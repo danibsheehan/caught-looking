@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { fetchGameTimeline } from '../../api/client.js'
 import ChartSkeleton from '../skeletons/ChartSkeleton.jsx'
+import { resolveGameScoreBarFills } from '../../utils/mlbTeamColors.js'
 
 /**
  * @param {{ gamePk: number | string | null | undefined }} props
@@ -70,6 +71,12 @@ export default function GameScoreBar({ gamePk }) {
   const awayKey = data?.awayTeam || 'Away'
   const homeKey = data?.homeTeam || 'Home'
 
+  const { awayFill, homeFill } = useMemo(
+    () =>
+      resolveGameScoreBarFills(data?.awayId, data?.homeId, '#38bdf8', 'var(--accent)'),
+    [data?.awayId, data?.homeId],
+  )
+
   if (pk == null || !Number.isFinite(pk) || pk <= 0) {
     return <p className="muted">Enter a valid MLB <code>gamePk</code> to chart runs by inning.</p>
   }
@@ -108,8 +115,8 @@ export default function GameScoreBar({ gamePk }) {
             }}
           />
           <Legend />
-          <Bar dataKey={awayKey} stackId="runs" fill="#38bdf8" name={awayKey} isAnimationActive={false} />
-          <Bar dataKey={homeKey} stackId="runs" fill="var(--accent)" name={homeKey} isAnimationActive={false} />
+          <Bar dataKey={awayKey} stackId="runs" fill={awayFill} name={awayKey} isAnimationActive={false} />
+          <Bar dataKey={homeKey} stackId="runs" fill={homeFill} name={homeKey} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
     </div>

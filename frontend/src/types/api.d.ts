@@ -41,6 +41,17 @@ export interface StandingTeam {
   divisionRank: string
   gamesBack: string
   wildCardGamesBack?: string
+  /** Optional fields from MLB standings payload */
+  runsScored?: number
+  runsAllowed?: number
+  runDifferential?: number
+  streak?: string
+  homeWins?: number
+  homeLosses?: number
+  awayWins?: number
+  awayLosses?: number
+  lastTenWins?: number
+  lastTenLosses?: number
 }
 
 export interface StandingDivision {
@@ -86,6 +97,57 @@ export interface GameTimelineResponse {
   innings: InningScore[]
   homeTotal: number
   awayTotal: number
+}
+
+export interface TeamGameTotals {
+  runs: number
+  hits: number
+  errors: number
+  leftOnBase?: number
+  doubles?: number
+  triples?: number
+  homeRuns?: number
+}
+
+export interface BatterLine {
+  playerId: number
+  name: string
+  pos: string
+  ab: number
+  r: number
+  h: number
+  doubles: number
+  triples: number
+  hr: number
+  rbi: number
+  bb: number
+  so: number
+}
+
+export interface PitcherLine {
+  playerId: number
+  name: string
+  ip: string
+  h: number
+  r: number
+  er: number
+  bb: number
+  so: number
+  hr: number
+}
+
+export interface TeamBoxSide {
+  teamId: number
+  teamName: string
+  totals: TeamGameTotals
+  batting: BatterLine[]
+  pitching: PitcherLine[]
+}
+
+export interface GameBoxscoreResponse {
+  gamePk: number
+  away: TeamBoxSide
+  home: TeamBoxSide
 }
 
 export interface PlayerStatSnapshot {
@@ -162,4 +224,37 @@ export interface GamesForDateResponse {
 export interface GamesForDateQuery {
   date: string
   teamId?: number
+}
+
+/** Query for `GET /teams/{teamId}/season-stats` */
+export interface TeamSeasonStatsQuery {
+  season?: number
+}
+
+/** Team hitting & pitching season aggregates */
+export interface TeamSeasonStatsResponse {
+  season: number
+  teamId: number
+  hitting: TeamHittingLine
+  pitching: TeamPitchingLine
+}
+
+export interface TeamHittingLine {
+  gamesPlayed: number
+  runs: number
+  runsPerGame: number
+  ops?: number
+  obp?: number
+  slg?: number
+  avg?: number
+}
+
+export interface TeamPitchingLine {
+  gamesPlayed: number
+  runsAllowed: number
+  runsAllowedPerGame: number
+  era?: number
+  whip?: number
+  k9?: number
+  bb9?: number
 }

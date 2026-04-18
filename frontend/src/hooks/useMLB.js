@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { fetchStandings, fetchTeams } from '../api/client.js'
+import { startTransition, useEffect, useState } from 'react'
+import { fetchStandings, fetchTeamSeasonStats, fetchTeams } from '../api/client.js'
 
 /**
  * @typedef {Object} UseStandingsResult
@@ -56,6 +56,52 @@ export function useStandings(params = {}) {
   }, [season, leagueId, standingsTypes])
 
   return { data, error, loading }
+}
+
+/**
+ * Season hitting & pitching aggregates for one team.
+ * @param {number | ''} teamId
+ * @param {number} season
+ * @returns {{ data: import('../types/api').TeamSeasonStatsResponse | null, error: Error | null, loading: boolean }}
+ */
+export function useTeamSeasonStats(teamId, season) {
+  const valid = typeof teamId === 'number' && teamId > 0
+  const [data, setData] = useState(
+    /** @type {import('../types/api').TeamSeasonStatsResponse | null} */ (null),
+  )
+  const [error, setError] = useState(/** @type {Error | null} */ (null))
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!valid) return
+
+    let cancelled = false
+    startTransition(() => {
+      setLoading(true)
+      setError(null)
+    })
+    fetchTeamSeasonStats(teamId, { season })
+      .then((json) => {
+        if (!cancelled) setData(json)
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setError(e instanceof Error ? e : new Error(String(e)))
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [valid, teamId, season])
+
+  return {
+    data: valid ? data : null,
+    error: valid ? error : null,
+    loading: valid && loading,
+  }
 }
 
 /**

@@ -294,6 +294,58 @@ code {
   color: var(--text);
 }
 
+.stat-cards--wide .stat-card {
+  min-width: 7.25rem;
+}
+
+.team-snapshot-heading {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.team-snapshot-lead {
+  margin: 0 0 0.65rem;
+}
+
+.segment-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.segment-tab {
+  font: inherit;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.segment-tab[aria-selected='true'] {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.segment-panel h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.deep-dive-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0.85rem 0 0.35rem;
+  color: var(--text-h);
+}
+
+.deep-dive-section-title:first-of-type {
+  margin-top: 0.25rem;
+}
+
 .player-card {
   border: 1px solid var(--border);
   border-radius: 0.5rem;
@@ -520,6 +572,11 @@ code {
   font: inherit;
   color: inherit;
   cursor: pointer;
+  box-sizing: border-box;
+}
+
+a.game-day-row {
+  text-decoration: none;
 }
 
 .game-day-row:hover {
@@ -539,6 +596,16 @@ code {
 
 .game-day-meta {
   font-variant-numeric: tabular-nums;
+}
+
+.game-detail-back {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.game-detail-back:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .panel {
@@ -752,4 +819,119 @@ code {
 .team-name {
   font-size: 0.85rem;
   color: var(--text);
+}
+
+.game-boxscore-panel {
+  margin-bottom: 1.25rem;
+}
+
+.game-boxscore-heading {
+  font-size: 1.15rem;
+  margin: 1rem 0 0.65rem;
+  color: var(--text-h);
+}
+
+.game-boxscore-heading:first-child {
+  margin-top: 0;
+}
+
+.game-totals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.game-totals-card .game-team-name {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.game-totals-dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+.game-totals-dl dt {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.game-totals-dl dd {
+  margin: 0.1rem 0 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.game-pitch-grid,
+.game-bat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.game-pitch-grid .game-team-name,
+.game-bat-grid .game-team-name {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.box-table-wrap {
+  overflow-x: auto;
+  margin: 0 -0.15rem;
+  padding: 0 0.15rem;
+}
+
+.game-data-table {
+  width: 100%;
+  min-width: 28rem;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.game-data-table th,
+.game-data-table td {
+  text-align: right;
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+
+.game-data-table th:first-child,
+.game-data-table td:first-child {
+  text-align: left;
+}
+
+.game-data-table thead th {
+  font-weight: 600;
+  color: var(--text-h);
+  vertical-align: bottom;
+}
+
+.box-sort-btn {
+  font: inherit;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: none;
+  background: none;
+  color: var(--text-h);
+  cursor: pointer;
+  padding: 0;
+  text-align: inherit;
+}
+
+.box-sort-btn:hover {
+  color: var(--accent);
+}
+
+.game-data-table tbody tr:hover {
+  background: var(--accent-bg);
 }

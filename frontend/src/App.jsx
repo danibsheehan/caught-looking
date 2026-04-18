@@ -12,7 +12,8 @@ import PageRouteSkeleton from './components/skeletons/PageRouteSkeleton.jsx'
 const Standings = lazy(() => import('./pages/Standings.jsx'))
 const TeamOverview = lazy(() => import('./pages/TeamOverview.jsx'))
 const PlayerComparison = lazy(() => import('./pages/PlayerComparison.jsx'))
-const GameTimeline = lazy(() => import('./pages/GameTimeline.jsx'))
+const GamesSlate = lazy(() => import('./pages/GamesSlate.jsx'))
+const GameDetail = lazy(() => import('./pages/GameDetail.jsx'))
 const Leaders = lazy(() => import('./pages/Leaders.jsx'))
 
 const nav = [
@@ -41,9 +42,13 @@ export default function App() {
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) =>
-                isActive ? 'nav-link is-active' : 'nav-link'
-              }
+              className={({ isActive }) => {
+                const active =
+                  to === '/games'
+                    ? isActive || location.pathname.startsWith('/games/')
+                    : isActive
+                return active ? 'nav-link is-active' : 'nav-link'
+              }}
             >
               {label}
             </NavLink>
@@ -58,7 +63,8 @@ export default function App() {
               <Route path="/standings" element={<Standings />} />
               <Route path="/teams" element={<TeamOverview />} />
               <Route path="/players" element={<PlayerComparison />} />
-              <Route path="/games" element={<GameTimeline />} />
+              <Route path="/games/:gamePk" element={<GameDetail />} />
+              <Route path="/games" element={<GamesSlate />} />
               <Route path="/leaders" element={<Leaders />} />
               <Route path="*" element={<Navigate to="/standings" replace />} />
             </Routes>

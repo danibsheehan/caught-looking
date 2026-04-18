@@ -32,3 +32,18 @@ export function divisionIndexForTeam(divisions, teamId) {
   }
   return -1
 }
+
+/**
+ * Division + standing row for a club (season snapshot).
+ * @param {import('../types/api').StandingDivision[] | undefined} divisions
+ * @param {number} teamId
+ * @returns {{ division: import('../types/api').StandingDivision, team: import('../types/api').StandingTeam } | null}
+ */
+export function standingTeamForId(divisions, teamId) {
+  if (!divisions?.length) return null
+  for (const d of divisions) {
+    const team = d.teams.find((t) => t.teamId === teamId)
+    if (team) return { division: d, team }
+  }
+  return null
+}

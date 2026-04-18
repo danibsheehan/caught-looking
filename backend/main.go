@@ -37,11 +37,13 @@ func main() {
 		_, _ = w.Write([]byte("ok"))
 	})
 	r.Get("/teams/{teamID}/record-timeline", h.RecordTimeline)
+	r.Get("/teams/{teamID}/season-stats", h.TeamSeasonStats)
 	r.Get("/record-timelines/batch", h.RecordTimelinesBatch)
 	r.Get("/teams", h.Teams)
 	r.Get("/standings", h.Standings)
 	r.Get("/games/for-date", h.GamesForDate)
 	r.Get("/games/{gamePk}/timeline", h.GameTimeline)
+	r.Get("/games/{gamePk}/boxscore", h.GameBoxscore)
 	r.Get("/players/search", h.PlayerSearch)
 	r.Get("/players/compare", h.PlayersCompare)
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { GameScoreBar } from '../components/charts'
+import { Link, useSearchParams } from 'react-router-dom'
 import GameListSkeleton from '../components/skeletons/GameListSkeleton.jsx'
 import { TeamSelector } from '../components/ui'
 import { fetchGamesForDate } from '../api/client.js'
@@ -13,21 +13,33 @@ function localISODate(d = new Date()) {
   return `${y}-${m}-${day}`
 }
 
-export default function GameTimeline() {
+const isoDateRe = /^\d{4}-\d{2}-\d{2}$/
+
+/**
+ * @param {URLSearchParams} searchParams
+ * @returns {string}
+ */
+function dateFromSearchParams(searchParams) {
+  const q = searchParams.get('date')
+  if (q && isoDateRe.test(q)) return q
+  return localISODate()
+}
+
+export default function GamesSlate() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const date = useMemo(
+    () => dateFromSearchParams(searchParams),
+    [searchParams],
+  )
+
   const { data: teamsData } = useTeams({ sportId: '1' })
   const teams = useMemo(() => teamsData?.teams ?? [], [teamsData])
 
-  const [date, setDate] = useState(localISODate)
   const [teamId, setTeamId] = useState(/** @type {number | ''} */ (''))
   const [games, setGames] = useState(
     /** @type {import('../types/api').GameSummary[]} */ ([]),
   )
-  const [selectedPk, setSelectedPk] = useState(
-    /** @type {number | null} */ (null),
-  )
-  const [loadError, setLoadError] = useState(
-    /** @type {string | null} */ (null),
-  )
+  const [loadError, setLoadError] = useState(/** @type {string | null} */ (null))
   const [loadingList, setLoadingList] = useState(false)
 
   useEffect(() => {
@@ -44,9 +56,7 @@ export default function GameTimeline() {
       })
         .then((res) => {
           if (cancelled) return
-          const list = res.games ?? []
-          setGames(list)
-          setSelectedPk(list.length ? list[0].gamePk : null)
+          setGames(res.games ?? [])
         })
         .catch((e) => {
           if (!cancelled)
@@ -62,14 +72,26 @@ export default function GameTimeline() {
     }
   }, [date, teamId])
 
+  /** @param {string} next */
+  function onDateChange(next) {
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev)
+        p.set('date', next)
+        return p
+      },
+      { replace: true },
+    )
+  }
+
   return (
     <section className="page">
       <header className="page-head">
         <div>
-          <h1>Game timeline</h1>
+          <h1>Games</h1>
           <p className="muted">
-            Pick a <strong>date</strong> (and optionally a team), choose a game from
-            the list, then see runs by inning.
+            Pick a date (and optionally a team), then open a game for runs by inning
+            and the full timeline.
           </p>
         </div>
         <div className="page-controls">
@@ -80,7 +102,7 @@ export default function GameTimeline() {
               style={{ width: '11rem' }}
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(e) => onDateChange(e.target.value)}
             />
           </label>
           {teams.length > 0 ? (
@@ -107,54 +129,33 @@ export default function GameTimeline() {
         {loadingList ? (
           <GameListSkeleton rows={7} />
         ) : games.length === 0 ? (
-          <p className="muted">No games on this date (try another day or clear the team filter).</p>
+          <p className="muted">
+            No games on this date (try another day or clear the team filter).
+          </p>
         ) : (
           <ul className="game-day-list" role="list">
             {games.map((g) => {
-              const active = selectedPk === g.gamePk
               const score =
                 g.status === 'Final' || g.status === 'Game Over'
                   ? `${g.awayScore}–${g.homeScore}`
                   : '—'
+              const to = `/games/${g.gamePk}?date=${encodeURIComponent(date)}`
               return (
                 <li key={g.gamePk} role="none">
-                  <button
-                    type="button"
-                    className={active ? 'game-day-row is-active' : 'game-day-row'}
-                    onClick={() => setSelectedPk(g.gamePk)}
-                  >
+                  <Link className="game-day-row" to={to}>
                     <span className="game-day-matchup">
                       {g.awayTeam} @ {g.homeTeam}
                     </span>
                     <span className="game-day-meta muted small">
                       {score} · {g.status}
                     </span>
-                  </button>
+                  </Link>
                 </li>
               )
             })}
           </ul>
         )}
       </div>
-
-      {selectedPk != null ? (
-        <div className="panel chart-panel">
-          <h2>Runs by inning</h2>
-          <p className="muted small">
-            Stacked bars: away (blue) + home (accent) per inning.
-          </p>
-          <GameScoreBar key={String(selectedPk)} gamePk={selectedPk} />
-        </div>
-      ) : null}
-
-      <details className="muted small" style={{ marginTop: '1rem' }}>
-        <summary>Advanced: open by numeric game ID</summary>
-        <p style={{ marginTop: '0.5rem' }}>
-          MLB calls this <code>gamePk</code>. You normally do not need it — use the
-          list above. If you have the id from a link or API, you can paste it in dev
-          tools or we can add a direct-id field later.
-        </p>
-      </details>
     </section>
   )
 }

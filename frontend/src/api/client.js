@@ -60,6 +60,19 @@ export async function fetchTeams(query = {}) {
  * @param {import('../types/api').RecordTimelineQuery} [query]
  * @returns {Promise<import('../types/api').RecordTimelineResponse>}
  */
+/**
+ * @param {number} teamId
+ * @param {import('../types/api').TeamSeasonStatsQuery} [query]
+ * @returns {Promise<import('../types/api').TeamSeasonStatsResponse>}
+ */
+export async function fetchTeamSeasonStats(teamId, query = {}) {
+  const qs = new URLSearchParams()
+  if (query.season != null) qs.set('season', String(query.season))
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  const raw = await apiGet(`/teams/${teamId}/season-stats${suffix}`)
+  return /** @type {import('../types/api').TeamSeasonStatsResponse} */ (raw)
+}
+
 export async function fetchRecordTimeline(teamId, query = {}) {
   const qs = new URLSearchParams()
   if (query.season != null) qs.set('season', String(query.season))
@@ -91,6 +104,15 @@ export async function fetchRecordTimelinesBatch(query) {
 export async function fetchGameTimeline(gamePk) {
   const raw = await apiGet(`/games/${gamePk}/timeline`)
   return /** @type {import('../types/api').GameTimelineResponse} */ (raw)
+}
+
+/**
+ * @param {number | string} gamePk
+ * @returns {Promise<import('../types/api').GameBoxscoreResponse>}
+ */
+export async function fetchGameBoxscore(gamePk) {
+  const raw = await apiGet(`/games/${gamePk}/boxscore`)
+  return /** @type {import('../types/api').GameBoxscoreResponse} */ (raw)
 }
 
 /**

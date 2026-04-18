@@ -2,15 +2,25 @@ package models
 
 // StandingTeam is one club's row within a division in the regular season.
 type StandingTeam struct {
-	TeamID        int    `json:"teamId"`
-	TeamName      string `json:"teamName"`
-	Wins          int    `json:"wins"`
-	Losses        int    `json:"losses"`
-	Pct           string `json:"pct"`
-	GamesPlayed   int    `json:"gamesPlayed"`
-	DivisionRank  string `json:"divisionRank"`
-	GamesBack     string `json:"gamesBack"`
-	WildCardGames string `json:"wildCardGamesBack,omitempty"`
+	TeamID          int    `json:"teamId"`
+	TeamName        string `json:"teamName"`
+	Wins            int    `json:"wins"`
+	Losses          int    `json:"losses"`
+	Pct             string `json:"pct"`
+	GamesPlayed     int    `json:"gamesPlayed"`
+	DivisionRank    string `json:"divisionRank"`
+	GamesBack       string `json:"gamesBack"`
+	WildCardGames   string `json:"wildCardGamesBack,omitempty"`
+	RunsScored      int    `json:"runsScored,omitempty"`
+	RunsAllowed     int    `json:"runsAllowed,omitempty"`
+	RunDifferential int    `json:"runDifferential,omitempty"`
+	Streak          string `json:"streak,omitempty"`
+	HomeWins        int    `json:"homeWins,omitempty"`
+	HomeLosses      int    `json:"homeLosses,omitempty"`
+	AwayWins        int    `json:"awayWins,omitempty"`
+	AwayLosses      int    `json:"awayLosses,omitempty"`
+	LastTenWins     int    `json:"lastTenWins,omitempty"`
+	LastTenLosses   int    `json:"lastTenLosses,omitempty"`
 }
 
 // StandingDivision groups teams under one division label.
