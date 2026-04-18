@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react'
+import type {
+  BatterLine,
+  GameBoxscoreResponse,
+  PitcherLine,
+  TeamBoxSide,
+} from '../../types/api'
 
-/**
- * MLB IP string to outs (e.g. 9.0 → 27, 0.1 → 1).
- * @param {string} ip
- */
-function ipToOuts(ip) {
+/** MLB IP string to outs (e.g. 9.0 → 27, 0.1 → 1). */
+function ipToOuts(ip: string): number {
   const s = String(ip).trim()
   if (!s) return 0
   const [w, frac = '0'] = s.split('.')
@@ -16,13 +19,11 @@ function ipToOuts(ip) {
   return whole * 3 + extra
 }
 
-/**
- * @template T
- * @param {T[]} rows
- * @param {'asc' | 'desc'} dir
- * @param {(row: T) => number | string} valueOf
- */
-function sortedCopy(rows, dir, valueOf) {
+function sortedCopy<T>(
+  rows: T[],
+  dir: 'asc' | 'desc',
+  valueOf: (row: T) => number | string,
+): T[] {
   const out = [...rows]
   out.sort((a, b) => {
     const va = valueOf(a)
@@ -38,10 +39,15 @@ function sortedCopy(rows, dir, valueOf) {
   return out
 }
 
-/**
- * @param {{ label: string, sortKey: string, activeKey: string | null, activeDir: 'asc' | 'desc', onSort: (k: string) => void }} props
- */
-function SortTh({ label, sortKey, activeKey, activeDir, onSort }) {
+type SortThProps = {
+  label: string
+  sortKey: string
+  activeKey: string | null
+  activeDir: 'asc' | 'desc'
+  onSort: (k: string) => void
+}
+
+function SortTh({ label, sortKey, activeKey, activeDir, onSort }: SortThProps) {
   const active = activeKey === sortKey
   return (
     <th scope="col">
@@ -57,10 +63,7 @@ function SortTh({ label, sortKey, activeKey, activeDir, onSort }) {
   )
 }
 
-/**
- * @param {import('../../types/api').TeamBoxSide} side
- */
-function TeamTotalsCard({ side }) {
+function TeamTotalsCard({ side }: { side: TeamBoxSide }) {
   const t = side.totals
   return (
     <div className="game-team-totals">
@@ -99,71 +102,72 @@ function TeamTotalsCard({ side }) {
   )
 }
 
-/**
- * @param {{ data: import('../../types/api').GameBoxscoreResponse }} props
- */
-export default function GameBoxscorePanel({ data }) {
-  const [batAway, setBatAway] = useState(
-    /** @type {{ key: string, dir: 'asc' | 'desc' } | null} */ (null),
-  )
-  const [batHome, setBatHome] = useState(
-    /** @type {{ key: string, dir: 'asc' | 'desc' } | null} */ (null),
-  )
-  const [pitAway, setPitAway] = useState(
-    /** @type {{ key: string, dir: 'asc' | 'desc' } | null} */ (null),
-  )
-  const [pitHome, setPitHome] = useState(
-    /** @type {{ key: string, dir: 'asc' | 'desc' } | null} */ (null),
-  )
+type SortState = { key: string; dir: 'asc' | 'desc' } | null
+
+export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse }) {
+  const [batAway, setBatAway] = useState<SortState>(null)
+  const [batHome, setBatHome] = useState<SortState>(null)
+  const [pitAway, setPitAway] = useState<SortState>(null)
+  const [pitHome, setPitHome] = useState<SortState>(null)
 
   const batAwayRows = useMemo(() => {
     if (!batAway) return data.away.batting
     const k = batAway.key
-    return sortedCopy(data.away.batting, batAway.dir, (row) =>
-      /** @type {Record<string, number | string>} */ (row)[k],
-    )
+    return sortedCopy<BatterLine>(data.away.batting, batAway.dir, (row) => {
+      const v = (row as unknown as Record<string, number | string>)[k]
+      return v ?? ''
+    })
   }, [data.away.batting, batAway])
 
   const batHomeRows = useMemo(() => {
     if (!batHome) return data.home.batting
     const k = batHome.key
-    return sortedCopy(data.home.batting, batHome.dir, (row) =>
-      /** @type {Record<string, number | string>} */ (row)[k],
-    )
+    return sortedCopy<BatterLine>(data.home.batting, batHome.dir, (row) => {
+      const v = (row as unknown as Record<string, number | string>)[k]
+      return v ?? ''
+    })
   }, [data.home.batting, batHome])
 
   const pitAwayRows = useMemo(() => {
     if (!pitAway) return data.away.pitching
     if (pitAway.key === 'ip') {
-      return sortedCopy(data.away.pitching, pitAway.dir, (row) => ipToOuts(row.ip))
+      return sortedCopy<PitcherLine>(data.away.pitching, pitAway.dir, (row) =>
+        ipToOuts(row.ip),
+      )
     }
     const k = pitAway.key
-    return sortedCopy(data.away.pitching, pitAway.dir, (row) =>
-      /** @type {Record<string, number | string>} */ (row)[k],
-    )
+    return sortedCopy<PitcherLine>(data.away.pitching, pitAway.dir, (row) => {
+      const v = (row as unknown as Record<string, number | string>)[k]
+      return v ?? ''
+    })
   }, [data.away.pitching, pitAway])
 
   const pitHomeRows = useMemo(() => {
     if (!pitHome) return data.home.pitching
     if (pitHome.key === 'ip') {
-      return sortedCopy(data.home.pitching, pitHome.dir, (row) => ipToOuts(row.ip))
+      return sortedCopy<PitcherLine>(data.home.pitching, pitHome.dir, (row) =>
+        ipToOuts(row.ip),
+      )
     }
     const k = pitHome.key
-    return sortedCopy(data.home.pitching, pitHome.dir, (row) =>
-      /** @type {Record<string, number | string>} */ (row)[k],
-    )
+    return sortedCopy<PitcherLine>(data.home.pitching, pitHome.dir, (row) => {
+      const v = (row as unknown as Record<string, number | string>)[k]
+      return v ?? ''
+    })
   }, [data.home.pitching, pitHome])
 
-  /** @param {'awayBat' | 'homeBat' | 'awayPit' | 'homePit'} which @param {string} key */
-  function toggleSort(which, key) {
+  function toggleSort(
+    which: 'awayBat' | 'homeBat' | 'awayPit' | 'homePit',
+    key: string,
+  ) {
     const map = {
-      awayBat: [batAway, setBatAway],
-      homeBat: [batHome, setBatHome],
-      awayPit: [pitAway, setPitAway],
-      homePit: [pitHome, setPitHome],
+      awayBat: [batAway, setBatAway] as const,
+      homeBat: [batHome, setBatHome] as const,
+      awayPit: [pitAway, setPitAway] as const,
+      homePit: [pitHome, setPitHome] as const,
     }
-    const [, set] = map[which]
-    set((prev) => {
+    const [, setSortState] = map[which]
+    setSortState((prev) => {
       if (!prev || prev.key !== key) return { key, dir: 'desc' }
       if (prev.dir === 'desc') return { key, dir: 'asc' }
       return null

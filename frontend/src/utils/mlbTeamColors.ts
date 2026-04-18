@@ -3,7 +3,7 @@
  * Secondaries are chosen to contrast with common primaries (e.g. navy vs red)
  * so stacked charts stay readable when two clubs share a similar primary.
  */
-export const MLB_TEAM_PRIMARY_HEX = /** @type {const} */ ({
+export const MLB_TEAM_PRIMARY_HEX = {
   108: '#BA0021',
   109: '#A71930',
   110: '#DF4601',
@@ -34,10 +34,10 @@ export const MLB_TEAM_PRIMARY_HEX = /** @type {const} */ ({
   146: '#00A3E0',
   147: '#132448',
   158: '#FFC52F',
-})
+} as const
 
 /** Secondary / accent used when the opponent’s primary is too close on the spectrum. */
-export const MLB_TEAM_SECONDARY_HEX = /** @type {const} */ ({
+export const MLB_TEAM_SECONDARY_HEX = {
   108: '#003263',
   109: '#30CED8',
   110: '#000000',
@@ -68,10 +68,12 @@ export const MLB_TEAM_SECONDARY_HEX = /** @type {const} */ ({
   146: '#EF3340',
   147: '#C4CED4',
   158: '#12284B',
-})
+} as const
 
-/** @param {string} hex */
-function hexToRgb(hex) {
+type PrimaryKey = keyof typeof MLB_TEAM_PRIMARY_HEX
+type SecondaryKey = keyof typeof MLB_TEAM_SECONDARY_HEX
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const n = hex.replace('#', '')
   if (n.length !== 6) return null
   const r = parseInt(n.slice(0, 2), 16)
@@ -81,12 +83,8 @@ function hexToRgb(hex) {
   return { r, g, b }
 }
 
-/**
- * Euclidean distance in RGB; good enough to flag “both reds” type clashes.
- * @param {string} hexA
- * @param {string} hexB
- */
-export function rgbDistance(hexA, hexB) {
+/** Euclidean distance in RGB; good enough to flag “both reds” type clashes. */
+export function rgbDistance(hexA: string, hexB: string): number {
   const a = hexToRgb(hexA)
   const b = hexToRgb(hexB)
   if (!a || !b) return 255
@@ -100,29 +98,28 @@ const PRIMARY_OK_DISTANCE = 72
  * Pick away/home fills so the two stacked segments read as different colors.
  * Prefers both teams’ primaries when they are already distinct; otherwise tries
  * primary/secondary mixes and picks the pair with the largest separation.
- *
- * @param {number | null | undefined} awayId
- * @param {number | null | undefined} homeId
- * @param {string} fallbackAway
- * @param {string} fallbackHome
- * @returns {{ awayFill: string, homeFill: string }}
  */
-export function resolveGameScoreBarFills(awayId, homeId, fallbackAway, fallbackHome) {
+export function resolveGameScoreBarFills(
+  awayId: number | null | undefined,
+  homeId: number | null | undefined,
+  fallbackAway: string,
+  fallbackHome: string,
+): { awayFill: string; homeFill: string } {
   const awayP =
     awayId != null && Number.isFinite(awayId) && awayId > 0
-      ? MLB_TEAM_PRIMARY_HEX[/** @type {keyof typeof MLB_TEAM_PRIMARY_HEX} */ (awayId)]
+      ? MLB_TEAM_PRIMARY_HEX[awayId as PrimaryKey]
       : undefined
   const homeP =
     homeId != null && Number.isFinite(homeId) && homeId > 0
-      ? MLB_TEAM_PRIMARY_HEX[/** @type {keyof typeof MLB_TEAM_PRIMARY_HEX} */ (homeId)]
+      ? MLB_TEAM_PRIMARY_HEX[homeId as PrimaryKey]
       : undefined
   const awayS =
     awayId != null && Number.isFinite(awayId) && awayId > 0
-      ? MLB_TEAM_SECONDARY_HEX[/** @type {keyof typeof MLB_TEAM_SECONDARY_HEX} */ (awayId)]
+      ? MLB_TEAM_SECONDARY_HEX[awayId as SecondaryKey]
       : undefined
   const homeS =
     homeId != null && Number.isFinite(homeId) && homeId > 0
-      ? MLB_TEAM_SECONDARY_HEX[/** @type {keyof typeof MLB_TEAM_SECONDARY_HEX} */ (homeId)]
+      ? MLB_TEAM_SECONDARY_HEX[homeId as SecondaryKey]
       : undefined
 
   const aP = awayP ?? fallbackAway
@@ -156,11 +153,10 @@ export function resolveGameScoreBarFills(awayId, homeId, fallbackAway, fallbackH
   return { awayFill: best.awayFill, homeFill: best.homeFill }
 }
 
-/**
- * @param {number | null | undefined} teamId
- * @param {string} fallback
- */
-export function mlbTeamPrimaryHex(teamId, fallback) {
+export function mlbTeamPrimaryHex(
+  teamId: number | null | undefined,
+  fallback: string,
+): string {
   if (teamId == null || !Number.isFinite(teamId) || teamId <= 0) return fallback
-  return MLB_TEAM_PRIMARY_HEX[/** @type {keyof typeof MLB_TEAM_PRIMARY_HEX} */ (teamId)] ?? fallback
+  return MLB_TEAM_PRIMARY_HEX[teamId as PrimaryKey] ?? fallback
 }

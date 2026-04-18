@@ -8,19 +8,18 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { fetchRecordTimeline } from '../../api/client.js'
-import ChartSkeleton from '../skeletons/ChartSkeleton.jsx'
+import { fetchRecordTimeline } from '../../api/client'
+import type { RecordTimelineResponse } from '../../types/api'
+import ChartSkeleton from '../skeletons/ChartSkeleton'
 
-/**
- * @param {{ teamId: number | null | undefined, season: number | null | undefined }} props
- */
-export default function WinLossChart({ teamId, season }) {
-  const [data, setData] = useState(
-    /** @type {import('../../types/api').RecordTimelineResponse | null} */ (null),
-  )
-  const [error, setError] = useState(
-    /** @type {Error | null} */ (null),
-  )
+type WinLossChartProps = {
+  teamId: number | null | undefined
+  season: number | null | undefined
+}
+
+export default function WinLossChart({ teamId, season }: WinLossChartProps) {
+  const [data, setData] = useState<RecordTimelineResponse | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -97,7 +96,9 @@ export default function WinLossChart({ teamId, season }) {
         <Tooltip
           formatter={(value) => [`${Number(value).toFixed(1)}%`, 'Win %']}
           labelFormatter={(_, p) => {
-            const row = p?.[0]?.payload
+            const row = p?.[0]?.payload as
+              | { gameIndex: number; officialDate: string; result: string; wins: number; losses: number }
+              | undefined
             if (!row) return ''
             return `Game ${row.gameIndex} · ${row.officialDate} (${row.result}) · ${row.wins}-${row.losses}`
           }}

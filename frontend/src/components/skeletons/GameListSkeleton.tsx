@@ -1,7 +1,10 @@
-import { SkeletonLine } from './SkeletonPrimitives.jsx'
+import { SkeletonLine } from './SkeletonPrimitives'
 
-/** @param {{ rows?: number }} props */
-export default function GameListSkeleton({ rows = 6 }) {
+type GameListSkeletonProps = {
+  rows?: number
+}
+
+export default function GameListSkeleton({ rows = 6 }: GameListSkeletonProps) {
   return (
     <div className="game-list-skeleton" aria-hidden="true">
       {Array.from({ length: rows }, (_, i) => (

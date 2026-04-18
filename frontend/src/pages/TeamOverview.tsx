@@ -1,34 +1,30 @@
 import { useMemo, useState } from 'react'
 import { WinLossChart } from '../components/charts'
-import TeamPageSkeleton from '../components/skeletons/TeamPageSkeleton.jsx'
+import TeamPageSkeleton from '../components/skeletons/TeamPageSkeleton'
 import { PlayerCard, StatCard, TeamSelector } from '../components/ui'
-import { useStandings, useTeamSeasonStats, useTeams } from '../hooks/useMLB.js'
-import { standingTeamForId } from '../utils/standings.js'
+import { useStandings, useTeamSeasonStats, useTeams } from '../hooks/useMLB'
+import { standingTeamForId } from '../utils/standings'
 
 const DEFAULT_SEASON = 2026
 
-/** @param {number | undefined} v */
-function formatSignedInt(v) {
+function formatSignedInt(v: number | undefined): string {
   if (v == null || Number.isNaN(v)) return '—'
   if (v === 0) return '0'
   return v > 0 ? `+${v}` : String(v)
 }
 
-/** @param {number | undefined} v */
-function formatSlashThree(v) {
+function formatSlashThree(v: number | undefined): string {
   if (v == null || Number.isNaN(v) || v === 0) return '—'
   const s = v.toFixed(3)
   return s.startsWith('0.') ? s.slice(1) : s
 }
 
-/** @param {number | undefined} v */
-function formatTwo(v) {
+function formatTwo(v: number | undefined): string {
   if (v == null || Number.isNaN(v)) return '—'
   return v.toFixed(2)
 }
 
-/** @param {string | undefined} dashOrValue */
-function formatStandingToken(dashOrValue) {
+function formatStandingToken(dashOrValue: string | undefined): string {
   if (dashOrValue == null || dashOrValue === '' || dashOrValue === '-') return '—'
   return dashOrValue
 }
@@ -36,9 +32,9 @@ function formatStandingToken(dashOrValue) {
 export default function TeamOverview() {
   const { data, loading, error } = useTeams({ sportId: '1' })
   const teams = useMemo(() => data?.teams ?? [], [data])
-  const [teamId, setTeamId] = useState(/** @type {number | ''} */ (''))
+  const [teamId, setTeamId] = useState<number | ''>('')
   const [season, setSeason] = useState(DEFAULT_SEASON)
-  const [panelTab, setPanelTab] = useState(/** @type {'trend' | 'deep'} */ ('trend'))
+  const [panelTab, setPanelTab] = useState<'trend' | 'deep'>('trend')
 
   const {
     data: standingsData,
@@ -60,10 +56,7 @@ export default function TeamOverview() {
     data: deepStats,
     loading: deepLoading,
     error: deepError,
-  } = useTeamSeasonStats(
-    selected && typeof selected.id === 'number' ? selected.id : '',
-    season,
-  )
+  } = useTeamSeasonStats(selected ? selected.id : '', season)
 
   if (loading && !data) {
     return <TeamPageSkeleton />

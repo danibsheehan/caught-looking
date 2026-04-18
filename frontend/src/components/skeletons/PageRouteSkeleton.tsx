@@ -1,4 +1,4 @@
-import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives.jsx'
+import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives'
 
 /** Shown while lazy route chunks load (Suspense). */
 export default function PageRouteSkeleton() {

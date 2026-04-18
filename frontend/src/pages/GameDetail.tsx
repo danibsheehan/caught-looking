@@ -1,8 +1,9 @@
 import { startTransition, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { GameScoreBar } from '../components/charts'
-import GameBoxscorePanel from '../components/game/GameBoxscorePanel.jsx'
-import { fetchGameBoxscore } from '../api/client.js'
+import GameBoxscorePanel from '../components/game/GameBoxscorePanel'
+import { fetchGameBoxscore } from '../api/client'
+import type { GameBoxscoreResponse } from '../types/api'
 
 export default function GameDetail() {
   const { gamePk: gamePkParam } = useParams()
@@ -14,10 +15,8 @@ export default function GameDetail() {
     return Number.isFinite(n) && n > 0 ? n : null
   }, [gamePkParam])
 
-  const [box, setBox] = useState(
-    /** @type {import('../types/api').GameBoxscoreResponse | null} */ (null),
-  )
-  const [boxError, setBoxError] = useState(/** @type {Error | null} */ (null))
+  const [box, setBox] = useState<GameBoxscoreResponse | null>(null)
+  const [boxError, setBoxError] = useState<Error | null>(null)
   const [boxLoading, setBoxLoading] = useState(true)
 
   useEffect(() => {

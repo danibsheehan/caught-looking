@@ -1,33 +1,17 @@
 import { startTransition, useEffect, useState } from 'react'
-import { fetchStandings, fetchTeamSeasonStats, fetchTeams } from '../api/client.js'
+import { fetchStandings, fetchTeamSeasonStats, fetchTeams } from '../api/client'
+import type {
+  StandingsQuery,
+  StandingsResponse,
+  TeamSeasonStatsResponse,
+  TeamsQuery,
+  TeamsResponse,
+} from '../types/api'
 
-/**
- * @typedef {Object} UseStandingsResult
- * @property {import('../types/api').StandingsResponse | null} data
- * @property {Error | null} error
- * @property {boolean} loading
- */
-
-/**
- * @typedef {Object} UseTeamsResult
- * @property {import('../types/api').TeamsResponse | null} data
- * @property {Error | null} error
- * @property {boolean} loading
- */
-
-/**
- * Regular-season standings from the Go API.
- * @param {import('../types/api').StandingsQuery} [params]
- * @returns {UseStandingsResult}
- */
-export function useStandings(params = {}) {
+export function useStandings(params: StandingsQuery = {}) {
   const { season, leagueId, standingsTypes } = params
-  const [data, setData] = useState(
-    /** @type {import('../types/api').StandingsResponse | null} */ (null),
-  )
-  const [error, setError] = useState(
-    /** @type {Error | null} */ (null),
-  )
+  const [data, setData] = useState<StandingsResponse | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -58,18 +42,10 @@ export function useStandings(params = {}) {
   return { data, error, loading }
 }
 
-/**
- * Season hitting & pitching aggregates for one team.
- * @param {number | ''} teamId
- * @param {number} season
- * @returns {{ data: import('../types/api').TeamSeasonStatsResponse | null, error: Error | null, loading: boolean }}
- */
-export function useTeamSeasonStats(teamId, season) {
+export function useTeamSeasonStats(teamId: number | '', season: number) {
   const valid = typeof teamId === 'number' && teamId > 0
-  const [data, setData] = useState(
-    /** @type {import('../types/api').TeamSeasonStatsResponse | null} */ (null),
-  )
-  const [error, setError] = useState(/** @type {Error | null} */ (null))
+  const [data, setData] = useState<TeamSeasonStatsResponse | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -104,19 +80,10 @@ export function useTeamSeasonStats(teamId, season) {
   }
 }
 
-/**
- * MLB clubs (defaults to sportId=1) for labels and selectors.
- * @param {import('../types/api').TeamsQuery} [params]
- * @returns {UseTeamsResult}
- */
-export function useTeams(params = {}) {
+export function useTeams(params: TeamsQuery = {}) {
   const { sportId } = params
-  const [data, setData] = useState(
-    /** @type {import('../types/api').TeamsResponse | null} */ (null),
-  )
-  const [error, setError] = useState(
-    /** @type {Error | null} */ (null),
-  )
+  const [data, setData] = useState<TeamsResponse | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

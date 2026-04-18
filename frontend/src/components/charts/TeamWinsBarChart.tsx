@@ -8,15 +8,18 @@ import {
   YAxis,
 } from 'recharts'
 
-/**
- * @typedef {{ abbrev: string, wins: number }} TeamWinRow
- */
+export type TeamWinRow = { abbrev: string; wins: number }
 
-/**
- * Vertical bar chart: wins by team abbreviation (standings slice).
- * @param {{ data: TeamWinRow[], height?: number }} props
- */
-export default function TeamWinsBarChart({ data, height = 320 }) {
+type TeamWinsBarChartProps = {
+  data: TeamWinRow[]
+  height?: number
+}
+
+/** Vertical bar chart: wins by team abbreviation (standings slice). */
+export default function TeamWinsBarChart({
+  data,
+  height = 320,
+}: TeamWinsBarChartProps) {
   return (
     <div className="chart-wrap" style={{ width: '100%', minHeight: height }}>
       <ResponsiveContainer width="100%" height={height}>

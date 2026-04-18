@@ -9,20 +9,18 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { fetchGameTimeline } from '../../api/client.js'
-import ChartSkeleton from '../skeletons/ChartSkeleton.jsx'
-import { resolveGameScoreBarFills } from '../../utils/mlbTeamColors.js'
+import { fetchGameTimeline } from '../../api/client'
+import type { GameTimelineResponse } from '../../types/api'
+import ChartSkeleton from '../skeletons/ChartSkeleton'
+import { resolveGameScoreBarFills } from '../../utils/mlbTeamColors'
 
-/**
- * @param {{ gamePk: number | string | null | undefined }} props
- */
-export default function GameScoreBar({ gamePk }) {
-  const [data, setData] = useState(
-    /** @type {import('../../types/api').GameTimelineResponse | null} */ (null),
-  )
-  const [error, setError] = useState(
-    /** @type {Error | null} */ (null),
-  )
+type GameScoreBarProps = {
+  gamePk: number | string | null | undefined
+}
+
+export default function GameScoreBar({ gamePk }: GameScoreBarProps) {
+  const [data, setData] = useState<GameTimelineResponse | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(false)
 
   const pk =
@@ -78,7 +76,11 @@ export default function GameScoreBar({ gamePk }) {
   )
 
   if (pk == null || !Number.isFinite(pk) || pk <= 0) {
-    return <p className="muted">Enter a valid MLB <code>gamePk</code> to chart runs by inning.</p>
+    return (
+      <p className="muted">
+        Enter a valid MLB <code>gamePk</code> to chart runs by inning.
+      </p>
+    )
   }
 
   if (loading && !data) {
@@ -105,7 +107,11 @@ export default function GameScoreBar({ gamePk }) {
       <ResponsiveContainer width="100%" height={360}>
         <BarChart data={rows} margin={{ top: 10, right: 10, left: 4, bottom: 28 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis dataKey="inning" tick={{ fill: 'var(--text)' }} label={{ value: 'Inning', position: 'insideBottom', offset: -2, fill: 'var(--text)' }} />
+          <XAxis
+            dataKey="inning"
+            tick={{ fill: 'var(--text)' }}
+            label={{ value: 'Inning', position: 'insideBottom', offset: -2, fill: 'var(--text)' }}
+          />
           <YAxis allowDecimals={false} tick={{ fill: 'var(--text)' }} width={36} />
           <Tooltip
             contentStyle={{

@@ -1,31 +1,30 @@
 import { useEffect, useId, useState } from 'react'
-import { fetchPlayersSearch } from '../../api/client.js'
+import { fetchPlayersSearch } from '../../api/client'
+import type { PlayerSearchHit } from '../../types/api'
 
-/**
- * @typedef {{ id: number, fullName: string }} PlayerPick
- */
+export type PlayerPick = { id: number; fullName: string }
 
-/**
- * Search MLB players by name (via Go `/players/search`) and pick one row.
- * @param {{
- *   label: string,
- *   selected: PlayerPick | null,
- *   onChange: (p: PlayerPick | null) => void,
- *   disabled?: boolean,
- * }} props
- */
-export default function PlayerPicker({ label, selected, onChange, disabled }) {
+type PlayerPickerProps = {
+  label: string
+  selected: PlayerPick | null
+  onChange: (p: PlayerPick | null) => void
+  disabled?: boolean
+}
+
+/** Search MLB players by name (via Go `/players/search`) and pick one row. */
+export default function PlayerPicker({
+  label,
+  selected,
+  onChange,
+  disabled,
+}: PlayerPickerProps) {
   const baseId = useId()
   const inputId = `${baseId}-q`
   const listId = `${baseId}-list`
 
   const [q, setQ] = useState('')
-  const [hits, setHits] = useState(
-    /** @type {import('../../types/api').PlayerSearchHit[]} */ ([]),
-  )
-  const [searchError, setSearchError] = useState(
-    /** @type {string | null} */ (null),
-  )
+  const [hits, setHits] = useState<PlayerSearchHit[]>([])
+  const [searchError, setSearchError] = useState<string | null>(null)
   const [searching, setSearching] = useState(false)
 
   useEffect(() => {

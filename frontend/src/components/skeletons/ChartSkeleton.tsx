@@ -1,7 +1,12 @@
-/**
- * @param {{ height?: number, label?: string }} props
- */
-export default function ChartSkeleton({ height = 320, label = 'Loading chart' }) {
+type ChartSkeletonProps = {
+  height?: number
+  label?: string
+}
+
+export default function ChartSkeleton({
+  height = 320,
+  label = 'Loading chart',
+}: ChartSkeletonProps) {
   return (
     <div
       className="chart-skeleton chart-skeleton--inline"

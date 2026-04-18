@@ -6,15 +6,15 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom'
-import RouteErrorBoundary from './components/RouteErrorBoundary.jsx'
-import PageRouteSkeleton from './components/skeletons/PageRouteSkeleton.jsx'
+import RouteErrorBoundary from './components/RouteErrorBoundary'
+import PageRouteSkeleton from './components/skeletons/PageRouteSkeleton'
 
-const Standings = lazy(() => import('./pages/Standings.jsx'))
-const TeamOverview = lazy(() => import('./pages/TeamOverview.jsx'))
-const PlayerComparison = lazy(() => import('./pages/PlayerComparison.jsx'))
-const GamesSlate = lazy(() => import('./pages/GamesSlate.jsx'))
-const GameDetail = lazy(() => import('./pages/GameDetail.jsx'))
-const Leaders = lazy(() => import('./pages/Leaders.jsx'))
+const Standings = lazy(() => import('./pages/Standings'))
+const TeamOverview = lazy(() => import('./pages/TeamOverview'))
+const PlayerComparison = lazy(() => import('./pages/PlayerComparison'))
+const GamesSlate = lazy(() => import('./pages/GamesSlate'))
+const GameDetail = lazy(() => import('./pages/GameDetail'))
+const Leaders = lazy(() => import('./pages/Leaders'))
 
 const nav = [
   { to: '/standings', label: 'Standings' },

@@ -1,22 +1,20 @@
-import { Component } from 'react'
+import { Component, type ErrorInfo, type ReactNode } from 'react'
+
+type Props = { children?: ReactNode }
+
+type State = { hasError: boolean; error: Error | null }
 
 /**
  * Catches render errors in lazy route trees so the shell (header/nav) stays visible.
  */
-export default class RouteErrorBoundary extends Component {
-  /** @type {{ hasError: boolean, error: Error | null }} */
-  state = { hasError: false, error: null }
+export default class RouteErrorBoundary extends Component<Props, State> {
+  state: State = { hasError: false, error: null }
 
-  /** @param {Error} error */
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error }
   }
 
-  /**
-   * @param {Error} error
-   * @param {{ componentStack?: string }} info
-   */
-  componentDidCatch(error, info) {
+  componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[RouteErrorBoundary]', error, info?.componentStack)
   }
 
@@ -29,9 +27,7 @@ export default class RouteErrorBoundary extends Component {
           <button
             type="button"
             className="route-error-retry"
-            onClick={() =>
-              this.setState({ hasError: false, error: null })
-            }
+            onClick={() => this.setState({ hasError: false, error: null })}
           >
             Try again
           </button>

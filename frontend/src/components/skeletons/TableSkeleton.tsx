@@ -1,9 +1,11 @@
-import { SkeletonLine } from './SkeletonPrimitives.jsx'
+import { SkeletonLine } from './SkeletonPrimitives'
 
-/**
- * @param {{ rows?: number, cols?: number }} props
- */
-export default function TableSkeleton({ rows = 8, cols = 7 }) {
+type TableSkeletonProps = {
+  rows?: number
+  cols?: number
+}
+
+export default function TableSkeleton({ rows = 8, cols = 7 }: TableSkeletonProps) {
   return (
     <div className="table-skeleton" aria-hidden="true">
       <div className="table-skeleton-head">

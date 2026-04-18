@@ -1,6 +1,6 @@
-import ChartSkeleton from './ChartSkeleton.jsx'
-import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives.jsx'
-import TableSkeleton from './TableSkeleton.jsx'
+import ChartSkeleton from './ChartSkeleton'
+import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives'
+import TableSkeleton from './TableSkeleton'
 
 /** Shape-matched loading state for the standings view. */
 export default function StandingsPageSkeleton() {

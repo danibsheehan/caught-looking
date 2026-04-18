@@ -1,14 +1,15 @@
-/**
- * Single-select from MLB clubs (typed against Go `/teams` rows).
- * @param {{
- *   id?: string,
- *   label?: string,
- *   teams: import('../../types/api').Team[],
- *   value: number | '',
- *   onChange: (teamId: number | '') => void,
- *   placeholder?: string,
- * }} props
- */
+import type { Team } from '../../types/api'
+
+type TeamSelectorProps = {
+  id?: string
+  label?: string
+  teams: Team[]
+  value: number | ''
+  onChange: (teamId: number | '') => void
+  placeholder?: string
+}
+
+/** Single-select from MLB clubs (typed against Go `/teams` rows). */
 export default function TeamSelector({
   id = 'team-selector',
   label = 'Team',
@@ -16,7 +17,7 @@ export default function TeamSelector({
   value,
   onChange,
   placeholder = 'All teams',
-}) {
+}: TeamSelectorProps) {
   const sorted = [...teams].sort((a, b) =>
     a.abbreviation.localeCompare(b.abbreviation),
   )

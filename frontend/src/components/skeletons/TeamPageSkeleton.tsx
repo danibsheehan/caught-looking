@@ -1,5 +1,5 @@
-import ChartSkeleton from './ChartSkeleton.jsx'
-import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives.jsx'
+import ChartSkeleton from './ChartSkeleton'
+import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives'
 
 export default function TeamPageSkeleton() {
   return (

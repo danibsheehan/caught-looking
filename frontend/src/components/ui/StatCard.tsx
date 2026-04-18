@@ -1,8 +1,11 @@
-/**
- * Compact label + metric for dashboards.
- * @param {{ label: string, value: string | number, hint?: string }} props
- */
-export default function StatCard({ label, value, hint }) {
+type StatCardProps = {
+  label: string
+  value: string | number
+  hint?: string
+}
+
+/** Compact label + metric for dashboards. */
+export default function StatCard({ label, value, hint }: StatCardProps) {
   return (
     <div className="stat-card">
       <span className="stat-card-label">{label}</span>

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import GameListSkeleton from '../components/skeletons/GameListSkeleton.jsx'
+import GameListSkeleton from '../components/skeletons/GameListSkeleton'
 import { TeamSelector } from '../components/ui'
-import { fetchGamesForDate } from '../api/client.js'
-import { useTeams } from '../hooks/useMLB.js'
+import { fetchGamesForDate } from '../api/client'
+import { useTeams } from '../hooks/useMLB'
+import type { GameSummary } from '../types/api'
 
-/** @returns {string} */
-function localISODate(d = new Date()) {
+function localISODate(d = new Date()): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
@@ -15,11 +15,7 @@ function localISODate(d = new Date()) {
 
 const isoDateRe = /^\d{4}-\d{2}-\d{2}$/
 
-/**
- * @param {URLSearchParams} searchParams
- * @returns {string}
- */
-function dateFromSearchParams(searchParams) {
+function dateFromSearchParams(searchParams: URLSearchParams): string {
   const q = searchParams.get('date')
   if (q && isoDateRe.test(q)) return q
   return localISODate()
@@ -35,11 +31,9 @@ export default function GamesSlate() {
   const { data: teamsData } = useTeams({ sportId: '1' })
   const teams = useMemo(() => teamsData?.teams ?? [], [teamsData])
 
-  const [teamId, setTeamId] = useState(/** @type {number | ''} */ (''))
-  const [games, setGames] = useState(
-    /** @type {import('../types/api').GameSummary[]} */ ([]),
-  )
-  const [loadError, setLoadError] = useState(/** @type {string | null} */ (null))
+  const [teamId, setTeamId] = useState<number | ''>('')
+  const [games, setGames] = useState<GameSummary[]>([])
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [loadingList, setLoadingList] = useState(false)
 
   useEffect(() => {
@@ -72,8 +66,7 @@ export default function GamesSlate() {
     }
   }, [date, teamId])
 
-  /** @param {string} next */
-  function onDateChange(next) {
+  function onDateChange(next: string) {
     setSearchParams(
       (prev) => {
         const p = new URLSearchParams(prev)

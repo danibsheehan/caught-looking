@@ -9,8 +9,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { fetchRecordTimelinesBatch } from '../../api/client.js'
-import ChartSkeleton from '../skeletons/ChartSkeleton.jsx'
+import { fetchRecordTimelinesBatch } from '../../api/client'
+import type { RecordTimelinesBatchResponse } from '../../types/api'
+import ChartSkeleton from '../skeletons/ChartSkeleton'
 
 /** Distinct strokes for up to 8 teams (matches backend batch cap). */
 const SERIES_STROKES = [
@@ -24,20 +25,19 @@ const SERIES_STROKES = [
   '#a78bfa',
 ]
 
-/**
- * @param {{
- *   teamIds: number[]
- *   season: number | null | undefined
- *   getLabel: (teamId: number) => string
- * }} props
- */
-export default function MultiTeamWinPctChart({ teamIds, season, getLabel }) {
-  const [payload, setPayload] = useState(
-    /** @type {import('../../types/api').RecordTimelinesBatchResponse | null} */ (
-      null
-    ),
-  )
-  const [error, setError] = useState(/** @type {Error | null} */ (null))
+type MultiTeamWinPctChartProps = {
+  teamIds: number[]
+  season: number | null | undefined
+  getLabel: (teamId: number) => string
+}
+
+export default function MultiTeamWinPctChart({
+  teamIds,
+  season,
+  getLabel,
+}: MultiTeamWinPctChartProps) {
+  const [payload, setPayload] = useState<RecordTimelinesBatchResponse | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(false)
 
   const sortedIds = useMemo(() => {
@@ -79,10 +79,11 @@ export default function MultiTeamWinPctChart({ teamIds, season, getLabel }) {
     for (const tl of payload.timelines) {
       maxGames = Math.max(maxGames, tl.points?.length ?? 0)
     }
-    const rows = []
+    const rows: Array<Record<string, number | undefined> & { gameIndex: number }> = []
     for (let i = 1; i <= maxGames; i++) {
-      /** @type {Record<string, number | undefined>} */
-      const row = { gameIndex: i }
+      const row: Record<string, number | undefined> & { gameIndex: number } = {
+        gameIndex: i,
+      }
       for (const tl of payload.timelines) {
         const pt = tl.points[i - 1]
         const key = `pct_${tl.teamId}`

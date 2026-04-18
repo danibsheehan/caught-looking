@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { MultiTeamWinPctChart, TeamWinsBarChart } from '../components/charts'
 import { StatCard, TeamSelector } from '../components/ui'
-import { useStandings, useTeams } from '../hooks/useMLB.js'
-import StandingsPageSkeleton from '../components/skeletons/StandingsPageSkeleton.jsx'
+import { useStandings, useTeams } from '../hooks/useMLB'
+import StandingsPageSkeleton from '../components/skeletons/StandingsPageSkeleton'
 import {
   divisionIndexForTeam,
   sortStandingTeams,
   teamLabelMap,
-} from '../utils/standings.js'
+} from '../utils/standings'
 
 export default function Standings() {
   const { data: teamsData } = useTeams({ sportId: '1' })
@@ -18,9 +18,7 @@ export default function Standings() {
   const divisions = data?.divisions ?? []
   const teams = teamsData?.teams ?? []
   const [selectedIdx, setSelectedIdx] = useState(0)
-  const [focusTeamId, setFocusTeamId] = useState(
-    /** @type {number | ''} */ (''),
-  )
+  const [focusTeamId, setFocusTeamId] = useState<number | ''>('')
 
   const safeIdx = Math.min(
     Math.max(0, selectedIdx),
@@ -41,10 +39,7 @@ export default function Standings() {
     [selected],
   )
 
-  /**
-   * @param {number | ''} id
-   */
-  function onTeamSelected(id) {
+  function onTeamSelected(id: number | '') {
     setFocusTeamId(id)
     if (id === '') return
     const idx = divisionIndexForTeam(divisions, id)
@@ -151,7 +146,7 @@ export default function Standings() {
             <MultiTeamWinPctChart
               teamIds={divisionTeamIds}
               season={data?.season ?? null}
-              getLabel={(id) => abbrevById.get(id) ?? String(id)}
+              getLabel={(id: number) => abbrevById.get(id) ?? String(id)}
             />
           </div>
 

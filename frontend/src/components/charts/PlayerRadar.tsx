@@ -9,15 +9,13 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
-import { fetchPlayersCompare } from '../../api/client.js'
-import ChartSkeleton from '../skeletons/ChartSkeleton.jsx'
+import { fetchPlayersCompare } from '../../api/client'
+import type { PlayersRadarResponse } from '../../types/api'
+import ChartSkeleton from '../skeletons/ChartSkeleton'
 
-/**
- * @typedef {{ key: string, label: string, higherIsBetter: boolean }} RadarAxis
- */
+type RadarAxis = { key: string; label: string; higherIsBetter: boolean }
 
-/** @type {RadarAxis[]} */
-const HITTING_AXES = [
+const HITTING_AXES: RadarAxis[] = [
   { key: 'avg', label: 'AVG', higherIsBetter: true },
   { key: 'obp', label: 'OBP', higherIsBetter: true },
   { key: 'slg', label: 'SLG', higherIsBetter: true },
@@ -25,21 +23,18 @@ const HITTING_AXES = [
   { key: 'rbi', label: 'RBI', higherIsBetter: true },
 ]
 
-/** @type {RadarAxis[]} */
-const PITCHING_AXES = [
+const PITCHING_AXES: RadarAxis[] = [
   { key: 'era', label: 'ERA', higherIsBetter: false },
   { key: 'whip', label: 'WHIP', higherIsBetter: false },
   { key: 'k9', label: 'K/9', higherIsBetter: true },
   { key: 'bb9', label: 'BB/9', higherIsBetter: false },
 ]
 
-/**
- * @param {number} v1
- * @param {number} v2
- * @param {boolean} higherIsBetter
- * @returns {[number, number]}
- */
-function pairScores(v1, v2, higherIsBetter) {
+function pairScores(
+  v1: number,
+  v2: number,
+  higherIsBetter: boolean,
+): [number, number] {
   const a = Number.isFinite(v1) ? v1 : 0
   const b = Number.isFinite(v2) ? v2 : 0
   if (higherIsBetter) {
@@ -47,17 +42,13 @@ function pairScores(v1, v2, higherIsBetter) {
     return [(a / m) * 100, (b / m) * 100]
   }
   const m = Math.max(a, b, 1e-6)
-  return [
-    ((m - a) / m) * 100,
-    ((m - b) / m) * 100,
-  ]
+  return [((m - a) / m) * 100, ((m - b) / m) * 100]
 }
 
-/**
- * @param {import('../../types/api').PlayersRadarResponse | null} payload
- * @param {'hitting' | 'pitching'} group
- */
-function toRadarRows(payload, group) {
+function toRadarRows(
+  payload: PlayersRadarResponse | null,
+  group: 'hitting' | 'pitching',
+): { metric: string; a: number; b: number }[] {
   if (!payload?.players || payload.players.length < 2) return []
   const axes = group === 'pitching' ? PITCHING_AXES : HITTING_AXES
   const [p1, p2] = payload.players
@@ -75,26 +66,21 @@ function toRadarRows(payload, group) {
   })
 }
 
-/**
- * @param {{
- *   playerId1: number | null | undefined,
- *   playerId2: number | null | undefined,
- *   season: number | null | undefined,
- *   group?: 'hitting' | 'pitching',
- * }} props
- */
+type PlayerRadarProps = {
+  playerId1: number | null | undefined
+  playerId2: number | null | undefined
+  season: number | null | undefined
+  group?: 'hitting' | 'pitching'
+}
+
 export default function PlayerRadar({
   playerId1,
   playerId2,
   season,
   group = 'hitting',
-}) {
-  const [data, setData] = useState(
-    /** @type {import('../../types/api').PlayersRadarResponse | null} */ (null),
-  )
-  const [error, setError] = useState(
-    /** @type {Error | null} */ (null),
-  )
+}: PlayerRadarProps) {
+  const [data, setData] = useState<PlayersRadarResponse | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {

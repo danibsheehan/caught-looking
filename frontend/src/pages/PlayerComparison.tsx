@@ -1,26 +1,20 @@
 import { useState } from 'react'
 import { PlayerRadar } from '../components/charts'
-import { PlayerPicker } from '../components/ui'
+import { PlayerPicker, type PlayerPick } from '../components/ui'
 
 const DEFAULT_SEASON = 2026
 
 export default function PlayerComparison() {
-  const [pick1, setPick1] = useState(
-    /** @type {{ id: number, fullName: string } | null} */ ({
-      id: 660271,
-      fullName: 'Shohei Ohtani',
-    }),
-  )
-  const [pick2, setPick2] = useState(
-    /** @type {{ id: number, fullName: string } | null} */ ({
-      id: 592450,
-      fullName: 'Aaron Judge',
-    }),
-  )
+  const [pick1, setPick1] = useState<PlayerPick | null>({
+    id: 660271,
+    fullName: 'Shohei Ohtani',
+  })
+  const [pick2, setPick2] = useState<PlayerPick | null>({
+    id: 592450,
+    fullName: 'Aaron Judge',
+  })
   const [season, setSeason] = useState(DEFAULT_SEASON)
-  const [group, setGroup] = useState(
-    /** @type {'hitting' | 'pitching'} */ ('hitting'),
-  )
+  const [group, setGroup] = useState<'hitting' | 'pitching'>('hitting')
 
   const p1 = pick1?.id
   const p2 = pick2?.id
