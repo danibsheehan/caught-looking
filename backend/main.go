@@ -45,7 +45,11 @@ func main() {
 	r.Get("/games/{gamePk}/timeline", h.GameTimeline)
 	r.Get("/games/{gamePk}/boxscore", h.GameBoxscore)
 	r.Get("/players/search", h.PlayerSearch)
+	r.Get("/players/{playerID}/current-team", h.PlayerCurrentTeam)
 	r.Get("/players/compare", h.PlayersCompare)
+	r.Get("/players/compare/year-by-year", h.PlayersCompareYearByYear)
+	r.Get("/players/compare/game-log", h.PlayersCompareGameLog)
+	r.Get("/league/season-baseline", h.LeagueSeasonBaseline)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

@@ -7,6 +7,7 @@ import {
   useLocation,
 } from 'react-router-dom'
 import RouteErrorBoundary from './components/RouteErrorBoundary'
+import ThemeToggle from './components/ThemeToggle'
 import PageRouteSkeleton from './components/skeletons/PageRouteSkeleton'
 
 const Standings = lazy(() => import('./pages/Standings'))
@@ -14,14 +15,12 @@ const TeamOverview = lazy(() => import('./pages/TeamOverview'))
 const PlayerComparison = lazy(() => import('./pages/PlayerComparison'))
 const GamesSlate = lazy(() => import('./pages/GamesSlate'))
 const GameDetail = lazy(() => import('./pages/GameDetail'))
-const Leaders = lazy(() => import('./pages/Leaders'))
 
 const nav = [
   { to: '/standings', label: 'Standings' },
   { to: '/teams', label: 'Teams' },
   { to: '/players', label: 'Players' },
   { to: '/games', label: 'Games' },
-  { to: '/leaders', label: 'Leaders' },
 ]
 
 export default function App() {
@@ -37,23 +36,26 @@ export default function App() {
             <span className="brand-sub">MLB stats & charts</span>
           </div>
         </div>
-        <nav className="app-nav" aria-label="Primary">
-          {nav.map(({ to, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) => {
-                const active =
-                  to === '/games'
-                    ? isActive || location.pathname.startsWith('/games/')
-                    : isActive
-                return active ? 'nav-link is-active' : 'nav-link'
-              }}
-            >
-              {label}
-            </NavLink>
-          ))}
-        </nav>
+        <div className="app-header-tools">
+          <nav className="app-nav" aria-label="Primary">
+            {nav.map(({ to, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) => {
+                  const active =
+                    to === '/games'
+                      ? isActive || location.pathname.startsWith('/games/')
+                      : isActive
+                  return active ? 'nav-link is-active' : 'nav-link'
+                }}
+              >
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+          <ThemeToggle />
+        </div>
       </header>
       <main className="app-main">
         <RouteErrorBoundary key={location.pathname}>
@@ -65,7 +67,6 @@ export default function App() {
               <Route path="/players" element={<PlayerComparison />} />
               <Route path="/games/:gamePk" element={<GameDetail />} />
               <Route path="/games" element={<GamesSlate />} />
-              <Route path="/leaders" element={<Leaders />} />
               <Route path="*" element={<Navigate to="/standings" replace />} />
             </Routes>
           </Suspense>

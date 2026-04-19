@@ -1,0 +1,348 @@
+package handlers
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/url"
+	"sort"
+	"strconv"
+	"strings"
+
+	"caught-looking/backend/models"
+
+	"golang.org/x/sync/errgroup"
+)
+
+type mlbPeopleYearByYearPayload struct {
+	Stats []struct {
+		Splits []struct {
+			Season string          `json:"season"`
+			Stat   json.RawMessage `json:"stat"`
+			Player struct {
+				ID       int64  `json:"id"`
+				FullName string `json:"fullName"`
+			} `json:"player"`
+		} `json:"splits"`
+	} `json:"stats"`
+}
+
+type mlbPeopleGameLogPayload struct {
+	Stats []struct {
+		Splits []struct {
+			Date   string          `json:"date"`
+			Stat   json.RawMessage `json:"stat"`
+			Player struct {
+				ID       int64  `json:"id"`
+				FullName string `json:"fullName"`
+			} `json:"player"`
+			Game struct {
+				GamePk int64 `json:"gamePk"`
+			} `json:"game"`
+		} `json:"splits"`
+	} `json:"stats"`
+}
+
+// PlayersCompareYearByYear returns per-season OPS or ERA for two players plus league baseline per season.
+func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Request) {
+	ids := strings.TrimSpace(r.URL.Query().Get("ids"))
+	parts := strings.Split(ids, ",")
+	if len(parts) != 2 {
+		http.Error(w, "query ids must be two comma-separated MLB person ids", http.StatusBadRequest)
+		return
+	}
+	id1, err1 := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 64)
+	id2, err2 := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64)
+	if err1 != nil || err2 != nil || id1 <= 0 || id2 <= 0 {
+		http.Error(w, "invalid ids", http.StatusBadRequest)
+		return
+	}
+
+	group := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("group")))
+	if group == "" {
+		group = "hitting"
+	}
+	if group != "hitting" && group != "pitching" {
+		http.Error(w, "group must be hitting or pitching", http.StatusBadRequest)
+		return
+	}
+
+	metric := "ops"
+	if group == "pitching" {
+		metric = "era"
+	}
+
+	cacheKey := "players-yearly:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group
+	if body, ok := h.cache.Get(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(body)
+		return
+	}
+
+	ctx := r.Context()
+	g, gctx := errgroup.WithContext(ctx)
+	var p1, p2 []models.SeasonPoint
+	var n1, n2 string
+	g.Go(func() error {
+		var err error
+		p1, n1, err = h.fetchPlayerYearByYear(gctx, id1, group)
+		return err
+	})
+	g.Go(func() error {
+		var err error
+		p2, n2, err = h.fetchPlayerYearByYear(gctx, id2, group)
+		return err
+	})
+	if err := g.Wait(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	seasonSeen := map[int]struct{}{}
+	for _, p := range p1 {
+		seasonSeen[p.Season] = struct{}{}
+	}
+	for _, p := range p2 {
+		seasonSeen[p.Season] = struct{}{}
+	}
+
+	leagueBySeason := make(map[string]float64, len(seasonSeen))
+	for sy := range seasonSeen {
+		v, err := h.fetchLeagueBaseline(ctx, sy, group)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		leagueBySeason[strconv.Itoa(sy)] = v
+	}
+
+	out := models.PlayersYearByYearResponse{
+		Group:          group,
+		Metric:         metric,
+		LeagueBySeason: leagueBySeason,
+		Players: []models.YearSeriesPlayer{
+			{ID: id1, FullName: n1, Points: p1},
+			{ID: id2, FullName: n2, Points: p2},
+		},
+	}
+
+	body, err := json.Marshal(out)
+	if err != nil {
+		http.Error(w, "encode error", http.StatusInternalServerError)
+		return
+	}
+
+	h.cache.Set(cacheKey, body, h.cfg.TTLStandings)
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(body)
+}
+
+func (h *Handlers) fetchPlayerYearByYear(ctx context.Context, id int64, group string) ([]models.SeasonPoint, string, error) {
+	q := url.Values{}
+	q.Set("stats", "yearByYear")
+	q.Set("group", group)
+	path := "/people/" + strconv.FormatInt(id, 10) + "/stats?" + q.Encode()
+
+	raw, err := h.mlb.Get(ctx, path)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var payload mlbPeopleYearByYearPayload
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil, "", err
+	}
+
+	name := ""
+	if len(payload.Stats) > 0 && len(payload.Stats[0].Splits) > 0 {
+		name = payload.Stats[0].Splits[0].Player.FullName
+	}
+
+	var out []models.SeasonPoint
+	if len(payload.Stats) == 0 {
+		return out, name, nil
+	}
+
+	for _, sp := range payload.Stats[0].Splits {
+		var statMap map[string]interface{}
+		if err := json.Unmarshal(sp.Stat, &statMap); err != nil {
+			continue
+		}
+		year, err := strconv.Atoi(strings.TrimSpace(sp.Season))
+		if err != nil || year < 1900 {
+			continue
+		}
+		var v float64
+		if group == "hitting" {
+			v = statFloat(statMap["ops"])
+		} else {
+			v = statFloat(statMap["era"])
+		}
+		if v <= 0 {
+			continue
+		}
+		out = append(out, models.SeasonPoint{Season: year, Value: v})
+	}
+
+	sort.Slice(out, func(i, j int) bool { return out[i].Season < out[j].Season })
+	return out, name, nil
+}
+
+// PlayersCompareGameLog returns the last N games of OPS or ERA for two players in a season, plus league baseline.
+func (h *Handlers) PlayersCompareGameLog(w http.ResponseWriter, r *http.Request) {
+	ids := strings.TrimSpace(r.URL.Query().Get("ids"))
+	parts := strings.Split(ids, ",")
+	if len(parts) != 2 {
+		http.Error(w, "query ids must be two comma-separated MLB person ids", http.StatusBadRequest)
+		return
+	}
+	id1, err1 := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 64)
+	id2, err2 := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64)
+	if err1 != nil || err2 != nil || id1 <= 0 || id2 <= 0 {
+		http.Error(w, "invalid ids", http.StatusBadRequest)
+		return
+	}
+
+	group := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("group")))
+	if group == "" {
+		group = "hitting"
+	}
+	if group != "hitting" && group != "pitching" {
+		http.Error(w, "group must be hitting or pitching", http.StatusBadRequest)
+		return
+	}
+
+	season := h.cfg.DefaultSeason
+	if v := strings.TrimSpace(r.URL.Query().Get("season")); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1900 || n > 2100 {
+			http.Error(w, "invalid season", http.StatusBadRequest)
+			return
+		}
+		season = n
+	}
+
+	limit := 28
+	if v := strings.TrimSpace(r.URL.Query().Get("limit")); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 5 || n > 60 {
+			http.Error(w, "limit must be between 5 and 60", http.StatusBadRequest)
+			return
+		}
+		limit = n
+	}
+
+	metric := "ops"
+	if group == "pitching" {
+		metric = "era"
+	}
+
+	cacheKey := "players-gamelog:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + strconv.Itoa(season) + ":" + strconv.Itoa(limit)
+	if body, ok := h.cache.Get(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(body)
+		return
+	}
+
+	ctx := r.Context()
+	g, gctx := errgroup.WithContext(ctx)
+	var g1, g2 []models.GamePoint
+	var n1, n2 string
+	g.Go(func() error {
+		var err error
+		g1, n1, err = h.fetchPlayerGameLog(gctx, id1, group, season, limit)
+		return err
+	})
+	g.Go(func() error {
+		var err error
+		g2, n2, err = h.fetchPlayerGameLog(gctx, id2, group, season, limit)
+		return err
+	})
+	if err := g.Wait(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	lb, err := h.fetchLeagueBaseline(ctx, season, group)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+
+	out := models.PlayersGameLogResponse{
+		Season:         season,
+		Group:          group,
+		Metric:         metric,
+		Limit:          limit,
+		LeagueBaseline: lb,
+		Players: []models.GameLogPlayer{
+			{ID: id1, FullName: n1, Games: g1},
+			{ID: id2, FullName: n2, Games: g2},
+		},
+	}
+
+	body, err := json.Marshal(out)
+	if err != nil {
+		http.Error(w, "encode error", http.StatusInternalServerError)
+		return
+	}
+
+	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(body)
+}
+
+func (h *Handlers) fetchPlayerGameLog(ctx context.Context, id int64, group string, season, limit int) ([]models.GamePoint, string, error) {
+	q := url.Values{}
+	q.Set("stats", "gameLog")
+	q.Set("group", group)
+	q.Set("season", strconv.Itoa(season))
+	path := "/people/" + strconv.FormatInt(id, 10) + "/stats?" + q.Encode()
+
+	raw, err := h.mlb.Get(ctx, path)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var payload mlbPeopleGameLogPayload
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil, "", err
+	}
+
+	name := ""
+	if len(payload.Stats) > 0 && len(payload.Stats[0].Splits) > 0 {
+		name = payload.Stats[0].Splits[0].Player.FullName
+	}
+
+	var games []models.GamePoint
+	if len(payload.Stats) == 0 {
+		return games, name, nil
+	}
+
+	for _, sp := range payload.Stats[0].Splits {
+		var statMap map[string]interface{}
+		if err := json.Unmarshal(sp.Stat, &statMap); err != nil {
+			continue
+		}
+		var v float64
+		if group == "hitting" {
+			v = statFloat(statMap["ops"])
+		} else {
+			v = statFloat(statMap["era"])
+		}
+		if v <= 0 {
+			continue
+		}
+		games = append(games, models.GamePoint{
+			Date:   strings.TrimSpace(sp.Date),
+			GamePk: sp.Game.GamePk,
+			Value:  v,
+		})
+	}
+
+	sort.Slice(games, func(i, j int) bool { return games[i].Date < games[j].Date })
+	if len(games) > limit {
+		games = games[len(games)-limit:]
+	}
+	return games, name, nil
+}

@@ -1,14 +1,18 @@
+import { useMemo } from 'react'
+import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
+import { distinctChartColorsForTeamIds } from '../../utils/mlbTeamColors'
 
-export type TeamWinRow = { abbrev: string; wins: number }
+export type TeamWinRow = { abbrev: string; wins: number; teamId: number }
 
 type TeamWinsBarChartProps = {
   data: TeamWinRow[]
@@ -20,6 +24,12 @@ export default function TeamWinsBarChart({
   data,
   height = 320,
 }: TeamWinsBarChartProps) {
+  const surfaceHex = useChartSurfaceHex()
+  const barColors = useMemo(
+    () => distinctChartColorsForTeamIds(data.map((r) => r.teamId), surfaceHex),
+    [data, surfaceHex],
+  )
+
   return (
     <div className="chart-wrap" style={{ width: '100%', minHeight: height }}>
       <ResponsiveContainer width="100%" height={height}>
@@ -37,12 +47,11 @@ export default function TeamWinsBarChart({
               color: 'var(--text-h)',
             }}
           />
-          <Bar
-            dataKey="wins"
-            fill="var(--accent)"
-            radius={[4, 4, 0, 0]}
-            name="Wins"
-          />
+          <Bar dataKey="wins" radius={[4, 4, 0, 0]} name="Wins">
+            {data.map((row, i) => (
+              <Cell key={row.teamId} fill={barColors[i]} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>

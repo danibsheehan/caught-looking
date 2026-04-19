@@ -11,6 +11,9 @@ import {
 import { fetchRecordTimeline } from '../../api/client'
 import type { RecordTimelineResponse } from '../../types/api'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
+import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
+import { adjustChartColorForSurface } from '../../utils/chartColorContrast'
+import { CHART_NEUTRAL_FALLBACK, mlbTeamPrimaryHex } from '../../utils/mlbTeamColors'
 
 type WinLossChartProps = {
   teamId: number | null | undefined
@@ -18,6 +21,7 @@ type WinLossChartProps = {
 }
 
 export default function WinLossChart({ teamId, season }: WinLossChartProps) {
+  const surfaceHex = useChartSurfaceHex()
   const [data, setData] = useState<RecordTimelineResponse | null>(null)
   const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(false)
@@ -71,6 +75,11 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
     return <p className="muted">No completed games in this sample yet.</p>
   }
 
+  const strokeColor = adjustChartColorForSurface(
+    mlbTeamPrimaryHex(teamId, CHART_NEUTRAL_FALLBACK),
+    surfaceHex,
+  )
+
   const rows = data.points.map((p) => ({
     ...p,
     pctLabel: `${(p.pct * 100).toFixed(1)}%`,
@@ -112,7 +121,7 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
           type="monotone"
           dataKey="pctPct"
           name="Win %"
-          stroke="var(--accent)"
+          stroke={strokeColor}
           strokeWidth={2}
           dot={{ r: 2, strokeWidth: 0 }}
           isAnimationActive={false}

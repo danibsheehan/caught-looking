@@ -31,6 +31,7 @@ export default function Standings() {
     return sortStandingTeams(selected.teams).map((t) => ({
       abbrev: abbrevById.get(t.teamId) ?? t.teamName,
       wins: t.wins,
+      teamId: t.teamId,
     }))
   }, [selected, abbrevById])
 

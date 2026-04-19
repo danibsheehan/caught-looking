@@ -12,13 +12,20 @@ import {
 import { fetchGameTimeline } from '../../api/client'
 import type { GameTimelineResponse } from '../../types/api'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
-import { resolveGameScoreBarFills } from '../../utils/mlbTeamColors'
+import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
+import { adjustChartColorForSurface } from '../../utils/chartColorContrast'
+import {
+  CHART_NEUTRAL_FALLBACK,
+  CHART_NEUTRAL_FALLBACK_ALT,
+  resolveGameScoreBarFills,
+} from '../../utils/mlbTeamColors'
 
 type GameScoreBarProps = {
   gamePk: number | string | null | undefined
 }
 
 export default function GameScoreBar({ gamePk }: GameScoreBarProps) {
+  const surfaceHex = useChartSurfaceHex()
   const [data, setData] = useState<GameTimelineResponse | null>(null)
   const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(false)
@@ -69,11 +76,18 @@ export default function GameScoreBar({ gamePk }: GameScoreBarProps) {
   const awayKey = data?.awayTeam || 'Away'
   const homeKey = data?.homeTeam || 'Home'
 
-  const { awayFill, homeFill } = useMemo(
-    () =>
-      resolveGameScoreBarFills(data?.awayId, data?.homeId, '#38bdf8', 'var(--accent)'),
-    [data?.awayId, data?.homeId],
-  )
+  const { awayFill, homeFill } = useMemo(() => {
+    const raw = resolveGameScoreBarFills(
+      data?.awayId,
+      data?.homeId,
+      CHART_NEUTRAL_FALLBACK_ALT,
+      CHART_NEUTRAL_FALLBACK,
+    )
+    return {
+      awayFill: adjustChartColorForSurface(raw.awayFill, surfaceHex),
+      homeFill: adjustChartColorForSurface(raw.homeFill, surfaceHex),
+    }
+  }, [data?.awayId, data?.homeId, surfaceHex])
 
   if (pk == null || !Number.isFinite(pk) || pk <= 0) {
     return (

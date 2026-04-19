@@ -1,9 +1,15 @@
 import { useMemo, useState } from 'react'
-import { WinLossChart } from '../components/charts'
+import {
+  DivisionRunsScatter,
+  MultiTeamWinPctChart,
+  RecordTimelineStrip,
+  TeamSeasonDeepDive,
+  WinLossChart,
+} from '../components/charts'
 import TeamPageSkeleton from '../components/skeletons/TeamPageSkeleton'
 import { PlayerCard, StatCard, TeamSelector } from '../components/ui'
 import { useStandings, useTeamSeasonStats, useTeams } from '../hooks/useMLB'
-import { standingTeamForId } from '../utils/standings'
+import { sortStandingTeams, standingTeamForId, teamLabelMap } from '../utils/standings'
 
 const DEFAULT_SEASON = 2026
 
@@ -11,17 +17,6 @@ function formatSignedInt(v: number | undefined): string {
   if (v == null || Number.isNaN(v)) return '—'
   if (v === 0) return '0'
   return v > 0 ? `+${v}` : String(v)
-}
-
-function formatSlashThree(v: number | undefined): string {
-  if (v == null || Number.isNaN(v) || v === 0) return '—'
-  const s = v.toFixed(3)
-  return s.startsWith('0.') ? s.slice(1) : s
-}
-
-function formatTwo(v: number | undefined): string {
-  if (v == null || Number.isNaN(v)) return '—'
-  return v.toFixed(2)
 }
 
 function formatStandingToken(dashOrValue: string | undefined): string {
@@ -52,6 +47,31 @@ export default function TeamOverview() {
     return standingTeamForId(standingsData?.divisions, selected.id)
   }, [standingsData, selected])
 
+  const abbrevById = useMemo(() => teamLabelMap(data), [data])
+
+  const divisionTeamIds = useMemo(() => {
+    if (!snapshot) return []
+    return sortStandingTeams(snapshot.division.teams).map((t) => t.teamId)
+  }, [snapshot])
+
+  const scatterPoints = useMemo(() => {
+    if (!snapshot) return []
+    return sortStandingTeams(snapshot.division.teams)
+      .filter(
+        (t) =>
+          t.runsScored != null &&
+          t.runsAllowed != null &&
+          !Number.isNaN(t.runsScored) &&
+          !Number.isNaN(t.runsAllowed),
+      )
+      .map((t) => ({
+        teamId: t.teamId,
+        rs: t.runsScored as number,
+        ra: t.runsAllowed as number,
+        label: abbrevById.get(t.teamId) ?? t.teamName,
+      }))
+  }, [snapshot, abbrevById])
+
   const {
     data: deepStats,
     loading: deepLoading,
@@ -79,8 +99,8 @@ export default function TeamOverview() {
         <div>
           <h1>Teams</h1>
           <p className="muted">
-            Club snapshot from standings, cumulative win %, and season hitting /
-            pitching lines.
+            Division charts (win %, run differential, game results) plus season
+            hitting / pitching lines.
           </p>
         </div>
         <div className="page-controls">
@@ -200,6 +220,28 @@ export default function TeamOverview() {
             )}
           </div>
 
+          <div className="team-viz-grid">
+            <div className="panel chart-panel">
+              <h2>Runs scored vs. allowed</h2>
+              <p className="muted small">
+                Season totals for every club in this division. The dashed line is
+                even run differential (RS = RA). Above it scores more than it allows.
+              </p>
+              <DivisionRunsScatter
+                points={scatterPoints}
+                focusTeamId={selected.id}
+              />
+            </div>
+            <div className="panel chart-panel">
+              <h2>Game-by-game results</h2>
+              <p className="muted small">
+                One tile per completed game in schedule order (scroll on long
+                seasons).
+              </p>
+              <RecordTimelineStrip teamId={selected.id} season={season} />
+            </div>
+          </div>
+
           <div className="panel segment-panel">
             <div className="segment-tabs" role="tablist" aria-label="Team views">
               <button
@@ -224,22 +266,33 @@ export default function TeamOverview() {
 
             {panelTab === 'trend' ? (
               <div className="chart-panel">
-                <h2>Cumulative win %</h2>
+                <h2>Division race — cumulative win %</h2>
                 <p className="muted small">
-                  Built from the club schedule; each point is after a completed
-                  game.
+                  Every team in this division on the same pace axis (games
+                  completed). Your club is emphasized.
                 </p>
-                <WinLossChart
-                  key={`${selected.id}-${season}`}
-                  teamId={selected.id}
-                  season={season}
-                />
+                {divisionTeamIds.length > 1 ? (
+                  <MultiTeamWinPctChart
+                    key={`${selected.id}-${season}-div`}
+                    teamIds={divisionTeamIds}
+                    season={season}
+                    getLabel={(id) => abbrevById.get(id) ?? String(id)}
+                    focusTeamId={selected.id}
+                  />
+                ) : (
+                  <WinLossChart
+                    key={`${selected.id}-${season}`}
+                    teamId={selected.id}
+                    season={season}
+                  />
+                )}
               </div>
             ) : (
               <>
                 <h2>Team stats (season)</h2>
                 <p className="muted small">
-                  Full-team hitting and pitching totals for the season.
+                  Rate stats as horizontal bars (fixed scales); R/G vs RA/G on one
+                  track at the top when both sides have games.
                 </p>
                 {deepLoading ? (
                   <p className="muted small">Loading team stats…</p>
@@ -248,91 +301,7 @@ export default function TeamOverview() {
                     {deepError.message}
                   </p>
                 ) : deepStats ? (
-                  <>
-                    <h3 className="deep-dive-section-title">Offense</h3>
-                    <div className="stat-cards stat-cards--wide">
-                      <StatCard
-                        label="Runs / G"
-                        value={formatTwo(deepStats.hitting.runsPerGame)}
-                      />
-                      <StatCard
-                        label="OPS"
-                        value={
-                          deepStats.hitting.gamesPlayed
-                            ? formatSlashThree(deepStats.hitting.ops)
-                            : '—'
-                        }
-                      />
-                      <StatCard
-                        label="OBP"
-                        value={
-                          deepStats.hitting.gamesPlayed
-                            ? formatSlashThree(deepStats.hitting.obp)
-                            : '—'
-                        }
-                      />
-                      <StatCard
-                        label="SLG"
-                        value={
-                          deepStats.hitting.gamesPlayed
-                            ? formatSlashThree(deepStats.hitting.slg)
-                            : '—'
-                        }
-                      />
-                      <StatCard
-                        label="AVG"
-                        value={
-                          deepStats.hitting.gamesPlayed
-                            ? formatSlashThree(deepStats.hitting.avg)
-                            : '—'
-                        }
-                      />
-                      <StatCard label="Runs (total)" value={deepStats.hitting.runs} />
-                    </div>
-                    <h3 className="deep-dive-section-title">Pitching</h3>
-                    <div className="stat-cards stat-cards--wide">
-                      <StatCard
-                        label="RA / G"
-                        value={formatTwo(deepStats.pitching.runsAllowedPerGame)}
-                      />
-                      <StatCard
-                        label="ERA"
-                        value={
-                          deepStats.pitching.gamesPlayed
-                            ? formatTwo(deepStats.pitching.era)
-                            : '—'
-                        }
-                      />
-                      <StatCard
-                        label="WHIP"
-                        value={
-                          deepStats.pitching.gamesPlayed
-                            ? formatTwo(deepStats.pitching.whip)
-                            : '—'
-                        }
-                      />
-                      <StatCard
-                        label="K/9"
-                        value={
-                          deepStats.pitching.gamesPlayed
-                            ? formatTwo(deepStats.pitching.k9)
-                            : '—'
-                        }
-                      />
-                      <StatCard
-                        label="BB/9"
-                        value={
-                          deepStats.pitching.gamesPlayed
-                            ? formatTwo(deepStats.pitching.bb9)
-                            : '—'
-                        }
-                      />
-                      <StatCard
-                        label="Runs allowed"
-                        value={deepStats.pitching.runsAllowed}
-                      />
-                    </div>
-                  </>
+                  <TeamSeasonDeepDive stats={deepStats} teamId={selected.id} />
                 ) : null}
               </>
             )}

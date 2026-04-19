@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   Legend,
   PolarAngleAxis,
@@ -9,124 +9,51 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
-import { fetchPlayersCompare } from '../../api/client'
 import type { PlayersRadarResponse } from '../../types/api'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
-
-type RadarAxis = { key: string; label: string; higherIsBetter: boolean }
-
-const HITTING_AXES: RadarAxis[] = [
-  { key: 'avg', label: 'AVG', higherIsBetter: true },
-  { key: 'obp', label: 'OBP', higherIsBetter: true },
-  { key: 'slg', label: 'SLG', higherIsBetter: true },
-  { key: 'hr', label: 'HR', higherIsBetter: true },
-  { key: 'rbi', label: 'RBI', higherIsBetter: true },
-]
-
-const PITCHING_AXES: RadarAxis[] = [
-  { key: 'era', label: 'ERA', higherIsBetter: false },
-  { key: 'whip', label: 'WHIP', higherIsBetter: false },
-  { key: 'k9', label: 'K/9', higherIsBetter: true },
-  { key: 'bb9', label: 'BB/9', higherIsBetter: false },
-]
-
-function pairScores(
-  v1: number,
-  v2: number,
-  higherIsBetter: boolean,
-): [number, number] {
-  const a = Number.isFinite(v1) ? v1 : 0
-  const b = Number.isFinite(v2) ? v2 : 0
-  if (higherIsBetter) {
-    const m = Math.max(a, b, 1e-6)
-    return [(a / m) * 100, (b / m) * 100]
-  }
-  const m = Math.max(a, b, 1e-6)
-  return [((m - a) / m) * 100, ((m - b) / m) * 100]
-}
+import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
+import { buildCompareMetricRows } from '../../utils/playerCompareMetricRows'
 
 function toRadarRows(
   payload: PlayersRadarResponse | null,
   group: 'hitting' | 'pitching',
 ): { metric: string; a: number; b: number }[] {
-  if (!payload?.players || payload.players.length < 2) return []
-  const axes = group === 'pitching' ? PITCHING_AXES : HITTING_AXES
-  const [p1, p2] = payload.players
-  const s1 = p1.stats ?? {}
-  const s2 = p2.stats ?? {}
-  return axes.map((ax) => {
-    const v1 = s1[ax.key] ?? 0
-    const v2 = s2[ax.key] ?? 0
-    const [a, b] = pairScores(v1, v2, ax.higherIsBetter)
-    return {
-      metric: ax.label,
-      a,
-      b,
-    }
-  })
+  return buildCompareMetricRows(payload, group).map(({ metric, a, b }) => ({
+    metric,
+    a,
+    b,
+  }))
 }
 
 type PlayerRadarProps = {
-  playerId1: number | null | undefined
-  playerId2: number | null | undefined
-  season: number | null | undefined
+  /** When false, show the idle placeholder (no fetch in this component). */
+  ready: boolean
+  data: PlayersRadarResponse | null
+  loading: boolean
+  error: Error | null
   group?: 'hitting' | 'pitching'
+  /** When set, radar uses that team’s primary; otherwise a fixed comparison pair. */
+  teamId1?: number | null
+  teamId2?: number | null
 }
 
 export default function PlayerRadar({
-  playerId1,
-  playerId2,
-  season,
+  ready,
+  data,
+  loading,
+  error,
   group = 'hitting',
+  teamId1,
+  teamId2,
 }: PlayerRadarProps) {
-  const [data, setData] = useState<PlayersRadarResponse | null>(null)
-  const [error, setError] = useState<Error | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (
-      playerId1 == null ||
-      playerId2 == null ||
-      season == null ||
-      playerId1 === playerId2
-    ) {
-      return
-    }
-    let cancelled = false
-    const ids = `${playerId1},${playerId2}`
-    const t = setTimeout(() => {
-      if (cancelled) return
-      setLoading(true)
-      setError(null)
-      fetchPlayersCompare({ ids, season, group })
-        .then((d) => {
-          if (!cancelled) setData(d)
-        })
-        .catch((e) => {
-          if (!cancelled)
-            setError(e instanceof Error ? e : new Error(String(e)))
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 0)
-    return () => {
-      cancelled = true
-      clearTimeout(t)
-    }
-  }, [playerId1, playerId2, season, group])
-
   const rows = useMemo(() => toRadarRows(data, group), [data, group])
 
   const nameA = data?.players?.[0]?.fullName ?? 'Player A'
   const nameB = data?.players?.[1]?.fullName ?? 'Player B'
 
-  if (
-    playerId1 == null ||
-    playerId2 == null ||
-    season == null ||
-    playerId1 === playerId2
-  ) {
+  const { colorA, colorB } = usePlayerCompareChartColors(teamId1, teamId2)
+
+  if (!ready) {
     return (
       <p className="muted">
         Enter two different MLB player IDs and a season to compare.
@@ -165,16 +92,16 @@ export default function PlayerRadar({
         <Radar
           name={nameA}
           dataKey="a"
-          stroke="var(--accent)"
-          fill="var(--accent)"
+          stroke={colorA}
+          fill={colorA}
           fillOpacity={0.35}
           isAnimationActive={false}
         />
         <Radar
           name={nameB}
           dataKey="b"
-          stroke="#38bdf8"
-          fill="#38bdf8"
+          stroke={colorB}
+          fill={colorB}
           fillOpacity={0.22}
           isAnimationActive={false}
         />

@@ -154,10 +154,14 @@ export interface PlayerStatSnapshot {
   id: number
   fullName: string
   group: string
+  /** Season split fields from GET /players/compare (see backend players_compare). */
   stats: Record<string, number>
 }
 
 export interface PlayersRadarResponse {
+  /** `season` — single-year stats; `career` — MLB career regular-season (gameType R) aggregate */
+  scope: 'season' | 'career'
+  /** Year when scope is season; 0 when career */
   season: number
   group: string
   players: PlayerStatSnapshot[]
@@ -183,6 +187,8 @@ export interface PlayersCompareQuery {
   ids: string
   season?: number
   group?: 'hitting' | 'pitching'
+  /** Single season vs career aggregate (backend ignores season when career). */
+  scope?: 'season' | 'career'
 }
 
 export interface PlayerSearchHit {
@@ -202,6 +208,71 @@ export interface PlayersSearchResponse {
 export interface PlayersSearchQuery {
   /** Search text (passed as MLB `names` query param) */
   names: string
+}
+
+/** GET /players/{id}/current-team — MLB `hydrate=currentTeam` */
+export interface PlayerCurrentTeamResponse {
+  playerId: number
+  /** 0 if free agent / not assigned in API */
+  teamId: number
+}
+
+export interface LeagueSeasonBaselineResponse {
+  season: number
+  group: string
+  ops: number
+  era: number
+}
+
+export interface SeasonPoint {
+  season: number
+  value: number
+}
+
+export interface YearSeriesPlayer {
+  id: number
+  fullName: string
+  points: SeasonPoint[]
+}
+
+export interface PlayersYearByYearResponse {
+  group: string
+  metric: 'ops' | 'era'
+  players: YearSeriesPlayer[]
+  leagueBySeason: Record<string, number>
+}
+
+export interface GamePoint {
+  date: string
+  gamePk: number
+  value: number
+}
+
+export interface GameLogPlayer {
+  id: number
+  fullName: string
+  games: GamePoint[]
+}
+
+export interface PlayersGameLogResponse {
+  season: number
+  group: string
+  metric: 'ops' | 'era'
+  limit: number
+  players: GameLogPlayer[]
+  leagueBaseline: number
+}
+
+export interface PlayersCompareYearByYearQuery {
+  ids: string
+  group?: 'hitting' | 'pitching'
+}
+
+export interface PlayersCompareGameLogQuery {
+  ids: string
+  season?: number
+  group?: 'hitting' | 'pitching'
+  limit?: number
 }
 
 export interface GameSummary {

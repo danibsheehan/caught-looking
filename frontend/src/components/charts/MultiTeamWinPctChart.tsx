@@ -12,30 +12,24 @@ import {
 import { fetchRecordTimelinesBatch } from '../../api/client'
 import type { RecordTimelinesBatchResponse } from '../../types/api'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
-
-/** Distinct strokes for up to 8 teams (matches backend batch cap). */
-const SERIES_STROKES = [
-  'var(--accent)',
-  '#22c55e',
-  '#38bdf8',
-  '#f97316',
-  '#eab308',
-  '#ec4899',
-  '#94a3b8',
-  '#a78bfa',
-]
+import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
+import { distinctChartColorsForTeamIds } from '../../utils/mlbTeamColors'
 
 type MultiTeamWinPctChartProps = {
   teamIds: number[]
   season: number | null | undefined
   getLabel: (teamId: number) => string
+  /** Draw this club’s line on top with heavier stroke (peer context on /teams). */
+  focusTeamId?: number
 }
 
 export default function MultiTeamWinPctChart({
   teamIds,
   season,
   getLabel,
+  focusTeamId,
 }: MultiTeamWinPctChartProps) {
+  const surfaceHex = useChartSurfaceHex()
   const [payload, setPayload] = useState<RecordTimelinesBatchResponse | null>(null)
   const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(false)
@@ -72,6 +66,24 @@ export default function MultiTeamWinPctChart({
       clearTimeout(t)
     }
   }, [sortedIds, season])
+
+  const lineColors = useMemo(
+    () => distinctChartColorsForTeamIds(sortedIds, surfaceHex),
+    [sortedIds, surfaceHex],
+  )
+
+  const colorByTeamId = useMemo(() => {
+    const m = new Map<number, string>()
+    sortedIds.forEach((id, idx) => m.set(id, lineColors[idx]))
+    return m
+  }, [sortedIds, lineColors])
+
+  /** Non-focused lines first so the focused club renders on top. */
+  const renderOrder = useMemo(() => {
+    if (focusTeamId == null || !sortedIds.includes(focusTeamId)) return sortedIds
+    const rest = sortedIds.filter((id) => id !== focusTeamId)
+    return [...rest, focusTeamId]
+  }, [sortedIds, focusTeamId])
 
   const chartData = useMemo(() => {
     if (!payload?.timelines?.length) return []
@@ -150,18 +162,22 @@ export default function MultiTeamWinPctChart({
           wrapperStyle={{ fontSize: 12 }}
           formatter={(value) => <span style={{ color: 'var(--text)' }}>{value}</span>}
         />
-        {sortedIds.map((id, idx) => (
-          <Line
-            key={id}
-            type="monotone"
-            dataKey={`pct_${id}`}
-            name={getLabel(id)}
-            stroke={SERIES_STROKES[idx % SERIES_STROKES.length]}
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={false}
-          />
-        ))}
+        {renderOrder.map((id) => {
+          const focused = focusTeamId != null && id === focusTeamId
+          return (
+            <Line
+              key={id}
+              type="monotone"
+              dataKey={`pct_${id}`}
+              name={getLabel(id)}
+              stroke={colorByTeamId.get(id)}
+              strokeWidth={focused ? 3 : 1.75}
+              strokeOpacity={focused ? 1 : 0.52}
+              dot={false}
+              isAnimationActive={false}
+            />
+          )
+        })}
       </LineChart>
     </ResponsiveContainer>
   )

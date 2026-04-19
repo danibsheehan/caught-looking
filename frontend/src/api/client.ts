@@ -3,8 +3,14 @@ import type {
   GameTimelineResponse,
   GamesForDateQuery,
   GamesForDateResponse,
+  LeagueSeasonBaselineResponse,
+  PlayerCurrentTeamResponse,
+  PlayersCompareGameLogQuery,
   PlayersCompareQuery,
+  PlayersCompareYearByYearQuery,
+  PlayersGameLogResponse,
   PlayersRadarResponse,
+  PlayersYearByYearResponse,
   PlayersSearchQuery,
   PlayersSearchResponse,
   RecordTimelineQuery,
@@ -127,9 +133,52 @@ export async function fetchPlayersCompare(
 ): Promise<PlayersRadarResponse> {
   const qs = new URLSearchParams()
   qs.set('ids', query.ids)
+  if (query.scope) qs.set('scope', query.scope)
   if (query.season != null) qs.set('season', String(query.season))
   if (query.group) qs.set('group', query.group)
   return apiGet<PlayersRadarResponse>(`/players/compare?${qs.toString()}`)
+}
+
+export async function fetchPlayerCurrentTeam(
+  playerId: number,
+): Promise<PlayerCurrentTeamResponse> {
+  return apiGet<PlayerCurrentTeamResponse>(
+    `/players/${playerId}/current-team`,
+  )
+}
+
+export async function fetchLeagueSeasonBaseline(
+  query: { season?: number; group?: 'hitting' | 'pitching' },
+): Promise<LeagueSeasonBaselineResponse> {
+  const qs = new URLSearchParams()
+  if (query.season != null) qs.set('season', String(query.season))
+  if (query.group) qs.set('group', query.group)
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return apiGet<LeagueSeasonBaselineResponse>(`/league/season-baseline${suffix}`)
+}
+
+export async function fetchPlayersCompareYearByYear(
+  query: PlayersCompareYearByYearQuery,
+): Promise<PlayersYearByYearResponse> {
+  const qs = new URLSearchParams()
+  qs.set('ids', query.ids)
+  if (query.group) qs.set('group', query.group)
+  return apiGet<PlayersYearByYearResponse>(
+    `/players/compare/year-by-year?${qs.toString()}`,
+  )
+}
+
+export async function fetchPlayersCompareGameLog(
+  query: PlayersCompareGameLogQuery,
+): Promise<PlayersGameLogResponse> {
+  const qs = new URLSearchParams()
+  qs.set('ids', query.ids)
+  if (query.season != null) qs.set('season', String(query.season))
+  if (query.group) qs.set('group', query.group)
+  if (query.limit != null) qs.set('limit', String(query.limit))
+  return apiGet<PlayersGameLogResponse>(
+    `/players/compare/game-log?${qs.toString()}`,
+  )
 }
 
 export async function fetchPlayersSearch(
