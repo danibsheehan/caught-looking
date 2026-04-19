@@ -1,10 +1,16 @@
 name: CI
 
+# Push only on main so feature-branch work does not double-trigger with pull_request.
+# Otherwise every PR update runs twice (push + pull_request); the PR coverage comment
+# jobs are skipped on push because they require github.event_name == 'pull_request'.
 on:
     push:
         branches:
-            - '**'
+            - main
+    # Coverage comment jobs (below) only run for this event, never for push — including
+    # push/merge to main — so merge commits do not post Cobertura PR comments.
     pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
     group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -32,11 +38,13 @@ jobs:
             - run: npm run typecheck
             - name: Test with coverage (Vitest)
               run: npm run test:coverage
+            # Copy out of gitignored coverage/ so upload-artifact v4 includes the file.
+            - run: cp coverage/cobertura-coverage.xml gha-cobertura-frontend.xml
             - run: npm run build
             - uses: actions/upload-artifact@v4
               with:
                   name: coverage-frontend-cobertura
-                  path: frontend/coverage/cobertura-coverage.xml
+                  path: frontend/gha-cobertura-frontend.xml
                   if-no-files-found: error
 
     backend:
@@ -57,52 +65,94 @@ jobs:
               run: |
                   go test ./... -count=1 -coverprofile=coverage.out -covermode=atomic
                   go install github.com/boumenot/gocover-cobertura@v1.4.0
-                  "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > cobertura.xml
+                  # Write as gha-cobertura.xml — backend/cobertura.xml is gitignored and
+                  # upload-artifact v4 would omit it from the artifact.
+                  "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura.xml
             - run: go build -o /dev/null .
             - uses: actions/upload-artifact@v4
               with:
                   name: coverage-backend-cobertura
-                  path: backend/cobertura.xml
+                  path: backend/gha-cobertura.xml
                   if-no-files-found: error
 
     pr-coverage-frontend:
         name: PR coverage comment (frontend)
         needs: [frontend]
+        # Never runs on push (e.g. merge to main); requires pull_request above.
         if: github.event_name == 'pull_request' && needs.frontend.result == 'success'
         runs-on: ubuntu-latest
+        # cobertura-action uses Issues API for PR comments and Checks API for the report;
+        # pull-requests:write alone is not always enough for issue comments on some repos.
         permissions:
+            contents: read
             pull-requests: write
+            issues: write
+            checks: write
         steps:
             - uses: actions/download-artifact@v4
               with:
                   name: coverage-frontend-cobertura
+            # Artifact layout varies (flat vs nested); cobertura-action needs a stable path.
+            - name: Place frontend Cobertura for cobertura-action
+              run: |
+                  set -euo pipefail
+                  mkdir -p frontend
+                  dest=frontend/gha-cobertura-frontend.xml
+                  if [ -f "$dest" ]; then exit 0; fi
+                  f=$(find "$GITHUB_WORKSPACE" -name gha-cobertura-frontend.xml -type f | head -1)
+                  if [ -z "$f" ]; then echo "::error::gha-cobertura-frontend.xml not in artifact"; find "$GITHUB_WORKSPACE" -type f; exit 1; fi
+                  cp "$f" "$dest"
             - uses: 5monkeys/cobertura-action@v14
-              continue-on-error: true
               with:
-                  path: frontend/coverage/cobertura-coverage.xml
+                  pull_request_number: ${{ github.event.pull_request.number }}
+                  path: frontend/gha-cobertura-frontend.xml
                   report_name: caught-looking-frontend-coverage
                   show_line: true
                   show_branch: true
+                  show_class_names: false
+                  show_missing: false
+                  only_changed_files: false
                   skip_covered: false
-                  minimum_coverage: 0
+                  minimum_coverage: 50
+                  # With fail_below_threshold false, cobertura-action always posts a "neutral" check.
+                  fail_below_threshold: true
 
     pr-coverage-backend:
         name: PR coverage comment (backend)
         needs: [backend]
+        # Never runs on push (e.g. merge to main); requires pull_request above.
         if: github.event_name == 'pull_request' && needs.backend.result == 'success'
         runs-on: ubuntu-latest
         permissions:
+            contents: read
             pull-requests: write
+            issues: write
+            checks: write
         steps:
             - uses: actions/download-artifact@v4
               with:
                   name: coverage-backend-cobertura
+            # Artifact layout varies (flat vs nested); cobertura-action needs a stable path.
+            - name: Place backend Cobertura for cobertura-action
+              run: |
+                  set -euo pipefail
+                  mkdir -p backend
+                  dest=backend/gha-cobertura.xml
+                  if [ -f "$dest" ]; then exit 0; fi
+                  f=$(find "$GITHUB_WORKSPACE" -name gha-cobertura.xml -type f | head -1)
+                  if [ -z "$f" ]; then echo "::error::gha-cobertura.xml not in artifact"; find "$GITHUB_WORKSPACE" -type f; exit 1; fi
+                  cp "$f" "$dest"
             - uses: 5monkeys/cobertura-action@v14
-              continue-on-error: true
               with:
-                  path: backend/cobertura.xml
+                  pull_request_number: ${{ github.event.pull_request.number }}
+                  path: backend/gha-cobertura.xml
                   report_name: caught-looking-backend-coverage
                   show_line: true
                   show_branch: true
+                  show_class_names: false
+                  show_missing: false
+                  only_changed_files: false
                   skip_covered: false
-                  minimum_coverage: 0
+                  minimum_coverage: 50
+                  # With fail_below_threshold false, cobertura-action always posts a "neutral" check.
+                  fail_below_threshold: true
