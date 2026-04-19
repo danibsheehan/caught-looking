@@ -1,0 +1,11 @@
+---
+description: OpenAPI-shaped TypeScript types for the JSON API
+globs: frontend/src/types/api.d.ts
+alwaysApply: false
+---
+
+# API types (`api.d.ts`)
+
+- **Source of truth**: shapes should match what **`backend` handlers serialize** (field names, nesting, optional fields). If the Go struct or JSON tags change, update these types in the same change.
+- **Naming**: `*Response` for payloads, `*Query` for query parameters. Reuse shared pieces (e.g. team/player summaries) instead of duplicating inline object types across endpoints.
+- **Exports**: use `export type` / `export interface` consistently with the rest of the file. Keep types close to how they appear in JSON (camelCase in TS for typical JSON).

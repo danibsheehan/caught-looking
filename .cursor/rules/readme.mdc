@@ -1,0 +1,17 @@
+---
+description: Keep README.md accurate for caught-looking (features, run, stack, config)
+globs: README.md
+alwaysApply: false
+---
+
+# README maintenance
+
+When editing **README.md**, keep it aligned with the repo:
+
+- **Features**: reflect actual SPA routes and major screens (`frontend/src/App.tsx`). Do not list planned work as shipped.
+- **Run locally**: document **`make install`** / **`make dev`** from the repo root; note API `:8080`, Vite default port, and `/api` proxy behavior (`frontend/vite.config.ts`).
+- **Tech stack**: match **`frontend/package.json`**, **`backend/go.mod`**, and real integrations (MLB Stats API, not generic “real time” unless behavior is described accurately).
+- **Configuration**: env vars must match **`backend/config/config.go`** and **`VITE_API_BASE`** usage in **`frontend/src/api/client.ts`**.
+- **CI**: if check commands change, update the README and **`.github/workflows/ci.yml`** / PR template in the same spirit.
+
+Prefer short tables and copy-pasteable commands. Link to **`.github/pull_request_template.md`** for contribution expectations rather than duplicating long policy text.

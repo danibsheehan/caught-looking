@@ -1,0 +1,20 @@
+---
+description: Typed API client and HTTP helpers for the Go backend
+globs: frontend/src/api/**/*.ts
+alwaysApply: false
+---
+
+# API client (`client.ts`)
+
+- **Base URL**: use `API_BASE` / `VITE_API_BASE` as already documented in `client.ts` — no hard-coded origins in new helpers.
+- **Core helper**: use **`apiGet<T>(path)`** for JSON GETs. Paths are relative to `API_BASE`, start with `/` (e.g. `/standings`, `/teams/42/season-stats`).
+- **New endpoints**: add a **`fetch…`** function that builds `URLSearchParams` for query strings, calls `apiGet<ResponseType>(...)`, and imports **`Query` / `Response` types from `../types/api`**. Export the function; add or adjust types in **`frontend/src/types/api.d.ts`** to match the Go handler’s JSON.
+- **Naming**: `fetchStandings`, `fetchTeams`, `fetchGameTimeline` — verb + resource; align path segments with **`backend`** route registration.
+- **Validation**: throw `Error` with a clear message for impossible client-side args (see `fetchRecordTimelinesBatch`). Let `apiGet` throw on non-OK HTTP.
+
+```typescript
+// Prefer
+return apiGet<MyResponse>(`/resource/${id}${suffix}`)
+
+// Avoid: raw fetch scattered outside this module for the same API
+```
