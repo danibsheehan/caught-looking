@@ -11,3 +11,4 @@ alwaysApply: false
 - **Models**: request/response structs in **`models/`** — use JSON tags that match **`frontend/src/types/api.d.ts`** field names.
 - **External MLB data**: use **`services.MLBClient`** and caching (`TTLCache`) rather than ad-hoc HTTP in handlers.
 - **Middleware**: CORS and logging live under **`middleware/`** — extend there if you add cross-cutting behavior.
+- **Tests**: follow **`.cursor/skills/backend-go-tests/SKILL.md`** for httptest MLB fakes, chi routes, and shared `handlers` test helpers.
