@@ -93,6 +93,7 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 }
 
 func buildTeamSide(side mlbBoxscoreSide) models.TeamBoxSide {
+	// Non-nil empty slices so JSON is [] not null (nil [] marshals to null; the UI maps over these).
 	t := models.TeamBoxSide{
 		TeamID:   side.Team.ID,
 		TeamName: side.Team.Name,
@@ -100,6 +101,8 @@ func buildTeamSide(side mlbBoxscoreSide) models.TeamBoxSide {
 			side.TeamStats.Batting,
 			side.TeamStats.Fielding,
 		),
+		Batting:  []models.BatterLine{},
+		Pitching: []models.PitcherLine{},
 	}
 
 	for _, pid := range side.Batters {
