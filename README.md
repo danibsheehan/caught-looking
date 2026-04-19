@@ -19,7 +19,7 @@ Routes in the SPA: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk
 | Backend  | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache for upstream responses |
 | Data     | MLB Stats API v1 (JSON over HTTPS) |
 
-Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — ESLint, TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (`go tool cover -func`), `go build`. On pull requests (same-repo workflows), a **sticky comment** is added or updated with the full frontend and backend coverage text (fork PRs may not receive the comment due to token limits; that step is non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
+Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — ESLint, TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests (same-repo workflows), **two** [**cobertura-action**](https://github.com/5monkeys/cobertura-action) comments (frontend and backend tables) are added or updated from the Cobertura reports (fork PRs may not receive them due to token limits; those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
 
 ## Prerequisites
 
