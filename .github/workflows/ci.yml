@@ -67,7 +67,8 @@ jobs:
                   go install github.com/boumenot/gocover-cobertura@v1.4.0
                   # Write as gha-cobertura.xml — backend/cobertura.xml is gitignored and
                   # upload-artifact v4 would omit it from the artifact.
-                  "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura.xml
+                  "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura-raw.xml
+                  python3 "$GITHUB_WORKSPACE/.github/scripts/merge_cobertura_by_file.py" gha-cobertura-raw.xml > gha-cobertura.xml
             - run: go build -o /dev/null .
             - uses: actions/upload-artifact@v4
               with:
