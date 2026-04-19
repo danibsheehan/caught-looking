@@ -94,7 +94,7 @@ Backend tests live as `*_test.go` next to packages under `backend/`. Frontend te
 
 ## Deployment (CI)
 
-Pushes to **`main`** run [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): build and push the API container to **Artifact Registry**, deploy to **Cloud Run**, then build the SPA with **`VITE_API_BASE`** set to the deployed service URL and publish **`frontend/dist`** to **Cloudflare Pages** (via [`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)). Forks skip deploy jobs.
+Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): build and push the API container to **Artifact Registry**, deploy to **Cloud Run**, then build the SPA with **`VITE_API_BASE`** set to the deployed service URL and publish **`frontend/dist`** to **Cloudflare Pages** (via [`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)). Forks skip deploy jobs.
 
 **One-time Google Cloud setup (example)**
 
