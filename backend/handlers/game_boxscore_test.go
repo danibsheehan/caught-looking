@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"caught-looking/backend/models"
@@ -60,6 +61,34 @@ const minimalBoxscoreJSON = `{
   }
 }`
 
+// Pregame / scheduled: no batter or pitcher lines yet; API must emit [] not null for slices.
+const pregameBoxscoreJSON = `{
+  "teams": {
+    "away": {
+      "team": {"id": 121, "name": "Away"},
+      "teamStats": {
+        "batting": {"runs": 0, "hits": 0},
+        "pitching": {},
+        "fielding": {"errors": 0}
+      },
+      "batters": [],
+      "pitchers": [],
+      "players": {}
+    },
+    "home": {
+      "team": {"id": 144, "name": "Home"},
+      "teamStats": {
+        "batting": {"runs": 0, "hits": 0},
+        "pitching": {},
+        "fielding": {"errors": 0}
+      },
+      "batters": [],
+      "pitchers": [],
+      "players": {}
+    }
+  }
+}`
+
 func TestGameBoxscore_invalidGamePk(t *testing.T) {
 	h := newTestHandlers(t, http.NotFoundHandler())
 	r := chi.NewRouter()
@@ -105,6 +134,42 @@ func TestGameBoxscore_success(t *testing.T) {
 	}
 	if len(out.Away.Batting) < 1 || len(out.Away.Pitching) < 1 {
 		t.Fatalf("lines: batting=%d pitching=%d", len(out.Away.Batting), len(out.Away.Pitching))
+	}
+}
+
+func TestGameBoxscore_pregameEmitsEmptyArraysNotNull(t *testing.T) {
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/game/1000/boxscore" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(pregameBoxscoreJSON))
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/games/{gamePk}/boxscore", h.GameBoxscore)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/games/1000/boxscore", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, `"batting":null`) || strings.Contains(body, `"pitching":null`) {
+		t.Fatalf("expected non-null JSON arrays for batting/pitching: %s", body)
+	}
+	var out models.GameBoxscoreResponse
+	if err := json.NewDecoder(strings.NewReader(body)).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if out.Away.Batting == nil || out.Home.Batting == nil {
+		t.Fatal("decoded Batting should be non-nil empty slice")
+	}
+	if out.Away.Pitching == nil || out.Home.Pitching == nil {
+		t.Fatal("decoded Pitching should be non-nil empty slice")
 	}
 }
 
