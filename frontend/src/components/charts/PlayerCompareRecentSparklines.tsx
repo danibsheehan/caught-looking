@@ -8,6 +8,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  type TooltipValueType,
 } from 'recharts'
 import type { GameLogPlayer, PlayersGameLogResponse } from '../../types/api'
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
@@ -89,7 +90,10 @@ function SparkBlock({
               border: '1px solid var(--border)',
               fontSize: 11,
             }}
-            formatter={(v: number | undefined) => [fmt(v), metric.toUpperCase()]}
+            formatter={(v: TooltipValueType | undefined) => [
+              fmt(typeof v === 'number' ? v : undefined),
+              metric.toUpperCase(),
+            ]}
             labelFormatter={(_lab, payload) => {
               const row = payload?.[0]?.payload as { date?: string } | undefined
               return row?.date ? `Game · ${row.date}` : 'Game'

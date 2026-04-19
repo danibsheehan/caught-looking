@@ -17,33 +17,38 @@ export function usePlayerCompareYearByYear(
   const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const inactive = !enabled || !ids
+
   useEffect(() => {
-    if (!enabled || !ids) {
-      setData(null)
-      setError(null)
-      setLoading(false)
-      return
-    }
+    if (inactive) return
     let cancelled = false
-    setLoading(true)
-    setError(null)
-    fetchPlayersCompareYearByYear({ ids, group })
-      .then((d) => {
-        if (!cancelled) setData(d)
-      })
-      .catch((e) => {
-        if (!cancelled)
-          setError(e instanceof Error ? e : new Error(String(e)))
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+    const t = setTimeout(() => {
+      if (cancelled) return
+      setLoading(true)
+      setError(null)
+      fetchPlayersCompareYearByYear({ ids, group })
+        .then((d) => {
+          if (!cancelled) setData(d)
+        })
+        .catch((e) => {
+          if (!cancelled)
+            setError(e instanceof Error ? e : new Error(String(e)))
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }, 0)
     return () => {
       cancelled = true
+      clearTimeout(t)
     }
-  }, [ids, group, enabled])
+  }, [ids, group, inactive])
 
-  return { data, error, loading }
+  return {
+    data: inactive ? null : data,
+    error: inactive ? null : error,
+    loading: inactive ? false : loading,
+  }
 }
 
 export function usePlayerCompareGameLog(
@@ -57,31 +62,36 @@ export function usePlayerCompareGameLog(
   const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const inactive = !enabled || !ids || season < 1900
+
   useEffect(() => {
-    if (!enabled || !ids || season < 1900) {
-      setData(null)
-      setError(null)
-      setLoading(false)
-      return
-    }
+    if (inactive) return
     let cancelled = false
-    setLoading(true)
-    setError(null)
-    fetchPlayersCompareGameLog({ ids, season, group, limit })
-      .then((d) => {
-        if (!cancelled) setData(d)
-      })
-      .catch((e) => {
-        if (!cancelled)
-          setError(e instanceof Error ? e : new Error(String(e)))
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+    const t = setTimeout(() => {
+      if (cancelled) return
+      setLoading(true)
+      setError(null)
+      fetchPlayersCompareGameLog({ ids, season, group, limit })
+        .then((d) => {
+          if (!cancelled) setData(d)
+        })
+        .catch((e) => {
+          if (!cancelled)
+            setError(e instanceof Error ? e : new Error(String(e)))
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }, 0)
     return () => {
       cancelled = true
+      clearTimeout(t)
     }
-  }, [ids, season, group, enabled, limit])
+  }, [ids, season, group, inactive, limit])
 
-  return { data, error, loading }
+  return {
+    data: inactive ? null : data,
+    error: inactive ? null : error,
+    loading: inactive ? false : loading,
+  }
 }

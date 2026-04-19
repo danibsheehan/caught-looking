@@ -23,20 +23,16 @@ export function usePlayersCompare({
   const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const needSeason = scope === 'season'
+  const inactive =
+    !enabled ||
+    playerId1 == null ||
+    playerId2 == null ||
+    (needSeason && season == null) ||
+    playerId1 === playerId2
+
   useEffect(() => {
-    const needSeason = scope === 'season'
-    if (
-      !enabled ||
-      playerId1 == null ||
-      playerId2 == null ||
-      (needSeason && season == null) ||
-      playerId1 === playerId2
-    ) {
-      setData(null)
-      setError(null)
-      setLoading(false)
-      return
-    }
+    if (inactive) return
 
     let cancelled = false
     const ids = `${playerId1},${playerId2}`
@@ -66,7 +62,11 @@ export function usePlayersCompare({
       cancelled = true
       clearTimeout(t)
     }
-  }, [enabled, playerId1, playerId2, season, scope, group])
+  }, [inactive, needSeason, playerId1, playerId2, season, scope, group])
 
-  return { data, error, loading }
+  return {
+    data: inactive ? null : data,
+    error: inactive ? null : error,
+    loading: inactive ? false : loading,
+  }
 }

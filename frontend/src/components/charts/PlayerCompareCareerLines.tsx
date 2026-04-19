@@ -8,6 +8,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  type TooltipValueType,
 } from 'recharts'
 import type { PlayersYearByYearResponse } from '../../types/api'
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
@@ -91,9 +92,12 @@ export default function PlayerCompareCareerLines({
             border: '1px solid var(--border)',
             color: 'var(--text-h)',
           }}
-          formatter={(value: number | undefined, name: string) => [
-            fmtY(metric, value ?? null),
-            name,
+          formatter={(
+            value: TooltipValueType | undefined,
+            name: string | number | undefined,
+          ) => [
+            fmtY(metric, typeof value === 'number' ? value : null),
+            String(name ?? ''),
           ]}
           labelFormatter={(s) => `Season ${s}`}
         />

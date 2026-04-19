@@ -277,7 +277,7 @@ export function teamSplitChartColors(
   surfaceHex: string,
 ): { offense: string; defense: string } {
   const primary = mlbTeamPrimaryHex(teamId, CHART_NEUTRAL_FALLBACK)
-  let secondary =
+  let secondary: string =
     MLB_TEAM_SECONDARY_HEX[teamId as SecondaryKey] ?? CHART_NEUTRAL_FALLBACK_ALT
 
   if (

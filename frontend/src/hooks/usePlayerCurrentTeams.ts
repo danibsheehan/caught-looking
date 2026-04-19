@@ -13,17 +13,14 @@ export function usePlayerCurrentTeams(
   const [teamId1, setTeamId1] = useState<number | null>(null)
   const [teamId2, setTeamId2] = useState<number | null>(null)
 
+  const invalid =
+    !enabled ||
+    playerId1 == null ||
+    playerId2 == null ||
+    playerId1 === playerId2
+
   useEffect(() => {
-    if (
-      !enabled ||
-      playerId1 == null ||
-      playerId2 == null ||
-      playerId1 === playerId2
-    ) {
-      setTeamId1(null)
-      setTeamId2(null)
-      return
-    }
+    if (invalid) return
 
     let cancelled = false
     Promise.all([
@@ -45,7 +42,10 @@ export function usePlayerCurrentTeams(
     return () => {
       cancelled = true
     }
-  }, [enabled, playerId1, playerId2])
+  }, [invalid, playerId1, playerId2])
 
-  return { teamId1, teamId2 }
+  return {
+    teamId1: invalid ? null : teamId1,
+    teamId2: invalid ? null : teamId2,
+  }
 }

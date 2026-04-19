@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import type { TooltipProps } from 'recharts'
 import {
   CartesianGrid,
   ReferenceLine,
@@ -9,6 +8,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  type TooltipContentProps,
 } from 'recharts'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { adjustChartColorForSurface } from '../../utils/chartColorContrast'
@@ -106,10 +106,7 @@ export default function DivisionRunsScatter({
   )
 }
 
-function DivisionRunsTooltip({
-  active,
-  payload,
-}: TooltipProps<number, string>) {
+function DivisionRunsTooltip({ active, payload }: TooltipContentProps) {
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload as DivisionScatterPoint | undefined
   if (!row) return null
