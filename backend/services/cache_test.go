@@ -1,0 +1,60 @@
+package services
+
+import (
+	"testing"
+	"time"
+)
+
+func TestTTLCache_Get_miss(t *testing.T) {
+	c := NewTTLCache()
+	if _, ok := c.Get("k"); ok {
+		t.Fatal("expected miss on empty cache")
+	}
+}
+
+func TestTTLCache_SetGet_hit(t *testing.T) {
+	c := NewTTLCache()
+	want := []byte(`{"x":1}`)
+	c.Set("k", want, time.Hour)
+
+	got, ok := c.Get("k")
+	if !ok {
+		t.Fatal("expected hit")
+	}
+	if string(got) != string(want) {
+		t.Fatalf("got %q want %q", got, want)
+	}
+}
+
+func TestTTLCache_Get_expired(t *testing.T) {
+	c := NewTTLCache()
+	c.Set("k", []byte("gone"), 25*time.Millisecond)
+
+	if _, ok := c.Get("k"); !ok {
+		t.Fatal("expected hit before expiry")
+	}
+
+	time.Sleep(50 * time.Millisecond)
+
+	if _, ok := c.Get("k"); ok {
+		t.Fatal("expected miss after expiry")
+	}
+	// Second Get on missing/expired key should stay miss
+	if _, ok := c.Get("k"); ok {
+		t.Fatal("expected miss on cleared key")
+	}
+}
+
+func TestTTLCache_overwrite(t *testing.T) {
+	c := NewTTLCache()
+	c.Set("k", []byte("a"), time.Hour)
+	c.Set("k", []byte("b"), time.Hour)
+
+	got, ok := c.Get("k")
+	if !ok {
+		t.Fatal("expected hit")
+	}
+	if string(got) != "b" {
+		t.Fatalf("got %q want %q", got, "b")
+	}
+}
