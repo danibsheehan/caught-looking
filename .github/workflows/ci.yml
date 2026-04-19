@@ -1,10 +1,16 @@
 name: CI
 
+# Push only on main so feature-branch work does not double-trigger with pull_request.
+# Otherwise every PR update runs twice (push + pull_request); the PR coverage comment
+# jobs are skipped on push because they require github.event_name == 'pull_request'.
 on:
     push:
         branches:
-            - '**'
+            - main
+    # Coverage comment jobs (below) only run for this event, never for push — including
+    # push/merge to main — so merge commits do not post Cobertura PR comments.
     pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
     group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -68,6 +74,7 @@ jobs:
     pr-coverage-frontend:
         name: PR coverage comment (frontend)
         needs: [frontend]
+        # Never runs on push (e.g. merge to main); requires pull_request above.
         if: github.event_name == 'pull_request' && needs.frontend.result == 'success'
         runs-on: ubuntu-latest
         permissions:
@@ -89,6 +96,7 @@ jobs:
     pr-coverage-backend:
         name: PR coverage comment (backend)
         needs: [backend]
+        # Never runs on push (e.g. merge to main); requires pull_request above.
         if: github.event_name == 'pull_request' && needs.backend.result == 'success'
         runs-on: ubuntu-latest
         permissions:
