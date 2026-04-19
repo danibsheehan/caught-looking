@@ -19,7 +19,7 @@ Routes in the SPA: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk
 | Backend  | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache for upstream responses |
 | Data     | MLB Stats API v1 (JSON over HTTPS) |
 
-Continuous integration (lint, typecheck, build, `go vet`, `go test`) runs in **GitHub Actions** on pushes to `main` and on pull requests.
+Continuous integration runs in **GitHub Actions** on pushes to `main` and on pull requests: **frontend** — ESLint, TypeScript, **Vitest**, production build; **backend** — `go vet`, `go test`, `go build`.
 
 ## Prerequisites
 
@@ -54,6 +54,23 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 | `npm run preview` | Preview production build |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript `--noEmit` |
+| `npm run test` | Vitest (watch mode) |
+| `npm run test:run` | Vitest once (matches CI) |
+| `npm run test:coverage` | Vitest once with V8 coverage (`frontend/coverage/`, open `index.html`) |
+
+Tests use **Vitest** (jsdom), **Testing Library**, and **`@testing-library/jest-dom`** matchers (`frontend/src/test/setup.ts`). Prefer mocking **`frontend/src/api/client`** in unit tests rather than calling the real API.
+
+### Tests from the repo root (`Makefile`)
+
+| Target | Purpose |
+| ------ | ------- |
+| `make test-backend` | `go test ./...` in `backend/` |
+| `make test-frontend` | `npm run test:run` in `frontend/` |
+| `make cover-backend` | Go coverage summary (`backend/coverage.out`) |
+| `make cover-backend-html` | Same + `backend/coverage.html` |
+| `make cover-frontend` | Vitest coverage report under `frontend/coverage/` |
+
+Backend tests live as `*_test.go` next to packages under `backend/`. Frontend tests are colocated as `*.test.ts` / `*.test.tsx` next to sources. Conventions for agents and contributors are summarized in **`.cursor/skills/backend-go-tests/SKILL.md`** (Go) and **`.cursor/skills/frontend-vitest-tests/SKILL.md`** (frontend).
 
 ## Configuration
 
@@ -79,10 +96,10 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 
 ```
 backend/    # Go HTTP API, MLB client, handlers, models
-frontend/   # React SPA (src/, Vite)
-Makefile    # install, dev, backend, frontend
+frontend/   # React SPA (src/, Vite, Vitest)
+Makefile    # install, dev, backend, frontend, test-*, cover-*
 ```
 
 ## Contributing
 
-Use the [pull request template](.github/pull_request_template.md). Keep API changes in sync: **Go JSON** ↔ **`frontend/src/types/api.d.ts`** and **`frontend/src/api/client.ts`**.
+Use the [pull request template](.github/pull_request_template.md). Before opening a PR, run the same checks as CI (e.g. `make test-backend`, `make test-frontend`, plus `npm run lint` / `npm run typecheck` / `npm run build` in `frontend/`, and `go vet ./...`, `go test ./...`, `go build` in `backend/`). Keep API changes in sync: **Go JSON** ↔ **`frontend/src/types/api.d.ts`** and **`frontend/src/api/client.ts`**.
