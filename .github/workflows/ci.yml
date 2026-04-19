@@ -38,11 +38,13 @@ jobs:
             - run: npm run typecheck
             - name: Test with coverage (Vitest)
               run: npm run test:coverage
+            # Copy out of gitignored coverage/ so upload-artifact v4 includes the file.
+            - run: cp coverage/cobertura-coverage.xml gha-cobertura-frontend.xml
             - run: npm run build
             - uses: actions/upload-artifact@v4
               with:
                   name: coverage-frontend-cobertura
-                  path: frontend/coverage/cobertura-coverage.xml
+                  path: frontend/gha-cobertura-frontend.xml
                   if-no-files-found: error
 
     backend:
@@ -63,12 +65,14 @@ jobs:
               run: |
                   go test ./... -count=1 -coverprofile=coverage.out -covermode=atomic
                   go install github.com/boumenot/gocover-cobertura@v1.4.0
-                  "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > cobertura.xml
+                  # Write as gha-cobertura.xml — backend/cobertura.xml is gitignored and
+                  # upload-artifact v4 would omit it from the artifact.
+                  "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura.xml
             - run: go build -o /dev/null .
             - uses: actions/upload-artifact@v4
               with:
                   name: coverage-backend-cobertura
-                  path: backend/cobertura.xml
+                  path: backend/gha-cobertura.xml
                   if-no-files-found: error
 
     pr-coverage-frontend:
@@ -86,7 +90,7 @@ jobs:
             - uses: 5monkeys/cobertura-action@v14
               continue-on-error: true
               with:
-                  path: frontend/coverage/cobertura-coverage.xml
+                  path: frontend/gha-cobertura-frontend.xml
                   report_name: caught-looking-frontend-coverage
                   show_line: true
                   show_branch: true
@@ -108,7 +112,7 @@ jobs:
             - uses: 5monkeys/cobertura-action@v14
               continue-on-error: true
               with:
-                  path: backend/cobertura.xml
+                  path: backend/gha-cobertura.xml
                   report_name: caught-looking-backend-coverage
                   show_line: true
                   show_branch: true
