@@ -92,6 +92,16 @@ jobs:
             - uses: actions/download-artifact@v4
               with:
                   name: coverage-frontend-cobertura
+            # Artifact layout varies (flat vs nested); cobertura-action needs a stable path.
+            - name: Place frontend Cobertura for cobertura-action
+              run: |
+                  set -euo pipefail
+                  mkdir -p frontend
+                  dest=frontend/gha-cobertura-frontend.xml
+                  if [ -f "$dest" ]; then exit 0; fi
+                  f=$(find "$GITHUB_WORKSPACE" -name gha-cobertura-frontend.xml -type f | head -1)
+                  if [ -z "$f" ]; then echo "::error::gha-cobertura-frontend.xml not in artifact"; find "$GITHUB_WORKSPACE" -type f; exit 1; fi
+                  cp "$f" "$dest"
             - uses: 5monkeys/cobertura-action@v14
               with:
                   pull_request_number: ${{ github.event.pull_request.number }}
@@ -120,6 +130,16 @@ jobs:
             - uses: actions/download-artifact@v4
               with:
                   name: coverage-backend-cobertura
+            # Artifact layout varies (flat vs nested); cobertura-action needs a stable path.
+            - name: Place backend Cobertura for cobertura-action
+              run: |
+                  set -euo pipefail
+                  mkdir -p backend
+                  dest=backend/gha-cobertura.xml
+                  if [ -f "$dest" ]; then exit 0; fi
+                  f=$(find "$GITHUB_WORKSPACE" -name gha-cobertura.xml -type f | head -1)
+                  if [ -z "$f" ]; then echo "::error::gha-cobertura.xml not in artifact"; find "$GITHUB_WORKSPACE" -type f; exit 1; fi
+                  cp "$f" "$dest"
             - uses: 5monkeys/cobertura-action@v14
               with:
                   pull_request_number: ${{ github.event.pull_request.number }}
