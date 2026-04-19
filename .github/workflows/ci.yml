@@ -2,16 +2,20 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - '**'
   pull_request:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   frontend:
-    name: Frontend (lint, typecheck, test, build)
+    name: Frontend (lint, typecheck, test+coverage, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,11 +30,17 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test:run
+      - name: Test with coverage (Vitest)
+        run: npm run test:coverage 2>&1 | tee "$GITHUB_WORKSPACE/coverage-frontend.txt"
       - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend-log
+          path: ${{ github.workspace }}/coverage-frontend.txt
+          if-no-files-found: error
 
   backend:
-    name: Backend (vet, test, build)
+    name: Backend (vet, test+coverage, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -43,5 +53,61 @@ jobs:
           cache-dependency-path: backend/go.sum
       - run: go mod download
       - run: go vet ./...
-      - run: go test ./...
+      - name: Test with coverage
+        run: |
+          go test ./... -count=1 -coverprofile=coverage.out -covermode=atomic
+          go tool cover -func=coverage.out | tee "$GITHUB_WORKSPACE/coverage-backend.txt"
       - run: go build -o /dev/null .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-backend-log
+          path: ${{ github.workspace }}/coverage-backend.txt
+          if-no-files-found: error
+
+  pr-coverage-comment:
+    name: PR coverage comment
+    needs: [frontend, backend]
+    if: github.event_name == 'pull_request' && needs.frontend.result == 'success' && needs.backend.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-frontend-log
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-backend-log
+          path: backend-log
+      - name: Build markdown comment
+        run: |
+          {
+            echo '## Code coverage'
+            echo ''
+            echo 'This comment is updated on each push to the PR branch.'
+            echo ''
+            echo '### Frontend (`npm run test:coverage`)'
+            echo ''
+            echo '<details>'
+            echo '<summary>Full Vitest / V8 output</summary>'
+            echo ''
+            echo '~~~'
+            cat coverage-frontend.txt
+            echo '~~~'
+            echo '</details>'
+            echo ''
+            echo '### Backend (`go test -coverprofile` + `go tool cover -func`)'
+            echo ''
+            echo '<details>'
+            echo '<summary>Per-function coverage</summary>'
+            echo ''
+            echo '~~~'
+            cat backend-log/coverage-backend.txt
+            echo '~~~'
+            echo '</details>'
+          } > pr-coverage-body.md
+      - uses: marocchino/sticky-pull-request-comment@v2.6.1
+        continue-on-error: true
+        with:
+          header: caught-looking-coverage
+          path: pr-coverage-body.md

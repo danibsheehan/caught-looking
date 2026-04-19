@@ -19,7 +19,7 @@ Routes in the SPA: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk
 | Backend  | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache for upstream responses |
 | Data     | MLB Stats API v1 (JSON over HTTPS) |
 
-Continuous integration runs in **GitHub Actions** on pushes to `main` and on pull requests: **frontend** — ESLint, TypeScript, **Vitest**, production build; **backend** — `go vet`, `go test`, `go build`.
+Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — ESLint, TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (`go tool cover -func`), `go build`. On pull requests (same-repo workflows), a **sticky comment** is added or updated with the full frontend and backend coverage text (fork PRs may not receive the comment due to token limits; that step is non-blocking).
 
 ## Prerequisites
 
