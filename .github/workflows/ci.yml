@@ -81,19 +81,27 @@ jobs:
         # Never runs on push (e.g. merge to main); requires pull_request above.
         if: github.event_name == 'pull_request' && needs.frontend.result == 'success'
         runs-on: ubuntu-latest
+        # cobertura-action uses Issues API for PR comments and Checks API for the report;
+        # pull-requests:write alone is not always enough for issue comments on some repos.
         permissions:
+            contents: read
             pull-requests: write
+            issues: write
+            checks: write
         steps:
             - uses: actions/download-artifact@v4
               with:
                   name: coverage-frontend-cobertura
             - uses: 5monkeys/cobertura-action@v14
-              continue-on-error: true
               with:
+                  pull_request_number: ${{ github.event.pull_request.number }}
                   path: frontend/gha-cobertura-frontend.xml
                   report_name: caught-looking-frontend-coverage
                   show_line: true
                   show_branch: true
+                  show_class_names: false
+                  show_missing: false
+                  only_changed_files: false
                   skip_covered: false
                   minimum_coverage: 0
 
@@ -104,17 +112,23 @@ jobs:
         if: github.event_name == 'pull_request' && needs.backend.result == 'success'
         runs-on: ubuntu-latest
         permissions:
+            contents: read
             pull-requests: write
+            issues: write
+            checks: write
         steps:
             - uses: actions/download-artifact@v4
               with:
                   name: coverage-backend-cobertura
             - uses: 5monkeys/cobertura-action@v14
-              continue-on-error: true
               with:
+                  pull_request_number: ${{ github.event.pull_request.number }}
                   path: backend/gha-cobertura.xml
                   report_name: caught-looking-backend-coverage
                   show_line: true
                   show_branch: true
+                  show_class_names: false
+                  show_missing: false
+                  only_changed_files: false
                   skip_covered: false
                   minimum_coverage: 0
