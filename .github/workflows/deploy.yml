@@ -58,18 +58,21 @@ jobs:
                   docker build -t "$IMAGE" -f backend/Dockerfile backend
                   docker push "$IMAGE"
 
+            # ALLOWED_ORIGINS values look like https://….pages.dev — they contain ":" and ",".
+            # Inline --set-env-vars / ^:^ breaks on "https://"; use --env-vars-file (JSON) instead.
             - name: Deploy to Cloud Run
               env:
                   CORS: ${{ vars.CORS_ALLOWED_ORIGINS }}
               run: |
                   IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/api:${GITHUB_SHA}"
+                  python3 -c 'import json, os; json.dump({"ALLOWED_ORIGINS": os.environ["CORS"]}, open("/tmp/cr-env.json", "w"))'
                   gcloud run deploy "$CLOUDRUN_SERVICE_NAME" \
                     --image "$IMAGE" \
                     --region "$GCP_REGION" \
                     --project "$GCP_PROJECT_ID" \
                     --platform managed \
                     --allow-unauthenticated \
-                    --set-env-vars "^:^ALLOWED_ORIGINS=${CORS}"
+                    --env-vars-file=/tmp/cr-env.json
 
             - id: cloudrun-url
               name: Read Cloud Run service URL
