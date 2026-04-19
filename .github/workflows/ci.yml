@@ -113,7 +113,9 @@ jobs:
                   show_missing: false
                   only_changed_files: false
                   skip_covered: false
-                  minimum_coverage: 0
+                  minimum_coverage: 50
+                  # With fail_below_threshold false, cobertura-action always posts a "neutral" check.
+                  fail_below_threshold: true
 
     pr-coverage-backend:
         name: PR coverage comment (backend)
@@ -151,4 +153,6 @@ jobs:
                   show_missing: false
                   only_changed_files: false
                   skip_covered: false
-                  minimum_coverage: 0
+                  minimum_coverage: 50
+                  # With fail_below_threshold false, cobertura-action always posts a "neutral" check.
+                  fail_below_threshold: true
