@@ -111,46 +111,50 @@ export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse
   const [pitHome, setPitHome] = useState<SortState>(null)
 
   const batAwayRows = useMemo(() => {
-    if (!batAway) return data.away.batting
+    const batting = data.away.batting ?? []
+    if (!batAway) return batting
     const k = batAway.key
-    return sortedCopy<BatterLine>(data.away.batting, batAway.dir, (row) => {
+    return sortedCopy<BatterLine>(batting, batAway.dir, (row) => {
       const v = (row as unknown as Record<string, number | string>)[k]
       return v ?? ''
     })
   }, [data.away.batting, batAway])
 
   const batHomeRows = useMemo(() => {
-    if (!batHome) return data.home.batting
+    const batting = data.home.batting ?? []
+    if (!batHome) return batting
     const k = batHome.key
-    return sortedCopy<BatterLine>(data.home.batting, batHome.dir, (row) => {
+    return sortedCopy<BatterLine>(batting, batHome.dir, (row) => {
       const v = (row as unknown as Record<string, number | string>)[k]
       return v ?? ''
     })
   }, [data.home.batting, batHome])
 
   const pitAwayRows = useMemo(() => {
-    if (!pitAway) return data.away.pitching
+    const pitching = data.away.pitching ?? []
+    if (!pitAway) return pitching
     if (pitAway.key === 'ip') {
-      return sortedCopy<PitcherLine>(data.away.pitching, pitAway.dir, (row) =>
+      return sortedCopy<PitcherLine>(pitching, pitAway.dir, (row) =>
         ipToOuts(row.ip),
       )
     }
     const k = pitAway.key
-    return sortedCopy<PitcherLine>(data.away.pitching, pitAway.dir, (row) => {
+    return sortedCopy<PitcherLine>(pitching, pitAway.dir, (row) => {
       const v = (row as unknown as Record<string, number | string>)[k]
       return v ?? ''
     })
   }, [data.away.pitching, pitAway])
 
   const pitHomeRows = useMemo(() => {
-    if (!pitHome) return data.home.pitching
+    const pitching = data.home.pitching ?? []
+    if (!pitHome) return pitching
     if (pitHome.key === 'ip') {
-      return sortedCopy<PitcherLine>(data.home.pitching, pitHome.dir, (row) =>
+      return sortedCopy<PitcherLine>(pitching, pitHome.dir, (row) =>
         ipToOuts(row.ip),
       )
     }
     const k = pitHome.key
-    return sortedCopy<PitcherLine>(data.home.pitching, pitHome.dir, (row) => {
+    return sortedCopy<PitcherLine>(pitching, pitHome.dir, (row) => {
       const v = (row as unknown as Record<string, number | string>)[k]
       return v ?? ''
     })
