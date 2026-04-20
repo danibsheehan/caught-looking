@@ -23,9 +23,10 @@ export default function TeamSelector({
   )
 
   return (
-    <label className="field" htmlFor={id}>
-      <span className="field-label">{label}</span>
+    <label className="form-field" htmlFor={id}>
+      <span className="form-field__label">{label}</span>
       <select
+        className="form-field__select"
         id={id}
         value={value === '' ? '' : String(value)}
         onChange={(e) => {

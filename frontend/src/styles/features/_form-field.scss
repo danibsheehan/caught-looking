@@ -1,0 +1,47 @@
+// Shared label + control layout (TeamSelector, GamesSlate; shared visuals with player compare / picker).
+.form-field,
+.players-compare__field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.form-field__label,
+.players-compare__label,
+.player-picker__label {
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.form-field__select,
+.players-compare__select {
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.form-field__input,
+.players-compare__input,
+.player-picker__input {
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  padding: 0.4rem 0.5rem;
+  width: 6.5rem;
+}
+
+.form-field__input--wide,
+.players-compare__input--wide,
+.player-picker__input--wide {
+  width: min(100%, 11rem);
+}
+
+.form-field__input--date {
+  width: 11rem;
+}
