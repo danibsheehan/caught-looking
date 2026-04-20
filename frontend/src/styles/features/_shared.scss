@@ -33,9 +33,45 @@ html[data-theme='dark'] .error {
   font-size: 1.1rem;
 }
 
-.chart-panel .chart-wrap {
+.chart-panel .chart-wrap,
+.standings-page__panel--chart .chart-wrap {
   width: 100%;
   margin-top: 0.5rem;
+}
+
+.table-scroll,
+.standings-page__table-scroll {
+  overflow-x: auto;
+}
+
+.data-table,
+.standings-page__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.data-table th,
+.data-table td,
+.standings-page__table th,
+.standings-page__table td {
+  text-align: left;
+  padding: 0.5rem 0.45rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table th,
+.standings-page__table th {
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.data-table tbody tr:hover,
+.standings-page__table tbody tr:hover {
+  background: var(--accent-bg);
 }
 
 .team-viz-grid {
@@ -52,11 +88,13 @@ html[data-theme='dark'] .error {
 }
 
 @media (max-width: 520px) {
-  .chart-panel {
+  .chart-panel,
+  .standings-page__panel--chart {
     padding-inline: 0.65rem;
   }
 
-  .chart-panel .chart-wrap {
+  .chart-panel .chart-wrap,
+  .standings-page__panel--chart .chart-wrap {
     margin-inline: -0.15rem;
   }
 }
