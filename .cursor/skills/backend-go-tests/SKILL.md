@@ -21,7 +21,7 @@ description: >-
    - Services/config/middleware: **`package services`**, **`package config`**, **`package middleware`** — mirror the package under test.
 
 2. **Shared helpers** (do not duplicate ad hoc)
-   - Use **`handlers/setup_test.go`**: `testConfig()` and **`newTestHandlers(t, mlbHTTPHandler)`** which wires `config.Config`, `services.NewTTLCache()`, and `services.NewMLBClient(httptest.Server.URL)`.
+   - Use **`handlers/setup_test.go`**: `testConfig()` and **`newTestHandlers(t, mlbHTTPHandler)`** which wires `config.Config`, `services.NewTTLCache()`, and `services.NewMLBClient(httptest.Server.URL, 0)` (no upstream QPS limit in tests).
    - Fake MLB is always an **`httptest.Server`** (or `http.HandlerFunc`) whose paths and query strings match what **`services.MLBClient.Get`** receives (e.g. `/people/123/stats?stats=season&...`, `/schedule?teamId=...`, `/game/555/linescore`).
 
 3. **Chi routes**

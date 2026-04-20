@@ -15,7 +15,7 @@ func TestHealth(t *testing.T) {
 	cfg := config.Config{
 		AllowedOrigins: []string{"http://localhost:5173"},
 	}
-	h := handlers.New(cfg, services.NewTTLCache(), services.NewMLBClient("http://127.0.0.1:9"))
+	h := handlers.New(cfg, services.NewTTLCache(), services.NewMLBClient("http://127.0.0.1:9", 0))
 	srv := httptest.NewServer(newRouter(cfg, h))
 	t.Cleanup(srv.Close)
 
