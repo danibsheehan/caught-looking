@@ -1,0 +1,34 @@
+---
+description: BEM naming for new frontend class names and new components
+globs:
+  - frontend/**/*.tsx
+  - frontend/src/**/*.scss
+alwaysApply: false
+---
+
+# Frontend — BEM (Block, Element, Modifier)
+
+The codebase still contains **legacy** class names (e.g. `nav-link`, `stat-card`). **Do not rename** those in drive-by edits. **Migrations happen in dedicated changes.**
+
+## When this rule applies (enforce)
+
+- **New component files**: any new `*.tsx` under `frontend/src/components/` or `frontend/src/pages/` must use **BEM** for every `className` you introduce.
+- **New styles**: any **new** selectors you add under `frontend/src/styles/` must be **BEM-shaped** (new blocks / elements / modifiers only). Extend legacy selectors only when matching existing markup.
+
+## Naming shape
+
+- **Block** (standalone): `block-name` — kebab-case, one conceptual UI unit (e.g. `game-day-row` → prefer a block like `games-slate` + elements instead of growing multi-purpose strings).
+- **Element**: `block-name__element` — double underscore, belongs to that block only.
+- **Modifier**: `block-name--modifier` or `block-name__element--modifier` — double hyphen, for variants and **state** (selected, disabled, active).
+
+Prefer modifiers on the same node instead of unrelated “state classes”, e.g. `foo__btn foo__btn--active` rather than `foo__btn is-active` **for new code**.
+
+## SCSS
+
+- Put rules next to their block; use Sass nesting with `&__element` and `&--modifier` so renames stay local.
+- Keep using existing **CSS variables** (`var(--accent)`, etc.) from `frontend/src/styles/_base.scss`; BEM is only the **class naming** layer.
+
+## Practical notes
+
+- **NavLink / conditional classes**: build strings from BEM parts (`block`, `block block--loading`, `block__link block__link--active`).
+- **Tests**: when adding tests for new components, assert on roles/labels where possible; if you query by `className`, use the new BEM strings.
