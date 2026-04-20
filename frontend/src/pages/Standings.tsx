@@ -53,7 +53,7 @@ export default function Standings() {
 
   if (error) {
     return (
-      <section className="page">
+      <section className="page standings-page">
         <h1>Standings</h1>
         <p className="error" role="alert">
           {error.message}
@@ -69,15 +69,15 @@ export default function Standings() {
   const teamsInDivision = selected?.teams?.length ?? 0
 
   return (
-    <section className="page">
-      <header className="page-head">
+    <section className="page standings-page">
+      <header className="standings-page__header">
         <div>
           <h1>Standings</h1>
           <p className="muted">
             Season <strong>{data?.season ?? '—'}</strong> · regular season · AL /
             NL
           </p>
-          <div className="stat-cards" role="list">
+          <div className="standings-page__stat-cards" role="list">
             <div role="listitem">
               <StatCard label="Season" value={data?.season ?? '—'} />
             </div>
@@ -93,7 +93,7 @@ export default function Standings() {
             </div>
           </div>
         </div>
-        <div className="page-controls">
+        <div className="standings-page__controls">
           {teams.length > 0 && (
             <TeamSelector
               id="standings-team-focus"
@@ -105,8 +105,8 @@ export default function Standings() {
             />
           )}
           {divisions.length > 0 && (
-            <label className="field">
-              <span className="field-label">Division</span>
+            <label className="standings-page__field">
+              <span className="standings-page__field-label">Division</span>
               <select
                 value={safeIdx}
                 onChange={(e) => {
@@ -129,7 +129,7 @@ export default function Standings() {
         <p className="muted">No standings returned.</p>
       ) : (
         <>
-          <div className="panel chart-panel">
+          <div className="standings-page__panel standings-page__panel--chart">
             <h2>Wins by team</h2>
             <p className="muted small">
               Selected division:{' '}
@@ -138,7 +138,7 @@ export default function Standings() {
             <TeamWinsBarChart data={chartRows} />
           </div>
 
-          <div className="panel chart-panel">
+          <div className="standings-page__panel standings-page__panel--chart">
             <h2>Cumulative win % vs games played</h2>
             <p className="muted small">
               All clubs in this division load together. The horizontal axis is games
@@ -152,10 +152,10 @@ export default function Standings() {
           </div>
 
           {divisions.map((div) => (
-            <div key={div.divisionId} className="panel">
+            <div key={div.divisionId} className="standings-page__panel">
               <h2>{div.divisionName || `Division ${div.divisionId}`}</h2>
-              <div className="table-scroll">
-                <table className="data-table">
+              <div className="standings-page__table-scroll">
+                <table className="standings-page__table">
                   <thead>
                     <tr>
                       <th scope="col">#</th>
@@ -172,11 +172,11 @@ export default function Standings() {
                       <tr key={t.teamId}>
                         <td>{t.divisionRank}</td>
                         <td>
-                          <span className="team-cell">
-                            <span className="team-abbr">
+                          <span className="standings-page__team-cell">
+                            <span className="standings-page__team-abbr">
                               {abbrevById.get(t.teamId) ?? '—'}
                             </span>
-                            <span className="team-name">{t.teamName}</span>
+                            <span className="standings-page__team-name">{t.teamName}</span>
                           </span>
                         </td>
                         <td>{t.wins}</td>

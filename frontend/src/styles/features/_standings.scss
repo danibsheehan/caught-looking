@@ -1,46 +1,77 @@
-.table-scroll {
-  overflow-x: auto;
-}
+.standings-page {
+  &__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95rem;
-}
+  &__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem 1.25rem;
+  }
 
-.data-table th,
-.data-table td {
-  text-align: left;
-  padding: 0.5rem 0.45rem;
-  border-bottom: 1px solid var(--border);
-}
+  &__stat-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 0.85rem;
+  }
 
-.data-table th {
-  font-weight: 600;
-  color: var(--text-h);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
+  &__panel {
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem 1.1rem;
+    margin-bottom: 1.25rem;
+    background: color-mix(in srgb, var(--bg) 96%, var(--code-bg) 4%);
+    box-shadow: var(--shadow);
 
-.data-table tbody tr:hover {
-  background: var(--accent-bg);
-}
+    h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+    }
+  }
 
-.team-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
+  &__field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
 
-.team-abbr {
-  font-weight: 600;
-  color: var(--text-h);
-  font-family: var(--mono);
-  font-size: 0.85rem;
-}
+  &__field-label {
+    font-size: 0.8rem;
+    color: var(--text);
+  }
 
-.team-name {
-  font-size: 0.85rem;
-  color: var(--text);
+  &__field select {
+    font: inherit;
+    color: var(--text-h);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  &__team-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  &__team-abbr {
+    font-weight: 600;
+    color: var(--text-h);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+
+  &__team-name {
+    font-size: 0.85rem;
+    color: var(--text);
+  }
 }
