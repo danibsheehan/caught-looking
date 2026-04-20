@@ -100,7 +100,7 @@ export default function GamesSlate() {
           </label>
           {teams.length > 0 ? (
             <TeamSelector
-              id="game-day-team"
+              id="games-slate-team"
               label="Team (optional)"
               teams={teams}
               value={teamId}
@@ -117,7 +117,7 @@ export default function GamesSlate() {
         </p>
       ) : null}
 
-      <div className="panel">
+      <div className="panel games-slate">
         <h2>Games on this day</h2>
         {loadingList ? (
           <GameListSkeleton rows={7} />
@@ -126,7 +126,7 @@ export default function GamesSlate() {
             No games on this date (try another day or clear the team filter).
           </p>
         ) : (
-          <ul className="game-day-list" role="list">
+          <ul className="games-slate__list" role="list">
             {games.map((g) => {
               const score =
                 g.status === 'Final' || g.status === 'Game Over'
@@ -135,11 +135,11 @@ export default function GamesSlate() {
               const to = `/games/${g.gamePk}?date=${encodeURIComponent(date)}`
               return (
                 <li key={g.gamePk} role="none">
-                  <Link className="game-day-row" to={to}>
-                    <span className="game-day-matchup">
+                  <Link className="games-slate__link" to={to}>
+                    <span className="games-slate__matchup">
                       {g.awayTeam} @ {g.homeTeam}
                     </span>
-                    <span className="game-day-meta muted small">
+                    <span className="games-slate__meta muted small">
                       {score} · {g.status}
                     </span>
                   </Link>

@@ -53,7 +53,7 @@ function SortTh({ label, sortKey, activeKey, activeDir, onSort }: SortThProps) {
     <th scope="col">
       <button
         type="button"
-        className="box-sort-btn"
+        className="game-boxscore__sort-btn"
         onClick={() => onSort(sortKey)}
       >
         {label}
@@ -66,9 +66,9 @@ function SortTh({ label, sortKey, activeKey, activeDir, onSort }: SortThProps) {
 function TeamTotalsCard({ side }: { side: TeamBoxSide }) {
   const t = side.totals
   return (
-    <div className="game-team-totals">
-      <h3 className="game-team-name">{side.teamName}</h3>
-      <dl className="game-totals-dl">
+    <div className="game-boxscore__team-totals">
+      <h3 className="game-boxscore__team-name">{side.teamName}</h3>
+      <dl className="game-boxscore__totals-dl">
         <div>
           <dt>R</dt>
           <dd>{t.runs}</dd>
@@ -179,23 +179,23 @@ export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse
   }
 
   return (
-    <div className="game-boxscore-panel">
-      <h2 className="game-boxscore-heading">Team totals</h2>
-      <div className="game-totals-grid">
-        <div className="panel game-totals-card">
+    <div className="game-boxscore">
+      <h2 className="game-boxscore__heading">Team totals</h2>
+      <div className="game-boxscore__totals-grid">
+        <div className="panel game-boxscore__totals-card">
           <TeamTotalsCard side={data.away} />
         </div>
-        <div className="panel game-totals-card">
+        <div className="panel game-boxscore__totals-card">
           <TeamTotalsCard side={data.home} />
         </div>
       </div>
 
-      <h2 className="game-boxscore-heading">Pitching</h2>
-      <div className="game-pitch-grid">
+      <h2 className="game-boxscore__heading">Pitching</h2>
+      <div className="game-boxscore__pitch-grid">
         <div className="panel">
-          <h3 className="game-team-name">{data.away.teamName}</h3>
-          <div className="box-table-wrap">
-            <table className="game-data-table">
+          <h3 className="game-boxscore__team-name">{data.away.teamName}</h3>
+          <div className="game-boxscore__table-wrap">
+            <table className="game-boxscore__table">
               <thead>
                 <tr>
                   <SortTh
@@ -274,9 +274,9 @@ export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse
           </div>
         </div>
         <div className="panel">
-          <h3 className="game-team-name">{data.home.teamName}</h3>
-          <div className="box-table-wrap">
-            <table className="game-data-table">
+          <h3 className="game-boxscore__team-name">{data.home.teamName}</h3>
+          <div className="game-boxscore__table-wrap">
+            <table className="game-boxscore__table">
               <thead>
                 <tr>
                   <SortTh
@@ -356,12 +356,12 @@ export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse
         </div>
       </div>
 
-      <h2 className="game-boxscore-heading">Batting</h2>
-      <div className="game-bat-grid">
+      <h2 className="game-boxscore__heading">Batting</h2>
+      <div className="game-boxscore__bat-grid">
         <div className="panel">
-          <h3 className="game-team-name">{data.away.teamName}</h3>
-          <div className="box-table-wrap">
-            <table className="game-data-table">
+          <h3 className="game-boxscore__team-name">{data.away.teamName}</h3>
+          <div className="game-boxscore__table-wrap">
+            <table className="game-boxscore__table">
               <thead>
                 <tr>
                   <SortTh
@@ -464,9 +464,9 @@ export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse
           </div>
         </div>
         <div className="panel">
-          <h3 className="game-team-name">{data.home.teamName}</h3>
-          <div className="box-table-wrap">
-            <table className="game-data-table">
+          <h3 className="game-boxscore__team-name">{data.home.teamName}</h3>
+          <div className="game-boxscore__table-wrap">
+            <table className="game-boxscore__table">
               <thead>
                 <tr>
                   <SortTh
