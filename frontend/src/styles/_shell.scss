@@ -187,7 +187,7 @@
   background: color-mix(in srgb, var(--bg) 72%, var(--accent) 28%);
 }
 
-.theme-toggle__btn.is-active {
+.theme-toggle__btn--active {
   background: linear-gradient(
     165deg,
     color-mix(in srgb, var(--accent-bg) 92%, var(--bg) 8%),

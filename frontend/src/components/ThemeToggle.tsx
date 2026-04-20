@@ -13,7 +13,7 @@ export default function ThemeToggle() {
         type="button"
         className={
           effective === 'light'
-            ? 'theme-toggle__btn is-active'
+            ? 'theme-toggle__btn theme-toggle__btn--active'
             : 'theme-toggle__btn'
         }
         onClick={setLight}
@@ -25,7 +25,7 @@ export default function ThemeToggle() {
         type="button"
         className={
           effective === 'dark'
-            ? 'theme-toggle__btn is-active'
+            ? 'theme-toggle__btn theme-toggle__btn--active'
             : 'theme-toggle__btn'
         }
         onClick={setDark}
