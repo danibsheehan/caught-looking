@@ -75,7 +75,7 @@ export default function PlayerComparison() {
   const rateLabel = group === 'hitting' ? 'OPS' : 'ERA'
 
   return (
-    <section className="page">
+    <section className="page players-compare">
       <header className="page-head">
         <div>
           <h1>Player comparison</h1>
@@ -87,14 +87,15 @@ export default function PlayerComparison() {
       </header>
 
       <div className="panel">
-        <div className="player-pick-grid">
+        <div className="players-compare__pick-grid">
           <PlayerPicker label="Player 1" selected={pick1} onChange={setPick1} />
           <PlayerPicker label="Player 2" selected={pick2} onChange={setPick2} />
         </div>
-        <div className="form-grid" style={{ marginTop: '1rem' }}>
-          <label className="field">
-            <span className="field-label">Compare</span>
+        <div className="players-compare__filters">
+          <label className="players-compare__field">
+            <span className="players-compare__label">Compare</span>
             <select
+              className="players-compare__select"
               value={compareScope}
               onChange={(e) => {
                 const v = e.target.value
@@ -105,10 +106,10 @@ export default function PlayerComparison() {
               <option value="career">Career</option>
             </select>
           </label>
-          <label className="field">
-            <span className="field-label">Season</span>
+          <label className="players-compare__field">
+            <span className="players-compare__label">Season</span>
             <input
-              className="field-input"
+              className="players-compare__input"
               type="number"
               min={1900}
               max={2100}
@@ -122,9 +123,10 @@ export default function PlayerComparison() {
               onChange={(e) => setSeason(Number(e.target.value) || DEFAULT_SEASON)}
             />
           </label>
-          <label className="field">
-            <span className="field-label">Stat group</span>
+          <label className="players-compare__field">
+            <span className="players-compare__label">Stat group</span>
             <select
+              className="players-compare__select"
               value={group}
               onChange={(e) => {
                 const v = e.target.value

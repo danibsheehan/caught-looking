@@ -46,9 +46,9 @@ function SparkBlock({
         : v.toFixed(2)
 
   return (
-    <div className="player-spark-block">
-      <div className="player-spark-block-head">
-        <span className="player-spark-block-title">{title}</span>
+    <div className="player-game-spark__block">
+      <div className="player-game-spark__head">
+        <span className="player-game-spark__title">{title}</span>
         <span className="muted small">{name}</span>
       </div>
       <ResponsiveContainer width="100%" height={140}>
@@ -146,7 +146,7 @@ export default function PlayerCompareRecentSparklines({
   }
 
   return (
-    <div className="player-spark-grid">
+    <div className="player-game-spark">
       {rowsA.length > 0 ? (
         <SparkBlock
           title="Player 1"

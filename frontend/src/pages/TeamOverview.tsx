@@ -132,7 +132,7 @@ export default function TeamOverview() {
             title={`${selected.abbreviation} — ${selected.teamName}`}
             subtitle={`${selected.leagueName} · ${selected.divisionName}`}
           >
-            <dl className="meta-dl">
+            <dl className="player-card__meta">
               <div>
                 <dt>Full name</dt>
                 <dd>{selected.name}</dd>
