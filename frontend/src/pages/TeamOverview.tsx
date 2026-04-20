@@ -112,10 +112,10 @@ export default function TeamOverview() {
             onChange={setTeamId}
             placeholder="Select a team"
           />
-          <label className="teams-page__field">
-            <span className="teams-page__field-label">Season</span>
+          <label className="form-field">
+            <span className="form-field__label">Season</span>
             <input
-              className="teams-page__field-input"
+              className="form-field__input"
               type="number"
               min={1900}
               max={2100}

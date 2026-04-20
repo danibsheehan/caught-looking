@@ -34,6 +34,7 @@ html[data-theme='dark'] .error {
 }
 
 .chart-panel .chart-frame,
+.players-compare__panel--chart .chart-frame,
 .standings-page__panel--chart .chart-frame,
 .teams-page__panel--chart .chart-frame,
 .teams-page__chart-area .chart-frame {
@@ -78,12 +79,14 @@ html[data-theme='dark'] .error {
 
 @media (max-width: 520px) {
   .chart-panel,
+  .players-compare__panel--chart,
   .standings-page__panel--chart,
   .teams-page__panel--chart {
     padding-inline: 0.65rem;
   }
 
   .chart-panel .chart-frame,
+  .players-compare__panel--chart .chart-frame,
   .standings-page__panel--chart .chart-frame,
   .teams-page__panel--chart .chart-frame,
   .teams-page__chart-area .chart-frame {

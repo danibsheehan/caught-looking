@@ -54,6 +54,29 @@
 }
 
 .players-compare {
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  &__panel {
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem 1.1rem;
+    margin-bottom: 1.25rem;
+    background: color-mix(in srgb, var(--bg) 96%, var(--code-bg) 4%);
+    box-shadow: var(--shadow);
+
+    h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+    }
+  }
+
   &__pick-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));

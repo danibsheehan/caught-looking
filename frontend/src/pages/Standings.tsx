@@ -105,9 +105,10 @@ export default function Standings() {
             />
           )}
           {divisions.length > 0 && (
-            <label className="standings-page__field">
-              <span className="standings-page__field-label">Division</span>
+            <label className="form-field">
+              <span className="form-field__label">Division</span>
               <select
+                className="form-field__select"
                 value={safeIdx}
                 onChange={(e) => {
                   setFocusTeamId('')

@@ -182,17 +182,17 @@ export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse
     <div className="game-boxscore">
       <h2 className="game-boxscore__heading">Team totals</h2>
       <div className="game-boxscore__totals-grid">
-        <div className="panel game-boxscore__totals-card">
+        <div className="game-boxscore__panel game-boxscore__totals-card">
           <TeamTotalsCard side={data.away} />
         </div>
-        <div className="panel game-boxscore__totals-card">
+        <div className="game-boxscore__panel game-boxscore__totals-card">
           <TeamTotalsCard side={data.home} />
         </div>
       </div>
 
       <h2 className="game-boxscore__heading">Pitching</h2>
       <div className="game-boxscore__pitch-grid">
-        <div className="panel">
+        <div className="game-boxscore__panel">
           <h3 className="game-boxscore__team-name">{data.away.teamName}</h3>
           <div className="game-boxscore__table-wrap">
             <table className="game-boxscore__table">
@@ -273,7 +273,7 @@ export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse
             </table>
           </div>
         </div>
-        <div className="panel">
+        <div className="game-boxscore__panel">
           <h3 className="game-boxscore__team-name">{data.home.teamName}</h3>
           <div className="game-boxscore__table-wrap">
             <table className="game-boxscore__table">
@@ -358,7 +358,7 @@ export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse
 
       <h2 className="game-boxscore__heading">Batting</h2>
       <div className="game-boxscore__bat-grid">
-        <div className="panel">
+        <div className="game-boxscore__panel">
           <h3 className="game-boxscore__team-name">{data.away.teamName}</h3>
           <div className="game-boxscore__table-wrap">
             <table className="game-boxscore__table">
@@ -463,7 +463,7 @@ export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse
             </table>
           </div>
         </div>
-        <div className="panel">
+        <div className="game-boxscore__panel">
           <h3 className="game-boxscore__team-name">{data.home.teamName}</h3>
           <div className="game-boxscore__table-wrap">
             <table className="game-boxscore__table">
