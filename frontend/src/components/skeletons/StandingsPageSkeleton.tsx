@@ -11,14 +11,14 @@ export default function StandingsPageSkeleton() {
           <SkeletonLine style={{ width: '9rem', height: '1.75rem', marginBottom: '0.4rem' }} />
           <SkeletonLine style={{ width: '16rem', height: '0.9rem' }} />
           <div className="standings-page__stat-cards">
-            <SkeletonBox className="skeleton-stat" />
-            <SkeletonBox className="skeleton-stat" />
-            <SkeletonBox className="skeleton-stat" />
+            <SkeletonBox className="skeleton__box--stat" />
+            <SkeletonBox className="skeleton__box--stat" />
+            <SkeletonBox className="skeleton__box--stat" />
           </div>
         </div>
         <div className="standings-page__controls">
-          <SkeletonBox className="skeleton-field" />
-          <SkeletonBox className="skeleton-field" />
+          <SkeletonBox className="skeleton__box--field" />
+          <SkeletonBox className="skeleton__box--field" />
         </div>
       </header>
       <div className="standings-page__panel standings-page__panel--chart">

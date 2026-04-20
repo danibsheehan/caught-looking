@@ -8,7 +8,7 @@ type SkeletonLineProps = {
 export function SkeletonLine({ className = '', style }: SkeletonLineProps) {
   return (
     <span
-      className={`skeleton-block skeleton-line ${className}`.trim()}
+      className={`skeleton__line ${className}`.trim()}
       style={style}
       aria-hidden="true"
     />
@@ -21,9 +21,6 @@ type SkeletonBoxProps = {
 
 export function SkeletonBox({ className = '' }: SkeletonBoxProps) {
   return (
-    <span
-      className={`skeleton-block skeleton-box ${className}`.trim()}
-      aria-hidden="true"
-    />
+    <span className={`skeleton__box ${className}`.trim()} aria-hidden="true" />
   )
 }

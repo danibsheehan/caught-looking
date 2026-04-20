@@ -89,29 +89,31 @@ export default function PlayerCompareStatsTable({ data, group }: Props) {
   const nameB = b.fullName || 'Player 2'
 
   return (
-    <div className="table-scroll">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th scope="col">Stat</th>
-            <th scope="col" style={tdNum}>
-              {nameA}
-            </th>
-            <th scope="col" style={tdNum}>
-              {nameB}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.key}>
-              <td>{row.label}</td>
-              <td style={tdNum}>{cell(a.stats, row.key, row.format)}</td>
-              <td style={tdNum}>{cell(b.stats, row.key, row.format)}</td>
+    <div className="player-compare-stats">
+      <div className="player-compare-stats__scroll">
+        <table className="player-compare-stats__table">
+          <thead>
+            <tr>
+              <th scope="col">Stat</th>
+              <th scope="col" style={tdNum}>
+                {nameA}
+              </th>
+              <th scope="col" style={tdNum}>
+                {nameB}
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.key}>
+                <td>{row.label}</td>
+                <td style={tdNum}>{cell(a.stats, row.key, row.format)}</td>
+                <td style={tdNum}>{cell(b.stats, row.key, row.format)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

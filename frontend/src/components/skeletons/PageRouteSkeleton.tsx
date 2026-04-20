@@ -9,7 +9,7 @@ export default function PageRouteSkeleton() {
           <SkeletonLine style={{ width: '40%', height: '1.75rem', marginBottom: '0.5rem' }} />
           <SkeletonLine style={{ width: '70%', height: '0.9rem' }} />
         </div>
-        <SkeletonBox className="skeleton-field" />
+        <SkeletonBox className="skeleton__box--field" />
       </div>
       <div className="panel">
         <SkeletonLine style={{ width: '30%', height: '1.1rem', marginBottom: '0.75rem' }} />

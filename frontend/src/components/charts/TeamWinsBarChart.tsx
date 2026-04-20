@@ -31,7 +31,7 @@ export default function TeamWinsBarChart({
   )
 
   return (
-    <div className="chart-wrap" style={{ width: '100%', minHeight: height }}>
+    <div className="chart-frame" style={{ width: '100%', minHeight: height }}>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart
           data={data}
