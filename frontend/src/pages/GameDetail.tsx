@@ -59,7 +59,7 @@ export default function GameDetail() {
       <header className="page-head">
         <div>
           <p className="muted small" style={{ marginBottom: '0.35rem' }}>
-            <Link className="game-detail-back" to={backTo}>
+            <Link className="games-detail__back" to={backTo}>
               ← Games
               {date ? ` · ${date}` : ''}
             </Link>
