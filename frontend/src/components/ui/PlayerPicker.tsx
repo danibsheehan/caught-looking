@@ -68,14 +68,14 @@ export default function PlayerPicker({
 
   return (
     <div className="player-picker">
-      <span className="field-label">{label}</span>
+      <span className="player-picker__label">{label}</span>
       {selected ? (
-        <div className="player-picker-selected">
-          <span className="player-picker-name">{selected.fullName}</span>
-          <span className="player-picker-id muted small">ID {selected.id}</span>
+        <div className="player-picker__selected">
+          <span className="player-picker__name">{selected.fullName}</span>
+          <span className="player-picker__id muted small">ID {selected.id}</span>
           <button
             type="button"
-            className="btn-text"
+            className="player-picker__change"
             onClick={() => onChange(null)}
             disabled={disabled}
           >
@@ -86,7 +86,7 @@ export default function PlayerPicker({
         <>
           <input
             id={inputId}
-            className="field-input field-input-wide"
+            className="player-picker__input player-picker__input--wide"
             type="search"
             autoComplete="off"
             placeholder="Type last name or full name…"
@@ -106,12 +106,12 @@ export default function PlayerPicker({
             <p className="muted small">No matches.</p>
           ) : null}
           {hits.length > 0 ? (
-            <ul id={listId} className="player-picker-results" role="listbox">
+            <ul id={listId} className="player-picker__results" role="listbox">
               {hits.map((p) => (
                 <li key={p.id} role="none">
                   <button
                     type="button"
-                    className="player-picker-hit"
+                    className="player-picker__hit"
                     disabled={disabled}
                     onClick={() => {
                       onChange({ id: p.id, fullName: p.fullName })
@@ -119,7 +119,7 @@ export default function PlayerPicker({
                       setHits([])
                     }}
                   >
-                    <span className="player-picker-hit-name">{p.fullName}</span>
+                    <span className="player-picker__hit-name">{p.fullName}</span>
                     <span className="muted small">
                       {p.position ? `${p.position}` : ''}
                       {p.primaryNumber ? ` · #${p.primaryNumber}` : ''}

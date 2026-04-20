@@ -35,7 +35,7 @@ function DumbbellRowTip({
 
   return (
     <div
-      className="player-dumbbell-flyout"
+      className="player-ahead-chart__flyout"
       role="tooltip"
       style={{
         background: 'var(--bg)',
@@ -82,8 +82,8 @@ export default function PlayerCompareAheadChart({
   if (!rows.length) return null
 
   return (
-    <div className="player-dumbbell-chart">
-      <div className="player-dumbbell-rows">
+    <div className="player-ahead-chart">
+      <div className="player-ahead-chart__rows">
         {rows.map((row) => {
           const lo = Math.min(row.a, row.b)
           const hi = Math.max(row.a, row.b)
@@ -93,25 +93,25 @@ export default function PlayerCompareAheadChart({
           return (
             <div
               key={row.key}
-              className="player-dumbbell-row"
+              className="player-ahead-chart__row"
               onMouseEnter={() => setTipRow(row)}
               onMouseLeave={() => setTipRow(null)}
             >
-              <div className="player-dumbbell-metric">{row.metric}</div>
-              <div className="player-dumbbell-track">
-                <div className="player-dumbbell-track-inner" aria-hidden>
-                  <div className="player-dumbbell-guides">
+              <div className="player-ahead-chart__metric">{row.metric}</div>
+              <div className="player-ahead-chart__track">
+                <div className="player-ahead-chart__track-inner" aria-hidden>
+                  <div className="player-ahead-chart__guides">
                     {[25, 50, 75].map((pct) => (
                       <span
                         key={pct}
-                        className="player-dumbbell-guide"
+                        className="player-ahead-chart__guide"
                         style={{ left: `${pct}%` }}
                       />
                     ))}
                   </div>
                   {!tied ? (
                     <div
-                      className="player-dumbbell-connector"
+                      className="player-ahead-chart__connector"
                       style={{
                         left: `${lo}%`,
                         width: `${span}%`,
@@ -120,7 +120,7 @@ export default function PlayerCompareAheadChart({
                   ) : null}
                   {tied ? (
                     <div
-                      className="player-dumbbell-dot player-dumbbell-dot--tie"
+                      className="player-ahead-chart__dot player-ahead-chart__dot--tie"
                       style={{
                         left: `${row.a}%`,
                         background: `linear-gradient(90deg, ${colorA} 50%, ${colorB} 50%)`,
@@ -129,7 +129,7 @@ export default function PlayerCompareAheadChart({
                   ) : (
                     <>
                       <div
-                        className="player-dumbbell-dot"
+                        className="player-ahead-chart__dot"
                         style={{
                           left: `${row.a}%`,
                           background: colorA,
@@ -137,7 +137,7 @@ export default function PlayerCompareAheadChart({
                         }}
                       />
                       <div
-                        className="player-dumbbell-dot"
+                        className="player-ahead-chart__dot"
                         style={{
                           left: `${row.b}%`,
                           background: colorB,
@@ -148,7 +148,7 @@ export default function PlayerCompareAheadChart({
                   )}
                 </div>
                 {tipRow?.key === row.key ? (
-                  <div className="player-dumbbell-flyout-wrap">
+                  <div className="player-ahead-chart__flyout-wrap">
                     <DumbbellRowTip row={row} nameA={nameA} nameB={nameB} group={group} />
                   </div>
                 ) : null}
@@ -158,9 +158,9 @@ export default function PlayerCompareAheadChart({
         })}
       </div>
 
-      <div className="player-dumbbell-scale" aria-hidden>
-        <span className="player-dumbbell-scale-spacer" />
-        <div className="player-dumbbell-scale-ticks">
+      <div className="player-ahead-chart__scale" aria-hidden>
+        <span className="player-ahead-chart__scale-spacer" />
+        <div className="player-ahead-chart__scale-ticks">
           <span>0</span>
           <span>25</span>
           <span>50</span>
@@ -169,21 +169,21 @@ export default function PlayerCompareAheadChart({
         </div>
       </div>
 
-      <p className="muted small player-dumbbell-axis-label">
+      <p className="muted small player-ahead-chart__axis-label">
         Scale: pair-normalized strength (100 = better for this matchup).
       </p>
 
-      <div className="player-dumbbell-legend" aria-label="Series">
-        <span className="player-dumbbell-legend-item">
+      <div className="player-ahead-chart__legend" aria-label="Series">
+        <span className="player-ahead-chart__legend-item">
           <span
-            className="player-dumbbell-legend-dot"
+            className="player-ahead-chart__legend-dot"
             style={{ background: colorA }}
           />
           {nameA}
         </span>
-        <span className="player-dumbbell-legend-item">
+        <span className="player-ahead-chart__legend-item">
           <span
-            className="player-dumbbell-legend-dot"
+            className="player-ahead-chart__legend-dot"
             style={{ background: colorB }}
           />
           {nameB}
