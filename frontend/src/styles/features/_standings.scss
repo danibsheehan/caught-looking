@@ -1,0 +1,46 @@
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 0.5rem 0.45rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table th {
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.data-table tbody tr:hover {
+  background: var(--accent-bg);
+}
+
+.team-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.team-abbr {
+  font-weight: 600;
+  color: var(--text-h);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+
+.team-name {
+  font-size: 0.85rem;
+  color: var(--text);
+}

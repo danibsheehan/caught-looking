@@ -10,6 +10,7 @@ alwaysApply: false
 - **Routing**: `react-router-dom` — keep route-level views under `frontend/src/pages/`, reusable UI under `frontend/src/components/` (match existing folder layout).
 - **Data fetching**: do not call `fetch` directly in components for app API data. Import **`fetch…` helpers from `../api/client`** (or wrap them in **`hooks/`** with `useState` / `useEffect` and cancellation like existing hooks). Keeps loading/error handling consistent.
 - **Types**: response and query types live in **`frontend/src/types/api.d.ts`** — import from there or from `@/types/api` if aliased; don’t inline large response shapes in components.
-- **Styling**: follow patterns in `frontend/src/index.css` (variables, utilities). Prefer existing classes and layout patterns over one-off inline styles unless there’s a strong reason.
+- **Styling**: follow patterns in `frontend/src/index.scss` and `frontend/src/styles/` (variables, utilities). Prefer existing classes and layout patterns over one-off inline styles unless there’s a strong reason.
+- **New class names / new components**: use **BEM** as defined in **`.cursor/rules/frontend-bem.mdc`**. Leave legacy class strings unchanged unless the task is an explicit BEM migration.
 - **Errors**: surface failures to the user (message or empty state), not silent `console.log` only.
 - **Tests**: follow **`.cursor/skills/frontend-vitest-tests/SKILL.md`** for Vitest, Testing Library, and mocked `api/client` (see also **`frontend-testing`** rule for `*.test.ts(x)` files).
