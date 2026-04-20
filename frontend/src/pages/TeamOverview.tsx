@@ -84,7 +84,7 @@ export default function TeamOverview() {
 
   if (error) {
     return (
-      <section className="page">
+      <section className="page teams-page">
         <h1>Teams</h1>
         <p className="error" role="alert">
           {error.message}
@@ -94,8 +94,8 @@ export default function TeamOverview() {
   }
 
   return (
-    <section className="page">
-      <header className="page-head">
+    <section className="page teams-page">
+      <header className="teams-page__header">
         <div>
           <h1>Teams</h1>
           <p className="muted">
@@ -103,7 +103,7 @@ export default function TeamOverview() {
             hitting / pitching lines.
           </p>
         </div>
-        <div className="page-controls">
+        <div className="teams-page__controls">
           <TeamSelector
             id="team-overview-selector"
             label="Club"
@@ -112,10 +112,10 @@ export default function TeamOverview() {
             onChange={setTeamId}
             placeholder="Select a team"
           />
-          <label className="field">
-            <span className="field-label">Season</span>
+          <label className="teams-page__field">
+            <span className="teams-page__field-label">Season</span>
             <input
-              className="field-input"
+              className="teams-page__field-input"
               type="number"
               min={1900}
               max={2100}
@@ -144,9 +144,9 @@ export default function TeamOverview() {
             </dl>
           </PlayerCard>
 
-          <div className="panel team-snapshot">
-            <h2 className="team-snapshot-heading">Season snapshot</h2>
-            <p className="muted small team-snapshot-lead">
+          <div className="teams-page__panel">
+            <h2 className="teams-page__snapshot-heading">Season snapshot</h2>
+            <p className="muted small teams-page__snapshot-lead">
               Race and form from regular-season standings (same season as above).
             </p>
             {standingsLoading ? (
@@ -161,7 +161,7 @@ export default function TeamOverview() {
                   {snapshot.division.divisionName} · Division rank{' '}
                   {snapshot.team.divisionRank}
                 </p>
-                <div className="stat-cards stat-cards--wide">
+                <div className="teams-page__stat-cards teams-page__stat-cards--wide">
                   <StatCard
                     label="Record"
                     value={`${snapshot.team.wins}-${snapshot.team.losses}`}
@@ -220,8 +220,8 @@ export default function TeamOverview() {
             )}
           </div>
 
-          <div className="team-viz-grid">
-            <div className="panel chart-panel">
+          <div className="teams-page__viz-grid">
+            <div className="teams-page__panel teams-page__panel--chart">
               <h2>Runs scored vs. allowed</h2>
               <p className="muted small">
                 Season totals for every club in this division. The dashed line is
@@ -232,7 +232,7 @@ export default function TeamOverview() {
                 focusTeamId={selected.id}
               />
             </div>
-            <div className="panel chart-panel">
+            <div className="teams-page__panel teams-page__panel--chart">
               <h2>Game-by-game results</h2>
               <p className="muted small">
                 One tile per completed game in schedule order (scroll on long
@@ -242,12 +242,12 @@ export default function TeamOverview() {
             </div>
           </div>
 
-          <div className="panel segment-panel">
-            <div className="segment-tabs" role="tablist" aria-label="Team views">
+          <div className="teams-page__panel teams-page__panel--segment">
+            <div className="teams-page__tabs" role="tablist" aria-label="Team views">
               <button
                 type="button"
                 role="tab"
-                className="segment-tab"
+                className="teams-page__tab"
                 aria-selected={panelTab === 'trend'}
                 onClick={() => setPanelTab('trend')}
               >
@@ -256,7 +256,7 @@ export default function TeamOverview() {
               <button
                 type="button"
                 role="tab"
-                className="segment-tab"
+                className="teams-page__tab"
                 aria-selected={panelTab === 'deep'}
                 onClick={() => setPanelTab('deep')}
               >
@@ -265,7 +265,7 @@ export default function TeamOverview() {
             </div>
 
             {panelTab === 'trend' ? (
-              <div className="chart-panel">
+              <div className="teams-page__chart-area">
                 <h2>Division race — cumulative win %</h2>
                 <p className="muted small">
                   Every team in this division on the same pace axis (games
