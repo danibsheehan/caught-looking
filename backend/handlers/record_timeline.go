@@ -186,7 +186,7 @@ func (h *Handlers) RecordTimeline(w http.ResponseWriter, r *http.Request) {
 
 	body, err := h.getOrBuildRecordTimelineBytes(r.Context(), teamID, season)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		respondUpstreamError(w, r, err)
 		return
 	}
 

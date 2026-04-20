@@ -110,7 +110,7 @@ func (h *Handlers) Standings(w http.ResponseWriter, r *http.Request) {
 
 	raw, err := h.mlb.Get(r.Context(), path)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		respondUpstreamError(w, r, err)
 		return
 	}
 
@@ -122,7 +122,7 @@ func (h *Handlers) Standings(w http.ResponseWriter, r *http.Request) {
 
 	divNames, err := h.loadDivisionNames(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		respondUpstreamError(w, r, err)
 		return
 	}
 

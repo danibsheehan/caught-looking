@@ -80,7 +80,7 @@ func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
 		return err
 	})
 	if err := g.Wait(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		respondUpstreamError(w, r, err)
 		return
 	}
 

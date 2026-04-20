@@ -65,7 +65,7 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 
 	raw, err := h.mlb.Get(r.Context(), "/game/"+pkStr+"/boxscore")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		respondUpstreamError(w, r, err)
 		return
 	}
 

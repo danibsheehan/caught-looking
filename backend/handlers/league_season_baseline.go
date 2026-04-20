@@ -51,7 +51,7 @@ func (h *Handlers) LeagueSeasonBaseline(w http.ResponseWriter, r *http.Request) 
 
 	val, err := h.fetchLeagueBaseline(r.Context(), season, group)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		respondUpstreamError(w, r, err)
 		return
 	}
 

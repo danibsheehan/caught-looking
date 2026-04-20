@@ -47,7 +47,7 @@ func (h *Handlers) Teams(w http.ResponseWriter, r *http.Request) {
 	path := "/teams?sportId=" + sportID
 	raw, err := h.mlb.Get(r.Context(), path)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		respondUpstreamError(w, r, err)
 		return
 	}
 
