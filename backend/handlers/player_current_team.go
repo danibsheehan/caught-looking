@@ -39,7 +39,7 @@ func (h *Handlers) PlayerCurrentTeam(w http.ResponseWriter, r *http.Request) {
 	path := "/people/" + strconv.FormatInt(id, 10) + "?hydrate=currentTeam"
 	raw, err := h.mlb.Get(r.Context(), path)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		respondUpstreamError(w, r, err)
 		return
 	}
 

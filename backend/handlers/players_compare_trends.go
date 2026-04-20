@@ -94,7 +94,7 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 		return err
 	})
 	if err := g.Wait(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		respondUpstreamError(w, r, err)
 		return
 	}
 
@@ -110,7 +110,7 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 	for sy := range seasonSeen {
 		v, err := h.fetchLeagueBaseline(ctx, sy, group)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadGateway)
+			respondUpstreamError(w, r, err)
 			return
 		}
 		leagueBySeason[strconv.Itoa(sy)] = v
@@ -259,13 +259,13 @@ func (h *Handlers) PlayersCompareGameLog(w http.ResponseWriter, r *http.Request)
 		return err
 	})
 	if err := g.Wait(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		respondUpstreamError(w, r, err)
 		return
 	}
 
 	lb, err := h.fetchLeagueBaseline(ctx, season, group)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		respondUpstreamError(w, r, err)
 		return
 	}
 
