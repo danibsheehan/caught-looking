@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCORS_allowedOriginGET(t *testing.T) {
@@ -89,6 +90,52 @@ func TestLogger_logsMethodPathStatusAndDuration(t *testing.T) {
 	line := buf.String()
 	if !strings.Contains(line, "POST") || !strings.Contains(line, "/v1/standings") || !strings.Contains(line, "418") {
 		t.Fatalf("log line missing method, path, or status: %q", strings.TrimSpace(line))
+	}
+}
+
+func TestHTTPRateLimit_exceedsReturns429(t *testing.T) {
+	h := HTTPRateLimit(2, time.Minute)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	const addr = "192.0.2.1:1234"
+	for range 2 {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.RemoteAddr = addr
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rec.Code)
+		}
+	}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = addr
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "too many requests") {
+		t.Fatalf("body: %q", rec.Body.String())
+	}
+}
+
+func TestHTTPRateLimit_disabledNoops(t *testing.T) {
+	var n int
+	h := HTTPRateLimit(0, time.Minute)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n++
+		w.WriteHeader(http.StatusOK)
+	}))
+	for range 10 {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.RemoteAddr = "192.0.2.2:1"
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("got %d", rec.Code)
+		}
+	}
+	if n != 10 {
+		t.Fatalf("handler calls: got %d want 10", n)
 	}
 }
 

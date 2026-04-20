@@ -17,6 +17,9 @@ var loadEnvKeys = []string{
 	"CACHE_TTL_SCORES",
 	"MLB_SEASON",
 	"MLB_LEAGUE_IDS",
+	"RATE_LIMIT_REQUESTS",
+	"RATE_LIMIT_WINDOW",
+	"MLB_MAX_QPS",
 }
 
 func resetLoadEnv(t *testing.T) {
@@ -31,13 +34,16 @@ func TestLoad_defaults(t *testing.T) {
 
 	got := Load()
 	want := Config{
-		HTTPAddr:         ":8080",
-		MLBBaseURL:       "https://statsapi.mlb.com/api/v1",
-		AllowedOrigins:   []string{"http://localhost:5173", "http://127.0.0.1:5173"},
-		TTLStandings:     time.Hour,
-		TTLScores:        5 * time.Minute,
-		DefaultSeason:    2026,
-		DefaultLeagueIDs: "103,104",
+		HTTPAddr:          ":8080",
+		MLBBaseURL:        "https://statsapi.mlb.com/api/v1",
+		AllowedOrigins:    []string{"http://localhost:5173", "http://127.0.0.1:5173"},
+		TTLStandings:      time.Hour,
+		TTLScores:         5 * time.Minute,
+		DefaultSeason:     2026,
+		DefaultLeagueIDs:  "103,104",
+		RateLimitRequests: 120,
+		RateLimitWindow:   time.Minute,
+		MLBMaxQPS:         20,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Load() mismatch\n got: %+v\nwant: %+v", got, want)
@@ -147,5 +153,36 @@ func TestLoad_MLB_LEAGUE_IDS(t *testing.T) {
 	got := Load()
 	if got.DefaultLeagueIDs != "100,200" {
 		t.Fatalf("DefaultLeagueIDs: got %q", got.DefaultLeagueIDs)
+	}
+}
+
+func TestLoad_RATE_LIMIT(t *testing.T) {
+	resetLoadEnv(t)
+	t.Setenv("RATE_LIMIT_REQUESTS", "60")
+	t.Setenv("RATE_LIMIT_WINDOW", "2m")
+
+	got := Load()
+	if got.RateLimitRequests != 60 || got.RateLimitWindow != 2*time.Minute {
+		t.Fatalf("rate limit: got %d / %v", got.RateLimitRequests, got.RateLimitWindow)
+	}
+}
+
+func TestLoad_invalidRATE_LIMIT_WINDOWIgnored(t *testing.T) {
+	resetLoadEnv(t)
+	t.Setenv("RATE_LIMIT_WINDOW", "not-a-duration")
+
+	got := Load()
+	if got.RateLimitWindow != time.Minute {
+		t.Fatalf("RateLimitWindow: got %v want default 1m", got.RateLimitWindow)
+	}
+}
+
+func TestLoad_MLB_MAX_QPS(t *testing.T) {
+	resetLoadEnv(t)
+	t.Setenv("MLB_MAX_QPS", "35.5")
+
+	got := Load()
+	if got.MLBMaxQPS != 35.5 {
+		t.Fatalf("MLBMaxQPS: got %v", got.MLBMaxQPS)
 	}
 }

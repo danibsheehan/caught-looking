@@ -14,7 +14,7 @@ func TestNewMLBClient_trimsTrailingSlash(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewMLBClient(srv.URL + "/")
+	c := NewMLBClient(srv.URL+"/", 0)
 	body, err := c.Get(context.Background(), "/x")
 	if err != nil {
 		t.Fatal(err)
@@ -45,7 +45,7 @@ func TestMLBClient_Get_success(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewMLBClient(srv.URL)
+	c := NewMLBClient(srv.URL, 0)
 	got, err := c.Get(context.Background(), "/api/v1/teams")
 	if err != nil {
 		t.Fatal(err)
@@ -62,7 +62,7 @@ func TestMLBClient_Get_errorStatus(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewMLBClient(srv.URL)
+	c := NewMLBClient(srv.URL, 0)
 	_, err := c.Get(context.Background(), "/missing")
 	if err == nil {
 		t.Fatal("expected error for non-2xx")
@@ -83,7 +83,7 @@ func TestMLBClient_Get_errorBodyTruncated(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewMLBClient(srv.URL)
+	c := NewMLBClient(srv.URL, 0)
 	_, err := c.Get(context.Background(), "/err")
 	if err == nil {
 		t.Fatal("expected error")
@@ -98,7 +98,7 @@ func TestMLBClient_Get_errorBodyTruncated(t *testing.T) {
 }
 
 func TestMLBClient_Get_invalidPath(t *testing.T) {
-	c := NewMLBClient("http://127.0.0.1:9")
+	c := NewMLBClient("http://127.0.0.1:9", 0)
 
 	tests := []struct {
 		name string
@@ -129,7 +129,7 @@ func TestMLBClient_Get_contextCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := NewMLBClient(srv.URL)
+	c := NewMLBClient(srv.URL, 0)
 	_, err := c.Get(ctx, "/slow")
 	if err == nil {
 		t.Fatal("expected error from cancelled context")

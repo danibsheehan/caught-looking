@@ -16,7 +16,7 @@ Routes in the SPA: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk
 | Layer    | Technology |
 | -------- | ---------- |
 | Frontend | React 19, TypeScript, Vite, React Router, Recharts |
-| Backend  | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache for upstream responses |
+| Backend  | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, MLB upstream QPS cap |
 | Data     | MLB Stats API v1 (JSON over HTTPS) |
 
 Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — ESLint, TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests (same-repo workflows), **two** [**cobertura-action**](https://github.com/5monkeys/cobertura-action) comments (frontend and backend tables) are added or updated from the Cobertura reports (fork PRs may not receive them due to token limits; those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
@@ -85,6 +85,9 @@ Backend tests live as `*_test.go` next to packages under `backend/`. Frontend te
 | `MLB_LEAGUE_IDS` | Default league ids for standings (default `103,104`) |
 | `CACHE_TTL_STANDINGS` | Standings cache TTL (Go duration, e.g. `1h`) |
 | `CACHE_TTL_SCORES` | Scores-related cache TTL (e.g. `5m`) |
+| `RATE_LIMIT_REQUESTS` | Max requests per client IP per sliding window (default `120`; set `0` to disable) |
+| `RATE_LIMIT_WINDOW` | Sliding window for that limit (default `1m`) |
+| `MLB_MAX_QPS` | Max outbound GETs per second to the MLB API **per Cloud Run instance** (token bucket, default `20`; `0` = unlimited) |
 
 ### Frontend (Vite)
 
@@ -127,6 +130,8 @@ Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account id |
 
 After the first successful deploy, **`CORS_ALLOWED_ORIGINS`** must include the real **`*.pages.dev`** (or custom domain) origin. If you add or change origins, update the variable and push to **`main`** (or update the Cloud Run service env) so CORS matches the browser.
+
+**Cost / abuse (optional, no extra GCP products)** — The API defaults to per-IP HTTP rate limiting and an outbound MLB QPS cap (see env vars above). On Cloud Run you can also set **maximum instances** (and concurrency) on the service to cap worst-case spend; defaults are in Google Cloud Console or `gcloud run services update … --max-instances=…`.
 
 ## Repository layout
 

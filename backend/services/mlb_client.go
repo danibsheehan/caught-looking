@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 const mlbUserAgent = "caught-looking/0.1 (+https://github.com) statsapi client"
@@ -15,15 +18,23 @@ const mlbUserAgent = "caught-looking/0.1 (+https://github.com) statsapi client"
 type MLBClient struct {
 	baseURL    string
 	httpClient *http.Client
+	upstream   *rate.Limiter
 }
 
-func NewMLBClient(baseURL string) *MLBClient {
-	return &MLBClient{
+// NewMLBClient returns a client for the given base URL. maxQPS caps outbound GET rate per process
+// (token bucket); use 0 for no limit (e.g. tests).
+func NewMLBClient(baseURL string, maxQPS float64) *MLBClient {
+	c := &MLBClient{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		httpClient: &http.Client{
 			Timeout: 15 * time.Second,
 		},
 	}
+	if maxQPS > 0 {
+		burst := int(math.Ceil(math.Max(5, math.Min(maxQPS, 50))))
+		c.upstream = rate.NewLimiter(rate.Limit(maxQPS), burst)
+	}
+	return c
 }
 
 // Get issues GET baseURL+path (path must start with /) and returns the response body.
@@ -38,6 +49,12 @@ func (c *MLBClient) Get(ctx context.Context, path string) ([]byte, error) {
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", mlbUserAgent)
+
+	if c.upstream != nil {
+		if err := c.upstream.Wait(ctx); err != nil {
+			return nil, err
+		}
+	}
 
 	res, err := c.httpClient.Do(req)
 	if err != nil {
