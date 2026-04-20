@@ -34,7 +34,9 @@ html[data-theme='dark'] .error {
 }
 
 .chart-panel .chart-wrap,
-.standings-page__panel--chart .chart-wrap {
+.standings-page__panel--chart .chart-wrap,
+.teams-page__panel--chart .chart-wrap,
+.teams-page__chart-area .chart-wrap {
   width: 100%;
   margin-top: 0.5rem;
 }
@@ -74,27 +76,17 @@ html[data-theme='dark'] .error {
   background: var(--accent-bg);
 }
 
-.team-viz-grid {
-  display: grid;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-@media (min-width: 900px) {
-  .team-viz-grid {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
-}
-
 @media (max-width: 520px) {
   .chart-panel,
-  .standings-page__panel--chart {
+  .standings-page__panel--chart,
+  .teams-page__panel--chart {
     padding-inline: 0.65rem;
   }
 
   .chart-panel .chart-wrap,
-  .standings-page__panel--chart .chart-wrap {
+  .standings-page__panel--chart .chart-wrap,
+  .teams-page__panel--chart .chart-wrap,
+  .teams-page__chart-area .chart-wrap {
     margin-inline: -0.15rem;
   }
 }

@@ -64,19 +64,19 @@ export default function RecordTimelineStrip({
   }
 
   return (
-    <div className="record-timeline-strip-wrap">
-      <div className="record-timeline-strip" role="list" aria-label="Game results in order">
+    <div className="record-timeline">
+      <div className="record-timeline__strip" role="list" aria-label="Game results in order">
         {data.points.map((p) => (
           <StripCell key={`${p.gameIndex}-${p.officialDate}`} point={p} />
         ))}
       </div>
-      <p className="muted small record-timeline-strip-legend">
-        <span className="record-legend-w">W</span> win ·{' '}
-        <span className="record-legend-l">L</span> loss
+      <p className="muted small record-timeline__legend">
+        <span className="record-timeline__abbr record-timeline__abbr--win">W</span> win ·{' '}
+        <span className="record-timeline__abbr record-timeline__abbr--loss">L</span> loss
         {data.points.some((p) => p.result === 'T') ? (
           <>
             {' '}
-            · <span className="record-legend-t">T</span> tie
+            · <span className="record-timeline__abbr record-timeline__abbr--tie">T</span> tie
           </>
         ) : null}
         · hover for date
@@ -86,15 +86,15 @@ export default function RecordTimelineStrip({
 }
 
 function StripCell({ point }: { point: RecordPoint }) {
-  const cls =
+  const mod =
     point.result === 'W'
-      ? 'is-win'
+      ? 'record-timeline__cell--win'
       : point.result === 'L'
-        ? 'is-loss'
-        : 'is-tie'
+        ? 'record-timeline__cell--loss'
+        : 'record-timeline__cell--tie'
   const title = `Game ${point.gameIndex} · ${point.officialDate} · ${point.result} (${point.wins}-${point.losses})`
   return (
-    <span role="listitem" className={`record-timeline-cell ${cls}`} title={title}>
+    <span role="listitem" className={`record-timeline__cell ${mod}`} title={title}>
       {point.result}
     </span>
   )

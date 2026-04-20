@@ -144,7 +144,7 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
 
   return (
     <div
-      className="team-season-deep-dive"
+      className="teams-deep-dive"
       style={
         {
           '--team-chart-offense': offenseColor,
@@ -163,11 +163,11 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
 
       {hasHitting ? (
         <>
-          <h3 className="deep-dive-section-title">Offense</h3>
-          <p className="muted small team-deep-dive-hint">
+          <h3 className="teams-deep-dive__section-title">Offense</h3>
+          <p className="muted small teams-deep-dive__hint">
             Bar length vs rough full-season ceilings (not league rank).
           </p>
-          <div className="team-stat-bar-list" role="list">
+          <div className="teams-deep-dive__bar-list" role="list">
             {hitRows.map((row) => (
               <StatBarRow
                 key={row.key}
@@ -184,12 +184,12 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
 
       {hasPitching ? (
         <>
-          <h3 className="deep-dive-section-title">Pitching</h3>
-          <p className="muted small team-deep-dive-hint">
+          <h3 className="teams-deep-dive__section-title">Pitching</h3>
+          <p className="muted small teams-deep-dive__hint">
             For ERA / WHIP / BB/9 / RA/G, a longer bar means stronger run prevention on
             this scale.
           </p>
-          <div className="team-stat-bar-list" role="list">
+          <div className="teams-deep-dive__bar-list" role="list">
             {pitchRows.map((row) => (
               <StatBarRow
                 key={row.key}
@@ -204,12 +204,12 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
         </>
       ) : null}
 
-      <p className="muted small team-deep-dive-totals">
-        <span className="team-deep-dive-totals__item">
+      <p className="muted small teams-deep-dive__totals">
+        <span className="teams-deep-dive__total-item">
           Runs scored (season): <strong>{hitting.runs}</strong>
         </span>
         <span aria-hidden="true"> · </span>
-        <span className="team-deep-dive-totals__item">
+        <span className="teams-deep-dive__total-item">
           Runs allowed: <strong>{pitching.runsAllowed}</strong>
         </span>
       </p>
@@ -247,20 +247,20 @@ function RgDumbbell({
   const [d0, d1] = RG_DOMAIN
 
   return (
-    <div className="team-rg-dumbbell">
-      <p className="muted small team-rg-dumbbell-lead">
+    <div className="teams-deep-dive__rg">
+      <p className="muted small teams-deep-dive__rg-lead">
         Runs per game: offense (R/G) vs runs allowed per game (RA/G) on one scale (
         {d0.toFixed(2)}–{d1.toFixed(2)} R/9).
       </p>
-      <div className="team-rg-dumbbell-inner">
-        <div className="team-rg-dumbbell-track" aria-hidden>
-          <div className="team-rg-dumbbell-guides">
+      <div className="teams-deep-dive__rg-inner">
+        <div className="teams-deep-dive__rg-track" aria-hidden>
+          <div className="teams-deep-dive__rg-guides">
             {ticks.map((t) => {
               const left = rgPosition(t)
               return (
                 <span
                   key={t}
-                  className="team-rg-dumbbell-guide"
+                  className="teams-deep-dive__rg-guide"
                   style={{ left: `${left}%` }}
                 />
               )
@@ -268,13 +268,13 @@ function RgDumbbell({
           </div>
           {!tied ? (
             <div
-              className="team-rg-dumbbell-connector"
+              className="teams-deep-dive__rg-connector"
               style={{ left: `${lo}%`, width: `${span}%` }}
             />
           ) : null}
           {tied ? (
             <div
-              className="team-rg-dumbbell-dot team-rg-dumbbell-dot--tie"
+              className="teams-deep-dive__rg-dot teams-deep-dive__rg-dot--tie"
               style={{
                 left: `${pRg}%`,
                 background: `linear-gradient(90deg, ${offenseColor} 50%, ${defenseColor} 50%)`,
@@ -283,19 +283,19 @@ function RgDumbbell({
           ) : (
             <>
               <div
-                className="team-rg-dumbbell-dot"
+                className="teams-deep-dive__rg-dot"
                 style={{ left: `${pRg}%`, background: offenseColor }}
                 title={`R/G ${formatTwo(runsPerGame)}`}
               />
               <div
-                className="team-rg-dumbbell-dot"
+                className="teams-deep-dive__rg-dot"
                 style={{ left: `${pRa}%`, background: defenseColor }}
                 title={`RA/G ${formatTwo(runsAllowedPerGame)}`}
               />
             </>
           )}
         </div>
-        <div className="team-rg-dumbbell-scale" aria-hidden>
+        <div className="teams-deep-dive__rg-scale" aria-hidden>
           {ticks.map((t) => (
             <span key={t} style={{ left: `${rgPosition(t)}%` }}>
               {t}
@@ -303,13 +303,13 @@ function RgDumbbell({
           ))}
         </div>
       </div>
-      <div className="team-rg-dumbbell-legend">
-        <span className="team-rg-dumbbell-legend-item">
-          <span className="team-rg-dumbbell-legend-swatch" style={{ background: offenseColor }} />
+      <div className="teams-deep-dive__rg-legend">
+        <span className="teams-deep-dive__rg-legend-item">
+          <span className="teams-deep-dive__rg-legend-swatch" style={{ background: offenseColor }} />
           R/G <strong>{formatTwo(runsPerGame)}</strong>
         </span>
-        <span className="team-rg-dumbbell-legend-item">
-          <span className="team-rg-dumbbell-legend-swatch" style={{ background: defenseColor }} />
+        <span className="teams-deep-dive__rg-legend-item">
+          <span className="teams-deep-dive__rg-legend-swatch" style={{ background: defenseColor }} />
           RA/G <strong>{formatTwo(runsAllowedPerGame)}</strong>
         </span>
       </div>
@@ -330,14 +330,16 @@ function StatBarRow({
   variant: 'hit' | 'pitch'
   empty: boolean
 }) {
-  const fillClass =
-    variant === 'hit' ? 'team-stat-bar-fill--hit' : 'team-stat-bar-fill--pitch'
+  const fillMod =
+    variant === 'hit'
+      ? 'teams-deep-dive__bar-fill--hit'
+      : 'teams-deep-dive__bar-fill--pitch'
   return (
-    <div className="team-stat-bar-row" role="listitem">
-      <span className="team-stat-bar-label">{label}</span>
-      <span className="team-stat-bar-value">{display}</span>
+    <div className="teams-deep-dive__bar-row" role="listitem">
+      <span className="teams-deep-dive__bar-label">{label}</span>
+      <span className="teams-deep-dive__bar-value">{display}</span>
       <div
-        className="team-stat-bar-track"
+        className="teams-deep-dive__bar-track"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}
@@ -346,7 +348,7 @@ function StatBarRow({
       >
         {!empty ? (
           <div
-            className={`team-stat-bar-fill ${fillClass}`}
+            className={`teams-deep-dive__bar-fill ${fillMod}`}
             style={{ width: `${fill}%` }}
           />
         ) : null}
