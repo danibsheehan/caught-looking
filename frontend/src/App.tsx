@@ -28,16 +28,16 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden="true" />
+      <header className="app-shell__header">
+        <div className="app-shell__brand">
+          <span className="app-shell__brand-mark" aria-hidden="true" />
           <div>
-            <span className="brand-title">Caught looking</span>
-            <span className="brand-sub">MLB stats & charts</span>
+            <span className="app-shell__brand-title">Caught looking</span>
+            <span className="app-shell__brand-sub">MLB stats & charts</span>
           </div>
         </div>
-        <div className="app-header-tools">
-          <nav className="app-nav" aria-label="Primary">
+        <div className="app-shell__header-tools">
+          <nav className="app-shell__nav" aria-label="Primary">
             {nav.map(({ to, label }) => (
               <NavLink
                 key={to}
@@ -47,7 +47,9 @@ export default function App() {
                     to === '/games'
                       ? isActive || location.pathname.startsWith('/games/')
                       : isActive
-                  return active ? 'nav-link is-active' : 'nav-link'
+                  return active
+                    ? 'app-shell__nav-link app-shell__nav-link--active'
+                    : 'app-shell__nav-link'
                 }}
               >
                 {label}
@@ -57,7 +59,7 @@ export default function App() {
           <ThemeToggle />
         </div>
       </header>
-      <main className="app-main">
+      <main className="app-shell__main">
         <RouteErrorBoundary key={location.pathname}>
           <Suspense fallback={<PageRouteSkeleton />}>
             <Routes>
