@@ -76,7 +76,7 @@ export default function PlayerComparison() {
 
   return (
     <section className="page players-compare">
-      <header className="page-head">
+      <header className="players-compare__head">
         <div>
           <h1>Player comparison</h1>
           <p className="muted">
@@ -86,7 +86,7 @@ export default function PlayerComparison() {
         </div>
       </header>
 
-      <div className="panel">
+      <div className="players-compare__panel">
         <div className="players-compare__pick-grid">
           <PlayerPicker label="Player 1" selected={pick1} onChange={setPick1} />
           <PlayerPicker label="Player 2" selected={pick2} onChange={setPick2} />
@@ -146,7 +146,7 @@ export default function PlayerComparison() {
       </div>
 
       {valid ? (
-        <div className="panel chart-panel">
+        <div className="players-compare__panel players-compare__panel--chart">
           <h2>Career arc</h2>
           <p className="muted small">
             Year-by-year {rateLabel} (regular season). Dashed line is league context:
@@ -172,7 +172,7 @@ export default function PlayerComparison() {
       ) : null}
 
       {valid ? (
-        <div className="panel chart-panel">
+        <div className="players-compare__panel players-compare__panel--chart">
           <h2>Recent games ({season})</h2>
           <p className="muted small">
             Per-game {rateLabel} for the last games logged in that season (up to 28).
@@ -197,7 +197,7 @@ export default function PlayerComparison() {
         </div>
       ) : null}
 
-      <div className="panel chart-panel">
+      <div className="players-compare__panel players-compare__panel--chart">
         <h2>Radar</h2>
         <p className="muted small">
           {compareScope === 'career'
@@ -219,7 +219,7 @@ export default function PlayerComparison() {
 
       {valid && compareData ? (
         <>
-          <div className="panel chart-panel">
+          <div className="players-compare__panel players-compare__panel--chart">
             <h2>Who&apos;s ahead</h2>
             <p className="muted small">
               Same metrics as the radar: each dumbbell shows pair-normalized strength
@@ -233,7 +233,7 @@ export default function PlayerComparison() {
               teamId2={radarTeam2}
             />
           </div>
-          <div className="panel chart-panel">
+          <div className="players-compare__panel players-compare__panel--chart">
             <h2>{compareData.scope === 'career' ? 'Career totals' : 'Season totals'}</h2>
             <p className="muted small">
               Raw values from the same split as the radar. wOBA and FIP appear when

@@ -95,6 +95,21 @@
     margin-bottom: 0.5rem;
   }
 
+  &__panel {
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem 1.1rem;
+    margin-bottom: 1.25rem;
+    background: color-mix(in srgb, var(--bg) 96%, var(--code-bg) 4%);
+    box-shadow: var(--shadow);
+  }
+
+  &__totals-grid &__panel,
+  &__pitch-grid &__panel,
+  &__bat-grid &__panel {
+    margin-bottom: 0;
+  }
+
   &__totals-card &__team-name,
   &__pitch-grid &__team-name,
   &__bat-grid &__team-name {

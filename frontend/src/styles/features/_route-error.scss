@@ -6,33 +6,33 @@
   border-radius: 0.5rem;
   background: color-mix(in srgb, var(--bg) 94%, var(--code-bg) 6%);
   text-align: center;
-}
 
-.route-error-title {
-  margin: 0 0 0.5rem;
-  font-size: 1.2rem;
-  color: var(--text-h);
-}
+  &__title {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem;
+    color: var(--text-h);
+  }
 
-.route-error-msg {
-  margin: 0 0 1rem;
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  color: var(--text);
-  word-break: break-word;
-}
+  &__msg {
+    margin: 0 0 1rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text);
+    word-break: break-word;
+  }
 
-.route-error-retry {
-  font: inherit;
-  padding: 0.55rem 1.1rem;
-  min-height: 44px;
-  border-radius: 0.35rem;
-  border: 1px solid var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--text-h);
-  cursor: pointer;
-}
+  &__retry {
+    font: inherit;
+    padding: 0.55rem 1.1rem;
+    min-height: 44px;
+    border-radius: 0.35rem;
+    border: 1px solid var(--accent-border);
+    background: var(--accent-bg);
+    color: var(--text-h);
+    cursor: pointer;
 
-.route-error-retry:hover {
-  border-color: var(--accent);
+    &:hover {
+      border-color: var(--accent);
+    }
+  }
 }

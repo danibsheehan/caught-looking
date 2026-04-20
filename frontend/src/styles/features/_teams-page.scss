@@ -15,28 +15,6 @@
     gap: 1rem 1.25rem;
   }
 
-  &__field {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-  }
-
-  &__field-label {
-    font-size: 0.8rem;
-    color: var(--text);
-  }
-
-  &__field-input {
-    font: inherit;
-    color: var(--text-h);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 0.35rem;
-    padding: 0.4rem 0.5rem;
-    width: 6.5rem;
-  }
-
   &__panel {
     border: 1px solid var(--border);
     border-radius: 0.5rem;

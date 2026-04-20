@@ -25,6 +25,6 @@ describe('StatCard', () => {
   it('omits hint when not provided', () => {
     const { container } = render(<StatCard label="X" value={1} />)
 
-    expect(container.querySelector('.stat-card-hint')).not.toBeInTheDocument()
+    expect(container.querySelector('.stat-card__hint')).not.toBeInTheDocument()
   })
 })

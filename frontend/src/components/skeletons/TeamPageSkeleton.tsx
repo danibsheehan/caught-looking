@@ -9,7 +9,7 @@ export default function TeamPageSkeleton() {
           <SkeletonLine style={{ width: '6rem', height: '1.75rem', marginBottom: '0.4rem' }} />
           <SkeletonLine style={{ width: 'min(100%, 22rem)', height: '0.9rem' }} />
         </div>
-        <SkeletonBox className="skeleton-field" />
+        <SkeletonBox className="skeleton__box--field" />
       </header>
       <div className="teams-page__panel">
         <SkeletonLine style={{ width: '40%', height: '1.05rem', marginBottom: '0.65rem' }} />

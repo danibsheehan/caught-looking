@@ -33,28 +33,29 @@ html[data-theme='dark'] .error {
   font-size: 1.1rem;
 }
 
-.chart-panel .chart-wrap,
-.standings-page__panel--chart .chart-wrap,
-.teams-page__panel--chart .chart-wrap,
-.teams-page__chart-area .chart-wrap {
+.chart-panel .chart-frame,
+.players-compare__panel--chart .chart-frame,
+.standings-page__panel--chart .chart-frame,
+.teams-page__panel--chart .chart-frame,
+.teams-page__chart-area .chart-frame {
   width: 100%;
   margin-top: 0.5rem;
 }
 
-.table-scroll,
+.player-compare-stats__scroll,
 .standings-page__table-scroll {
   overflow-x: auto;
 }
 
-.data-table,
+.player-compare-stats__table,
 .standings-page__table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
 }
 
-.data-table th,
-.data-table td,
+.player-compare-stats__table th,
+.player-compare-stats__table td,
 .standings-page__table th,
 .standings-page__table td {
   text-align: left;
@@ -62,7 +63,7 @@ html[data-theme='dark'] .error {
   border-bottom: 1px solid var(--border);
 }
 
-.data-table th,
+.player-compare-stats__table th,
 .standings-page__table th {
   font-weight: 600;
   color: var(--text-h);
@@ -71,22 +72,24 @@ html[data-theme='dark'] .error {
   letter-spacing: 0.04em;
 }
 
-.data-table tbody tr:hover,
+.player-compare-stats__table tbody tr:hover,
 .standings-page__table tbody tr:hover {
   background: var(--accent-bg);
 }
 
 @media (max-width: 520px) {
   .chart-panel,
+  .players-compare__panel--chart,
   .standings-page__panel--chart,
   .teams-page__panel--chart {
     padding-inline: 0.65rem;
   }
 
-  .chart-panel .chart-wrap,
-  .standings-page__panel--chart .chart-wrap,
-  .teams-page__panel--chart .chart-wrap,
-  .teams-page__chart-area .chart-wrap {
+  .chart-panel .chart-frame,
+  .players-compare__panel--chart .chart-frame,
+  .standings-page__panel--chart .chart-frame,
+  .teams-page__panel--chart .chart-frame,
+  .teams-page__chart-area .chart-frame {
     margin-inline: -0.15rem;
   }
 }

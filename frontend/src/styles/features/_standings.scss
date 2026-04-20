@@ -36,27 +36,6 @@
     }
   }
 
-  &__field {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-  }
-
-  &__field-label {
-    font-size: 0.8rem;
-    color: var(--text);
-  }
-
-  &__field select {
-    font: inherit;
-    color: var(--text-h);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 0.35rem;
-    padding: 0.4rem 0.5rem;
-  }
-
   &__team-cell {
     display: flex;
     flex-direction: column;

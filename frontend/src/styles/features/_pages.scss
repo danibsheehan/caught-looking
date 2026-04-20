@@ -19,13 +19,6 @@
   gap: 1rem 1.25rem;
 }
 
-.stat-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  margin-top: 0.85rem;
-}
-
 .stat-card {
   display: flex;
   flex-direction: column;
@@ -36,27 +29,23 @@
   border: 1px solid var(--border);
   border-radius: 0.4rem;
   background: var(--code-bg);
-}
 
-.stat-card-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text);
-}
+  &__label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text);
+  }
 
-.stat-card-value {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-h);
-  font-variant-numeric: tabular-nums;
-}
+  &__value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-h);
+    font-variant-numeric: tabular-nums;
+  }
 
-.stat-card-hint {
-  font-size: 0.75rem;
-  color: var(--text);
-}
-
-.stat-cards--wide .stat-card {
-  min-width: 7.25rem;
+  &__hint {
+    font-size: 0.75rem;
+    color: var(--text);
+  }
 }

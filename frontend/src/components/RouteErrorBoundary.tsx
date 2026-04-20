@@ -22,11 +22,11 @@ export default class RouteErrorBoundary extends Component<Props, State> {
     if (this.state.hasError && this.state.error) {
       return (
         <div className="route-error" role="alert">
-          <h2 className="route-error-title">Something went wrong</h2>
-          <p className="route-error-msg">{this.state.error.message}</p>
+          <h2 className="route-error__title">Something went wrong</h2>
+          <p className="route-error__msg">{this.state.error.message}</p>
           <button
             type="button"
-            className="route-error-retry"
+            className="route-error__retry"
             onClick={() => this.setState({ hasError: false, error: null })}
           >
             Try again

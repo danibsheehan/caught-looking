@@ -88,11 +88,10 @@ export default function GamesSlate() {
           </p>
         </div>
         <div className="page-controls">
-          <label className="field">
-            <span className="field-label">Date</span>
+          <label className="form-field">
+            <span className="form-field__label">Date</span>
             <input
-              className="field-input"
-              style={{ width: '11rem' }}
+              className="form-field__input form-field__input--date"
               type="date"
               value={date}
               onChange={(e) => onDateChange(e.target.value)}
