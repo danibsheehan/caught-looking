@@ -19,13 +19,6 @@
   gap: 1rem 1.25rem;
 }
 
-.stat-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  margin-top: 0.85rem;
-}
-
 .stat-card {
   display: flex;
   flex-direction: column;
@@ -55,8 +48,4 @@
     font-size: 0.75rem;
     color: var(--text);
   }
-}
-
-.stat-cards--wide .stat-card {
-  min-width: 7.25rem;
 }
