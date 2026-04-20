@@ -1,0 +1,110 @@
+.page h1 {
+  font-size: 1.75rem;
+  margin: 0 0 0.35rem;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.page-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 1.25rem;
+}
+
+.stat-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-width: 6.5rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--code-bg);
+}
+
+.stat-card-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.stat-card-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card-hint {
+  font-size: 0.75rem;
+  color: var(--text);
+}
+
+.stat-cards--wide .stat-card {
+  min-width: 7.25rem;
+}
+
+.team-snapshot-heading {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.team-snapshot-lead {
+  margin: 0 0 0.65rem;
+}
+
+.segment-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.segment-tab {
+  font: inherit;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.segment-tab[aria-selected='true'] {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.segment-panel h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.deep-dive-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0.85rem 0 0.35rem;
+  color: var(--text-h);
+}
+
+.deep-dive-section-title:first-of-type {
+  margin-top: 0.25rem;
+}

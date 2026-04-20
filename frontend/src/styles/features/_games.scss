@@ -1,0 +1,190 @@
+.game-day-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.game-day-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--bg);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+a.game-day-row {
+  text-decoration: none;
+}
+
+.game-day-row:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.game-day-row.is-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.game-day-matchup {
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.game-day-meta {
+  font-variant-numeric: tabular-nums;
+}
+
+.game-detail-back {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.game-detail-back:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.game-list-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.game-list-skeleton-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+}
+
+.game-boxscore-panel {
+  margin-bottom: 1.25rem;
+}
+
+.game-boxscore-heading {
+  font-size: 1.15rem;
+  margin: 1rem 0 0.65rem;
+  color: var(--text-h);
+}
+
+.game-boxscore-heading:first-child {
+  margin-top: 0;
+}
+
+.game-totals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.game-totals-card .game-team-name {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.game-totals-dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+  gap: 0.5rem 0.75rem;
+}
+
+.game-totals-dl dt {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.game-totals-dl dd {
+  margin: 0.1rem 0 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.game-pitch-grid,
+.game-bat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.game-pitch-grid .game-team-name,
+.game-bat-grid .game-team-name {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.box-table-wrap {
+  overflow-x: auto;
+  margin: 0 -0.15rem;
+  padding: 0 0.15rem;
+}
+
+.game-data-table {
+  width: 100%;
+  min-width: 28rem;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.game-data-table th,
+.game-data-table td {
+  text-align: right;
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+
+.game-data-table th:first-child,
+.game-data-table td:first-child {
+  text-align: left;
+}
+
+.game-data-table thead th {
+  font-weight: 600;
+  color: var(--text-h);
+  vertical-align: bottom;
+}
+
+.box-sort-btn {
+  font: inherit;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: none;
+  background: none;
+  color: var(--text-h);
+  cursor: pointer;
+  padding: 0;
+  text-align: inherit;
+}
+
+.box-sort-btn:hover {
+  color: var(--accent);
+}
+
+.game-data-table tbody tr:hover {
+  background: var(--accent-bg);
+}

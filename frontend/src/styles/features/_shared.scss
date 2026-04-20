@@ -1,0 +1,62 @@
+.muted {
+  color: var(--text);
+}
+
+.muted.small {
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.error {
+  color: #b91c1c;
+}
+
+html[data-theme='dark'] .error {
+  color: #fca5a5;
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.25rem;
+  background: color-mix(in srgb, var(--bg) 96%, var(--code-bg) 4%);
+  box-shadow: var(--shadow);
+}
+
+.panel h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.chart-panel .chart-wrap {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.team-viz-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .team-viz-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+@media (max-width: 520px) {
+  .chart-panel {
+    padding-inline: 0.65rem;
+  }
+
+  .chart-panel .chart-wrap {
+    margin-inline: -0.15rem;
+  }
+}

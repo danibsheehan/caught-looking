@@ -1,0 +1,81 @@
+.chart-skeleton {
+  border-radius: 0.35rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 88%, var(--code-bg) 12%);
+  background-image: linear-gradient(
+    110deg,
+    transparent 40%,
+    color-mix(in srgb, var(--accent) 12%, transparent) 50%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+.chart-skeleton--inline,
+.chart-skeleton--route {
+  width: 100%;
+  min-height: 320px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.skeleton-block {
+  display: inline-block;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--code-bg) 85%, var(--border) 15%);
+  background-image: linear-gradient(
+    110deg,
+    transparent 35%,
+    color-mix(in srgb, var(--accent) 10%, transparent) 50%,
+    transparent 65%
+  );
+  background-size: 220% 100%;
+  animation: skeleton-shimmer 1.25s ease-in-out infinite;
+}
+
+.skeleton-line {
+  display: block;
+  max-width: 100%;
+}
+
+.skeleton-box.skeleton-field {
+  width: 11rem;
+  height: 2.5rem;
+  border-radius: 0.35rem;
+}
+
+.skeleton-stat {
+  width: 6.5rem;
+  height: 3.25rem;
+  border-radius: 0.4rem;
+}
+
+.page-skeleton .skeleton-field {
+  width: min(100%, 12rem);
+}
+
+.table-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.table-skeleton-head,
+.table-skeleton-row {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.table-skeleton-head {
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}

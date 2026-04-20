@@ -1,0 +1,340 @@
+.player-card {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: color-mix(in srgb, var(--bg) 94%, var(--code-bg) 6%);
+}
+
+.player-card-head {
+  margin-bottom: 0.5rem;
+}
+
+.player-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text-h);
+}
+
+.player-card-sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.player-card-body {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.meta-dl {
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.meta-dl dt {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.meta-dl dd {
+  margin: 0.15rem 0 0;
+  color: var(--text-h);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.field-label {
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.field select {
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.field-input {
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  padding: 0.4rem 0.5rem;
+  width: 6.5rem;
+}
+
+.field-input-wide {
+  width: min(100%, 11rem);
+}
+
+.form-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.25rem;
+  align-items: flex-end;
+}
+
+.player-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.player-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.player-picker-selected {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--code-bg);
+}
+
+.player-picker-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.player-picker-id {
+  font-family: var(--mono);
+}
+
+.player-picker-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 14rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--bg);
+}
+
+.player-picker-hit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.45rem 0.55rem;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.player-picker-hit:last-child {
+  border-bottom: none;
+}
+
+.player-picker-hit:hover {
+  background: var(--accent-bg);
+}
+
+.player-picker-hit-name {
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.btn-text {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.btn-text:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Player comparison — dumbbell (gap) chart */
+.player-dumbbell-chart {
+  margin-top: 0.35rem;
+  overflow: visible;
+}
+
+.player-dumbbell-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.player-dumbbell-row {
+  display: grid;
+  grid-template-columns: 3.25rem 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  border-radius: 0.35rem;
+  padding: 0.2rem 0.15rem;
+}
+
+.player-dumbbell-row:hover {
+  background: var(--accent-bg);
+}
+
+.player-dumbbell-metric {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-h);
+  text-align: right;
+  line-height: 1.2;
+}
+
+.player-dumbbell-track {
+  position: relative;
+  min-width: 0;
+}
+
+.player-dumbbell-track-inner {
+  position: relative;
+  height: 26px;
+  width: 100%;
+  margin-top: 1px;
+}
+
+.player-dumbbell-guides {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.player-dumbbell-guide {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: 0;
+  width: 0;
+  border-left: 1px dashed color-mix(in srgb, var(--border) 85%, transparent);
+  transform: translateX(-50%);
+}
+
+.player-dumbbell-connector {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text) 22%, transparent);
+  z-index: 0;
+}
+
+.player-dumbbell-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--border) 55%, transparent);
+  z-index: 1;
+}
+
+.player-dumbbell-dot--tie {
+  z-index: 2;
+}
+
+.player-dumbbell-flyout-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -6px);
+  z-index: 4;
+  pointer-events: none;
+  min-width: 12rem;
+}
+
+.player-dumbbell-scale {
+  display: grid;
+  grid-template-columns: 3.25rem 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.35rem;
+}
+
+.player-dumbbell-scale-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.player-dumbbell-axis-label {
+  margin: 0.35rem 0 0;
+}
+
+.player-dumbbell-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.65rem;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.player-dumbbell-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.player-dumbbell-legend-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.player-spark-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 0.35rem;
+}
+
+.player-spark-block-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.35rem;
+}
+
+.player-spark-block-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-h);
+}
