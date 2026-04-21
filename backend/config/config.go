@@ -19,6 +19,7 @@ type Config struct {
 	RateLimitRequests   int           // per client IP per window; 0 disables HTTP rate limiting
 	RateLimitWindow     time.Duration // sliding window for RateLimitRequests
 	MLBMaxQPS           float64       // token-bucket limit for outbound MLB GETs per process; 0 = unlimited
+	MLBHTTPTimeout      time.Duration // per-attempt timeout for outbound MLB GETs; 0 = default (15s)
 }
 
 // Load reads configuration from environment variables with sensible defaults.
@@ -33,7 +34,8 @@ func Load() Config {
 		DefaultLeagueIDs:  "103,104",
 		RateLimitRequests: 120,
 		RateLimitWindow:   time.Minute,
-		MLBMaxQPS:         20,
+		MLBMaxQPS:        20,
+		MLBHTTPTimeout:   15 * time.Second,
 	}
 
 	if v := strings.TrimSpace(os.Getenv("PORT")); v != "" {
@@ -96,6 +98,12 @@ func Load() Config {
 	if v := strings.TrimSpace(os.Getenv("MLB_MAX_QPS")); v != "" {
 		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			cfg.MLBMaxQPS = f
+		}
+	}
+
+	if v := strings.TrimSpace(os.Getenv("MLB_HTTP_TIMEOUT")); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.MLBHTTPTimeout = d
 		}
 	}
 

@@ -17,7 +17,7 @@ import (
 func main() {
 	cfg := config.Load()
 	cache := services.NewTTLCache()
-	mlb := services.NewMLBClient(cfg.MLBBaseURL, cfg.MLBMaxQPS)
+	mlb := services.NewMLBClient(cfg.MLBBaseURL, cfg.MLBMaxQPS, cfg.MLBHTTPTimeout)
 	h := handlers.New(cfg, cache, mlb)
 
 	srv := &http.Server{

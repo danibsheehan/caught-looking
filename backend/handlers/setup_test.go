@@ -24,5 +24,5 @@ func newTestHandlers(t *testing.T, mlb http.Handler) *Handlers {
 	t.Helper()
 	srv := httptest.NewServer(mlb)
 	t.Cleanup(srv.Close)
-	return New(testConfig(), services.NewTTLCache(), services.NewMLBClient(srv.URL, 0))
+	return New(testConfig(), services.NewTTLCache(), services.NewMLBClient(srv.URL, 0, 0))
 }
