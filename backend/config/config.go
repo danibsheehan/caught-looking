@@ -11,14 +11,17 @@ import (
 type Config struct {
 	HTTPAddr            string
 	MLBBaseURL          string
+	SavantBaseURL       string
 	AllowedOrigins      []string
 	TTLStandings        time.Duration
 	TTLScores           time.Duration
+	TTLStatcast         time.Duration // Statcast CSV per game (Savant)
 	DefaultSeason       int
 	DefaultLeagueIDs    string
 	RateLimitRequests   int           // per client IP per window; 0 disables HTTP rate limiting
 	RateLimitWindow     time.Duration // sliding window for RateLimitRequests
 	MLBMaxQPS           float64       // token-bucket limit for outbound MLB GETs per process; 0 = unlimited
+	SavantMaxQPS        float64       // token-bucket limit for outbound Savant GETs per process; 0 = unlimited
 }
 
 // Load reads configuration from environment variables with sensible defaults.
@@ -26,14 +29,17 @@ func Load() Config {
 	cfg := Config{
 		HTTPAddr:          ":8080",
 		MLBBaseURL:        "https://statsapi.mlb.com/api/v1",
+		SavantBaseURL:     "https://baseballsavant.mlb.com",
 		AllowedOrigins:    []string{"http://localhost:5173", "http://127.0.0.1:5173"},
 		TTLStandings:      time.Hour,
 		TTLScores:         5 * time.Minute,
+		TTLStatcast:       6 * time.Hour,
 		DefaultSeason:     2026,
 		DefaultLeagueIDs:  "103,104",
 		RateLimitRequests: 120,
 		RateLimitWindow:   time.Minute,
 		MLBMaxQPS:         20,
+		SavantMaxQPS:      5,
 	}
 
 	if v := strings.TrimSpace(os.Getenv("PORT")); v != "" {
@@ -44,6 +50,10 @@ func Load() Config {
 
 	if v := strings.TrimSpace(os.Getenv("MLB_BASE_URL")); v != "" {
 		cfg.MLBBaseURL = strings.TrimRight(v, "/")
+	}
+
+	if v := strings.TrimSpace(os.Getenv("SAVANT_BASE_URL")); v != "" {
+		cfg.SavantBaseURL = strings.TrimRight(v, "/")
 	}
 
 	if v := strings.TrimSpace(os.Getenv("ALLOWED_ORIGINS")); v != "" {
@@ -68,6 +78,12 @@ func Load() Config {
 	if v := strings.TrimSpace(os.Getenv("CACHE_TTL_SCORES")); v != "" {
 		if d, err := time.ParseDuration(v); err == nil {
 			cfg.TTLScores = d
+		}
+	}
+
+	if v := strings.TrimSpace(os.Getenv("CACHE_TTL_STATCAST")); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.TTLStatcast = d
 		}
 	}
 
@@ -96,6 +112,12 @@ func Load() Config {
 	if v := strings.TrimSpace(os.Getenv("MLB_MAX_QPS")); v != "" {
 		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			cfg.MLBMaxQPS = f
+		}
+	}
+
+	if v := strings.TrimSpace(os.Getenv("SAVANT_MAX_QPS")); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			cfg.SavantMaxQPS = f
 		}
 	}
 

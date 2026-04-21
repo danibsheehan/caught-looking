@@ -17,6 +17,7 @@ func testConfig() config.Config {
 		DefaultLeagueIDs: "103,104",
 		TTLScores:        time.Hour,
 		TTLStandings:     time.Hour,
+		TTLStatcast:      time.Hour,
 	}
 }
 
@@ -24,5 +25,10 @@ func newTestHandlers(t *testing.T, mlb http.Handler) *Handlers {
 	t.Helper()
 	srv := httptest.NewServer(mlb)
 	t.Cleanup(srv.Close)
-	return New(testConfig(), services.NewTTLCache(), services.NewMLBClient(srv.URL, 0))
+	return New(
+		testConfig(),
+		services.NewTTLCache(),
+		services.NewMLBClient(srv.URL, 0),
+		services.NewSavantClient(srv.URL, 0),
+	)
 }

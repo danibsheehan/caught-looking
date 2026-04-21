@@ -107,7 +107,7 @@ func TestLoadDivisionNames_emptyDivisions(t *testing.T) {
 		t.Fatalf("expected empty map, got %#v", m)
 	}
 	// Cached empty slice still satisfies later reads without MLB.
-	h2 := New(testConfig(), h.cache, h.mlb)
+	h2 := New(testConfig(), h.cache, h.mlb, h.savant)
 	m2, err := h2.loadDivisionNames(context.Background())
 	if err != nil {
 		t.Fatal(err)

@@ -34,11 +34,11 @@ describe('usePlayerCompareYearByYear', () => {
   })
 
   it('does not fetch when disabled or ids empty', () => {
-    renderHook(() => usePlayerCompareYearByYear('1,2', 'hitting', false))
+    renderHook(() => usePlayerCompareYearByYear('1,2', 'hitting', false, 'ops'))
     expect(fetchPlayersCompareYearByYear).not.toHaveBeenCalled()
 
     const { result: empty } = renderHook(() =>
-      usePlayerCompareYearByYear('', 'hitting', true),
+      usePlayerCompareYearByYear('', 'hitting', true, 'ops'),
     )
     expect(fetchPlayersCompareYearByYear).not.toHaveBeenCalled()
     expect(empty.current.data).toBeNull()
@@ -48,7 +48,7 @@ describe('usePlayerCompareYearByYear', () => {
     vi.mocked(fetchPlayersCompareYearByYear).mockResolvedValue(mockYearByYear)
 
     const { result } = renderHook(() =>
-      usePlayerCompareYearByYear('10,20', 'pitching', true),
+      usePlayerCompareYearByYear('10,20', 'pitching', true, 'era'),
     )
 
     await waitFor(() => expect(result.current.data).toEqual(mockYearByYear))
@@ -56,6 +56,7 @@ describe('usePlayerCompareYearByYear', () => {
     expect(fetchPlayersCompareYearByYear).toHaveBeenCalledWith({
       ids: '10,20',
       group: 'pitching',
+      metric: 'era',
     })
   })
 
@@ -63,7 +64,7 @@ describe('usePlayerCompareYearByYear', () => {
     vi.mocked(fetchPlayersCompareYearByYear).mockRejectedValue(new Error('yby'))
 
     const { result } = renderHook(() =>
-      usePlayerCompareYearByYear('1,2', 'hitting', true),
+      usePlayerCompareYearByYear('1,2', 'hitting', true, 'ops'),
     )
 
     await waitFor(() => expect(result.current.error?.message).toBe('yby'))

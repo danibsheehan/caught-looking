@@ -23,6 +23,13 @@ func TestPlayersCompareYearByYear_validation(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status: got %d", rec.Code)
 	}
+
+	rec2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest(http.MethodGet, "/players/compare/year-by-year?ids=1,2&group=hitting&metric=era", nil)
+	r.ServeHTTP(rec2, req2)
+	if rec2.Code != http.StatusBadRequest {
+		t.Fatalf("invalid metric: status: got %d", rec2.Code)
+	}
 }
 
 func TestPlayersCompareYearByYear_success(t *testing.T) {

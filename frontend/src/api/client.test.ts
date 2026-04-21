@@ -135,14 +135,21 @@ describe('api client', () => {
       expect(fetchMock).not.toHaveBeenCalled()
     })
 
-    it('fetchGameTimeline and fetchGameBoxscore encode game pk in path', async () => {
+    it('fetchGameTimeline, fetchGameBoxscore, fetchGameStatcast encode game pk in path', async () => {
       fetchMock.mockResolvedValueOnce(jsonResponse({}))
       fetchMock.mockResolvedValueOnce(jsonResponse({}))
-      const { fetchGameTimeline, fetchGameBoxscore } = await getClient()
+      fetchMock.mockResolvedValueOnce(jsonResponse({}))
+      fetchMock.mockResolvedValueOnce(jsonResponse({ pitches: [] }))
+      const { fetchGameTimeline, fetchGameBoxscore, fetchGameStatcast, fetchGameStatcastPitches } =
+        await getClient()
       await fetchGameTimeline(662000)
       await fetchGameBoxscore('662001')
+      await fetchGameStatcast(662002)
+      await fetchGameStatcastPitches(662003)
       expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/games/662000/timeline')
       expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/games/662001/boxscore')
+      expect(fetchMock.mock.calls[2]?.[0]).toBe('/api/games/662002/statcast')
+      expect(fetchMock.mock.calls[3]?.[0]).toBe('/api/games/662003/statcast/pitches')
     })
 
     it('fetchGamesForDate requires date and optional teamId', async () => {

@@ -43,7 +43,8 @@ type mlbPeopleGameLogPayload struct {
 	} `json:"stats"`
 }
 
-// PlayersCompareYearByYear returns per-season OPS or ERA for two players plus league baseline per season.
+// PlayersCompareYearByYear returns per-season rate stats for two players plus league baseline per season.
+// Query metric (optional): hitting — ops (default), avg, obp, slg, woba; pitching — era (default), whip, k9, bb9, fip.
 func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Request) {
 	ids := strings.TrimSpace(r.URL.Query().Get("ids"))
 	parts := strings.Split(ids, ",")
@@ -67,12 +68,20 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	metric := "ops"
-	if group == "pitching" {
-		metric = "era"
+	metric := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("metric")))
+	if metric == "" {
+		if group == "pitching" {
+			metric = "era"
+		} else {
+			metric = "ops"
+		}
+	}
+	if !validYearByYearMetric(group, metric) {
+		http.Error(w, "invalid metric for group", http.StatusBadRequest)
+		return
 	}
 
-	cacheKey := "players-yearly:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group
+	cacheKey := "players-yearly:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + metric
 	if body, ok := h.cache.Get(cacheKey); ok {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(body)
@@ -85,12 +94,12 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 	var n1, n2 string
 	g.Go(func() error {
 		var err error
-		p1, n1, err = h.fetchPlayerYearByYear(gctx, id1, group)
+		p1, n1, err = h.fetchPlayerYearByYear(gctx, id1, group, metric)
 		return err
 	})
 	g.Go(func() error {
 		var err error
-		p2, n2, err = h.fetchPlayerYearByYear(gctx, id2, group)
+		p2, n2, err = h.fetchPlayerYearByYear(gctx, id2, group, metric)
 		return err
 	})
 	if err := g.Wait(); err != nil {
@@ -108,7 +117,7 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 
 	leagueBySeason := make(map[string]float64, len(seasonSeen))
 	for sy := range seasonSeen {
-		v, err := h.fetchLeagueBaseline(ctx, sy, group)
+		v, err := h.fetchLeagueBaselineMetric(ctx, sy, group, metric)
 		if err != nil {
 			respondUpstreamError(w, r, err)
 			return
@@ -137,7 +146,58 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 	_, _ = w.Write(body)
 }
 
-func (h *Handlers) fetchPlayerYearByYear(ctx context.Context, id int64, group string) ([]models.SeasonPoint, string, error) {
+func validYearByYearMetric(group, metric string) bool {
+	switch group {
+	case "hitting":
+		switch metric {
+		case "ops", "avg", "obp", "slg", "woba":
+			return true
+		}
+	case "pitching":
+		switch metric {
+		case "era", "whip", "k9", "bb9", "fip":
+			return true
+		}
+	}
+	return false
+}
+
+func yearByYearPlayerStat(statMap map[string]interface{}, group, metric string) float64 {
+	switch group {
+	case "hitting":
+		switch metric {
+		case "ops":
+			return statFloat(statMap["ops"])
+		case "avg":
+			return statFloat(statMap["avg"])
+		case "obp":
+			return statFloat(statMap["obp"])
+		case "slg":
+			return statFloat(statMap["slg"])
+		case "woba":
+			if v := statFloat(statMap["woba"]); v > 0 {
+				return v
+			}
+			return statFloat(statMap["weightedOnBaseAverage"])
+		}
+	case "pitching":
+		switch metric {
+		case "era":
+			return statFloat(statMap["era"])
+		case "whip":
+			return statFloat(statMap["whip"])
+		case "k9":
+			return statFloat(statMap["strikeoutsPer9Inn"])
+		case "bb9":
+			return statFloat(statMap["walksPer9Inn"])
+		case "fip":
+			return statFloat(statMap["fip"])
+		}
+	}
+	return 0
+}
+
+func (h *Handlers) fetchPlayerYearByYear(ctx context.Context, id int64, group, metric string) ([]models.SeasonPoint, string, error) {
 	q := url.Values{}
 	q.Set("stats", "yearByYear")
 	q.Set("group", group)
@@ -172,12 +232,7 @@ func (h *Handlers) fetchPlayerYearByYear(ctx context.Context, id int64, group st
 		if err != nil || year < 1900 {
 			continue
 		}
-		var v float64
-		if group == "hitting" {
-			v = statFloat(statMap["ops"])
-		} else {
-			v = statFloat(statMap["era"])
-		}
+		v := yearByYearPlayerStat(statMap, group, metric)
 		if v <= 0 {
 			continue
 		}
