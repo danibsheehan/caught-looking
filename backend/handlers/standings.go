@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"caught-looking/backend/models"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type mlbSplitRecord struct {
@@ -108,8 +110,21 @@ func (h *Handlers) Standings(w http.ResponseWriter, r *http.Request) {
 	q.Set("standingsTypes", standingsType)
 	path := "/standings?" + q.Encode()
 
-	raw, err := h.mlb.Get(r.Context(), path)
-	if err != nil {
+	ctx := r.Context()
+	var raw []byte
+	var divNames map[int]string
+	grp, ctx := errgroup.WithContext(ctx)
+	grp.Go(func() error {
+		var err error
+		raw, err = h.mlb.Get(ctx, path)
+		return err
+	})
+	grp.Go(func() error {
+		var err error
+		divNames, err = h.loadDivisionNames(ctx)
+		return err
+	})
+	if err := grp.Wait(); err != nil {
 		respondUpstreamError(w, r, err)
 		return
 	}
@@ -117,12 +132,6 @@ func (h *Handlers) Standings(w http.ResponseWriter, r *http.Request) {
 	var payload mlbStandingsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		http.Error(w, "upstream parse error", http.StatusBadGateway)
-		return
-	}
-
-	divNames, err := h.loadDivisionNames(r.Context())
-	if err != nil {
-		respondUpstreamError(w, r, err)
 		return
 	}
 

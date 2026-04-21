@@ -111,6 +111,12 @@ func TestStandings_upstreamParseError(t *testing.T) {
 			_, _ = w.Write([]byte(`not json`))
 			return
 		}
+		if r.URL.Path == "/divisions" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(divisionsJSON))
+			return
+		}
 		http.NotFound(w, r)
 	})
 	h := newTestHandlers(t, mlb)
