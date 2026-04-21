@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestNewMLBClient_trimsTrailingSlash(t *testing.T) {
@@ -14,7 +16,7 @@ func TestNewMLBClient_trimsTrailingSlash(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewMLBClient(srv.URL+"/", 0)
+	c := NewMLBClient(srv.URL+"/", 0, 0)
 	body, err := c.Get(context.Background(), "/x")
 	if err != nil {
 		t.Fatal(err)
@@ -45,7 +47,7 @@ func TestMLBClient_Get_success(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewMLBClient(srv.URL, 0)
+	c := NewMLBClient(srv.URL, 0, 0)
 	got, err := c.Get(context.Background(), "/api/v1/teams")
 	if err != nil {
 		t.Fatal(err)
@@ -62,7 +64,7 @@ func TestMLBClient_Get_errorStatus(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewMLBClient(srv.URL, 0)
+	c := NewMLBClient(srv.URL, 0, 0)
 	_, err := c.Get(context.Background(), "/missing")
 	if err == nil {
 		t.Fatal("expected error for non-2xx")
@@ -83,7 +85,7 @@ func TestMLBClient_Get_errorBodyTruncated(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewMLBClient(srv.URL, 0)
+	c := NewMLBClient(srv.URL, 0, 0)
 	_, err := c.Get(context.Background(), "/err")
 	if err == nil {
 		t.Fatal("expected error")
@@ -98,7 +100,7 @@ func TestMLBClient_Get_errorBodyTruncated(t *testing.T) {
 }
 
 func TestMLBClient_Get_invalidPath(t *testing.T) {
-	c := NewMLBClient("http://127.0.0.1:9", 0)
+	c := NewMLBClient("http://127.0.0.1:9", 0, 0)
 
 	tests := []struct {
 		name string
@@ -129,9 +131,35 @@ func TestMLBClient_Get_contextCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := NewMLBClient(srv.URL, 0)
+	c := NewMLBClient(srv.URL, 0, 0)
 	_, err := c.Get(ctx, "/slow")
 	if err == nil {
 		t.Fatal("expected error from cancelled context")
+	}
+}
+
+func TestMLBClient_Get_retriesAfterSlowHeaders(t *testing.T) {
+	var n atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cur := n.Add(1)
+		if cur == 1 {
+			time.Sleep(400 * time.Millisecond)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	c := NewMLBClient(srv.URL, 0, 200*time.Millisecond)
+	body, err := c.Get(context.Background(), "/x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n.Load() != 2 {
+		t.Fatalf("server invocations: got %d want 2 (retry after header timeout)", n.Load())
+	}
+	if string(body) != `{"ok":true}` {
+		t.Fatalf("body: got %s", body)
 	}
 }

@@ -2,15 +2,20 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"golang.org/x/time/rate"
 )
+
+const defaultMLBHTTPTimeout = 15 * time.Second
 
 const mlbUserAgent = "caught-looking/0.1 (+https://github.com) statsapi client"
 
@@ -18,16 +23,32 @@ const mlbUserAgent = "caught-looking/0.1 (+https://github.com) statsapi client"
 type MLBClient struct {
 	baseURL    string
 	httpClient *http.Client
+	transport  *http.Transport
 	upstream   *rate.Limiter
 }
 
 // NewMLBClient returns a client for the given base URL. maxQPS caps outbound GET rate per process
-// (token bucket); use 0 for no limit (e.g. tests).
-func NewMLBClient(baseURL string, maxQPS float64) *MLBClient {
+// (token bucket); use 0 for no limit (e.g. tests). reqTimeout is the per-attempt HTTP client
+// deadline (including reading the body); use 0 for the default (15s).
+func NewMLBClient(baseURL string, maxQPS float64, reqTimeout time.Duration) *MLBClient {
+	if reqTimeout <= 0 {
+		reqTimeout = defaultMLBHTTPTimeout
+	}
+
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.MaxIdleConns = 100
+	t.MaxIdleConnsPerHost = 32
+	t.IdleConnTimeout = 60 * time.Second
+	t.ResponseHeaderTimeout = mlbResponseHeaderTimeout(reqTimeout)
+	t.TLSHandshakeTimeout = 10 * time.Second
+	t.ExpectContinueTimeout = 1 * time.Second
+
 	c := &MLBClient{
-		baseURL: strings.TrimRight(baseURL, "/"),
+		baseURL:   strings.TrimRight(baseURL, "/"),
+		transport: t,
 		httpClient: &http.Client{
-			Timeout: 15 * time.Second,
+			Timeout:   reqTimeout,
+			Transport: t,
 		},
 	}
 	if maxQPS > 0 {
@@ -37,18 +58,26 @@ func NewMLBClient(baseURL string, maxQPS float64) *MLBClient {
 	return c
 }
 
+func mlbResponseHeaderTimeout(reqTimeout time.Duration) time.Duration {
+	if reqTimeout <= 5*time.Second {
+		if reqTimeout <= 2*time.Second {
+			return reqTimeout / 2
+		}
+		return reqTimeout - time.Second
+	}
+	ht := reqTimeout * 2 / 3
+	if ht < 5*time.Second {
+		return 5 * time.Second
+	}
+	return ht
+}
+
 // Get issues GET baseURL+path (path must start with /) and returns the response body.
 func (c *MLBClient) Get(ctx context.Context, path string) ([]byte, error) {
 	if path == "" || path[0] != '/' {
 		return nil, fmt.Errorf("mlb path must start with /, got %q", path)
 	}
 	u := c.baseURL + path
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", mlbUserAgent)
 
 	if c.upstream != nil {
 		if err := c.upstream.Wait(ctx); err != nil {
@@ -56,20 +85,96 @@ func (c *MLBClient) Get(ctx context.Context, path string) ([]byte, error) {
 		}
 	}
 
-	res, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
+	const maxAttempts = 2
+	var lastErr error
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if attempt > 0 {
+			c.transport.CloseIdleConnections()
+			if err := sleepContext(ctx, time.Duration(100*attempt)*time.Millisecond); err != nil {
+				return nil, err
+			}
+		}
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("User-Agent", mlbUserAgent)
+
+		res, err := c.httpClient.Do(req)
+		if err != nil {
+			lastErr = err
+			if attempt+1 < maxAttempts && mlbRetryable(err) {
+				continue
+			}
+			return nil, err
+		}
+
+		body, readErr := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+		if readErr != nil {
+			lastErr = readErr
+			if attempt+1 < maxAttempts && mlbRetryable(readErr) {
+				continue
+			}
+			return nil, readErr
+		}
+		if res.StatusCode < 200 || res.StatusCode >= 300 {
+			return nil, fmt.Errorf("mlb GET %s: status %d: %s", path, res.StatusCode, truncate(body, 200))
+		}
+		return body, nil
 	}
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return nil, fmt.Errorf("mlb GET %s: status %d: %s", path, res.StatusCode, truncate(body, 200))
+	return nil, lastErr
+}
+
+func sleepContext(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
 	}
-	return body, nil
+}
+
+func mlbRetryable(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var ne net.Error
+	if errors.As(err, &ne) && ne.Timeout() {
+		return true
+	}
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "Client.Timeout"):
+		return true
+	case strings.Contains(msg, "timeout awaiting response headers"):
+		return true
+	case strings.Contains(msg, "connection reset"):
+		return true
+	case strings.Contains(msg, "broken pipe"):
+		return true
+	case strings.Contains(msg, "TLS handshake timeout"):
+		return true
+	case strings.Contains(msg, "unexpected EOF"):
+		return true
+	case strings.Contains(msg, "use of closed network connection"):
+		return true
+	}
+	var ue *url.Error
+	if errors.As(err, &ue) {
+		return mlbRetryable(ue.Err)
+	}
+	return false
 }
 
 func truncate(b []byte, n int) string {

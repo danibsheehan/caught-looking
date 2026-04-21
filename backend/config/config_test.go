@@ -20,6 +20,7 @@ var loadEnvKeys = []string{
 	"RATE_LIMIT_REQUESTS",
 	"RATE_LIMIT_WINDOW",
 	"MLB_MAX_QPS",
+	"MLB_HTTP_TIMEOUT",
 }
 
 func resetLoadEnv(t *testing.T) {
@@ -44,6 +45,7 @@ func TestLoad_defaults(t *testing.T) {
 		RateLimitRequests: 120,
 		RateLimitWindow:   time.Minute,
 		MLBMaxQPS:         20,
+		MLBHTTPTimeout:    15 * time.Second,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Load() mismatch\n got: %+v\nwant: %+v", got, want)
