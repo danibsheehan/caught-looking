@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import GamePitcherStrikeZones from './GamePitcherStrikeZones'
 import type { GameBoxscoreResponse, StatcastPitch } from '../../types/api'
@@ -50,14 +51,25 @@ const box: GameBoxscoreResponse = {
 }
 
 describe('GamePitcherStrikeZones', () => {
-  it('renders a card per pitcher with box score name', () => {
+  it('defaults to single-pitcher view with a pitcher select and featured chart', () => {
     render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />)
-    expect(screen.getByRole('heading', { name: 'Casey Pitcher' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /Away — Away Club/ })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: /Pitcher/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: /Away Club — Casey Pitcher/ }),
+    ).toBeInTheDocument()
     expect(screen.getByText(/4-Seam Fastball 1/)).toBeInTheDocument()
     expect(
-      screen.getByRole('img', { name: /Pitch locations normalized/i }),
+      screen.getByRole('img', { name: /Pitch locations for Casey Pitcher/i }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Show all pitchers/i })).toBeInTheDocument()
+  })
+
+  it('shows the full grid after toggling to all pitchers', async () => {
+    const user = userEvent.setup()
+    render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />)
+    await user.click(screen.getByRole('button', { name: /Show all pitchers/i }))
+    expect(screen.getByRole('heading', { name: /Away — Away Club/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Casey Pitcher', level: 3 })).toBeInTheDocument()
   })
 
   it('shows empty copy when there are no pitches', () => {
