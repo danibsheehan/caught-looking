@@ -12,6 +12,11 @@ import {
 } from 'recharts'
 import type { PlayersYearByYearResponse } from '../../types/api'
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
+import {
+  formatYearByYearAxisValue,
+  formatYearByYearTooltipValue,
+  yearByYearMetricShortLabel,
+} from '../../utils/yearByYearMetric'
 
 type Row = {
   season: number
@@ -35,10 +40,6 @@ function buildRows(payload: PlayersYearByYearResponse | null): Row[] {
   }))
 }
 
-function fmtY(metric: 'ops' | 'era', v: number | null | undefined): string {
-  if (v == null || !Number.isFinite(v)) return '—'
-  return metric === 'ops' ? v.toFixed(3) : v.toFixed(2)
-}
 
 type Props = {
   data: PlayersYearByYearResponse
@@ -57,6 +58,7 @@ export default function PlayerCompareCareerLines({
   const nameA = pa?.fullName ?? 'Player 1'
   const nameB = pb?.fullName ?? 'Player 2'
   const metric = data.metric
+  const axisTitle = yearByYearMetricShortLabel(metric)
   const leagueColor = 'var(--muted)'
 
   if (!rows.length) {
@@ -75,11 +77,9 @@ export default function PlayerCompareCareerLines({
         <YAxis
           tick={{ fill: 'var(--text)', fontSize: 11 }}
           domain={['auto', 'auto']}
-          tickFormatter={(v) =>
-            metric === 'ops' ? Number(v).toFixed(2) : Number(v).toFixed(1)
-          }
+          tickFormatter={(v) => formatYearByYearAxisValue(metric, Number(v))}
           label={{
-            value: metric === 'ops' ? 'OPS' : 'ERA',
+            value: axisTitle,
             angle: -90,
             position: 'insideLeft',
             fill: 'var(--muted)',
@@ -96,7 +96,10 @@ export default function PlayerCompareCareerLines({
             value: TooltipValueType | undefined,
             name: string | number | undefined,
           ) => [
-            fmtY(metric, typeof value === 'number' ? value : null),
+            formatYearByYearTooltipValue(
+              metric,
+              typeof value === 'number' ? value : null,
+            ),
             String(name ?? ''),
           ]}
           labelFormatter={(s) => `Season ${s}`}

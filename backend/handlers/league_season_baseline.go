@@ -74,6 +74,27 @@ func (h *Handlers) LeagueSeasonBaseline(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handlers) fetchLeagueBaseline(ctx context.Context, season int, group string) (float64, error) {
+	best, err := h.loadLeagueTeamStatMaps(ctx, season, group)
+	if err != nil {
+		return 0, err
+	}
+	if group == "hitting" {
+		return leagueRateFromTeamMaps(best, group, "ops"), nil
+	}
+	return leagueRateFromTeamMaps(best, group, "era"), nil
+}
+
+// fetchLeagueBaselineMetric returns the same AL+NL team-aggregate rate as /league/season-baseline
+// for OPS/ERA, and extended metrics used by GET /players/compare/year-by-year.
+func (h *Handlers) fetchLeagueBaselineMetric(ctx context.Context, season int, group, metric string) (float64, error) {
+	best, err := h.loadLeagueTeamStatMaps(ctx, season, group)
+	if err != nil {
+		return 0, err
+	}
+	return leagueRateFromTeamMaps(best, group, metric), nil
+}
+
+func (h *Handlers) loadLeagueTeamStatMaps(ctx context.Context, season int, group string) (map[int]map[string]interface{}, error) {
 	q := url.Values{}
 	q.Set("stats", "season")
 	q.Set("group", group)
@@ -84,15 +105,15 @@ func (h *Handlers) fetchLeagueBaseline(ctx context.Context, season int, group st
 
 	raw, err := h.mlb.Get(ctx, path)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	var payload mlbTeamSeasonSplitsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return 0, err
+		return nil, err
 	}
 	if len(payload.Stats) == 0 || len(payload.Stats[0].Splits) == 0 {
-		return 0, nil
+		return map[int]map[string]interface{}{}, nil
 	}
 
 	// One row per MLB team (dedupe franchise; keep max games).
@@ -118,7 +139,10 @@ func (h *Handlers) fetchLeagueBaseline(ctx context.Context, season int, group st
 		}
 		best[tid] = statMap
 	}
+	return best, nil
+}
 
+func leagueRateFromTeamMaps(best map[int]map[string]interface{}, group, metric string) float64 {
 	if group == "hitting" {
 		var hTot, ab, tb, bb, hbp, sf int
 		for _, sm := range best {
@@ -131,21 +155,83 @@ func (h *Handlers) fetchLeagueBaseline(ctx context.Context, season int, group st
 		}
 		den := ab + bb + hbp + sf
 		if ab == 0 || den == 0 {
-			return 0, nil
+			return 0
 		}
 		obp := float64(hTot+bb+hbp) / float64(den)
 		slg := float64(tb) / float64(ab)
-		return obp + slg, nil
+		switch metric {
+		case "ops":
+			return obp + slg
+		case "avg":
+			return float64(hTot) / float64(ab)
+		case "obp":
+			return obp
+		case "slg":
+			return slg
+		case "woba":
+			var wobaNum, paSum float64
+			for _, sm := range best {
+				w := statFloat(sm["weightedOnBaseAverage"])
+				if w <= 0 {
+					w = statFloat(sm["woba"])
+				}
+				pa := float64(intFromStat(sm["plateAppearances"]))
+				if w > 0 && pa > 0 {
+					wobaNum += w * pa
+					paSum += pa
+				}
+			}
+			if paSum > 1e-6 {
+				return wobaNum / paSum
+			}
+			return 0
+		default:
+			return 0
+		}
 	}
 
-	var er int
+	var er, hAllowed, bb, so, hr int
 	var ip float64
 	for _, sm := range best {
 		er += intFromStat(sm["earnedRuns"])
+		hAllowed += intFromStat(sm["hits"])
+		bb += intFromStat(sm["baseOnBalls"])
+		so += intFromStat(sm["strikeOuts"])
+		hr += intFromStat(sm["homeRuns"])
 		ip += parseBaseballInnings(fmtSprint(sm["inningsPitched"]))
 	}
 	if ip < 1e-6 {
-		return 0, nil
+		return 0
 	}
-	return 9.0 * float64(er) / ip, nil
+	switch metric {
+	case "era":
+		return 9.0 * float64(er) / ip
+	case "whip":
+		return float64(hAllowed+bb) / ip
+	case "k9":
+		return 9.0 * float64(so) / ip
+	case "bb9":
+		return 9.0 * float64(bb) / ip
+	case "fip":
+		var num, wip float64
+		for _, sm := range best {
+			f := statFloat(sm["fip"])
+			inn := parseBaseballInnings(fmtSprint(sm["inningsPitched"]))
+			if f > 0 && inn > 0 {
+				num += f * inn
+				wip += inn
+			}
+		}
+		if wip > 1e-6 {
+			return num / wip
+		}
+		// Fallback: classic FIP shape from league counting totals (no run-environment constant).
+		hbp := 0
+		for _, sm := range best {
+			hbp += intFromStat(sm["hitByPitch"])
+		}
+		return (13.0*float64(hr) + 3.0*float64(bb+hbp) - 2.0*float64(so)) / ip
+	default:
+		return 0
+	}
 }

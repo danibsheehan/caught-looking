@@ -11,7 +11,7 @@ type LeagueSeasonBaselineResponse struct {
 // PlayersYearByYearResponse is GET /players/compare/year-by-year.
 type PlayersYearByYearResponse struct {
 	Group          string             `json:"group"`
-	Metric         string             `json:"metric"` // ops | era
+	Metric         string             `json:"metric"` // hitting: ops|avg|obp|slg|woba — pitching: era|whip|k9|bb9|fip
 	Players        []YearSeriesPlayer `json:"players"`
 	LeagueBySeason map[string]float64 `json:"leagueBySeason"`
 }

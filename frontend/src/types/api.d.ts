@@ -150,6 +150,52 @@ export interface GameBoxscoreResponse {
   home: TeamBoxSide
 }
 
+/** GET /games/{gamePk}/statcast — batted-ball tracking rows (cached on the server). */
+export interface StatcastBattedBall {
+  launchSpeed?: number
+  launchAngle?: number
+  /** Savant Search grid `hc_x` (not literal field feet until converted for spray charts). */
+  hcX?: number
+  /** Savant Search grid `hc_y` (increases toward backstop; not literal depth in feet). */
+  hcY?: number
+  batter: number
+  pitcher: number
+  playerName: string
+  events?: string
+  /** "Top" (away batting) or "Bottom" (home batting); from `inning_topbot`. */
+  inningHalf?: string
+}
+
+export interface GameStatcastResponse {
+  gamePk: number
+  /** MLB Stats API venue id from schedule (for park-shaped outline). */
+  venueId?: number
+  venueName?: string
+  battedBalls: StatcastBattedBall[]
+}
+
+/** GET /games/{gamePk}/statcast/pitches — pitch-level rows (plate location, type; cached on the server). */
+export interface StatcastPitch {
+  /** Horizontal location at plate (feet), catcher’s view — source `plate_x`. */
+  plateX: number
+  /** Vertical location at plate (feet) — source `plate_z`. */
+  plateZ: number
+  pitchName?: string
+  pitcher: number
+  releaseSpeed?: number
+  /** "Top" or "Bottom"; from `inning_topbot`. */
+  inningHalf?: string
+  /** Top of batter strike zone (feet), source `sz_top`. */
+  szTop?: number
+  /** Bottom of batter strike zone (feet), source `sz_bot`. */
+  szBot?: number
+}
+
+export interface GameStatcastPitchesResponse {
+  gamePk: number
+  pitches: StatcastPitch[]
+}
+
 export interface PlayerStatSnapshot {
   id: number
   fullName: string
@@ -235,9 +281,22 @@ export interface YearSeriesPlayer {
   points: SeasonPoint[]
 }
 
+/** Year-by-year career arc metric (GET /players/compare/year-by-year). */
+export type YearByYearMetric =
+  | 'ops'
+  | 'avg'
+  | 'obp'
+  | 'slg'
+  | 'woba'
+  | 'era'
+  | 'whip'
+  | 'k9'
+  | 'bb9'
+  | 'fip'
+
 export interface PlayersYearByYearResponse {
   group: string
-  metric: 'ops' | 'era'
+  metric: YearByYearMetric
   players: YearSeriesPlayer[]
   leagueBySeason: Record<string, number>
 }
@@ -266,6 +325,7 @@ export interface PlayersGameLogResponse {
 export interface PlayersCompareYearByYearQuery {
   ids: string
   group?: 'hitting' | 'pitching'
+  metric?: YearByYearMetric
 }
 
 export interface PlayersCompareGameLogQuery {

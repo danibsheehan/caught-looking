@@ -1,9 +1,13 @@
 import { startTransition, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { GameScoreBar } from '../components/charts'
+import { GameStatcastScatter, GameStatcastSpray } from '../components/charts'
 import GameBoxscorePanel from '../components/game/GameBoxscorePanel'
-import { fetchGameBoxscore } from '../api/client'
-import type { GameBoxscoreResponse } from '../types/api'
+import { fetchGameBoxscore, fetchGameStatcast, fetchGameStatcastPitches } from '../api/client'
+import type {
+  GameBoxscoreResponse,
+  GameStatcastPitchesResponse,
+  GameStatcastResponse,
+} from '../types/api'
 
 export default function GameDetail() {
   const { gamePk: gamePkParam } = useParams()
@@ -18,6 +22,14 @@ export default function GameDetail() {
   const [box, setBox] = useState<GameBoxscoreResponse | null>(null)
   const [boxError, setBoxError] = useState<Error | null>(null)
   const [boxLoading, setBoxLoading] = useState(true)
+
+  const [statcast, setStatcast] = useState<GameStatcastResponse | null>(null)
+  const [statcastError, setStatcastError] = useState<Error | null>(null)
+  const [statcastLoading, setStatcastLoading] = useState(true)
+
+  const [pitchesData, setPitchesData] = useState<GameStatcastPitchesResponse | null>(null)
+  const [pitchesError, setPitchesError] = useState<Error | null>(null)
+  const [pitchesLoading, setPitchesLoading] = useState(true)
 
   useEffect(() => {
     if (gamePk == null) return
@@ -37,6 +49,54 @@ export default function GameDetail() {
       })
       .finally(() => {
         if (!cancelled) setBoxLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [gamePk])
+
+  useEffect(() => {
+    if (gamePk == null) return
+    let cancelled = false
+    startTransition(() => {
+      setStatcastLoading(true)
+      setStatcastError(null)
+      setStatcast(null)
+    })
+    fetchGameStatcast(gamePk)
+      .then((data) => {
+        if (!cancelled) setStatcast(data)
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setStatcastError(e instanceof Error ? e : new Error(String(e)))
+      })
+      .finally(() => {
+        if (!cancelled) setStatcastLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [gamePk])
+
+  useEffect(() => {
+    if (gamePk == null) return
+    let cancelled = false
+    startTransition(() => {
+      setPitchesLoading(true)
+      setPitchesError(null)
+      setPitchesData(null)
+    })
+    fetchGameStatcastPitches(gamePk)
+      .then((data) => {
+        if (!cancelled) setPitchesData(data)
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setPitchesError(e instanceof Error ? e : new Error(String(e)))
+      })
+      .finally(() => {
+        if (!cancelled) setPitchesLoading(false)
       })
     return () => {
       cancelled = true
@@ -78,15 +138,47 @@ export default function GameDetail() {
           {boxError.message}
         </p>
       ) : box ? (
-        <GameBoxscorePanel data={box} />
+        <GameBoxscorePanel
+          data={box}
+          gamePk={gamePk}
+          pitchLocation={{
+            loading: pitchesLoading,
+            error: pitchesError,
+            data: pitchesData,
+          }}
+        />
       ) : null}
 
-      <div className="panel chart-panel">
-        <h2>Runs by inning</h2>
+      <div className="panel chart-panel game-statcast">
+        <h2>Batted balls</h2>
         <p className="muted small">
-          Stacked bars use each team&apos;s primary color per inning.
+          Spray chart maps Savant hc_x / hc_y into field feet; launch metrics below use exit
+          velocity and launch angle.
         </p>
-        <GameScoreBar key={String(gamePk)} gamePk={gamePk} />
+        {statcastLoading ? (
+          <p className="muted">Loading batted-ball data…</p>
+        ) : statcastError ? (
+          <p className="error" role="alert">
+            {statcastError.message}
+          </p>
+        ) : statcast ? (
+          <>
+            <h3 className="game-statcast__subhead">Spray (field view)</h3>
+            <GameStatcastSpray
+              battedBalls={statcast.battedBalls}
+              venueId={statcast.venueId}
+              venueName={statcast.venueName}
+              awayTeamId={box?.away.teamId}
+              homeTeamId={box?.home.teamId}
+            />
+            <h3 className="game-statcast__subhead">Exit velocity vs. launch angle</h3>
+            <GameStatcastScatter
+              battedBalls={statcast.battedBalls}
+              awayTeamId={box?.away.teamId}
+              homeTeamId={box?.home.teamId}
+            />
+          </>
+        ) : null}
       </div>
     </section>
   )

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   PlayerCompareAheadChart,
   PlayerCompareCareerLines,
@@ -14,8 +14,18 @@ import {
   usePlayerCompareYearByYear,
 } from '../hooks/usePlayerCompareTrends'
 import { usePlayersCompare } from '../hooks/usePlayersCompare'
+import type { YearByYearMetric } from '../types/api'
+import {
+  HITTING_CAREER_METRICS,
+  PITCHING_CAREER_METRICS,
+  yearByYearMetricShortLabel,
+} from '../utils/yearByYearMetric'
 
 const DEFAULT_SEASON = 2026
+
+function defaultCareerMetric(group: 'hitting' | 'pitching'): YearByYearMetric {
+  return group === 'pitching' ? 'era' : 'ops'
+}
 
 export default function PlayerComparison() {
   const [pick1, setPick1] = useState<PlayerPick | null>({
@@ -29,6 +39,11 @@ export default function PlayerComparison() {
   const [season, setSeason] = useState(DEFAULT_SEASON)
   const [compareScope, setCompareScope] = useState<'season' | 'career'>('season')
   const [group, setGroup] = useState<'hitting' | 'pitching'>('hitting')
+  const [careerMetric, setCareerMetric] = useState<YearByYearMetric>('ops')
+
+  useEffect(() => {
+    setCareerMetric(defaultCareerMetric(group))
+  }, [group])
 
   const p1 = pick1?.id
   const p2 = pick2?.id
@@ -64,7 +79,7 @@ export default function PlayerComparison() {
     data: yearlyData,
     error: yearlyError,
     loading: yearlyLoading,
-  } = usePlayerCompareYearByYear(compareIds, group, valid)
+  } = usePlayerCompareYearByYear(compareIds, group, valid, careerMetric)
 
   const {
     data: gameLogData,
@@ -72,7 +87,8 @@ export default function PlayerComparison() {
     loading: gameLogLoading,
   } = usePlayerCompareGameLog(compareIds, season, group, valid)
 
-  const rateLabel = group === 'hitting' ? 'OPS' : 'ERA'
+  const gameLogRateLabel = group === 'hitting' ? 'OPS' : 'ERA'
+  const careerMetricLabel = yearByYearMetricShortLabel(careerMetric)
 
   return (
     <section className="page players-compare">
@@ -148,9 +164,30 @@ export default function PlayerComparison() {
       {valid ? (
         <div className="players-compare__panel players-compare__panel--chart">
           <h2>Career arc</h2>
+          <div className="players-compare__career-toolbar">
+            <label className="players-compare__field">
+              <span className="players-compare__label">Metric</span>
+              <select
+                className="players-compare__select"
+                value={careerMetric}
+                onChange={(e) =>
+                  setCareerMetric(e.target.value as YearByYearMetric)
+                }
+              >
+                {(group === 'pitching'
+                  ? PITCHING_CAREER_METRICS
+                  : HITTING_CAREER_METRICS
+                ).map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <p className="muted small">
-            Year-by-year {rateLabel} (regular season). Dashed line is league context:
-            OPS or ERA implied by MLB team season totals (AL+NL), not a player
+            Year-by-year {careerMetricLabel} (regular season). Dashed line is the same
+            league context: rate implied by AL+NL team season totals, not a player
             leaderboard average.
           </p>
           {yearlyLoading && !yearlyData ? (
@@ -175,8 +212,8 @@ export default function PlayerComparison() {
         <div className="players-compare__panel players-compare__panel--chart">
           <h2>Recent games ({season})</h2>
           <p className="muted small">
-            Per-game {rateLabel} for the last games logged in that season (up to 28).
-            Horizontal reference: same league baseline as team-aggregate {rateLabel}{' '}
+            Per-game {gameLogRateLabel} for the last games logged in that season (up to 28).
+            Horizontal reference: same league baseline as team-aggregate {gameLogRateLabel}{' '}
             for {season}.
           </p>
           {gameLogLoading && !gameLogData ? (

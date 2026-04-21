@@ -1,4 +1,7 @@
-import { adjustChartColorForSurface } from './chartColorContrast'
+import {
+  adjustChartColorForSurface,
+  CHART_INK_MIN_CONTRAST,
+} from './chartColorContrast'
 
 /**
  * Primary / secondary brand hex for MLB Stats API team IDs.
@@ -171,6 +174,7 @@ function minDistanceToAssigned(hex: string, assigned: string[]): number {
 export function distinctChartColorsForTeamIds(
   teamIds: readonly number[],
   surfaceHex: string,
+  inkMin: number = CHART_INK_MIN_CONTRAST,
 ): string[] {
   const assigned: string[] = []
 
@@ -198,7 +202,7 @@ export function distinctChartColorsForTeamIds(
     assigned.push(best)
   }
 
-  return assigned.map((c) => adjustChartColorForSurface(c, surfaceHex))
+  return assigned.map((c) => adjustChartColorForSurface(c, surfaceHex, inkMin))
 }
 
 /**

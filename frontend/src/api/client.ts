@@ -1,5 +1,7 @@
 import type {
   GameBoxscoreResponse,
+  GameStatcastPitchesResponse,
+  GameStatcastResponse,
   GameTimelineResponse,
   GamesForDateQuery,
   GamesForDateResponse,
@@ -117,6 +119,18 @@ export async function fetchGameBoxscore(
   return apiGet<GameBoxscoreResponse>(`/games/${gamePk}/boxscore`)
 }
 
+export async function fetchGameStatcast(
+  gamePk: number | string,
+): Promise<GameStatcastResponse> {
+  return apiGet<GameStatcastResponse>(`/games/${gamePk}/statcast`)
+}
+
+export async function fetchGameStatcastPitches(
+  gamePk: number | string,
+): Promise<GameStatcastPitchesResponse> {
+  return apiGet<GameStatcastPitchesResponse>(`/games/${gamePk}/statcast/pitches`)
+}
+
 export async function fetchGamesForDate(
   query: GamesForDateQuery,
 ): Promise<GamesForDateResponse> {
@@ -163,6 +177,7 @@ export async function fetchPlayersCompareYearByYear(
   const qs = new URLSearchParams()
   qs.set('ids', query.ids)
   if (query.group) qs.set('group', query.group)
+  if (query.metric) qs.set('metric', query.metric)
   return apiGet<PlayersYearByYearResponse>(
     `/players/compare/year-by-year?${qs.toString()}`,
   )

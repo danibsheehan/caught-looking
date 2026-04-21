@@ -15,6 +15,24 @@ function localISODate(d = new Date()): string {
 
 const isoDateRe = /^\d{4}-\d{2}-\d{2}$/
 
+/** MLB `detailedState` values where we omit the line score (not started or no game). */
+const SLATE_NO_LINE_SCORE_STATUSES = new Set([
+  'Scheduled',
+  'Pre-Game',
+  'Warmup',
+  'Postponed',
+  'Cancelled',
+  'Canceled',
+  'TBD',
+])
+
+function formatSlateScore(g: GameSummary): string {
+  if (SLATE_NO_LINE_SCORE_STATUSES.has(g.status)) {
+    return '—'
+  }
+  return `${g.awayScore}–${g.homeScore}`
+}
+
 function dateFromSearchParams(searchParams: URLSearchParams): string {
   const q = searchParams.get('date')
   if (q && isoDateRe.test(q)) return q
@@ -127,10 +145,7 @@ export default function GamesSlate() {
         ) : (
           <ul className="games-slate__list" role="list">
             {games.map((g) => {
-              const score =
-                g.status === 'Final' || g.status === 'Game Over'
-                  ? `${g.awayScore}–${g.homeScore}`
-                  : '—'
+              const score = formatSlateScore(g)
               const to = `/games/${g.gamePk}?date=${encodeURIComponent(date)}`
               return (
                 <li key={g.gamePk} role="none">
