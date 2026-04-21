@@ -64,34 +64,42 @@
 
 .game-statcast-spray {
   position: relative;
-  max-width: 36rem;
+  max-width: 44rem;
   margin: 0.25rem 0 1rem;
   overflow: visible;
 
-  /* Spray chart field — used by SVG fills/strokes (avoid color-mix inside SVG gradient stops). */
-  --spray-sky-a: #a8d4ef;
-  --spray-sky-b: #d4eaf4;
-  --spray-grass-a: #a3cfa3;
-  --spray-grass-b: #6fa86f;
-  --spray-dirt-a: #ddc9a8;
-  --spray-dirt-b: #b8956e;
-  --spray-chalk: #fffef8;
-  --spray-chalk-soft: rgba(255, 254, 248, 0.45);
-  --spray-edge: rgba(45, 62, 42, 0.35);
-  --spray-plate: #f4f0e8;
-  --spray-plate-line: rgba(55, 48, 40, 0.45);
-  --spray-bip-ring: rgba(255, 255, 255, 0.92);
+  /* Spray chart — light panel + teal fair turf (common field-tool diagram look). */
+  --spray-chart-bg-a: #fafcfc;
+  --spray-chart-bg-b: #eef2f3;
+  --spray-grass-a: #9ee0d8;
+  --spray-grass-b: #5ebfb4;
+  --spray-grass-mid: #7acec4;
+  --spray-dirt-a: #e8ddd0;
+  --spray-dirt-b: #c9b69e;
+  --spray-dirt-line: rgba(120, 105, 88, 0.45);
+  --spray-fence-line: rgba(96, 108, 118, 0.55);
+  --spray-foul-line: rgba(130, 142, 152, 0.88);
+  --spray-plate: #f6f3ed;
+  --spray-plate-line: rgba(100, 92, 82, 0.42);
+  --spray-bip-ring: rgba(255, 255, 255, 0.88);
+  --spray-fence-label: rgba(255, 255, 255, 0.94);
 
   &__svg {
     display: block;
     border-radius: 0.5rem;
     border: 1px solid var(--border);
     box-shadow: var(--shadow);
-    background: var(--spray-sky-b);
+    background: var(--spray-chart-bg-b);
   }
 
   &__svg text {
     font-family: var(--sans, system-ui, sans-serif);
+  }
+
+  &__fence-ft {
+    paint-order: stroke fill;
+    stroke: rgba(0, 35, 40, 0.22);
+    stroke-width: 2px;
   }
 
   &__caption {
@@ -139,18 +147,24 @@
 }
 
 html[data-theme='dark'] .game-statcast-spray {
-  --spray-sky-a: #1e2d3a;
-  --spray-sky-b: #121920;
-  --spray-grass-a: #3d5c3d;
-  --spray-grass-b: #2a402a;
-  --spray-dirt-a: #6b5a45;
-  --spray-dirt-b: #4a3d30;
-  --spray-chalk: rgba(235, 232, 224, 0.88);
-  --spray-chalk-soft: rgba(235, 232, 224, 0.28);
-  --spray-edge: rgba(0, 0, 0, 0.35);
-  --spray-plate: #c9c2b6;
+  --spray-chart-bg-a: #141a1c;
+  --spray-chart-bg-b: #0e1214;
+  --spray-grass-a: #2d5c56;
+  --spray-grass-b: #1a3d38;
+  --spray-grass-mid: #234a45;
+  --spray-dirt-a: #4a4036;
+  --spray-dirt-b: #2e2822;
+  --spray-dirt-line: rgba(180, 165, 145, 0.35);
+  --spray-fence-line: rgba(140, 155, 165, 0.5);
+  --spray-foul-line: rgba(160, 172, 182, 0.75);
+  --spray-plate: #8a8074;
   --spray-plate-line: rgba(0, 0, 0, 0.35);
-  --spray-bip-ring: rgba(10, 14, 11, 0.55);
+  --spray-bip-ring: rgba(12, 18, 14, 0.65);
+  --spray-fence-label: rgba(235, 242, 240, 0.92);
+}
+
+html[data-theme='dark'] .game-statcast-spray__fence-ft {
+  stroke: rgba(0, 0, 0, 0.48);
 }
 
 .game-statcast-scatter {
@@ -173,10 +187,56 @@ html[data-theme='dark'] .game-statcast-spray {
     margin: 0.5rem 0 0;
   }
 
+  &__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem 1rem;
+    margin-bottom: 1rem;
+  }
+
+  &__picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
+
+  &__picker-label {
+    font-size: 0.8rem;
+    color: var(--text);
+  }
+
+  &__select {
+    font: inherit;
+    color: var(--text-h);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+    padding: 0.4rem 0.5rem;
+    max-width: 100%;
+  }
+
+  &__view-toggle {
+    font: inherit;
+    cursor: pointer;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+    padding: 0.4rem 0.65rem;
+
+    &:hover {
+      border-color: var(--accent-border);
+      background: var(--accent-bg);
+    }
+  }
+
   &__section {
     padding: 0;
 
-    &:not(:first-of-type) {
+    & + & {
       margin-top: 1.35rem;
       padding-top: 1.35rem;
       border-top: 1px solid color-mix(in srgb, var(--border) 82%, var(--text-h) 18%);
@@ -211,6 +271,10 @@ html[data-theme='dark'] .game-statcast-spray {
     background: color-mix(in srgb, var(--bg) 96%, var(--code-bg) 4%);
     box-shadow: var(--shadow);
     min-width: 0;
+
+    &--featured {
+      padding-top: 0.65rem;
+    }
   }
 
   &__head {
@@ -240,6 +304,12 @@ html[data-theme='dark'] .game-statcast-spray {
     max-width: min(22rem, 100%);
     aspect-ratio: 1 / 1;
     margin: 0.35rem 0 0.65rem;
+
+    &--featured {
+      max-width: min(32rem, 100%);
+      margin-left: auto;
+      margin-right: auto;
+    }
   }
 
   &__svg {

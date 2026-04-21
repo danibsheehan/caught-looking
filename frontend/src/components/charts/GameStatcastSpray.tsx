@@ -3,15 +3,7 @@ import {
   getFieldDimensionsForVenue,
   type FieldDimensionsFt,
 } from '../../data/mlbVenueFieldDimensions'
-import {
-  scaleSprayOutlinePoint,
-  SPRAY_HOME,
-  SPRAY_INFIELD,
-  SPRAY_LF,
-  SPRAY_OF_CONTROL,
-  SPRAY_PLATE,
-  SPRAY_RF,
-} from '../../data/parkSprayOutline'
+import { buildSprayFenceGeometry } from '../../data/parkSprayOutline'
 import type { StatcastBattedBall } from '../../types/api'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { inningHalfBucket } from '../../utils/inningHalf'
@@ -35,9 +27,18 @@ type GameStatcastSprayProps = {
   homeTeamId?: number
 }
 
-const W = 520
-const H = 460
-const PAD = { l: 40, r: 20, t: 22, b: 48 }
+/** ViewBox size (px); larger than v1 so the field reads bigger in the game panel. */
+const W = 620
+const H = 548
+const PAD = { l: 40, r: 40, t: 22, b: 48 }
+/** Inset inside the plot rect before fitting; keeps field art off the chart border. */
+const PLOT_INSET_PX = 24
+/**
+ * Even with isotropic scale, width-tied fits can use 100% of the plot width, so the fair wedge
+ * (and infield) read flush to the sides. Cap how much horizontal span the data may occupy so
+ * there is always visible margin (similar to Savant’s field diagrams).
+ */
+const MAX_FIELD_WIDTH_FRAC = 0.78
 
 function toSprayPoints(rows: StatcastBattedBall[]): SprayPoint[] {
   const out: SprayPoint[] = []
@@ -55,6 +56,9 @@ function toSprayPoints(rows: StatcastBattedBall[]): SprayPoint[] {
   }
   return out
 }
+
+const EXTENT_PAD_X = 0.06
+const EXTENT_PAD_Y = 0.05
 
 function extentWithPadding(
   vals: number[],
@@ -114,34 +118,54 @@ export default function GameStatcastSpray({
 
   const scaledField = useMemo(() => {
     const d = fieldDims
+    const fence = buildSprayFenceGeometry(d)
     return {
-      home: scaleSprayOutlinePoint(SPRAY_HOME, d),
-      lf: scaleSprayOutlinePoint(SPRAY_LF, d),
-      rf: scaleSprayOutlinePoint(SPRAY_RF, d),
-      ofControl: scaleSprayOutlinePoint(SPRAY_OF_CONTROL, d),
-      infield: SPRAY_INFIELD.map((p) => scaleSprayOutlinePoint(p, d)),
-      plate: SPRAY_PLATE.map((p) => scaleSprayOutlinePoint(p, d)),
+      fence,
+      ofControl: fence.cf,
+      plate: fence.plate,
     }
   }, [fieldDims])
 
-  const { sx, sy } = useMemo(() => {
+  const { sx, sy, pxPerFt } = useMemo(() => {
+    const { fence } = scaledField
     const outlineFlat: [number, number][] = [
-      scaledField.home,
-      scaledField.lf,
-      scaledField.rf,
-      scaledField.ofControl,
-      ...scaledField.infield,
+      fence.home,
+      fence.lf,
+      fence.lcf,
+      fence.cf,
+      fence.rcf,
+      fence.rf,
+      ...fence.infieldGrass,
+      ...fence.infieldDirtOuter,
+      fence.moundCenter,
       ...scaledField.plate,
     ]
     const xs = [...outlineFlat.map((p) => p[0]), ...points.map((p) => p.hcX)]
     const ys = [...outlineFlat.map((p) => p[1]), ...points.map((p) => p.hcY)]
-    const [x0, x1] = extentWithPadding(xs, 0.06, [35, 215])
-    const [y0, y1] = extentWithPadding(ys, 0.05, [-28, 430])
+    const [x0, x1] = extentWithPadding(xs, EXTENT_PAD_X, [35, 215])
+    const [y0, y1] = extentWithPadding(ys, EXTENT_PAD_Y, [-28, 430])
+    const dataW = x1 - x0
+    const dataH = y1 - y0
     const plotW = W - PAD.l - PAD.r
     const plotH = H - PAD.t - PAD.b
+    const innerW = Math.max(1, plotW - 2 * PLOT_INSET_PX)
+    const innerH = Math.max(1, plotH - 2 * PLOT_INSET_PX)
+    // Same ft→px on both axes; also cap width usage so the infield is never edge-to-edge.
+    const scale = Math.min(
+      innerH / dataH,
+      innerW / dataW,
+      (MAX_FIELD_WIDTH_FRAC * innerW) / dataW,
+    )
+    const drawW = dataW * scale
+    const drawH = dataH * scale
+    const originX = PAD.l + PLOT_INSET_PX + (innerW - drawW) / 2
+    const originY = PAD.t + PLOT_INSET_PX + (innerH - drawH) / 2
+    const [hx0, hy0] = scaledField.fence.home
+    const pxPerFt = Math.abs(originX + (hx0 + 1 - x0) * scale - (originX + (hx0 - x0) * scale))
     return {
-      sx: (hx: number) => PAD.l + ((hx - x0) / (x1 - x0)) * plotW,
-      sy: (hy: number) => PAD.t + ((y1 - hy) / (y1 - y0)) * plotH,
+      sx: (hx: number) => originX + (hx - x0) * scale,
+      sy: (hy: number) => originY + (y1 - hy) * scale,
+      pxPerFt,
     }
   }, [points, scaledField])
 
@@ -151,33 +175,88 @@ export default function GameStatcastSpray({
   )
 
   const fairPathD = useMemo(() => {
-    const [hx, hy] = scaledField.home
-    const [lx, ly] = scaledField.lf
-    const [rx, ry] = scaledField.rf
+    const { home, lf, lcf, cf, rcf, rf } = scaledField.fence
+    const [hx, hy] = home
+    return `M ${sx(hx).toFixed(2)} ${sy(hy).toFixed(2)} L ${sx(lf[0]).toFixed(2)} ${sy(lf[1]).toFixed(2)} L ${sx(lcf[0]).toFixed(2)} ${sy(lcf[1]).toFixed(2)} L ${sx(cf[0]).toFixed(2)} ${sy(cf[1]).toFixed(2)} L ${sx(rcf[0]).toFixed(2)} ${sy(rcf[1]).toFixed(2)} L ${sx(rf[0]).toFixed(2)} ${sy(rf[1]).toFixed(2)} Z`
+  }, [sx, sy, scaledField])
+
+  const fenceLabels = useMemo(() => {
+    const { fence } = scaledField
+    const { home, lf, lcf, cf, rcf, rf } = fence
+    const nudge = (p: [number, number]): [number, number] => {
+      const dx = p[0] - home[0]
+      const dy = p[1] - home[1]
+      const len = Math.hypot(dx, dy)
+      if (len < 1e-6) return p
+      const s = 11 / len
+      return [p[0] + dx * s, p[1] + dy * s]
+    }
+    return [
+      { key: 'lf', text: `${fieldDims.lf}`, pt: nudge(lf) },
+      { key: 'lcf', text: `${Math.round(fence.lcfFt)}`, pt: nudge(lcf) },
+      { key: 'cf', text: `${fieldDims.cf}`, pt: nudge(cf) },
+      { key: 'rcf', text: `${Math.round(fence.rcfFt)}`, pt: nudge(rcf) },
+      { key: 'rf', text: `${fieldDims.rf}`, pt: nudge(rf) },
+    ]
+  }, [scaledField, fieldDims])
+
+  /** Linear turf gradient: plate → CF (broadcast-style shading, deeper OF). */
+  const grassLinear = useMemo(() => {
+    const [hx, hy] = scaledField.fence.home
     const [cx, cy] = scaledField.ofControl
-    return `M ${sx(hx).toFixed(2)} ${sy(hy).toFixed(2)} L ${sx(lx).toFixed(2)} ${sy(ly).toFixed(2)} Q ${sx(cx).toFixed(2)} ${sy(cy).toFixed(2)} ${sx(rx).toFixed(2)} ${sy(ry).toFixed(2)} Z`
+    return {
+      x1: sx(hx),
+      y1: sy(hy),
+      x2: sx(cx),
+      y2: sy(cy),
+    }
   }, [sx, sy, scaledField])
 
   const dirtPathD = useMemo(
-    () => pathFromPoints(sx, sy, scaledField.infield, true),
-    [sx, sy, scaledField.infield],
+    () => pathFromPoints(sx, sy, scaledField.fence.infieldDirtOuter, true),
+    [sx, sy, scaledField.fence.infieldDirtOuter],
   )
+
+  const infieldGrassPathD = useMemo(
+    () => pathFromPoints(sx, sy, scaledField.fence.infieldGrass, true),
+    [sx, sy, scaledField.fence.infieldGrass],
+  )
+
+  const uCfPlan = useMemo((): [number, number] => {
+    const { home, cf } = scaledField.fence
+    const dx = cf[0] - home[0]
+    const dy = cf[1] - home[1]
+    const h = Math.hypot(dx, dy)
+    if (h < 1e-9) return [0, 1]
+    return [dx / h, dy / h]
+  }, [scaledField.fence])
+
+  const moundRubberD = useMemo(() => {
+    const m = scaledField.fence.moundCenter
+    const [ux, uy] = uCfPlan
+    const wx = -uy
+    const wy = ux
+    const half = 3.25
+    const a: [number, number] = [m[0] - wx * half, m[1] - wy * half]
+    const b: [number, number] = [m[0] + wx * half, m[1] + wy * half]
+    return `M ${sx(a[0]).toFixed(2)} ${sy(a[1]).toFixed(2)} L ${sx(b[0]).toFixed(2)} ${sy(b[1]).toFixed(2)}`
+  }, [sx, sy, scaledField.fence.moundCenter, uCfPlan])
   const platePathD = useMemo(
     () => pathFromPoints(sx, sy, scaledField.plate, true),
     [sx, sy, scaledField.plate],
   )
 
   const foulLeftD = useMemo(() => {
-    const [hx, hy] = scaledField.home
-    const [lx, ly] = scaledField.lf
+    const [hx, hy] = scaledField.fence.home
+    const [lx, ly] = scaledField.fence.lf
     return `M ${sx(hx).toFixed(2)} ${sy(hy).toFixed(2)} L ${sx(lx).toFixed(2)} ${sy(ly).toFixed(2)}`
-  }, [sx, sy, scaledField.home, scaledField.lf])
+  }, [sx, sy, scaledField.fence])
 
   const foulRightD = useMemo(() => {
-    const [hx, hy] = scaledField.home
-    const [rx, ry] = scaledField.rf
+    const [hx, hy] = scaledField.fence.home
+    const [rx, ry] = scaledField.fence.rf
     return `M ${sx(hx).toFixed(2)} ${sy(hy).toFixed(2)} L ${sx(rx).toFixed(2)} ${sy(ry).toFixed(2)}`
-  }, [sx, sy, scaledField.home, scaledField.rf])
+  }, [sx, sy, scaledField.fence])
 
   if (!points.length) {
     return (
@@ -193,14 +272,14 @@ export default function GameStatcastSpray({
       <p className="muted small game-statcast-spray__caption">
         {venueName ? (
           <>
-            Fair-territory outline is scaled using published LF / CF / RF distances at{' '}
-            <strong>{venueName}</strong> ({fieldDims.lf} / {fieldDims.cf} / {fieldDims.rf} ft). Hit
-            dots use raw tracking coordinates in the same field space.
+            Outline uses a 90° fair sector at home, fence corners at published LF / CF / RF from{' '}
+            <strong>{venueName}</strong> ({fieldDims.lf} / {fieldDims.cf} / {fieldDims.rf} ft); power
+            alleys are estimated. Dots share hc_x / hc_y with this diagram (feet).
           </>
         ) : (
           <>
-            Fair-territory outline uses a generic template ({fieldDims.lf} / {fieldDims.cf} /{' '}
-            {fieldDims.rf} ft) — ballpark was not resolved from the schedule for this game.
+            Outline uses generic LF / CF / RF distances; venue unknown. Dots use field coordinates
+            (feet).
           </>
         )}
       </p>
@@ -213,67 +292,86 @@ export default function GameStatcastSpray({
         aria-label="Spray chart: batted ball positions on the field"
       >
         <defs>
-          <linearGradient id={`${gid}-sky`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--spray-sky-a)" />
-            <stop offset="100%" stopColor="var(--spray-sky-b)" />
+          <linearGradient id={`${gid}-chart-bg`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--spray-chart-bg-a)" />
+            <stop offset="100%" stopColor="var(--spray-chart-bg-b)" />
           </linearGradient>
-          <radialGradient id={`${gid}-grass`} cx="50%" cy="92%" r="78%" fx="50%" fy="92%">
+          <linearGradient
+            id={`${gid}-grass`}
+            gradientUnits="userSpaceOnUse"
+            x1={grassLinear.x1}
+            y1={grassLinear.y1}
+            x2={grassLinear.x2}
+            y2={grassLinear.y2}
+          >
             <stop offset="0%" stopColor="var(--spray-grass-a)" />
+            <stop offset="52%" stopColor="var(--spray-grass-mid)" />
             <stop offset="100%" stopColor="var(--spray-grass-b)" />
-          </radialGradient>
+          </linearGradient>
           <linearGradient id={`${gid}-dirt`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="var(--spray-dirt-a)" />
             <stop offset="100%" stopColor="var(--spray-dirt-b)" />
           </linearGradient>
         </defs>
 
-        <rect width={W} height={H} fill={`url(#${gid}-sky)`} rx={6} />
+        <rect width={W} height={H} fill={`url(#${gid}-chart-bg)`} rx={6} />
 
         <path
           d={fairPathD}
           fill={`url(#${gid}-grass)`}
-          stroke="var(--spray-edge)"
-          strokeWidth={1.35}
-          strokeLinejoin="round"
+          stroke="var(--spray-fence-line)"
+          strokeWidth={1.1}
+          strokeLinejoin="miter"
+          strokeMiterlimit={2.2}
         />
         <path
           d={dirtPathD}
           fill={`url(#${gid}-dirt)`}
-          stroke="var(--spray-dirt-b)"
-          strokeWidth={1}
-          strokeLinejoin="round"
-          opacity={0.97}
+          stroke="var(--spray-dirt-line)"
+          strokeWidth={0.85}
+          strokeLinejoin="miter"
+          strokeMiterlimit={2.2}
+          opacity={0.94}
+        />
+        <path
+          d={infieldGrassPathD}
+          fill={`url(#${gid}-grass)`}
+          stroke="none"
+          opacity={0.98}
+        />
+        <circle
+          cx={sx(scaledField.fence.moundCenter[0])}
+          cy={sy(scaledField.fence.moundCenter[1])}
+          r={6.25 * pxPerFt}
+          fill="var(--spray-dirt-a)"
+          stroke="var(--spray-dirt-line)"
+          strokeWidth={0.9}
+          opacity={0.96}
+        />
+        <path
+          d={moundRubberD}
+          fill="none"
+          stroke="var(--spray-plate-line)"
+          strokeWidth={1.1}
+          strokeLinecap="round"
+          opacity={0.9}
         />
 
         <path
           d={foulLeftD}
           fill="none"
-          stroke="var(--spray-chalk)"
-          strokeWidth={2.75}
+          stroke="var(--spray-foul-line)"
+          strokeWidth={1.35}
           strokeLinecap="round"
           opacity={0.95}
         />
         <path
           d={foulRightD}
           fill="none"
-          stroke="var(--spray-chalk)"
-          strokeWidth={2.75}
+          stroke="var(--spray-foul-line)"
+          strokeWidth={1.35}
           strokeLinecap="round"
           opacity={0.95}
-        />
-        <path
-          d={foulLeftD}
-          fill="none"
-          stroke="var(--spray-chalk-soft)"
-          strokeWidth={1.1}
-          strokeLinecap="round"
-        />
-        <path
-          d={foulRightD}
-          fill="none"
-          stroke="var(--spray-chalk-soft)"
-          strokeWidth={1.1}
-          strokeLinecap="round"
         />
 
         <path
@@ -283,6 +381,24 @@ export default function GameStatcastSpray({
           strokeWidth={0.9}
           strokeLinejoin="round"
         />
+
+        {fenceLabels.map(({ key, text, pt }) => (
+          <text
+            key={key}
+            className="game-statcast-spray__fence-ft"
+            x={sx(pt[0])}
+            y={sy(pt[1])}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="var(--spray-fence-label)"
+            fontSize={8.5}
+            fontWeight={500}
+            style={{ pointerEvents: 'none' }}
+            aria-hidden
+          >
+            {text}
+          </text>
+        ))}
 
         {points.map((p, i) => {
           let fill = otherColor

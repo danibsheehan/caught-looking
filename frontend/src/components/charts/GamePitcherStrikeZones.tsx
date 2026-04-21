@@ -44,6 +44,17 @@ function mixSummary(pitches: StatcastPitch[]): string {
     .join(' · ')
 }
 
+/** Label for the pitcher dropdown (team context + name). */
+function pitcherOptionLabel(
+  row: PitcherStatcastRow,
+  box: GameBoxscoreResponse | null,
+): string {
+  if (row.side === 'away' && box) return `${box.away.teamName} — ${row.name}`
+  if (row.side === 'home' && box) return `${box.home.teamName} — ${row.name}`
+  if (row.side === 'unknown') return `Other — ${row.name}`
+  return row.name
+}
+
 /** Strike zone interior in normalized space: x ∈ [-1,1], z ∈ [0,1]. */
 const ZONE_POLYGON_NORM = [
   [-1, 0],
@@ -63,7 +74,15 @@ const PLATE_POLYGON_NORM = [
 
 type HoverTip = { pitch: StatcastPitch; clientX: number; clientY: number }
 
-function PitcherStrikeZoneSvg({ pitches }: { pitches: StatcastPitch[] }) {
+function PitcherStrikeZoneSvg({
+  pitches,
+  variant = 'default',
+  ariaLabel = 'Pitch locations normalized to the batter strike zone',
+}: {
+  pitches: StatcastPitch[]
+  variant?: 'default' | 'featured'
+  ariaLabel?: string
+}) {
   const svgId = useId()
   const gradId = `${svgId}-zoneFill`
   const [tip, setTip] = useState<HoverTip | null>(null)
@@ -96,17 +115,18 @@ function PitcherStrikeZoneSvg({ pitches }: { pitches: StatcastPitch[] }) {
 
   const clearTip = useCallback(() => setTip(null), [])
 
+  const wrapClass =
+    variant === 'featured'
+      ? 'game-pitcher-zones__svg-wrap game-pitcher-zones__svg-wrap--featured'
+      : 'game-pitcher-zones__svg-wrap'
+
   return (
-    <div
-      className="game-pitcher-zones__svg-wrap"
-      onMouseLeave={clearTip}
-      onBlur={clearTip}
-    >
+    <div className={wrapClass} onMouseLeave={clearTip} onBlur={clearTip}>
       <svg
         className="game-pitcher-zones__svg"
         viewBox="0 0 100 100"
         role="img"
-        aria-label="Pitch locations normalized to the batter strike zone"
+        aria-label={ariaLabel}
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -147,12 +167,13 @@ function PitcherStrikeZoneSvg({ pitches }: { pitches: StatcastPitch[] }) {
           const { xN, zN } = normalizedPlateLocation(p)
           const { x, y } = projNormToSvg(xN, zN)
           const fill = pitchTypeColor((p.pitchName && p.pitchName.trim()) || 'Unknown')
+          const r = variant === 'featured' ? 1.55 : 1.35
           return (
             <circle
               key={`${p.pitcher}-${i}-${p.plateX}-${p.plateZ}`}
               cx={x}
               cy={y}
-              r={1.35}
+              r={r}
               fill={fill}
               fillOpacity={0.92}
               stroke="var(--bg)"
@@ -235,6 +256,63 @@ function partitionPitchersBySide(rows: PitcherStatcastRow[]) {
   return { away, home, unknown }
 }
 
+function OnePitcherCard({
+  row,
+  box,
+  showTeamUnderName,
+  showTitle = true,
+  featured = false,
+}: {
+  row: PitcherStatcastRow
+  box: GameBoxscoreResponse | null
+  showTeamUnderName: boolean
+  showTitle?: boolean
+  featured?: boolean
+}) {
+  const titleId = useId()
+  return (
+    <article
+      className={`game-pitcher-zones__card${featured ? ' game-pitcher-zones__card--featured' : ''}`}
+      aria-labelledby={showTitle ? titleId : undefined}
+      aria-label={showTitle ? undefined : `Pitch location for ${row.name}`}
+    >
+      {showTitle ? (
+        <header className="game-pitcher-zones__head">
+          <h3 className="game-pitcher-zones__title" id={titleId}>
+            {row.name}
+          </h3>
+          {showTeamUnderName && row.side !== 'unknown' && box ? (
+            <p className="muted small game-pitcher-zones__team">
+              {row.side === 'away' ? box.away.teamName : box.home.teamName}
+            </p>
+          ) : null}
+          <p className="muted small game-pitcher-zones__mix">{mixSummary(row.pitches)}</p>
+        </header>
+      ) : (
+        <p className="muted small game-pitcher-zones__mix">{mixSummary(row.pitches)}</p>
+      )}
+      <PitcherStrikeZoneSvg
+        pitches={row.pitches}
+        variant={featured ? 'featured' : 'default'}
+        ariaLabel={`Pitch locations for ${row.name}`}
+      />
+      <ul className="game-pitcher-zones__legend" aria-label="Pitch types">
+        {groupByPitchName(row.pitches).map(([name, pts]) => (
+          <li key={name} className="game-pitcher-zones__legend-item">
+            <span
+              className="game-pitcher-zones__legend-swatch"
+              style={{ background: pitchTypeColor(name) }}
+            />
+            <span>
+              {name} <span className="muted">({pts.length})</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </article>
+  )
+}
+
 function PitcherCards({
   rows,
   box,
@@ -247,35 +325,14 @@ function PitcherCards({
   return (
     <>
       {rows.map((row) => (
-        <article
+        <OnePitcherCard
           key={row.id}
-          className="game-pitcher-zones__card"
-          aria-label={`Pitch location for ${row.name}`}
-        >
-          <header className="game-pitcher-zones__head">
-            <h3 className="game-pitcher-zones__title">{row.name}</h3>
-            {showTeamUnderName && row.side !== 'unknown' && box ? (
-              <p className="muted small game-pitcher-zones__team">
-                {row.side === 'away' ? box.away.teamName : box.home.teamName}
-              </p>
-            ) : null}
-            <p className="muted small game-pitcher-zones__mix">{mixSummary(row.pitches)}</p>
-          </header>
-          <PitcherStrikeZoneSvg pitches={row.pitches} />
-          <ul className="game-pitcher-zones__legend" aria-label="Pitch types">
-            {groupByPitchName(row.pitches).map(([name, pts]) => (
-              <li key={name} className="game-pitcher-zones__legend-item">
-                <span
-                  className="game-pitcher-zones__legend-swatch"
-                  style={{ background: pitchTypeColor(name) }}
-                />
-                <span>
-                  {name} <span className="muted">({pts.length})</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </article>
+          row={row}
+          box={box}
+          showTeamUnderName={showTeamUnderName}
+          showTitle
+          featured={false}
+        />
       ))}
     </>
   )
@@ -284,6 +341,23 @@ function PitcherCards({
 export default function GamePitcherStrikeZones({ pitches, box }: GamePitcherStrikeZonesProps) {
   const rows = useMemo(() => buildPitcherStrikeZoneRows(pitches, box), [pitches, box])
   const { away, home, unknown } = useMemo(() => partitionPitchersBySide(rows), [rows])
+  const [viewMode, setViewMode] = useState<'single' | 'all'>('single')
+  /** User-chosen pitcher; when null or stale, first available row is used. */
+  const [userPitcherId, setUserPitcherId] = useState<number | null>(null)
+  const selectId = useId()
+
+  const effectivePitcherId = useMemo(() => {
+    if (rows.length === 0) return null
+    if (userPitcherId != null && rows.some((r) => r.id === userPitcherId)) {
+      return userPitcherId
+    }
+    return rows[0]!.id
+  }, [rows, userPitcherId])
+
+  const selectedRow = useMemo(
+    () => rows.find((r) => r.id === effectivePitcherId) ?? null,
+    [rows, effectivePitcherId],
+  )
 
   if (!pitches.length) {
     return (
@@ -297,44 +371,87 @@ export default function GamePitcherStrikeZones({ pitches, box }: GamePitcherStri
 
   return (
     <div className="game-pitcher-zones">
-      {away.length > 0 ? (
-        <section
-          className="game-pitcher-zones__section game-pitcher-zones__section--away"
-          aria-label={box ? sectionHeading('Away', box.away.teamName) : 'Away pitching'}
-        >
-          <h4 className="game-pitcher-zones__section-head">
-            {box ? sectionHeading('Away', box.away.teamName) : 'Away'}
-          </h4>
-          <div className="game-pitcher-zones__grid">
-            <PitcherCards rows={away} box={box} showTeamUnderName={false} />
+      <div className="game-pitcher-zones__toolbar">
+        {viewMode === 'single' && rows.length > 0 ? (
+          <div className="game-pitcher-zones__picker">
+            <label className="game-pitcher-zones__picker-label" htmlFor={selectId}>
+              Pitcher
+            </label>
+            <select
+              id={selectId}
+              className="game-pitcher-zones__select"
+              value={effectivePitcherId != null ? String(effectivePitcherId) : ''}
+              onChange={(e) => setUserPitcherId(Number(e.target.value))}
+            >
+              {rows.map((row) => (
+                <option key={row.id} value={row.id}>
+                  {pitcherOptionLabel(row, box)}
+                </option>
+              ))}
+            </select>
           </div>
-        </section>
+        ) : null}
+        <button
+          type="button"
+          className="game-pitcher-zones__view-toggle"
+          onClick={() => setViewMode((m) => (m === 'single' ? 'all' : 'single'))}
+        >
+          {viewMode === 'single' ? 'Show all pitchers' : 'Single pitcher'}
+        </button>
+      </div>
+
+      {viewMode === 'single' && selectedRow ? (
+        <OnePitcherCard
+          row={selectedRow}
+          box={box}
+          showTeamUnderName={false}
+          showTitle={false}
+          featured
+        />
       ) : null}
 
-      {home.length > 0 ? (
-        <section
-          className="game-pitcher-zones__section game-pitcher-zones__section--home"
-          aria-label={box ? sectionHeading('Home', box.home.teamName) : 'Home pitching'}
-        >
-          <h4 className="game-pitcher-zones__section-head">
-            {box ? sectionHeading('Home', box.home.teamName) : 'Home'}
-          </h4>
-          <div className="game-pitcher-zones__grid">
-            <PitcherCards rows={home} box={box} showTeamUnderName={false} />
-          </div>
-        </section>
-      ) : null}
+      {viewMode === 'all' ? (
+        <>
+          {away.length > 0 ? (
+            <section
+              className="game-pitcher-zones__section game-pitcher-zones__section--away"
+              aria-label={box ? sectionHeading('Away', box.away.teamName) : 'Away pitching'}
+            >
+              <h4 className="game-pitcher-zones__section-head">
+                {box ? sectionHeading('Away', box.away.teamName) : 'Away'}
+              </h4>
+              <div className="game-pitcher-zones__grid">
+                <PitcherCards rows={away} box={box} showTeamUnderName={false} />
+              </div>
+            </section>
+          ) : null}
 
-      {unknown.length > 0 ? (
-        <section
-          className="game-pitcher-zones__section game-pitcher-zones__section--unknown"
-          aria-label="Pitchers not matched to box score"
-        >
-          <h4 className="game-pitcher-zones__section-head">Other pitchers</h4>
-          <div className="game-pitcher-zones__grid">
-            <PitcherCards rows={unknown} box={box} showTeamUnderName />
-          </div>
-        </section>
+          {home.length > 0 ? (
+            <section
+              className="game-pitcher-zones__section game-pitcher-zones__section--home"
+              aria-label={box ? sectionHeading('Home', box.home.teamName) : 'Home pitching'}
+            >
+              <h4 className="game-pitcher-zones__section-head">
+                {box ? sectionHeading('Home', box.home.teamName) : 'Home'}
+              </h4>
+              <div className="game-pitcher-zones__grid">
+                <PitcherCards rows={home} box={box} showTeamUnderName={false} />
+              </div>
+            </section>
+          ) : null}
+
+          {unknown.length > 0 ? (
+            <section
+              className="game-pitcher-zones__section game-pitcher-zones__section--unknown"
+              aria-label="Pitchers not matched to box score"
+            >
+              <h4 className="game-pitcher-zones__section-head">Other pitchers</h4>
+              <div className="game-pitcher-zones__grid">
+                <PitcherCards rows={unknown} box={box} showTeamUnderName />
+              </div>
+            </section>
+          ) : null}
+        </>
       ) : null}
     </div>
   )
