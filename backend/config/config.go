@@ -41,7 +41,6 @@ func Load() Config {
 		RateLimitWindow:   time.Minute,
 		MLBMaxQPS:        20,
 		MLBHTTPTimeout:   15 * time.Second,
-		MLBMaxQPS:         20,
 		SavantMaxQPS:      5,
 	}
 

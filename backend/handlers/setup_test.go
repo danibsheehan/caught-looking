@@ -28,7 +28,7 @@ func newTestHandlers(t *testing.T, mlb http.Handler) *Handlers {
 	return New(
 		testConfig(),
 		services.NewTTLCache(),
-		services.NewMLBClient(srv.URL, 0),
+		services.NewMLBClient(srv.URL, 0, 0),
 		services.NewSavantClient(srv.URL, 0),
 	)
 }

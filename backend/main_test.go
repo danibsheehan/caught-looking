@@ -18,7 +18,7 @@ func TestHealth(t *testing.T) {
 	h := handlers.New(
 		cfg,
 		services.NewTTLCache(),
-		services.NewMLBClient("http://127.0.0.1:9", 0),
+		services.NewMLBClient("http://127.0.0.1:9", 0, 0),
 		services.NewSavantClient("http://127.0.0.1:9", 0),
 	)
 	srv := httptest.NewServer(newRouter(cfg, h))
