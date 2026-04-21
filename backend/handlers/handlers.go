@@ -10,8 +10,9 @@ type Handlers struct {
 	cfg    config.Config
 	cache  *services.TTLCache
 	mlb    *services.MLBClient
+	savant *services.SavantClient
 }
 
-func New(cfg config.Config, cache *services.TTLCache, mlb *services.MLBClient) *Handlers {
-	return &Handlers{cfg: cfg, cache: cache, mlb: mlb}
+func New(cfg config.Config, cache *services.TTLCache, mlb *services.MLBClient, savant *services.SavantClient) *Handlers {
+	return &Handlers{cfg: cfg, cache: cache, mlb: mlb, savant: savant}
 }

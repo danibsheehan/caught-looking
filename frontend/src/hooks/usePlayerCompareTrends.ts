@@ -6,12 +6,14 @@ import {
 import type {
   PlayersGameLogResponse,
   PlayersYearByYearResponse,
+  YearByYearMetric,
 } from '../types/api'
 
 export function usePlayerCompareYearByYear(
   ids: string,
   group: 'hitting' | 'pitching',
   enabled: boolean,
+  metric: YearByYearMetric,
 ) {
   const [data, setData] = useState<PlayersYearByYearResponse | null>(null)
   const [error, setError] = useState<Error | null>(null)
@@ -26,7 +28,7 @@ export function usePlayerCompareYearByYear(
       if (cancelled) return
       setLoading(true)
       setError(null)
-      fetchPlayersCompareYearByYear({ ids, group })
+      fetchPlayersCompareYearByYear({ ids, group, metric })
         .then((d) => {
           if (!cancelled) setData(d)
         })
@@ -42,7 +44,7 @@ export function usePlayerCompareYearByYear(
       cancelled = true
       clearTimeout(t)
     }
-  }, [ids, group, inactive])
+  }, [ids, group, inactive, metric])
 
   return {
     data: inactive ? null : data,

@@ -21,6 +21,9 @@ var loadEnvKeys = []string{
 	"RATE_LIMIT_WINDOW",
 	"MLB_MAX_QPS",
 	"MLB_HTTP_TIMEOUT",
+	"SAVANT_BASE_URL",
+	"CACHE_TTL_STATCAST",
+	"SAVANT_MAX_QPS",
 }
 
 func resetLoadEnv(t *testing.T) {
@@ -37,15 +40,18 @@ func TestLoad_defaults(t *testing.T) {
 	want := Config{
 		HTTPAddr:          ":8080",
 		MLBBaseURL:        "https://statsapi.mlb.com/api/v1",
+		SavantBaseURL:     "https://baseballsavant.mlb.com",
 		AllowedOrigins:    []string{"http://localhost:5173", "http://127.0.0.1:5173"},
 		TTLStandings:      time.Hour,
 		TTLScores:         5 * time.Minute,
+		TTLStatcast:       6 * time.Hour,
 		DefaultSeason:     2026,
 		DefaultLeagueIDs:  "103,104",
 		RateLimitRequests: 120,
 		RateLimitWindow:   time.Minute,
 		MLBMaxQPS:         20,
 		MLBHTTPTimeout:    15 * time.Second,
+		SavantMaxQPS:      5,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Load() mismatch\n got: %+v\nwant: %+v", got, want)

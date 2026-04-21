@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
+import { GamePitcherStrikeZones, GameScoreBar } from '../charts'
 import type {
   BatterLine,
   GameBoxscoreResponse,
+  GameStatcastPitchesResponse,
   PitcherLine,
   TeamBoxSide,
 } from '../../types/api'
@@ -104,7 +106,23 @@ function TeamTotalsCard({ side }: { side: TeamBoxSide }) {
 
 type SortState = { key: string; dir: 'asc' | 'desc' } | null
 
-export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse }) {
+export type GameBoxscorePitchLocation = {
+  loading: boolean
+  error: Error | null
+  data: GameStatcastPitchesResponse | null
+}
+
+export default function GameBoxscorePanel({
+  data,
+  gamePk,
+  pitchLocation,
+}: {
+  data: GameBoxscoreResponse
+  /** When set, renders “Runs by inning” directly below team totals. */
+  gamePk?: number
+  /** Pitch-location charts; shown below pitching tables when provided. */
+  pitchLocation?: GameBoxscorePitchLocation
+}) {
   const [batAway, setBatAway] = useState<SortState>(null)
   const [batHome, setBatHome] = useState<SortState>(null)
   const [pitAway, setPitAway] = useState<SortState>(null)
@@ -189,6 +207,16 @@ export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse
           <TeamTotalsCard side={data.home} />
         </div>
       </div>
+
+      {gamePk != null ? (
+        <div className="game-boxscore__runs-panel panel chart-panel">
+          <h2>Runs by inning</h2>
+          <p className="muted small">
+            Stacked bars use each team&apos;s primary color per inning.
+          </p>
+          <GameScoreBar key={String(gamePk)} gamePk={gamePk} />
+        </div>
+      ) : null}
 
       <h2 className="game-boxscore__heading">Pitching</h2>
       <div className="game-boxscore__pitch-grid">
@@ -355,6 +383,25 @@ export default function GameBoxscorePanel({ data }: { data: GameBoxscoreResponse
           </div>
         </div>
       </div>
+
+      {pitchLocation != null ? (
+        <div className="panel chart-panel game-boxscore__pitch-location">
+          <h2>Pitch location</h2>
+          <p className="muted small">
+            Each pitcher&apos;s pitches at the plate (horizontal and vertical location), colored by
+            pitch type.
+          </p>
+          {pitchLocation.loading ? (
+            <p className="muted">Loading pitch data…</p>
+          ) : pitchLocation.error ? (
+            <p className="error" role="alert">
+              {pitchLocation.error.message}
+            </p>
+          ) : pitchLocation.data ? (
+            <GamePitcherStrikeZones pitches={pitchLocation.data.pitches} box={data} />
+          ) : null}
+        </div>
+      ) : null}
 
       <h2 className="game-boxscore__heading">Batting</h2>
       <div className="game-boxscore__bat-grid">
