@@ -2,7 +2,7 @@ import type { FieldDimensionsFt } from './mlbVenueFieldDimensions'
 import { DEFAULT_FIELD_DIMS } from './mlbVenueFieldDimensions'
 
 /**
- * Reference fair-territory template in field coordinates hc_x / hc_y (feet), matched to ~DEFAULT_FIELD_DIMS.
+ * Reference fair-territory template in field feet (same space as `statcastHcToFieldFeet`), matched to ~DEFAULT_FIELD_DIMS.
  */
 export const SPRAY_HOME: [number, number] = [125, 4]
 export const SPRAY_LF: [number, number] = [14, 72]

@@ -12,8 +12,10 @@ import {
 } from 'recharts'
 import type { StatcastBattedBall } from '../../types/api'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
+import { buildScatterTooltipRows } from '../../utils/statcastDisplay'
 import { inningHalfBucket } from '../../utils/inningHalf'
 import { statcastHalfFillColors } from '../../utils/statcastHalfColors'
+import StatcastMetricTooltipContent from './StatcastMetricTooltipContent'
 
 export type GameStatcastScatterPoint = {
   launchAngle: number
@@ -162,24 +164,15 @@ function StatcastTooltip({ active, payload }: TooltipContentProps) {
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload as GameStatcastScatterPoint | undefined
   if (!row) return null
+  const rows = buildScatterTooltipRows({
+    playerName: row.playerName,
+    launchSpeed: row.launchSpeed,
+    launchAngle: row.launchAngle,
+    events: row.events,
+  })
   return (
-    <div
-      className="game-statcast-scatter__tooltip"
-      style={{
-        background: 'var(--bg)',
-        border: '1px solid var(--border)',
-        color: 'var(--text-h)',
-        padding: '0.45rem 0.6rem',
-        borderRadius: '0.35rem',
-        fontSize: '0.82rem',
-        boxShadow: 'var(--shadow)',
-      }}
-    >
-      <div style={{ fontWeight: 600 }}>{row.playerName}</div>
-      <div style={{ marginTop: '0.2rem', color: 'var(--text)' }}>
-        {row.launchSpeed.toFixed(1)} mph · {row.launchAngle.toFixed(1)}°
-        {row.events ? ` · ${row.events}` : ''}
-      </div>
+    <div className="game-statcast-scatter__tooltip statcast-metric-tooltip">
+      <StatcastMetricTooltipContent rows={rows} />
     </div>
   )
 }

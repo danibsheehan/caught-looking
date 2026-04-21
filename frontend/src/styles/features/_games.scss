@@ -114,16 +114,8 @@
   &__tooltip {
     pointer-events: none;
     z-index: 2;
-    min-width: 10rem;
+    min-width: 11rem;
     max-width: 18rem;
-    padding: 0.45rem 0.55rem;
-    border-radius: 0.35rem;
-    font-size: 0.82rem;
-    line-height: 1.35;
-    color: var(--text-h);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow);
   }
 
   &__legend {
@@ -170,6 +162,63 @@ html[data-theme='dark'] .game-statcast-spray__fence-ft {
 .game-statcast-scatter {
   &__empty {
     margin: 0.5rem 0 0;
+  }
+
+  &__tooltip {
+    max-width: 17rem;
+  }
+}
+
+/* Spray + launch-angle scatter: shared 1–4 metric tooltip (Distance → … → Result). */
+.statcast-metric-tooltip {
+  padding: 0.38rem 0.45rem;
+  border-radius: 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.28;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+
+  &__title {
+    font-weight: 600;
+    color: var(--text-h);
+    line-height: 1.25;
+  }
+
+  &__title + &__list {
+    margin-top: 0.28rem;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding-left: 0;
+  }
+
+  &__item {
+    margin-top: 0.14rem;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  &__label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-h);
+    line-height: 1.2;
+  }
+
+  &__value {
+    display: block;
+    margin-top: 0.06rem;
+    font-size: 0.8rem;
+    font-weight: 400;
+    line-height: 1.3;
+    color: var(--text);
   }
 }
 

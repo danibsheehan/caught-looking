@@ -152,7 +152,7 @@ export default function GameDetail() {
       <div className="panel chart-panel game-statcast">
         <h2>Batted balls</h2>
         <p className="muted small">
-          Spray chart uses hit coordinates in the field (hc_x / hc_y); launch metrics below use exit
+          Spray chart maps Savant hc_x / hc_y into field feet; launch metrics below use exit
           velocity and launch angle.
         </p>
         {statcastLoading ? (

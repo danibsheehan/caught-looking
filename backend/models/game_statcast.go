@@ -12,7 +12,7 @@ type GameStatcastResponse struct {
 type StatcastBattedBall struct {
 	LaunchSpeed *float64 `json:"launchSpeed,omitempty"`
 	LaunchAngle *float64 `json:"launchAngle,omitempty"`
-	// HCX/HCY are hit coordinates in feet (Statcast `hc_x` / `hc_y`); used for spray-style field plots.
+	// HCX/HCY are Statcast Search grid coordinates (hc_x / hc_y); consumers map to field feet for spray plots.
 	HCX *float64 `json:"hcX,omitempty"`
 	HCY *float64 `json:"hcY,omitempty"`
 	Batter      int      `json:"batter"`

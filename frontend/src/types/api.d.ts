@@ -154,9 +154,9 @@ export interface GameBoxscoreResponse {
 export interface StatcastBattedBall {
   launchSpeed?: number
   launchAngle?: number
-  /** Hit position X (feet), source `hc_x` — spray chart. */
+  /** Savant Search grid `hc_x` (not literal field feet until converted for spray charts). */
   hcX?: number
-  /** Hit position Y (feet), source `hc_y` — spray chart (depth from plate). */
+  /** Savant Search grid `hc_y` (increases toward backstop; not literal depth in feet). */
   hcY?: number
   batter: number
   pitcher: number
