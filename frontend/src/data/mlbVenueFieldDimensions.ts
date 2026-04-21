@@ -1,7 +1,7 @@
 /**
  * Approximate outfield fence distances (feet) at LF line, CF, RF line for spray-chart scaling.
  * Sources: typical MLB / club published dimensions (rounded). Used only to scale the decorative
- * fair-territory outline per venue — hit dots remain raw hc_x / hc_y.
+ * fair-territory outline per venue — hit dots use Savant grid coords converted to field feet in the chart.
  */
 export type FieldDimensionsFt = {
   lf: number

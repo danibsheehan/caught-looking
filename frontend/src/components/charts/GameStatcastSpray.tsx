@@ -8,10 +8,17 @@ import type { StatcastBattedBall } from '../../types/api'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { inningHalfBucket } from '../../utils/inningHalf'
 import { statcastHalfFillColors } from '../../utils/statcastHalfColors'
+import { buildSprayTooltipRows, type StatcastChartTooltipRow } from '../../utils/statcastDisplay'
+import { statcastHcToFieldFeet } from '../../utils/statcastHitCoordinates'
+import StatcastMetricTooltipContent from './StatcastMetricTooltipContent'
 
 type SprayPoint = {
+  /** Field-foot x (third → first), after Statcast grid → feet conversion. */
   hcX: number
+  /** Field-foot y (depth toward OF), after conversion. */
   hcY: number
+  rawHcX: number
+  rawHcY: number
   playerName: string
   events?: string
   inningHalf?: string
@@ -44,9 +51,12 @@ function toSprayPoints(rows: StatcastBattedBall[]): SprayPoint[] {
   const out: SprayPoint[] = []
   for (const r of rows) {
     if (r.hcX == null || r.hcY == null) continue
+    const { x, y } = statcastHcToFieldFeet(r.hcX, r.hcY)
     out.push({
-      hcX: r.hcX,
-      hcY: r.hcY,
+      hcX: x,
+      hcY: y,
+      rawHcX: r.hcX,
+      rawHcY: r.hcY,
       playerName: r.playerName,
       events: r.events,
       inningHalf: r.inningHalf,
@@ -106,7 +116,7 @@ export default function GameStatcastSpray({
   const [tip, setTip] = useState<{
     px: number
     py: number
-    lines: string[]
+    rows: StatcastChartTooltipRow[]
   } | null>(null)
 
   const points = useMemo(() => toSprayPoints(battedBalls), [battedBalls])
@@ -160,7 +170,7 @@ export default function GameStatcastSpray({
     const drawH = dataH * scale
     const originX = PAD.l + PLOT_INSET_PX + (innerW - drawW) / 2
     const originY = PAD.t + PLOT_INSET_PX + (innerH - drawH) / 2
-    const [hx0, hy0] = scaledField.fence.home
+    const [hx0] = scaledField.fence.home
     const pxPerFt = Math.abs(originX + (hx0 + 1 - x0) * scale - (originX + (hx0 - x0) * scale))
     return {
       sx: (hx: number) => originX + (hx - x0) * scale,
@@ -274,12 +284,13 @@ export default function GameStatcastSpray({
           <>
             Outline uses a 90° fair sector at home, fence corners at published LF / CF / RF from{' '}
             <strong>{venueName}</strong> ({fieldDims.lf} / {fieldDims.cf} / {fieldDims.rf} ft); power
-            alleys are estimated. Dots share hc_x / hc_y with this diagram (feet).
+            alleys are estimated. Dots plot Savant hc_x / hc_y converted to the same field-foot space
+            as this outline.
           </>
         ) : (
           <>
-            Outline uses generic LF / CF / RF distances; venue unknown. Dots use field coordinates
-            (feet).
+            Outline uses generic LF / CF / RF distances; venue unknown. Dots use the standard Savant
+            → field-foot conversion.
           </>
         )}
       </p>
@@ -414,17 +425,17 @@ export default function GameStatcastSpray({
           }
           const cx = sx(p.hcX)
           const cy = sy(p.hcY)
-          const lines = [
-            p.playerName,
-            `${p.hcX.toFixed(0)} ft, ${p.hcY.toFixed(0)} ft (hc_x, hc_y)`,
-            ...(p.launchSpeed != null && p.launchAngle != null
-              ? [`${p.launchSpeed.toFixed(1)} mph · ${p.launchAngle.toFixed(1)}°`]
-              : []),
-            ...(p.events ? [p.events] : []),
-          ]
+          const rows = buildSprayTooltipRows({
+            playerName: p.playerName,
+            fieldX: p.hcX,
+            fieldY: p.hcY,
+            launchSpeed: p.launchSpeed,
+            launchAngle: p.launchAngle,
+            events: p.events,
+          })
           return (
             <circle
-              key={`${p.hcX}-${p.hcY}-${i}`}
+              key={`${p.rawHcX}-${p.rawHcY}-${i}`}
               cx={cx}
               cy={cy}
               r={5.25}
@@ -432,7 +443,7 @@ export default function GameStatcastSpray({
               stroke="var(--spray-bip-ring)"
               strokeWidth={1.5}
               style={{ cursor: 'default' }}
-              onMouseEnter={() => setTip({ px: cx, py: cy, lines })}
+              onMouseEnter={() => setTip({ px: cx, py: cy, rows })}
               onMouseLeave={() => setTip(null)}
             />
           )
@@ -446,13 +457,13 @@ export default function GameStatcastSpray({
           fontSize={11}
           opacity={0.92}
         >
-          Third base ← hc_x (ft) → First base · deeper contact toward top (hc_y)
+          Along the infield: third-base side ↔ first-base side · Up on this diagram = farther from home
         </text>
       </svg>
 
       {tip ? (
         <div
-          className="game-statcast-spray__tooltip"
+          className="game-statcast-spray__tooltip statcast-metric-tooltip"
           style={{
             position: 'absolute',
             left: `${(tip.px / W) * 100}%`,
@@ -460,11 +471,7 @@ export default function GameStatcastSpray({
             transform: 'translate(-50%, calc(-100% - 10px))',
           }}
         >
-          {tip.lines.map((line, i) => (
-            <div key={i} style={{ fontWeight: i === 0 ? 600 : 400 }}>
-              {line}
-            </div>
-          ))}
+          <StatcastMetricTooltipContent rows={tip.rows} />
         </div>
       ) : null}
 
