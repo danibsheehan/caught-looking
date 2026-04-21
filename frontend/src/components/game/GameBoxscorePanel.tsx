@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
-import { obsidianTeamChartPairsRegistryPrimary } from '../../utils/mlbTeamColors'
+import { gameInningBarFills } from '../../utils/gameChartColors'
 import { GamePitcherStrikeZones, GameScoreBar } from '../charts'
 import GameFinalScoreStrip from './GameFinalScoreStrip'
 import type {
@@ -132,16 +132,11 @@ export default function GameBoxscorePanel({
   const [pitHome, setPitHome] = useState<SortState>(null)
 
   const surfaceHex = useChartSurfaceHex()
-  const scoreStripLabelColors = useMemo(() => {
-    const pairs = obsidianTeamChartPairsRegistryPrimary(
-      [data.away.teamId, data.home.teamId],
-      surfaceHex,
-    )
-    return {
-      away: pairs[0]?.label ?? '#c8d8e8',
-      home: pairs[1]?.label ?? '#c8d8e8',
-    }
-  }, [data.away.teamId, data.home.teamId, surfaceHex])
+  /** Same fills as {@link GameScoreBar} stacked bars so the score strip matches the chart. */
+  const runsByInningTeamFills = useMemo(
+    () => gameInningBarFills(data.away.teamId, data.home.teamId, surfaceHex),
+    [data.away.teamId, data.home.teamId, surfaceHex],
+  )
 
   const batAwayRows = useMemo(() => {
     const batting = data.away.batting ?? []
@@ -235,8 +230,8 @@ export default function GameBoxscorePanel({
             homeTeamName={data.home.teamName}
             awayRuns={data.away.totals.runs}
             homeRuns={data.home.totals.runs}
-            awayScoreColor={scoreStripLabelColors.away}
-            homeScoreColor={scoreStripLabelColors.home}
+            awayScoreColor={runsByInningTeamFills.awayFill}
+            homeScoreColor={runsByInningTeamFills.homeFill}
           />
           <GameScoreBar key={String(gamePk)} gamePk={gamePk} showCaption={false} />
         </div>

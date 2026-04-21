@@ -92,8 +92,8 @@ export default function GameStatcastScatter({
     const laMax = la.length ? Math.max(...la) : 50
     const evMin = ev.length ? Math.min(...ev) : 50
     const evMax = ev.length ? Math.max(...ev) : 110
-    const laPad = Math.max(5, (laMax - laMin) * 0.08)
-    const evPad = Math.max(4, (evMax - evMin) * 0.06)
+    const laPad = Math.max(6, (laMax - laMin) * 0.12)
+    const evPad = Math.max(5, (evMax - evMin) * 0.1)
     const xDomain = [Math.floor(laMin - laPad), Math.ceil(laMax + laPad)] as [number, number]
     return {
       points: all,
@@ -101,7 +101,8 @@ export default function GameStatcastScatter({
       bottom: botBat,
       other,
       xDomain,
-      yDomain: [Math.max(30, Math.floor(evMin - evPad)), Math.ceil(evMax + evPad)] as [
+      // Floor from data (not a fixed 30 mph) so slow rollers and weak contact use the full vertical scale.
+      yDomain: [Math.max(0, Math.floor(evMin - evPad)), Math.ceil(evMax + evPad)] as [
         number,
         number,
       ],
@@ -133,8 +134,8 @@ export default function GameStatcastScatter({
         read bottom to top as harder-hit contact. Hover a point for the batter and play result—where
         the ball went on the field is on the spray chart.
       </p>
-      <ResponsiveContainer width="100%" height={320}>
-        <ScatterChart margin={{ top: 10, right: 12, left: 4, bottom: 28 }}>
+      <ResponsiveContainer width="100%" height={400}>
+        <ScatterChart margin={{ top: 12, right: 14, left: 8, bottom: 30 }}>
           {launchAngleBands.map((b) => (
             <ReferenceArea
               key={b.key}
