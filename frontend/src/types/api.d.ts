@@ -181,10 +181,14 @@ export interface StatcastPitch {
   /** Vertical location at plate (feet) — source `plate_z`. */
   plateZ: number
   pitchName?: string
+  /** Savant `pitch_type` abbrev. (e.g. FF, SL); optional when the feed only has `pitchName`. */
+  pitchType?: string
   pitcher: number
   releaseSpeed?: number
   /** "Top" or "Bottom"; from `inning_topbot`. */
   inningHalf?: string
+  /** Batter stand for this pitch — Savant `stand` (L / R / S). */
+  batterStand?: 'L' | 'R' | 'S'
   /** Top of batter strike zone (feet), source `sz_top`. */
   szTop?: number
   /** Bottom of batter strike zone (feet), source `sz_bot`. */

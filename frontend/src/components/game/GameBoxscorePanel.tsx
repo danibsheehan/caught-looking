@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react'
+import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
+import { gameInningBarFills } from '../../utils/gameChartColors'
 import { GamePitcherStrikeZones, GameScoreBar } from '../charts'
+import GameFinalScoreStrip from './GameFinalScoreStrip'
 import type {
   BatterLine,
   GameBoxscoreResponse,
@@ -128,6 +131,13 @@ export default function GameBoxscorePanel({
   const [pitAway, setPitAway] = useState<SortState>(null)
   const [pitHome, setPitHome] = useState<SortState>(null)
 
+  const surfaceHex = useChartSurfaceHex()
+  /** Same fills as {@link GameScoreBar} stacked bars so the score strip matches the chart. */
+  const runsByInningTeamFills = useMemo(
+    () => gameInningBarFills(data.away.teamId, data.home.teamId, surfaceHex),
+    [data.away.teamId, data.home.teamId, surfaceHex],
+  )
+
   const batAwayRows = useMemo(() => {
     const batting = data.away.batting ?? []
     if (!batAway) return batting
@@ -212,9 +222,18 @@ export default function GameBoxscorePanel({
         <div className="game-boxscore__runs-panel panel chart-panel">
           <h2>Runs by inning</h2>
           <p className="muted small">
-            Stacked bars use each team&apos;s primary color per inning.
+            Stacked bars use each team’s primary color, brightened for readability on a dark
+            background (fast-read scoring by inning).
           </p>
-          <GameScoreBar key={String(gamePk)} gamePk={gamePk} />
+          <GameFinalScoreStrip
+            awayTeamName={data.away.teamName}
+            homeTeamName={data.home.teamName}
+            awayRuns={data.away.totals.runs}
+            homeRuns={data.home.totals.runs}
+            awayScoreColor={runsByInningTeamFills.awayFill}
+            homeScoreColor={runsByInningTeamFills.homeFill}
+          />
+          <GameScoreBar key={String(gamePk)} gamePk={gamePk} showCaption={false} />
         </div>
       ) : null}
 
@@ -388,8 +407,9 @@ export default function GameBoxscorePanel({
         <div className="panel chart-panel game-boxscore__pitch-location">
           <h2>Pitch location</h2>
           <p className="muted small">
-            Each pitcher&apos;s pitches at the plate (horizontal and vertical location), colored by
-            pitch type.
+            Catcher&apos;s view toward the pitcher: each pitch where it crossed the plate (horizontal
+            and vertical feet), with a light depth perspective on the grid. Colors are pitch
+            type.
           </p>
           {pitchLocation.loading ? (
             <p className="muted">Loading pitch data…</p>

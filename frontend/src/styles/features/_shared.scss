@@ -8,10 +8,6 @@
 }
 
 .error {
-  color: #b91c1c;
-}
-
-html[data-theme='dark'] .error {
   color: #fca5a5;
 }
 
@@ -24,7 +20,7 @@ html[data-theme='dark'] .error {
   border-radius: 0.5rem;
   padding: 1rem 1.1rem;
   margin-bottom: 1.25rem;
-  background: color-mix(in srgb, var(--bg) 96%, var(--code-bg) 4%);
+  background: var(--surface);
   box-shadow: var(--shadow);
 }
 
@@ -61,6 +57,18 @@ html[data-theme='dark'] .error {
   text-align: left;
   padding: 0.5rem 0.45rem;
   border-bottom: 1px solid var(--border);
+}
+
+.standings-page__table tbody td:nth-child(1),
+.standings-page__table tbody td:nth-child(n + 3) {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.player-compare-stats__table tbody td:nth-child(2),
+.player-compare-stats__table tbody td:nth-child(3) {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .player-compare-stats__table th,

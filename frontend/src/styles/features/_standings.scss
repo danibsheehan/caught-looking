@@ -27,7 +27,7 @@
     border-radius: 0.5rem;
     padding: 1rem 1.1rem;
     margin-bottom: 1.25rem;
-    background: color-mix(in srgb, var(--bg) 96%, var(--code-bg) 4%);
+    background: var(--surface);
     box-shadow: var(--shadow);
 
     h2 {

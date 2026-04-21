@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceDot,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -12,8 +13,8 @@ import { fetchRecordTimeline } from '../../api/client'
 import type { RecordTimelineResponse } from '../../types/api'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
-import { adjustChartColorForSurface } from '../../utils/chartColorContrast'
-import { CHART_NEUTRAL_FALLBACK, mlbTeamPrimaryHex } from '../../utils/mlbTeamColors'
+import { chartCartesianTick } from '../../utils/rechartsAxis'
+import { obsidianTeamChartPairs } from '../../utils/mlbTeamColors'
 
 type WinLossChartProps = {
   teamId: number | null | undefined
@@ -53,6 +54,14 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
     }
   }, [teamId, season])
 
+  const { strokeColor, peakLabelColor } = useMemo(() => {
+    if (teamId == null || !Number.isFinite(teamId) || teamId <= 0) {
+      return { strokeColor: '#64748b', peakLabelColor: '#94a3b8' }
+    }
+    const [pair] = obsidianTeamChartPairs([teamId], surfaceHex)
+    return { strokeColor: pair!.ink, peakLabelColor: pair!.label }
+  }, [teamId, surfaceHex])
+
   if (teamId == null || season == null) {
     return (
       <p className="muted">Select a team and season to plot rolling win percentage.</p>
@@ -75,11 +84,6 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
     return <p className="muted">No completed games in this sample yet.</p>
   }
 
-  const strokeColor = adjustChartColorForSurface(
-    mlbTeamPrimaryHex(teamId, CHART_NEUTRAL_FALLBACK),
-    surfaceHex,
-  )
-
   const rows = data.points.map((p) => ({
     ...p,
     pctLabel: `${(p.pct * 100).toFixed(1)}%`,
@@ -87,19 +91,30 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
     x: p.gameIndex,
   }))
 
+  const peakRow = rows.reduce((best, row) =>
+    row.pctPct >= best.pctPct ? row : best,
+  )
+
   return (
     <ResponsiveContainer width="100%" height={360}>
       <LineChart data={rows} margin={{ top: 10, right: 10, left: 4, bottom: 28 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
         <XAxis
           dataKey="x"
-          tick={{ fill: 'var(--text)', fontSize: 11 }}
-          label={{ value: 'Game #', position: 'insideBottom', offset: -4, fill: 'var(--text)' }}
+          tick={chartCartesianTick}
+          label={{
+            value: 'Game #',
+            position: 'insideBottom',
+            offset: -4,
+            fill: 'var(--muted)',
+            fontSize: 11,
+            fontFamily: 'var(--sans)',
+          }}
         />
         <YAxis
           domain={[0, 100]}
           tickFormatter={(v) => `${v}%`}
-          tick={{ fill: 'var(--text)' }}
+          tick={chartCartesianTick}
           width={48}
         />
         <Tooltip
@@ -125,6 +140,22 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
           strokeWidth={2}
           dot={{ r: 2, strokeWidth: 0 }}
           isAnimationActive={false}
+        />
+        <ReferenceDot
+          x={peakRow.x}
+          y={peakRow.pctPct}
+          r={4}
+          fill={peakLabelColor}
+          stroke="var(--bg)"
+          strokeWidth={1}
+          ifOverflow="extendDomain"
+          label={{
+            value: 'peak',
+            position: 'top',
+            fill: peakLabelColor,
+            fontSize: 10,
+            fontFamily: 'var(--mono)',
+          }}
         />
       </LineChart>
     </ResponsiveContainer>

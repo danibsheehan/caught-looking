@@ -7,7 +7,6 @@ import {
   useLocation,
 } from 'react-router-dom'
 import RouteErrorBoundary from './components/RouteErrorBoundary'
-import ThemeToggle from './components/ThemeToggle'
 import PageRouteSkeleton from './components/skeletons/PageRouteSkeleton'
 
 const Standings = lazy(() => import('./pages/Standings'))
@@ -56,7 +55,10 @@ export default function App() {
               </NavLink>
             ))}
           </nav>
-          <ThemeToggle />
+          <div className="app-shell__status" aria-live="polite">
+            <span className="app-shell__status-pulse" aria-hidden="true" />
+            <span>live · statcast</span>
+          </div>
         </div>
       </header>
       <main className="app-shell__main">

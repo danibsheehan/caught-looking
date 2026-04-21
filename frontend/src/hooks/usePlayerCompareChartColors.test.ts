@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { usePlayerCompareChartColors } from './usePlayerCompareChartColors'
 
 vi.mock('./useChartSurfaceHex', () => ({
-  useChartSurfaceHex: () => '#ffffff',
+  useChartSurfaceHex: () => '#070b10',
 }))
 
 describe('usePlayerCompareChartColors', () => {

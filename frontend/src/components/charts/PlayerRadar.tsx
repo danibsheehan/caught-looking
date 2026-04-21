@@ -13,6 +13,7 @@ import type { PlayersRadarResponse } from '../../types/api'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
 import { buildCompareMetricRows } from '../../utils/playerCompareMetricRows'
+import { polarAxisTickSans } from '../../utils/rechartsAxis'
 
 function toRadarRows(
   payload: PlayersRadarResponse | null,
@@ -87,7 +88,7 @@ export default function PlayerRadar({
         margin={{ top: 16, right: 24, bottom: 16, left: 24 }}
       >
         <PolarGrid stroke="var(--border)" />
-        <PolarAngleAxis dataKey="metric" tick={{ fill: 'var(--text)', fontSize: 11 }} />
+        <PolarAngleAxis dataKey="metric" tick={polarAxisTickSans} />
         <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
         <Radar
           name={nameA}

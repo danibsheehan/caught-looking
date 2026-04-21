@@ -4,44 +4,60 @@ import {
   buildPitcherStrikeZoneRows,
   type PitcherStatcastRow,
 } from '../../utils/gameStatcastPitchers'
-import { pitchTypeColor } from '../../utils/pitchTypeColors'
+import {
+  opacityFromUsageShare,
+  pitchHexForCode,
+  pitchMarkerFillStyle,
+  pitchShareByCode,
+  resolvePitchCode,
+} from '../../utils/pitchTypeColors'
+import { buildPitchZoneTooltipRows } from '../../utils/statcastDisplay'
 import {
   NORM_X_MAX,
   NORM_X_MIN,
   NORM_Z_MAX,
   NORM_Z_MIN,
   normalizedPlateLocation,
-  projNormToSvg,
-  resolveStrikeZoneFeet,
-  svgPointString,
+  projNormToSvgStrikeSquare,
+  svgPointStringStrikeSquare,
 } from '../../utils/statcastPlateNormalized'
+import StatcastMetricTooltipContent from './StatcastMetricTooltipContent'
 
 type GamePitcherStrikeZonesProps = {
   pitches: StatcastPitch[]
   box: GameBoxscoreResponse | null
 }
 
-function groupByPitchName(pitches: StatcastPitch[]): [string, StatcastPitch[]][] {
-  const m = new Map<string, StatcastPitch[]>()
-  for (const p of pitches) {
-    const key = (p.pitchName && p.pitchName.trim()) || 'Unknown'
-    const arr = m.get(key) ?? []
-    arr.push(p)
-    m.set(key, arr)
+type PitchCodeGroup = { code: string; label: string; pitches: StatcastPitch[] }
+
+function legendLabelForGroup(code: string, pitches: StatcastPitch[]): string {
+  const first = pitches[0]
+  const name = first?.pitchName?.trim()
+  const pt = first?.pitchType?.trim()
+  if (name && pt && name.toUpperCase() !== pt.toUpperCase()) {
+    return `${name} (${pt.toUpperCase()})`
   }
-  return [...m.entries()].sort((a, b) => b[1].length - a[1].length)
+  if (name) {
+    return name
+  }
+  return code
 }
 
-function mixSummary(pitches: StatcastPitch[]): string {
-  const counts = new Map<string, number>()
+function groupPitchesByCode(pitches: StatcastPitch[]): PitchCodeGroup[] {
+  const m = new Map<string, StatcastPitch[]>()
   for (const p of pitches) {
-    const k = (p.pitchName && p.pitchName.trim()) || 'Unknown'
-    counts.set(k, (counts.get(k) ?? 0) + 1)
+    const c = resolvePitchCode(p)
+    const arr = m.get(c) ?? []
+    arr.push(p)
+    m.set(c, arr)
   }
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, n]) => `${name} ${n}`)
-    .join(' · ')
+  return [...m.entries()]
+    .sort((a, b) => b[1].length - a[1].length)
+    .map(([code, pts]) => ({
+      code,
+      pitches: pts,
+      label: legendLabelForGroup(code, pts),
+    }))
 }
 
 /** Label for the pitcher dropdown (team context + name). */
@@ -76,23 +92,29 @@ type HoverTip = { pitch: StatcastPitch; clientX: number; clientY: number }
 
 function PitcherStrikeZoneSvg({
   pitches,
+  repertoirePitches,
   variant = 'default',
-  ariaLabel = 'Pitch locations normalized to the batter strike zone',
+  isolated = false,
+  ariaLabel = 'Pitch locations from catcher view, normalized to the batter strike zone',
 }: {
   pitches: StatcastPitch[]
+  /** Full sample for usage share → opacity (not the filtered subset when a legend type is isolated). */
+  repertoirePitches: StatcastPitch[]
   variant?: 'default' | 'featured'
+  isolated?: boolean
   ariaLabel?: string
 }) {
   const svgId = useId()
   const gradId = `${svgId}-zoneFill`
   const [tip, setTip] = useState<HoverTip | null>(null)
+  const shareByCode = useMemo(() => pitchShareByCode(repertoirePitches), [repertoirePitches])
 
   const zonePoints = useMemo(
-    () => ZONE_POLYGON_NORM.map(([x, z]) => svgPointString(x, z)).join(' '),
+    () => ZONE_POLYGON_NORM.map(([x, z]) => svgPointStringStrikeSquare(x, z)).join(' '),
     [],
   )
   const platePoints = useMemo(
-    () => PLATE_POLYGON_NORM.map(([x, z]) => svgPointString(x, z)).join(' '),
+    () => PLATE_POLYGON_NORM.map(([x, z]) => svgPointStringStrikeSquare(x, z)).join(' '),
     [],
   )
 
@@ -101,17 +123,22 @@ function PitcherStrikeZoneSvg({
     const zs = [0, 0.5, 1]
     const segs: { x1: number; y1: number; x2: number; y2: number }[] = []
     for (const xN of xs) {
-      const a = projNormToSvg(xN, NORM_Z_MIN)
-      const b = projNormToSvg(xN, NORM_Z_MAX)
+      const a = projNormToSvgStrikeSquare(xN, NORM_Z_MIN)
+      const b = projNormToSvgStrikeSquare(xN, NORM_Z_MAX)
       segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y })
     }
     for (const zN of zs) {
-      const a = projNormToSvg(NORM_X_MIN, zN)
-      const b = projNormToSvg(NORM_X_MAX, zN)
+      const a = projNormToSvgStrikeSquare(NORM_X_MIN, zN)
+      const b = projNormToSvgStrikeSquare(NORM_X_MAX, zN)
       segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y })
     }
     return segs
   }, [])
+
+  const labelPitcher = useMemo(() => ({ x: 50, y: 4.5 }), [])
+  const label3b = useMemo(() => projNormToSvgStrikeSquare(-1.22, 0.98), [])
+  const label1b = useMemo(() => projNormToSvgStrikeSquare(1.22, 0.98), [])
+  const labelCatcher = useMemo(() => ({ x: 50, y: 97.5 }), [])
 
   const clearTip = useCallback(() => setTip(null), [])
 
@@ -135,6 +162,40 @@ function PitcherStrikeZoneSvg({
           </linearGradient>
         </defs>
         <rect x="0" y="0" width="100" height="100" fill="var(--bg)" rx="0.8" />
+        <g className="game-pitcher-zones__svg-scene">
+          <text
+            className="game-pitcher-zones__svg-label game-pitcher-zones__svg-label--pitcher"
+            x={labelPitcher.x}
+            y={labelPitcher.y}
+            textAnchor="middle"
+          >
+            Pitcher
+          </text>
+          <text
+            className="game-pitcher-zones__svg-label game-pitcher-zones__svg-label--corner"
+            x={label3b.x}
+            y={label3b.y}
+            textAnchor="start"
+          >
+            3B
+          </text>
+          <text
+            className="game-pitcher-zones__svg-label game-pitcher-zones__svg-label--corner"
+            x={label1b.x}
+            y={label1b.y}
+            textAnchor="end"
+          >
+            1B
+          </text>
+          <text
+            className="game-pitcher-zones__svg-label game-pitcher-zones__svg-label--catcher"
+            x={labelCatcher.x}
+            y={labelCatcher.y}
+            textAnchor="middle"
+          >
+            Catcher
+          </text>
+        </g>
         {gridLines.map((s, i) => (
           <line
             key={i}
@@ -165,8 +226,8 @@ function PitcherStrikeZoneSvg({
         />
         {pitches.map((p, i) => {
           const { xN, zN } = normalizedPlateLocation(p)
-          const { x, y } = projNormToSvg(xN, zN)
-          const fill = pitchTypeColor((p.pitchName && p.pitchName.trim()) || 'Unknown')
+          const { x, y } = projNormToSvgStrikeSquare(xN, zN)
+          const { fill, fillOpacity } = pitchMarkerFillStyle(p, shareByCode, { isolated })
           const r = variant === 'featured' ? 1.55 : 1.35
           return (
             <circle
@@ -175,7 +236,7 @@ function PitcherStrikeZoneSvg({
               cy={y}
               r={r}
               fill={fill}
-              fillOpacity={0.92}
+              fillOpacity={fillOpacity}
               stroke="var(--bg)"
               strokeWidth={0.35}
               vectorEffect="non-scaling-stroke"
@@ -197,49 +258,24 @@ function PitcherStrikeZoneSvg({
 
 function FloatingPitchTooltip({ tip }: { tip: HoverTip }) {
   const p = tip.pitch
-  const label = (p.pitchName && p.pitchName.trim()) || 'Unknown'
-  const { xN, zN } = normalizedPlateLocation(p)
-  const { bot, top } = resolveStrikeZoneFeet(p)
-  const zoneFromPitchBounds = p.szTop != null && p.szBot != null && p.szTop > p.szBot
+  const rows = buildPitchZoneTooltipRows({
+    pitchName: p.pitchName,
+    pitchType: p.pitchType,
+    releaseSpeed: p.releaseSpeed,
+  })
   return (
     <div
       role="tooltip"
-      className="game-pitcher-zones__tooltip game-pitcher-zones__tooltip--floating"
+      className="game-pitcher-zones__tooltip statcast-metric-tooltip"
       style={{
         position: 'fixed',
         left: tip.clientX + 12,
         top: tip.clientY + 12,
         zIndex: 40,
-        background: 'var(--bg)',
-        border: '1px solid var(--border)',
-        color: 'var(--text-h)',
-        padding: '0.45rem 0.6rem',
-        borderRadius: '0.35rem',
-        fontSize: '0.82rem',
-        boxShadow: 'var(--shadow)',
-        maxWidth: '16rem',
         pointerEvents: 'none',
       }}
     >
-      <div style={{ fontWeight: 600 }}>{label}</div>
-      <div style={{ marginTop: '0.2rem', color: 'var(--text)' }}>
-        {p.plateX.toFixed(2)} ft · {p.plateZ.toFixed(2)} ft
-      </div>
-      <div style={{ marginTop: '0.15rem', color: 'var(--text)' }}>
-        Norm: x {xN.toFixed(2)} · z {zN.toFixed(2)} (zone height 0–1)
-      </div>
-      <div style={{ marginTop: '0.15rem', color: 'var(--text)' }}>
-        Zone: {bot.toFixed(2)}–{top.toFixed(2)} ft
-        {zoneFromPitchBounds ? ' (per pitch)' : ' (default)'}
-      </div>
-      {p.releaseSpeed != null ? (
-        <div style={{ marginTop: '0.15rem', color: 'var(--text)' }}>
-          {p.releaseSpeed.toFixed(1)} mph
-        </div>
-      ) : null}
-      {p.inningHalf ? (
-        <div style={{ marginTop: '0.15rem', color: 'var(--text)' }}>{p.inningHalf}</div>
-      ) : null}
+      <StatcastMetricTooltipContent rows={rows} />
     </div>
   )
 }
@@ -270,6 +306,17 @@ function OnePitcherCard({
   featured?: boolean
 }) {
   const titleId = useId()
+  const [isolatedCode, setIsolatedCode] = useState<string | null>(null)
+
+  const legendGroups = useMemo(() => groupPitchesByCode(row.pitches), [row.pitches])
+  const shareByCode = useMemo(() => pitchShareByCode(row.pitches), [row.pitches])
+  const plotPitches = useMemo(() => {
+    if (!isolatedCode) {
+      return row.pitches
+    }
+    return row.pitches.filter((p) => resolvePitchCode(p) === isolatedCode)
+  }, [row.pitches, isolatedCode])
+
   return (
     <article
       className={`game-pitcher-zones__card${featured ? ' game-pitcher-zones__card--featured' : ''}`}
@@ -286,28 +333,44 @@ function OnePitcherCard({
               {row.side === 'away' ? box.away.teamName : box.home.teamName}
             </p>
           ) : null}
-          <p className="muted small game-pitcher-zones__mix">{mixSummary(row.pitches)}</p>
         </header>
-      ) : (
-        <p className="muted small game-pitcher-zones__mix">{mixSummary(row.pitches)}</p>
-      )}
+      ) : null}
       <PitcherStrikeZoneSvg
-        pitches={row.pitches}
+        pitches={plotPitches}
+        repertoirePitches={row.pitches}
         variant={featured ? 'featured' : 'default'}
+        isolated={isolatedCode != null}
         ariaLabel={`Pitch locations for ${row.name}`}
       />
       <ul className="game-pitcher-zones__legend" aria-label="Pitch types">
-        {groupByPitchName(row.pitches).map(([name, pts]) => (
-          <li key={name} className="game-pitcher-zones__legend-item">
-            <span
-              className="game-pitcher-zones__legend-swatch"
-              style={{ background: pitchTypeColor(name) }}
-            />
-            <span>
-              {name} <span className="muted">({pts.length})</span>
-            </span>
-          </li>
-        ))}
+        {legendGroups.map((g) => {
+          const share = shareByCode.get(g.code) ?? 0
+          const swatchOpacity = opacityFromUsageShare(share)
+          const active = isolatedCode === g.code
+          return (
+            <li key={g.code} className="game-pitcher-zones__legend-item">
+              <button
+                type="button"
+                className={`game-pitcher-zones__legend-btn${active ? ' game-pitcher-zones__legend-btn--active' : ''}`}
+                aria-pressed={active}
+                onClick={() =>
+                  setIsolatedCode((prev) => (prev === g.code ? null : g.code))
+                }
+              >
+                <span
+                  className="game-pitcher-zones__legend-swatch"
+                  style={{
+                    backgroundColor: pitchHexForCode(g.code),
+                    opacity: swatchOpacity,
+                  }}
+                />
+                <span>
+                  {g.label} <span className="muted">({g.pitches.length})</span>
+                </span>
+              </button>
+            </li>
+          )
+        })}
       </ul>
     </article>
   )
@@ -402,6 +465,7 @@ export default function GamePitcherStrikeZones({ pitches, box }: GamePitcherStri
 
       {viewMode === 'single' && selectedRow ? (
         <OnePitcherCard
+          key={selectedRow.id}
           row={selectedRow}
           box={box}
           showTeamUnderName={false}

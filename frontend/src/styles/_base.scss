@@ -1,23 +1,34 @@
 html {
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* DM Sans — prose, labels, headings; Space Mono — numerals & axis ticks only */
+  --sans: 'DM Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: 'DM Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'Space Mono', ui-monospace, Consolas, monospace;
 
-  /* WCAG 2.2 AA: default text ≥4.5:1 on --bg; borders ≥3:1 vs adjacent surfaces. */
-  color-scheme: light;
-  --text: #5c5668;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #8b8b8d;
-  --code-bg: #f4f3ec;
-  --accent: #0f766e;
-  --accent-bg: rgba(15, 118, 110, 0.12);
-  --accent-border: rgba(15, 118, 110, 0.5);
+  /* Neon on obsidian — teal + rose pair (see mockup); WCAG AA body text vs --bg */
+  color-scheme: dark;
+  --bg: #070b10;
+  --surface: #0a1018;
+  --text: #8b9cad;
+  --text-h: #c8d8e8;
+  --muted: #5a6b7c;
+  --chart-tick: #4a5f72;
+  /** Faint grid; 50% win line uses --chart-y-mid */
+  --chart-grid-faint: #0d1a26;
+  --chart-y-mid: #0f2030;
+  --chart-y-mid-tick: #1a3a30;
+  --border: #0f1e2d;
+  --code-bg: #0d121a;
+  --accent: #00f5c4;
+  --accent-muted: #00c4a0;
+  --accent-2: #ff4f9a;
+  --accent-bg: rgba(0, 245, 196, 0.08);
+  --accent-border: rgba(0, 245, 196, 0.45);
+  --accent-2-bg: rgba(255, 79, 154, 0.08);
   --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+    rgba(0, 0, 0, 0.5) 0 12px 24px -8px, rgba(0, 0, 0, 0.35) 0 4px 8px -4px;
 
   font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
+  letter-spacing: 0.02em;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -28,20 +39,6 @@ html {
   @media (max-width: 1024px) {
     font-size: 16px;
   }
-}
-
-html[data-theme='dark'] {
-  color-scheme: dark;
-  --text: #9ca3af;
-  --text-h: #f3f4f6;
-  --bg: #16171d;
-  --border: #6b7280;
-  --code-bg: #1f2028;
-  --accent: #2dd4bf;
-  --accent-bg: rgba(45, 212, 191, 0.14);
-  --accent-border: rgba(45, 212, 191, 0.55);
-  --shadow:
-    rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
 }
 
 body {
@@ -78,7 +75,7 @@ h2 {
 
 h1 {
   font-size: 56px;
-  letter-spacing: -1.68px;
+  letter-spacing: -0.04em;
   margin: 32px 0;
   @media (max-width: 1024px) {
     font-size: 36px;
@@ -88,7 +85,7 @@ h1 {
 h2 {
   font-size: 24px;
   line-height: 118%;
-  letter-spacing: -0.24px;
+  letter-spacing: -0.03em;
   margin: 0 0 8px;
   @media (max-width: 1024px) {
     font-size: 20px;
@@ -107,4 +104,10 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+/** Tabular numerals in Space Mono — use on metric cells, not prose. */
+.numeral {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
 }

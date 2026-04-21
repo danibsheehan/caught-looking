@@ -11,8 +11,11 @@ import {
   type TooltipContentProps,
 } from 'recharts'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
-import { adjustChartColorForSurface } from '../../utils/chartColorContrast'
-import { CHART_NEUTRAL_FALLBACK, mlbTeamPrimaryHex } from '../../utils/mlbTeamColors'
+import {
+  CHART_NEUTRAL_FALLBACK,
+  obsidianTeamChartPairsRegistryPrimary,
+} from '../../utils/mlbTeamColors'
+import { chartCartesianTick } from '../../utils/rechartsAxis'
 
 export type DivisionScatterPoint = {
   teamId: number
@@ -31,6 +34,29 @@ export default function DivisionRunsScatter({
   focusTeamId,
 }: DivisionRunsScatterProps) {
   const surfaceHex = useChartSurfaceHex()
+
+  const teamIdsOrdered = useMemo(() => {
+    const seen = new Set<number>()
+    const out: number[] = []
+    for (const p of points) {
+      if (!seen.has(p.teamId)) {
+        seen.add(p.teamId)
+        out.push(p.teamId)
+      }
+    }
+    return out
+  }, [points])
+
+  const inkByTeamId = useMemo(() => {
+    const m = new Map<number, string>()
+    if (teamIdsOrdered.length === 0) return m
+    const pairs = obsidianTeamChartPairsRegistryPrimary(teamIdsOrdered, surfaceHex)
+    teamIdsOrdered.forEach((id, i) => {
+      const ink = pairs[i]?.ink
+      if (ink) m.set(id, ink)
+    })
+    return m
+  }, [teamIdsOrdered, surfaceHex])
 
   const { domain, plot } = useMemo(() => {
     if (!points.length) {
@@ -58,19 +84,20 @@ export default function DivisionRunsScatter({
   return (
     <ResponsiveContainer width="100%" height={320}>
       <ScatterChart margin={{ top: 10, right: 12, left: 4, bottom: 28 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+        <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
         <XAxis
           type="number"
           dataKey="ra"
           name="Runs allowed"
           domain={domain}
-          tick={{ fill: 'var(--text)', fontSize: 11 }}
+          tick={chartCartesianTick}
           label={{
             value: 'Runs allowed (season)',
             position: 'insideBottom',
             offset: -4,
-            fill: 'var(--text)',
+            fill: 'var(--muted)',
             fontSize: 11,
+            fontFamily: 'var(--sans)',
           }}
         />
         <YAxis
@@ -78,14 +105,15 @@ export default function DivisionRunsScatter({
           dataKey="rs"
           name="Runs scored"
           domain={domain}
-          tick={{ fill: 'var(--text)', fontSize: 11 }}
+          tick={chartCartesianTick}
           width={48}
           label={{
             value: 'Runs scored (season)',
             angle: -90,
             position: 'insideLeft',
-            fill: 'var(--text)',
+            fill: 'var(--muted)',
             fontSize: 11,
+            fontFamily: 'var(--sans)',
           }}
         />
         <Tooltip
@@ -100,7 +128,10 @@ export default function DivisionRunsScatter({
           stroke="var(--border)"
           strokeDasharray="4 4"
         />
-        <Scatter data={plot} shape={(props) => scatterDot(props, focusTeamId, surfaceHex)} />
+        <Scatter
+          data={plot}
+          shape={(props) => scatterDot(props, focusTeamId, inkByTeamId)}
+        />
       </ScatterChart>
     </ResponsiveContainer>
   )
@@ -137,12 +168,12 @@ function scatterDot(
     payload?: DivisionScatterPoint
   },
   focusTeamId: number | undefined,
-  surfaceHex: string,
+  inkByTeamId: Map<number, string>,
 ) {
   const { cx, cy, payload } = props
   if (cx == null || cy == null || !payload) return null
-  const base = mlbTeamPrimaryHex(payload.teamId, CHART_NEUTRAL_FALLBACK)
-  const fill = adjustChartColorForSurface(base, surfaceHex)
+  const fill =
+    inkByTeamId.get(payload.teamId) ?? CHART_NEUTRAL_FALLBACK
   const focused = focusTeamId != null && payload.teamId === focusTeamId
   const r = focused ? 9 : 5.5
   return (

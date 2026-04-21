@@ -1,7 +1,9 @@
 import {
   adjustChartColorForSurface,
   CHART_INK_MIN_CONTRAST,
+  mixHex,
 } from './chartColorContrast'
+import { getObsidianTeamColor, resolveObsidianMatchupFills } from './mlbTeamObsidianRegistry'
 
 /**
  * Primary / secondary brand hex for MLB Stats API team IDs.
@@ -19,8 +21,8 @@ export const CHART_NEUTRAL_FALLBACK = '#64748b'
 export const CHART_NEUTRAL_FALLBACK_ALT = '#94a3b8'
 
 /** Two-player / two-series charts when team IDs are not passed (distinct from each other). */
-export const CHART_COMPARISON_A = '#0ea5e9'
-export const CHART_COMPARISON_B = '#f97316'
+export const CHART_COMPARISON_A = '#00f5c4'
+export const CHART_COMPARISON_B = '#ff4f9a'
 export const MLB_TEAM_PRIMARY_HEX = {
   108: '#BA0021',
   109: '#A71930',
@@ -145,6 +147,13 @@ function teamChartColorCandidates(teamId: number): string[] {
   if (!Number.isFinite(teamId) || teamId <= 0) {
     return [CHART_NEUTRAL_FALLBACK]
   }
+  const obs = getObsidianTeamColor(teamId)
+  if (obs) {
+    const uniq = [obs.primary, obs.secondary].filter(
+      (c, i, a) => c && a.indexOf(c) === i,
+    )
+    if (uniq.length > 0) return uniq
+  }
   const p = MLB_TEAM_PRIMARY_HEX[teamId as PrimaryKey]
   const s = MLB_TEAM_SECONDARY_HEX[teamId as SecondaryKey]
   const out: string[] = []
@@ -165,17 +174,10 @@ function minDistanceToAssigned(hex: string, assigned: string[]): number {
 }
 
 /**
- * Assigns one stroke/fill color per team for a single chart, maximizing
- * pairwise separation while preferring each club’s primary, then secondary,
- * then a distinct reserve only when needed. Colors are then nudged toward black
- * or white so they meet {@link adjustChartColorForSurface} vs `surfaceHex`
- * (plot background).
+ * Raw brand hex per team (same distinctness rules as multi-team charts), before
+ * contrast adjustment — use for deriving obsidian ink/label pairs.
  */
-export function distinctChartColorsForTeamIds(
-  teamIds: readonly number[],
-  surfaceHex: string,
-  inkMin: number = CHART_INK_MIN_CONTRAST,
-): string[] {
+export function pickDistinctChartBrandHexes(teamIds: readonly number[]): string[] {
   const assigned: string[] = []
 
   for (const id of teamIds) {
@@ -202,7 +204,143 @@ export function distinctChartColorsForTeamIds(
     assigned.push(best)
   }
 
-  return assigned.map((c) => adjustChartColorForSurface(c, surfaceHex, inkMin))
+  return assigned
+}
+
+/**
+ * Darken brand toward a **blue-slate** (not the page bg) so fills stay saturated
+ * like the mockup (#1a2a40, #c05020, #8a1a1a) instead of muddy gray.
+ */
+const OBSIDIAN_INK_POLE = '#0e1828'
+const INK_MIX_TOWARD_POLE = 0.38
+/**
+ * Looser than default chart ink — aggressive 3:1 nudging toward white mutes hue.
+ */
+const OBSIDIAN_INK_MIN_CONTRAST = 2.35
+
+const LABEL_LIGHT_POLE = '#f1f5f9'
+/** Keep chroma: mockup labels (#d06030, #c04040, #8ab0c8) read as team colors. */
+const LABEL_MIX_TOWARD_LIGHT = 0.26
+const LABEL_MIN_CONTRAST = 3.15
+
+/** Pull contrast-adjusted hex back toward brand so orange/red/navy don’t go gray. */
+function snapTowardBrand(adjusted: string, brand: string, t: number): string {
+  return mixHex(adjusted, brand, t)
+}
+
+/**
+ * Per-team pair: **ink** = darkened/saturated brand for strokes and bars on
+ * obsidian; **label** = brighter brand for abbrev ticks, value labels, and
+ * end-cap dots (see standings mockup).
+ */
+/** Map each team id to its registry label color (same order as `teamIds`). */
+export function obsidianRegistryLabelMap(
+  teamIds: readonly number[],
+  surfaceHex: string,
+): Map<number, string> {
+  const pairs = obsidianTeamChartPairsRegistryPrimary(teamIds, surfaceHex)
+  const m = new Map<number, string>()
+  teamIds.forEach((id, i) => {
+    m.set(id, pairs[i]?.label ?? '#c8d8e8')
+  })
+  return m
+}
+
+/**
+ * Ink/label pairs using each team’s registry **primary** as the bar/line brand.
+ * Use for division standings (strip + bars) so colors match {@link getObsidianTeamColor}
+ * primaries. For charts that must force separation when many teams share a hue family,
+ * use {@link obsidianTeamChartPairs} instead (distinctness swapping).
+ */
+export function obsidianTeamChartPairsRegistryPrimary(
+  teamIds: readonly number[],
+  surfaceHex: string,
+): { ink: string; label: string }[] {
+  return teamIds.map((teamId) => {
+    const reg = getObsidianTeamColor(teamId)
+    const brand = reg?.primary ?? mlbTeamPrimaryHex(teamId, CHART_NEUTRAL_FALLBACK)
+
+    const inkBase = mixHex(brand, OBSIDIAN_INK_POLE, INK_MIX_TOWARD_POLE)
+    const inkAdjusted = adjustChartColorForSurface(
+      inkBase,
+      surfaceHex,
+      OBSIDIAN_INK_MIN_CONTRAST,
+    )
+    const ink = snapTowardBrand(inkAdjusted, brand, 0.22)
+
+    if (reg) {
+      const labelAdjusted = adjustChartColorForSurface(
+        reg.label,
+        surfaceHex,
+        LABEL_MIN_CONTRAST,
+      )
+      const label = snapTowardBrand(labelAdjusted, reg.label, 0.28)
+      return { ink, label }
+    }
+
+    const labelBase = mixHex(brand, LABEL_LIGHT_POLE, LABEL_MIX_TOWARD_LIGHT)
+    const labelAdjusted = adjustChartColorForSurface(
+      labelBase,
+      surfaceHex,
+      LABEL_MIN_CONTRAST,
+    )
+    const label = snapTowardBrand(labelAdjusted, brand, 0.35)
+    return { ink, label }
+  })
+}
+
+export function obsidianTeamChartPairs(
+  teamIds: readonly number[],
+  surfaceHex: string,
+): { ink: string; label: string }[] {
+  const brands = pickDistinctChartBrandHexes(teamIds)
+  return teamIds.map((teamId, i) => {
+    const brand = brands[i]!
+    const reg = getObsidianTeamColor(teamId)
+    const inkBase = mixHex(brand, OBSIDIAN_INK_POLE, INK_MIX_TOWARD_POLE)
+    const inkAdjusted = adjustChartColorForSurface(
+      inkBase,
+      surfaceHex,
+      OBSIDIAN_INK_MIN_CONTRAST,
+    )
+    const ink = snapTowardBrand(inkAdjusted, brand, 0.22)
+
+    if (reg) {
+      const labelAdjusted = adjustChartColorForSurface(
+        reg.label,
+        surfaceHex,
+        LABEL_MIN_CONTRAST,
+      )
+      const label = snapTowardBrand(labelAdjusted, reg.label, 0.28)
+      return { ink, label }
+    }
+
+    const labelBase = mixHex(brand, LABEL_LIGHT_POLE, LABEL_MIX_TOWARD_LIGHT)
+    const labelAdjusted = adjustChartColorForSurface(
+      labelBase,
+      surfaceHex,
+      LABEL_MIN_CONTRAST,
+    )
+    const label = snapTowardBrand(labelAdjusted, brand, 0.35)
+    return { ink, label }
+  })
+}
+
+/**
+ * Assigns one stroke/fill color per team for a single chart, maximizing
+ * pairwise separation while preferring each club’s primary, then secondary,
+ * then a distinct reserve only when needed. Colors are then nudged toward black
+ * or white so they meet {@link adjustChartColorForSurface} vs `surfaceHex`
+ * (plot background).
+ */
+export function distinctChartColorsForTeamIds(
+  teamIds: readonly number[],
+  surfaceHex: string,
+  inkMin: number = CHART_INK_MIN_CONTRAST,
+): string[] {
+  return pickDistinctChartBrandHexes(teamIds).map((c) =>
+    adjustChartColorForSurface(c, surfaceHex, inkMin),
+  )
 }
 
 /**
@@ -216,6 +354,11 @@ export function resolveGameScoreBarFills(
   fallbackAway: string,
   fallbackHome: string,
 ): { awayFill: string; homeFill: string } {
+  const registryPair = resolveObsidianMatchupFills(awayId, homeId)
+  if (registryPair) {
+    return registryPair
+  }
+
   const awayP =
     awayId != null && Number.isFinite(awayId) && awayId > 0
       ? MLB_TEAM_PRIMARY_HEX[awayId as PrimaryKey]

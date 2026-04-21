@@ -12,9 +12,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const minimalPitchesCSV = `plate_x,plate_z,pitch_name,pitcher,batter,release_speed,inning_topbot,sz_top,sz_bot
--0.42,2.15,4-Seam Fastball,67890,12345,94.2,Top,3.41,1.74
-0.31,3.05,Slider,67890,12345,87.0,Bot,3.37,1.79
+const minimalPitchesCSV = `plate_x,plate_z,pitch_name,pitch_type,pitcher,batter,release_speed,inning_topbot,sz_top,sz_bot,stand
+-0.42,2.15,4-Seam Fastball,FF,67890,12345,94.2,Top,3.41,1.74,R
+0.31,3.05,Slider,SL,67890,12345,87.0,Bot,3.37,1.79,R
 `
 
 func TestGameStatcastPitches_invalidGamePk(t *testing.T) {
@@ -63,8 +63,11 @@ func TestGameStatcastPitches_success(t *testing.T) {
 	if out.Pitches[0].PlateX != -0.42 || out.Pitches[0].PlateZ != 2.15 {
 		t.Fatalf("row0 location: %+v", out.Pitches[0])
 	}
-	if out.Pitches[0].PitchName != "4-Seam Fastball" || out.Pitches[0].Pitcher != 67890 {
+	if out.Pitches[0].PitchName != "4-Seam Fastball" || out.Pitches[0].PitchType != "FF" || out.Pitches[0].Pitcher != 67890 {
 		t.Fatalf("row0 meta: %+v", out.Pitches[0])
+	}
+	if out.Pitches[1].PitchName != "Slider" || out.Pitches[1].PitchType != "SL" {
+		t.Fatalf("row1 meta: %+v", out.Pitches[1])
 	}
 	if out.Pitches[0].ReleaseSpeed == nil || *out.Pitches[0].ReleaseSpeed != 94.2 {
 		t.Fatalf("row0 speed: %+v", out.Pitches[0].ReleaseSpeed)
@@ -74,6 +77,9 @@ func TestGameStatcastPitches_success(t *testing.T) {
 	}
 	if out.Pitches[0].SzTop == nil || *out.Pitches[0].SzTop != 3.41 || out.Pitches[0].SzBot == nil || *out.Pitches[0].SzBot != 1.74 {
 		t.Fatalf("row0 sz: %+v / %+v", out.Pitches[0].SzTop, out.Pitches[0].SzBot)
+	}
+	if out.Pitches[0].BatterStand != "R" || out.Pitches[1].BatterStand != "R" {
+		t.Fatalf("batterStand: %+v / %+v", out.Pitches[0].BatterStand, out.Pitches[1].BatterStand)
 	}
 }
 
@@ -106,5 +112,18 @@ func TestParseStatcastPitchesCSV_missingColumns(t *testing.T) {
 	got := parseStatcastPitchesCSV([]byte(csvNoPlate))
 	if len(got) != 0 {
 		t.Fatalf("expected empty, got %d", len(got))
+	}
+}
+
+func TestParseStatcastPitchesCSV_pitchTypeOnlyColumn(t *testing.T) {
+	csvPitchTypeOnly := `plate_x,plate_z,pitch_type,pitcher
+-0.1,2.0,CH,1
+`
+	got := parseStatcastPitchesCSV([]byte(csvPitchTypeOnly))
+	if len(got) != 1 {
+		t.Fatalf("got %d rows", len(got))
+	}
+	if got[0].PitchType != "CH" || got[0].PitchName != "CH" {
+		t.Fatalf("want pitch type/name CH, got %+v", got[0])
 	}
 }

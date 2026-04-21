@@ -68,21 +68,23 @@
   margin: 0.25rem 0 1rem;
   overflow: visible;
 
-  /* Spray chart — light panel + teal fair turf (common field-tool diagram look). */
-  --spray-chart-bg-a: #fafcfc;
-  --spray-chart-bg-b: #eef2f3;
-  --spray-grass-a: #9ee0d8;
-  --spray-grass-b: #5ebfb4;
-  --spray-grass-mid: #7acec4;
-  --spray-dirt-a: #e8ddd0;
-  --spray-dirt-b: #c9b69e;
-  --spray-dirt-line: rgba(120, 105, 88, 0.45);
-  --spray-fence-line: rgba(96, 108, 118, 0.55);
-  --spray-foul-line: rgba(130, 142, 152, 0.88);
-  --spray-plate: #f6f3ed;
-  --spray-plate-line: rgba(100, 92, 82, 0.42);
-  --spray-bip-ring: rgba(255, 255, 255, 0.88);
-  --spray-fence-label: rgba(255, 255, 255, 0.94);
+  /* Spray chart — dark field (obsidian UI). */
+  --spray-chart-bg-a: #141a1c;
+  --spray-chart-bg-b: #0e1214;
+  --spray-grass-a: #2d5c56;
+  --spray-grass-b: #1a3d38;
+  --spray-grass-mid: #234a45;
+  --spray-grass-beyond-a: #1e3532;
+  --spray-grass-beyond-b: #142824;
+  --spray-dirt-a: #4a4036;
+  --spray-dirt-b: #2e2822;
+  --spray-dirt-line: rgba(180, 165, 145, 0.35);
+  --spray-fence-line: rgba(140, 155, 165, 0.5);
+  --spray-foul-line: rgba(160, 172, 182, 0.75);
+  --spray-plate: #8a8074;
+  --spray-plate-line: rgba(0, 0, 0, 0.35);
+  --spray-bip-ring: rgba(12, 18, 14, 0.65);
+  --spray-fence-label: rgba(235, 242, 240, 0.92);
 
   &__svg {
     display: block;
@@ -98,7 +100,7 @@
 
   &__fence-ft {
     paint-order: stroke fill;
-    stroke: rgba(0, 35, 40, 0.22);
+    stroke: rgba(0, 0, 0, 0.48);
     stroke-width: 2px;
   }
 
@@ -131,35 +133,74 @@
     display: inline-block;
     width: 0.65rem;
     height: 0.65rem;
-    border-radius: 50%;
     margin-right: 0.35rem;
     vertical-align: -0.08em;
     border: 1px solid color-mix(in srgb, var(--bg) 40%, var(--border));
+
+    &--circle {
+      border-radius: 50%;
+    }
+
+    /* Rotated square reads as diamond; matches home-half markers on the chart */
+    &--diamond {
+      width: 0.52rem;
+      height: 0.52rem;
+      border-radius: 2px;
+      transform: rotate(45deg);
+      vertical-align: -0.06em;
+      margin-left: 0.06rem;
+      margin-right: 0.42rem;
+    }
   }
 }
 
-html[data-theme='dark'] .game-statcast-spray {
-  --spray-chart-bg-a: #141a1c;
-  --spray-chart-bg-b: #0e1214;
-  --spray-grass-a: #2d5c56;
-  --spray-grass-b: #1a3d38;
-  --spray-grass-mid: #234a45;
-  --spray-dirt-a: #4a4036;
-  --spray-dirt-b: #2e2822;
-  --spray-dirt-line: rgba(180, 165, 145, 0.35);
-  --spray-fence-line: rgba(140, 155, 165, 0.5);
-  --spray-foul-line: rgba(160, 172, 182, 0.75);
-  --spray-plate: #8a8074;
-  --spray-plate-line: rgba(0, 0, 0, 0.35);
-  --spray-bip-ring: rgba(12, 18, 14, 0.65);
-  --spray-fence-label: rgba(235, 242, 240, 0.92);
-}
-
-html[data-theme='dark'] .game-statcast-spray__fence-ft {
-  stroke: rgba(0, 0, 0, 0.48);
-}
-
 .game-statcast-scatter {
+  --statcast-la-grounder: rgba(110, 145, 210, 0.14);
+  --statcast-la-linedrive: rgba(70, 175, 125, 0.12);
+  --statcast-la-fly: rgba(215, 155, 75, 0.13);
+
+  &__caption {
+    margin: 0 0 0.65rem;
+    line-height: 1.35;
+  }
+
+  &__band-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 1.1rem;
+    margin: 0.55rem 0 0;
+    padding: 0;
+    list-style: none;
+    line-height: 1.3;
+
+    li {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.38rem;
+    }
+  }
+
+  &__band-swatch {
+    width: 0.78rem;
+    height: 0.62rem;
+    border-radius: 2px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    box-sizing: border-box;
+
+    &--grounder {
+      background: var(--statcast-la-grounder);
+    }
+
+    &--linedrive {
+      background: var(--statcast-la-linedrive);
+    }
+
+    &--fly {
+      background: var(--statcast-la-fly);
+    }
+  }
+
   &__empty {
     margin: 0.5rem 0 0;
   }
@@ -227,6 +268,8 @@ html[data-theme='dark'] .game-statcast-spray__fence-ft {
 }
 
 .game-pitcher-zones {
+  --game-plate-fill: #2a2824;
+
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -317,7 +360,7 @@ html[data-theme='dark'] .game-statcast-spray__fence-ft {
     border: 1px solid var(--border);
     border-radius: 0.5rem;
     padding: 0.85rem 1rem 0.75rem;
-    background: color-mix(in srgb, var(--bg) 96%, var(--code-bg) 4%);
+    background: var(--surface);
     box-shadow: var(--shadow);
     min-width: 0;
 
@@ -339,12 +382,6 @@ html[data-theme='dark'] .game-statcast-spray__fence-ft {
 
   &__team {
     margin: 0 0 0.25rem;
-  }
-
-  &__mix {
-    margin: 0 0 0.35rem;
-    line-height: 1.4;
-    font-variant-numeric: tabular-nums;
   }
 
   &__svg-wrap {
@@ -370,6 +407,30 @@ html[data-theme='dark'] .game-statcast-spray__fence-ft {
     box-shadow: var(--shadow);
   }
 
+  &__svg-scene {
+    pointer-events: none;
+  }
+
+  &__svg-label {
+    fill: var(--text);
+    opacity: 0.78;
+    font-family: var(--sans, system-ui, sans-serif);
+    font-weight: 500;
+
+    &--pitcher {
+      font-size: 3.4px;
+    }
+
+    &--corner {
+      font-size: 3.1px;
+    }
+
+    &--catcher {
+      font-size: 2.85px;
+      opacity: 0.65;
+    }
+  }
+
   &__legend {
     list-style: none;
     margin: 0 0 0.35rem;
@@ -387,6 +448,30 @@ html[data-theme='dark'] .game-statcast-spray__fence-ft {
     gap: 0.35rem;
   }
 
+  &__legend-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0.15rem 0.35rem;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.3rem;
+
+    &:hover {
+      border-color: var(--border);
+      background: color-mix(in srgb, var(--accent-bg) 55%, transparent);
+    }
+
+    &--active {
+      border-color: var(--accent-border);
+      background: var(--accent-bg);
+    }
+  }
+
   &__legend-swatch {
     width: 0.65rem;
     height: 0.65rem;
@@ -394,10 +479,10 @@ html[data-theme='dark'] .game-statcast-spray__fence-ft {
     border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
     flex-shrink: 0;
   }
-}
 
-html[data-theme='dark'] .game-pitcher-zones {
-  --game-plate-fill: #2a2824;
+  &__tooltip {
+    max-width: 17rem;
+  }
 }
 
 .games-detail {
@@ -461,7 +546,7 @@ html[data-theme='dark'] .game-pitcher-zones {
     border-radius: 0.5rem;
     padding: 1rem 1.1rem;
     margin-bottom: 1.25rem;
-    background: color-mix(in srgb, var(--bg) 96%, var(--code-bg) 4%);
+    background: var(--surface);
     box-shadow: var(--shadow);
   }
 
@@ -494,6 +579,7 @@ html[data-theme='dark'] .game-pitcher-zones {
 
     dd {
       margin: 0.1rem 0 0;
+      font-family: var(--mono);
       font-variant-numeric: tabular-nums;
       font-weight: 600;
       color: var(--text-h);
@@ -525,6 +611,7 @@ html[data-theme='dark'] .game-pitcher-zones {
       text-align: right;
       padding: 0.35rem 0.4rem;
       border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
       font-variant-numeric: tabular-nums;
     }
 
@@ -559,5 +646,66 @@ html[data-theme='dark'] .game-pitcher-zones {
     &:hover {
       color: var(--accent);
     }
+  }
+}
+
+.game-final-score-strip {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--surface) 82%, #0d1620);
+  border: 1px solid var(--border);
+
+  &__team {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    align-items: flex-start;
+  }
+
+  &__name {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text);
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  &__num {
+    font-family: var(--mono);
+    font-size: 1.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  &__mid {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-h);
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 55%, transparent);
   }
 }
