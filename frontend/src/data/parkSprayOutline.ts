@@ -250,3 +250,22 @@ export function buildSprayFenceGeometry(dims: FieldDimensionsFt): SprayFenceGeom
     plate,
   }
 }
+
+/**
+ * Visual-only scale from home for outfield grass fill. Vertices sit slightly past published
+ * LF / LCF / CF / RCF / RF so deep batted balls (often a few feet beyond the wall on HRs) still
+ * land on the green turf graphic. Fence distance labels and the chord stroke use true distances.
+ */
+export const SPRAY_OUTFIELD_GRASS_BLEED = 1.12
+
+/** Push an outfield corner along its ray from home (same bearing, longer distance). */
+export function expandSprayOutfieldCornerFromHome(
+  home: [number, number],
+  corner: [number, number],
+  factor: number = SPRAY_OUTFIELD_GRASS_BLEED,
+): [number, number] {
+  return [
+    home[0] + factor * (corner[0] - home[0]),
+    home[1] + factor * (corner[1] - home[1]),
+  ]
+}

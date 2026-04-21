@@ -152,8 +152,8 @@ export default function GameDetail() {
       <div className="panel chart-panel game-statcast">
         <h2>Batted balls</h2>
         <p className="muted small">
-          Spray chart maps Savant hc_x / hc_y into field feet; launch metrics below use exit
-          velocity and launch angle.
+          The field view shows roughly where each ball was put in play. The chart below uses the same
+          batted balls to summarize how hard and how lofted each contact was.
         </p>
         {statcastLoading ? (
           <p className="muted">Loading batted-ball data…</p>
@@ -171,7 +171,7 @@ export default function GameDetail() {
               awayTeamId={box?.away.teamId}
               homeTeamId={box?.home.teamId}
             />
-            <h3 className="game-statcast__subhead">Exit velocity vs. launch angle</h3>
+            <h3 className="game-statcast__subhead">How each batted ball was struck</h3>
             <GameStatcastScatter
               battedBalls={statcast.battedBalls}
               awayTeamId={box?.away.teamId}

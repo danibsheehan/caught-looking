@@ -17,4 +17,6 @@ type StatcastPitch struct {
 	// SzTop/SzBot are the top and bottom of the batter’s strike zone (feet), Savant `sz_top` / `sz_bot`.
 	SzTop *float64 `json:"szTop,omitempty"`
 	SzBot *float64 `json:"szBot,omitempty"`
+	// BatterStand is Savant `stand`: L, R, or S (switch); empty when missing.
+	BatterStand string `json:"batterStand,omitempty"`
 }

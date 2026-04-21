@@ -91,6 +91,23 @@ export function buildSprayTooltipRows(p: {
   ]
 }
 
+/** Pitch location (strike zone) chart: pitch type as title, velocity only. */
+export function buildPitchZoneTooltipRows(p: {
+  pitchName?: string
+  releaseSpeed?: number | null
+}): StatcastChartTooltipRow[] {
+  const title = p.pitchName?.trim() || 'Unknown'
+  return [
+    { variant: 'title', text: title },
+    {
+      variant: 'step',
+      step: 1,
+      title: 'Velocity',
+      body: formatVelocityBody(p.releaseSpeed ?? undefined),
+    },
+  ]
+}
+
 /** Launch-angle scatter: no field position — point users to the spray chart on the same page. */
 export function buildScatterTooltipRows(p: {
   playerName: string
@@ -103,8 +120,8 @@ export function buildScatterTooltipRows(p: {
     {
       variant: 'step',
       step: 1,
-      title: 'Distance',
-      body: 'Ball location on the field is on the spray chart (above).',
+      title: 'On the field',
+      body: 'Where the ball went is shown on the spray chart above.',
     },
     { variant: 'step', step: 2, title: 'Velocity', body: formatVelocityBody(p.launchSpeed) },
     { variant: 'step', step: 3, title: 'Angle', body: formatAngleBody(p.launchAngle) },

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildPitchZoneTooltipRows,
   buildScatterTooltipRows,
   buildSprayTooltipRows,
   formatStatcastEvent,
@@ -68,15 +69,37 @@ describe('buildSprayTooltipRows', () => {
   })
 })
 
+describe('buildPitchZoneTooltipRows', () => {
+  it('uses pitch name as title and a single velocity row', () => {
+    const rows = buildPitchZoneTooltipRows({
+      pitchName: 'Slider',
+      releaseSpeed: 88.4,
+    })
+    expect(rows[0]).toEqual({ variant: 'title', text: 'Slider' })
+    expect(rows[1]).toMatchObject({
+      variant: 'step',
+      step: 1,
+      title: 'Velocity',
+      body: '88.4 mph',
+    })
+  })
+
+  it('falls back for missing pitch name and speed', () => {
+    const rows = buildPitchZoneTooltipRows({})
+    expect(rows[0]).toEqual({ variant: 'title', text: 'Unknown' })
+    expect(rows[1]).toMatchObject({ title: 'Velocity', body: '—' })
+  })
+})
+
 describe('buildScatterTooltipRows', () => {
-  it('matches spray metric order; distance points to spray chart', () => {
+  it('matches spray metric order; field row points to spray chart', () => {
     const rows = buildScatterTooltipRows({
       playerName: 'B',
       launchSpeed: 95,
       launchAngle: 12,
       events: 'field_out',
     })
-    expect(rows[1]).toMatchObject({ step: 1, title: 'Distance' })
+    expect(rows[1]).toMatchObject({ step: 1, title: 'On the field' })
     expect(rows[1].variant === 'step' && rows[1].body).toMatch(/spray chart/i)
     expect(rows[4]).toMatchObject({ step: 4, title: 'Result', body: 'Out' })
   })

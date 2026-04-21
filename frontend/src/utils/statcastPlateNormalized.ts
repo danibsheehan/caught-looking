@@ -49,7 +49,61 @@ export function projNormToSvg(xN: number, zN: number): { x: number; y: number } 
   return { x, y }
 }
 
+/**
+ * Catcher’s-view projection with light keystone: horizontal span narrows toward the top of the
+ * plot (pitcher direction) so the strike zone reads as a plane tilted in depth. Matches how
+ * plate_x / plate_z are defined (from behind the plate, looking toward the mound).
+ */
+export const CATCHER_VIEW_KEYSTONE = 0.082
+
+export function projNormToSvgCatcherPerspective(
+  xN: number,
+  zN: number,
+  keystone: number = CATCHER_VIEW_KEYSTONE,
+): { x: number; y: number } {
+  const t = (zN - NORM_Z_MIN) / (NORM_Z_MAX - NORM_Z_MIN)
+  const xK = xN * (1 - keystone * t)
+  const span = NORM_X_MAX - NORM_X_MIN
+  const x = ((xK - NORM_X_MIN) / span) * 100
+  const y = (1 - (zN - NORM_Z_MIN) / (NORM_Z_MAX - NORM_Z_MIN)) * 100
+  return { x, y }
+}
+
 export function svgPointString(xN: number, zN: number): string {
   const { x, y } = projNormToSvg(xN, zN)
+  return `${x},${y}`
+}
+
+export function svgPointStringCatcherView(xN: number, zN: number): string {
+  const { x, y } = projNormToSvgCatcherPerspective(xN, zN)
+  return `${x},${y}`
+}
+
+const SPAN_X = NORM_X_MAX - NORM_X_MIN
+const SPAN_Z = NORM_Z_MAX - NORM_Z_MIN
+
+/** Pixel span of the official zone x ∈ [-1, 1] if x were mapped linearly to 0–100. */
+const ZONE_PIXEL_WIDTH = (2 / SPAN_X) * 100
+/** Pixel span of z ∈ [0, 1] in normalized vertical space. */
+const ZONE_PIXEL_HEIGHT = (1 / SPAN_Z) * 100
+
+/**
+ * Linear catcher-style map (no keystone) with aspect fix so the strike zone interior
+ * ([-1,1]×[0,1] in normalized plate space) is a **square** in SVG coordinates.
+ */
+export function projNormToSvgStrikeSquare(xN: number, zN: number): { x: number; y: number } {
+  const xLin = ((xN - NORM_X_MIN) / SPAN_X) * 100
+  const yLin = (1 - (zN - NORM_Z_MIN) / SPAN_Z) * 100
+
+  if (ZONE_PIXEL_WIDTH >= ZONE_PIXEL_HEIGHT) {
+    const s = ZONE_PIXEL_HEIGHT / ZONE_PIXEL_WIDTH
+    return { x: 50 + (xLin - 50) * s, y: yLin }
+  }
+  const s = ZONE_PIXEL_WIDTH / ZONE_PIXEL_HEIGHT
+  return { x: xLin, y: 50 + (yLin - 50) * s }
+}
+
+export function svgPointStringStrikeSquare(xN: number, zN: number): string {
+  const { x, y } = projNormToSvgStrikeSquare(xN, zN)
   return `${x},${y}`
 }

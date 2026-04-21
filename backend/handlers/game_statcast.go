@@ -197,6 +197,23 @@ func normalizeInningTopBot(s string) string {
 	}
 }
 
+// normalizeBatterStand normalizes Savant `stand` to L, R, or S; empty if unknown.
+func normalizeBatterStand(s string) string {
+	if s == "" {
+		return ""
+	}
+	switch strings.ToLower(s) {
+	case "l":
+		return "L"
+	case "r":
+		return "R"
+	case "s":
+		return "S"
+	default:
+		return ""
+	}
+}
+
 func columnIndex(idx map[string]int, name string) int {
 	if i, ok := idx[name]; ok {
 		return i

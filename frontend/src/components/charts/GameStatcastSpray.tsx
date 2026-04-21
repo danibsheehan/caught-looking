@@ -3,7 +3,10 @@ import {
   getFieldDimensionsForVenue,
   type FieldDimensionsFt,
 } from '../../data/mlbVenueFieldDimensions'
-import { buildSprayFenceGeometry } from '../../data/parkSprayOutline'
+import {
+  buildSprayFenceGeometry,
+  expandSprayOutfieldCornerFromHome,
+} from '../../data/parkSprayOutline'
 import type { StatcastBattedBall } from '../../types/api'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { inningHalfBucket } from '../../utils/inningHalf'
@@ -11,6 +14,7 @@ import { statcastHalfFillColors } from '../../utils/statcastHalfColors'
 import { buildSprayTooltipRows, type StatcastChartTooltipRow } from '../../utils/statcastDisplay'
 import { statcastHcToFieldFeet } from '../../utils/statcastHitCoordinates'
 import StatcastMetricTooltipContent from './StatcastMetricTooltipContent'
+import { STATCAST_SPRAY_DOT_R, statcastSprayDiamondPath } from '../../utils/statcastMarkerGeometry'
 
 type SprayPoint = {
   /** Field-foot x (third → first), after Statcast grid → feet conversion. */
@@ -131,20 +135,26 @@ export default function GameStatcastSpray({
     const fence = buildSprayFenceGeometry(d)
     return {
       fence,
-      ofControl: fence.cf,
       plate: fence.plate,
     }
   }, [fieldDims])
 
   const { sx, sy, pxPerFt } = useMemo(() => {
     const { fence } = scaledField
+    const { home, lf, lcf, cf, rcf, rf } = fence
+    const ex = (p: [number, number]) => expandSprayOutfieldCornerFromHome(home, p)
     const outlineFlat: [number, number][] = [
-      fence.home,
-      fence.lf,
-      fence.lcf,
-      fence.cf,
-      fence.rcf,
-      fence.rf,
+      home,
+      lf,
+      lcf,
+      cf,
+      rcf,
+      rf,
+      ex(lf),
+      ex(lcf),
+      ex(cf),
+      ex(rcf),
+      ex(rf),
       ...fence.infieldGrass,
       ...fence.infieldDirtOuter,
       fence.moundCenter,
@@ -184,10 +194,30 @@ export default function GameStatcastSpray({
     [awayTeamId, homeTeamId, surfaceHex],
   )
 
-  const fairPathD = useMemo(() => {
+  /** Expanded outfield paint (beyond true fence); underlay so the bleed ring reads as non-play. */
+  const fairGrassBeyondD = useMemo(() => {
+    const { home, lf, lcf, cf, rcf, rf } = scaledField.fence
+    const [hx, hy] = home
+    const e = (p: [number, number]) => expandSprayOutfieldCornerFromHome(home, p)
+    const lfE = e(lf)
+    const lcfE = e(lcf)
+    const cfE = e(cf)
+    const rcfE = e(rcf)
+    const rfE = e(rf)
+    return `M ${sx(hx).toFixed(2)} ${sy(hy).toFixed(2)} L ${sx(lfE[0]).toFixed(2)} ${sy(lfE[1]).toFixed(2)} L ${sx(lcfE[0]).toFixed(2)} ${sy(lcfE[1]).toFixed(2)} L ${sx(cfE[0]).toFixed(2)} ${sy(cfE[1]).toFixed(2)} L ${sx(rcfE[0]).toFixed(2)} ${sy(rcfE[1]).toFixed(2)} L ${sx(rfE[0]).toFixed(2)} ${sy(rfE[1]).toFixed(2)} Z`
+  }, [sx, sy, scaledField])
+
+  /** Fair territory up to published fence (in play). */
+  const fairGrassInnerD = useMemo(() => {
     const { home, lf, lcf, cf, rcf, rf } = scaledField.fence
     const [hx, hy] = home
     return `M ${sx(hx).toFixed(2)} ${sy(hy).toFixed(2)} L ${sx(lf[0]).toFixed(2)} ${sy(lf[1]).toFixed(2)} L ${sx(lcf[0]).toFixed(2)} ${sy(lcf[1]).toFixed(2)} L ${sx(cf[0]).toFixed(2)} ${sy(cf[1]).toFixed(2)} L ${sx(rcf[0]).toFixed(2)} ${sy(rcf[1]).toFixed(2)} L ${sx(rf[0]).toFixed(2)} ${sy(rf[1]).toFixed(2)} Z`
+  }, [sx, sy, scaledField])
+
+  /** Published fence chord at true LF–RF distances (stroke only). */
+  const fairFenceChordD = useMemo(() => {
+    const { lf, lcf, cf, rcf, rf } = scaledField.fence
+    return `M ${sx(lf[0]).toFixed(2)} ${sy(lf[1]).toFixed(2)} L ${sx(lcf[0]).toFixed(2)} ${sy(lcf[1]).toFixed(2)} L ${sx(cf[0]).toFixed(2)} ${sy(cf[1]).toFixed(2)} L ${sx(rcf[0]).toFixed(2)} ${sy(rcf[1]).toFixed(2)} L ${sx(rf[0]).toFixed(2)} ${sy(rf[1]).toFixed(2)}`
   }, [sx, sy, scaledField])
 
   const fenceLabels = useMemo(() => {
@@ -210,10 +240,24 @@ export default function GameStatcastSpray({
     ]
   }, [scaledField, fieldDims])
 
-  /** Linear turf gradient: plate → CF (broadcast-style shading, deeper OF). */
+  /** In-play fair grass gradient: plate → true CF. */
   const grassLinear = useMemo(() => {
-    const [hx, hy] = scaledField.fence.home
-    const [cx, cy] = scaledField.ofControl
+    const { home, cf } = scaledField.fence
+    const [hx, hy] = home
+    const [cx, cy] = cf
+    return {
+      x1: sx(hx),
+      y1: sy(hy),
+      x2: sx(cx),
+      y2: sy(cy),
+    }
+  }, [sx, sy, scaledField])
+
+  /** Muted gradient for the band past the fence (visual bleed / beyond play). */
+  const grassBeyondLinear = useMemo(() => {
+    const { home, cf } = scaledField.fence
+    const [hx, hy] = home
+    const [cx, cy] = expandSprayOutfieldCornerFromHome(home, cf)
     return {
       x1: sx(hx),
       y1: sy(hy),
@@ -271,8 +315,7 @@ export default function GameStatcastSpray({
   if (!points.length) {
     return (
       <p className="muted game-statcast-spray__empty">
-        No hit-position data (hc_x / hc_y) for this game — spray chart needs tracking coordinates on
-        batted balls.
+        No field-location data for this game, so the spray chart cannot be shown.
       </p>
     )
   }
@@ -282,15 +325,17 @@ export default function GameStatcastSpray({
       <p className="muted small game-statcast-spray__caption">
         {venueName ? (
           <>
-            Outline uses a 90° fair sector at home, fence corners at published LF / CF / RF from{' '}
-            <strong>{venueName}</strong> ({fieldDims.lf} / {fieldDims.cf} / {fieldDims.rf} ft); power
-            alleys are estimated. Dots plot Savant hc_x / hc_y converted to the same field-foot space
-            as this outline.
+            Outline matches <strong>{venueName}</strong>&apos;s published left, center, and right
+            field distances ({fieldDims.lf} / {fieldDims.cf} / {fieldDims.rf} ft); power alleys are
+            approximate. Each dot is a batted ball; brighter green is fair territory inside the fence,
+            duller green beyond the wall. Fouls and pop-ups behind the plate may sit outside the
+            outline.
           </>
         ) : (
           <>
-            Outline uses generic LF / CF / RF distances; venue unknown. Dots use the standard Savant
-            → field-foot conversion.
+            Outline uses generic outfield distances (venue unknown). Each dot is a batted ball;
+            brighter green is in play inside the fence, duller green beyond the wall. Fouls and
+            unusual paths may sit outside the diagram.
           </>
         )}
       </p>
@@ -319,6 +364,17 @@ export default function GameStatcastSpray({
             <stop offset="52%" stopColor="var(--spray-grass-mid)" />
             <stop offset="100%" stopColor="var(--spray-grass-b)" />
           </linearGradient>
+          <linearGradient
+            id={`${gid}-grass-beyond`}
+            gradientUnits="userSpaceOnUse"
+            x1={grassBeyondLinear.x1}
+            y1={grassBeyondLinear.y1}
+            x2={grassBeyondLinear.x2}
+            y2={grassBeyondLinear.y2}
+          >
+            <stop offset="0%" stopColor="var(--spray-grass-beyond-a)" />
+            <stop offset="100%" stopColor="var(--spray-grass-beyond-b)" />
+          </linearGradient>
           <linearGradient id={`${gid}-dirt`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="var(--spray-dirt-a)" />
             <stop offset="100%" stopColor="var(--spray-dirt-b)" />
@@ -328,8 +384,18 @@ export default function GameStatcastSpray({
         <rect width={W} height={H} fill={`url(#${gid}-chart-bg)`} rx={6} />
 
         <path
-          d={fairPathD}
+          d={fairGrassBeyondD}
+          fill={`url(#${gid}-grass-beyond)`}
+          stroke="none"
+        />
+        <path
+          d={fairGrassInnerD}
           fill={`url(#${gid}-grass)`}
+          stroke="none"
+        />
+        <path
+          d={fairFenceChordD}
+          fill="none"
           stroke="var(--spray-fence-line)"
           strokeWidth={1.1}
           strokeLinejoin="miter"
@@ -413,12 +479,15 @@ export default function GameStatcastSpray({
 
         {points.map((p, i) => {
           let fill = otherColor
+          let half: 'top' | 'bottom' | 'other' = 'other'
           switch (inningHalfBucket(p.inningHalf)) {
             case 'top':
               fill = topColor
+              half = 'top'
               break
             case 'bottom':
               fill = bottomColor
+              half = 'bottom'
               break
             default:
               break
@@ -433,19 +502,23 @@ export default function GameStatcastSpray({
             launchAngle: p.launchAngle,
             events: p.events,
           })
-          return (
-            <circle
+          const r = STATCAST_SPRAY_DOT_R
+          const common = {
+            fill,
+            stroke: 'var(--spray-bip-ring)',
+            strokeWidth: 1.5,
+            style: { cursor: 'default' as const },
+            onMouseEnter: () => setTip({ px: cx, py: cy, rows }),
+            onMouseLeave: () => setTip(null),
+          }
+          return half === 'bottom' ? (
+            <path
               key={`${p.rawHcX}-${p.rawHcY}-${i}`}
-              cx={cx}
-              cy={cy}
-              r={5.25}
-              fill={fill}
-              stroke="var(--spray-bip-ring)"
-              strokeWidth={1.5}
-              style={{ cursor: 'default' }}
-              onMouseEnter={() => setTip({ px: cx, py: cy, rows })}
-              onMouseLeave={() => setTip(null)}
+              d={statcastSprayDiamondPath(cx, cy, r)}
+              {...common}
             />
+          ) : (
+            <circle key={`${p.rawHcX}-${p.rawHcY}-${i}`} cx={cx} cy={cy} r={r} {...common} />
           )
         })}
 
@@ -477,12 +550,18 @@ export default function GameStatcastSpray({
 
       <ul className="game-statcast-spray__legend muted small" aria-hidden="true">
         <li>
-          <span className="game-statcast-spray__swatch" style={{ background: topColor }} />
-          Away batting
+          <span
+            className="game-statcast-spray__swatch game-statcast-spray__swatch--circle"
+            style={{ background: topColor }}
+          />
+          Away batting — blue (circles)
         </li>
         <li>
-          <span className="game-statcast-spray__swatch" style={{ background: bottomColor }} />
-          Home batting
+          <span
+            className="game-statcast-spray__swatch game-statcast-spray__swatch--diamond"
+            style={{ background: bottomColor }}
+          />
+          Home batting — orange (diamonds)
         </li>
       </ul>
     </div>

@@ -3,9 +3,11 @@ import { getFieldDimensionsForVenue, VENUE_FIELD_DIMENSIONS_FT } from './mlbVenu
 import {
   buildHomePlateOutline,
   buildSprayFenceGeometry,
+  expandSprayOutfieldCornerFromHome,
   scaleSprayOutlinePoint,
   SPRAY_HOME,
   SPRAY_OF_CONTROL,
+  SPRAY_OUTFIELD_GRASS_BLEED,
 } from './parkSprayOutline'
 
 describe('mlbVenueFieldDimensions', () => {
@@ -63,5 +65,13 @@ describe('parkSprayOutline', () => {
     expect(pts.length).toBe(6)
     expect(pts[0][0]).toBe(pts[5][0])
     expect(pts[0][1]).toBe(pts[5][1])
+  })
+
+  it('expandSprayOutfieldCornerFromHome moves corners outward from home on the same ray', () => {
+    const g = buildSprayFenceGeometry({ lf: 330, cf: 400, rf: 330 })
+    const ex = expandSprayOutfieldCornerFromHome(g.home, g.cf)
+    const d0 = Math.hypot(g.cf[0] - g.home[0], g.cf[1] - g.home[1])
+    const d1 = Math.hypot(ex[0] - g.home[0], ex[1] - g.home[1])
+    expect(d1 / d0).toBeCloseTo(SPRAY_OUTFIELD_GRASS_BLEED, 5)
   })
 })

@@ -13,12 +13,7 @@ import { fetchGameTimeline } from '../../api/client'
 import type { GameTimelineResponse } from '../../types/api'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
-import { adjustChartColorForSurface } from '../../utils/chartColorContrast'
-import {
-  CHART_NEUTRAL_FALLBACK,
-  CHART_NEUTRAL_FALLBACK_ALT,
-  resolveGameScoreBarFills,
-} from '../../utils/mlbTeamColors'
+import { statcastHalfFillColors } from '../../utils/statcastHalfColors'
 
 type GameScoreBarProps = {
   gamePk: number | string | null | undefined
@@ -77,16 +72,12 @@ export default function GameScoreBar({ gamePk }: GameScoreBarProps) {
   const homeKey = data?.homeTeam || 'Home'
 
   const { awayFill, homeFill } = useMemo(() => {
-    const raw = resolveGameScoreBarFills(
+    const { topHalf, bottomHalf } = statcastHalfFillColors(
       data?.awayId,
       data?.homeId,
-      CHART_NEUTRAL_FALLBACK_ALT,
-      CHART_NEUTRAL_FALLBACK,
+      surfaceHex,
     )
-    return {
-      awayFill: adjustChartColorForSurface(raw.awayFill, surfaceHex),
-      homeFill: adjustChartColorForSurface(raw.homeFill, surfaceHex),
-    }
+    return { awayFill: topHalf, homeFill: bottomHalf }
   }, [data?.awayId, data?.homeId, surfaceHex])
 
   if (pk == null || !Number.isFinite(pk) || pk <= 0) {

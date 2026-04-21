@@ -5,6 +5,8 @@ import {
   PLATE_HALF_FT,
   normalizedPlateLocation,
   projNormToSvg,
+  projNormToSvgCatcherPerspective,
+  projNormToSvgStrikeSquare,
   resolveStrikeZoneFeet,
 } from './statcastPlateNormalized'
 import type { StatcastPitch } from '../types/api'
@@ -61,5 +63,50 @@ describe('projNormToSvg', () => {
     expect(hi.x).toBeCloseTo(100, 5)
     expect(lo.y).toBeCloseTo(100, 5)
     expect(hi.y).toBeCloseTo(0, 5)
+  })
+})
+
+describe('projNormToSvgCatcherPerspective', () => {
+  it('matches flat projection at the bottom of the plot (near catcher)', () => {
+    const a = projNormToSvg(-0.5, -0.22)
+    const b = projNormToSvgCatcherPerspective(-0.5, -0.22)
+    expect(b.x).toBeCloseTo(a.x, 5)
+    expect(b.y).toBeCloseTo(a.y, 5)
+  })
+
+  it('narrows horizontal span toward the pitcher (top of plot)', () => {
+    const flat = projNormToSvg(1.35, 1.22)
+    const persp = projNormToSvgCatcherPerspective(1.35, 1.22)
+    expect(persp.x).toBeLessThan(flat.x)
+    expect(persp.y).toBeCloseTo(flat.y, 5)
+  })
+})
+
+function dist(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+): number {
+  return Math.hypot(a.x - b.x, a.y - b.y)
+}
+
+describe('projNormToSvgStrikeSquare', () => {
+  it('maps the official strike zone polygon to equal sides (square)', () => {
+    const bl = projNormToSvgStrikeSquare(-1, 0)
+    const br = projNormToSvgStrikeSquare(1, 0)
+    const tr = projNormToSvgStrikeSquare(1, 1)
+    const tl = projNormToSvgStrikeSquare(-1, 1)
+    const bottom = dist(bl, br)
+    const right = dist(br, tr)
+    const top = dist(tr, tl)
+    const left = dist(tl, bl)
+    expect(bottom).toBeCloseTo(right, 5)
+    expect(right).toBeCloseTo(top, 5)
+    expect(top).toBeCloseTo(left, 5)
+  })
+
+  it('keeps vertical grid lines vertical (no keystone)', () => {
+    const bottom = projNormToSvgStrikeSquare(0.5, -0.22)
+    const top = projNormToSvgStrikeSquare(0.5, 1.22)
+    expect(bottom.x).toBeCloseTo(top.x, 5)
   })
 })

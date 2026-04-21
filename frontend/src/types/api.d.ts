@@ -185,6 +185,8 @@ export interface StatcastPitch {
   releaseSpeed?: number
   /** "Top" or "Bottom"; from `inning_topbot`. */
   inningHalf?: string
+  /** Batter stand for this pitch — Savant `stand` (L / R / S). */
+  batterStand?: 'L' | 'R' | 'S'
   /** Top of batter strike zone (feet), source `sz_top`. */
   szTop?: number
   /** Bottom of batter strike zone (feet), source `sz_bot`. */

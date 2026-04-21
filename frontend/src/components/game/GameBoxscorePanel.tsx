@@ -212,7 +212,8 @@ export default function GameBoxscorePanel({
         <div className="game-boxscore__runs-panel panel chart-panel">
           <h2>Runs by inning</h2>
           <p className="muted small">
-            Stacked bars use each team&apos;s primary color per inning.
+            Away runs are blue and home runs are orange (same fixed colors as the batted-ball charts,
+            not team uniforms).
           </p>
           <GameScoreBar key={String(gamePk)} gamePk={gamePk} />
         </div>
@@ -388,8 +389,9 @@ export default function GameBoxscorePanel({
         <div className="panel chart-panel game-boxscore__pitch-location">
           <h2>Pitch location</h2>
           <p className="muted small">
-            Each pitcher&apos;s pitches at the plate (horizontal and vertical location), colored by
-            pitch type.
+            Catcher&apos;s view toward the pitcher: each pitch where it crossed the plate (horizontal
+            and vertical feet), with a light depth perspective on the grid. Colors are pitch
+            type.
           </p>
           {pitchLocation.loading ? (
             <p className="muted">Loading pitch data…</p>

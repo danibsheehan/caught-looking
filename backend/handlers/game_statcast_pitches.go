@@ -22,7 +22,7 @@ func (h *Handlers) GameStatcastPitches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cacheKey := "game-statcast-pitches-v2:" + pkStr
+	cacheKey := "game-statcast-pitches-v3:" + pkStr
 	if body, ok := h.cache.Get(cacheKey); ok {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(body)
@@ -81,6 +81,7 @@ func parseStatcastPitchesCSV(raw []byte) []models.StatcastPitch {
 	th := columnIndex(idx, "inning_topbot")
 	szTopI := columnIndex(idx, "sz_top")
 	szBotI := columnIndex(idx, "sz_bot")
+	standI := columnIndex(idx, "stand")
 
 	if pxi < 0 || pzi < 0 || pi < 0 {
 		return out
@@ -126,6 +127,9 @@ func parseStatcastPitchesCSV(raw []byte) []models.StatcastPitch {
 			if v, ok := parseCSVFloat(rec, szBotI); ok {
 				row.SzBot = &v
 			}
+		}
+		if standI >= 0 && standI < len(rec) {
+			row.BatterStand = normalizeBatterStand(strings.TrimSpace(rec[standI]))
 		}
 		out = append(out, row)
 	}

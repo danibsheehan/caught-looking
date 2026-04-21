@@ -12,9 +12,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-const minimalPitchesCSV = `plate_x,plate_z,pitch_name,pitcher,batter,release_speed,inning_topbot,sz_top,sz_bot
--0.42,2.15,4-Seam Fastball,67890,12345,94.2,Top,3.41,1.74
-0.31,3.05,Slider,67890,12345,87.0,Bot,3.37,1.79
+const minimalPitchesCSV = `plate_x,plate_z,pitch_name,pitcher,batter,release_speed,inning_topbot,sz_top,sz_bot,stand
+-0.42,2.15,4-Seam Fastball,67890,12345,94.2,Top,3.41,1.74,R
+0.31,3.05,Slider,67890,12345,87.0,Bot,3.37,1.79,R
 `
 
 func TestGameStatcastPitches_invalidGamePk(t *testing.T) {
@@ -74,6 +74,9 @@ func TestGameStatcastPitches_success(t *testing.T) {
 	}
 	if out.Pitches[0].SzTop == nil || *out.Pitches[0].SzTop != 3.41 || out.Pitches[0].SzBot == nil || *out.Pitches[0].SzBot != 1.74 {
 		t.Fatalf("row0 sz: %+v / %+v", out.Pitches[0].SzTop, out.Pitches[0].SzBot)
+	}
+	if out.Pitches[0].BatterStand != "R" || out.Pitches[1].BatterStand != "R" {
+		t.Fatalf("batterStand: %+v / %+v", out.Pitches[0].BatterStand, out.Pitches[1].BatterStand)
 	}
 }
 

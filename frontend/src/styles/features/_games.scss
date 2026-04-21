@@ -74,6 +74,9 @@
   --spray-grass-a: #9ee0d8;
   --spray-grass-b: #5ebfb4;
   --spray-grass-mid: #7acec4;
+  /* Past the fence (diagram bleed only): muted vs in-play turf */
+  --spray-grass-beyond-a: #c5ddd4;
+  --spray-grass-beyond-b: #8fb5aa;
   --spray-dirt-a: #e8ddd0;
   --spray-dirt-b: #c9b69e;
   --spray-dirt-line: rgba(120, 105, 88, 0.45);
@@ -131,10 +134,24 @@
     display: inline-block;
     width: 0.65rem;
     height: 0.65rem;
-    border-radius: 50%;
     margin-right: 0.35rem;
     vertical-align: -0.08em;
     border: 1px solid color-mix(in srgb, var(--bg) 40%, var(--border));
+
+    &--circle {
+      border-radius: 50%;
+    }
+
+    /* Rotated square reads as diamond; matches home-half markers on the chart */
+    &--diamond {
+      width: 0.52rem;
+      height: 0.52rem;
+      border-radius: 2px;
+      transform: rotate(45deg);
+      vertical-align: -0.06em;
+      margin-left: 0.06rem;
+      margin-right: 0.42rem;
+    }
   }
 }
 
@@ -144,6 +161,8 @@ html[data-theme='dark'] .game-statcast-spray {
   --spray-grass-a: #2d5c56;
   --spray-grass-b: #1a3d38;
   --spray-grass-mid: #234a45;
+  --spray-grass-beyond-a: #1e3532;
+  --spray-grass-beyond-b: #142824;
   --spray-dirt-a: #4a4036;
   --spray-dirt-b: #2e2822;
   --spray-dirt-line: rgba(180, 165, 145, 0.35);
@@ -160,6 +179,52 @@ html[data-theme='dark'] .game-statcast-spray__fence-ft {
 }
 
 .game-statcast-scatter {
+  --statcast-la-grounder: rgba(78, 108, 168, 0.12);
+  --statcast-la-linedrive: rgba(48, 132, 96, 0.1);
+  --statcast-la-fly: rgba(178, 118, 52, 0.11);
+
+  &__caption {
+    margin: 0 0 0.65rem;
+    line-height: 1.35;
+  }
+
+  &__band-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 1.1rem;
+    margin: 0.55rem 0 0;
+    padding: 0;
+    list-style: none;
+    line-height: 1.3;
+
+    li {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.38rem;
+    }
+  }
+
+  &__band-swatch {
+    width: 0.78rem;
+    height: 0.62rem;
+    border-radius: 2px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    box-sizing: border-box;
+
+    &--grounder {
+      background: var(--statcast-la-grounder);
+    }
+
+    &--linedrive {
+      background: var(--statcast-la-linedrive);
+    }
+
+    &--fly {
+      background: var(--statcast-la-fly);
+    }
+  }
+
   &__empty {
     margin: 0.5rem 0 0;
   }
@@ -167,6 +232,12 @@ html[data-theme='dark'] .game-statcast-spray__fence-ft {
   &__tooltip {
     max-width: 17rem;
   }
+}
+
+html[data-theme='dark'] .game-statcast-scatter {
+  --statcast-la-grounder: rgba(110, 145, 210, 0.14);
+  --statcast-la-linedrive: rgba(70, 175, 125, 0.12);
+  --statcast-la-fly: rgba(215, 155, 75, 0.13);
 }
 
 /* Spray + launch-angle scatter: shared 1–4 metric tooltip (Distance → … → Result). */
@@ -370,6 +441,30 @@ html[data-theme='dark'] .game-statcast-spray__fence-ft {
     box-shadow: var(--shadow);
   }
 
+  &__svg-scene {
+    pointer-events: none;
+  }
+
+  &__svg-label {
+    fill: var(--text);
+    opacity: 0.78;
+    font-family: var(--sans, system-ui, sans-serif);
+    font-weight: 500;
+
+    &--pitcher {
+      font-size: 3.4px;
+    }
+
+    &--corner {
+      font-size: 3.1px;
+    }
+
+    &--catcher {
+      font-size: 2.85px;
+      opacity: 0.65;
+    }
+  }
+
   &__legend {
     list-style: none;
     margin: 0 0 0.35rem;
@@ -393,6 +488,10 @@ html[data-theme='dark'] .game-statcast-spray__fence-ft {
     border-radius: 50%;
     border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
     flex-shrink: 0;
+  }
+
+  &__tooltip {
+    max-width: 17rem;
   }
 }
 

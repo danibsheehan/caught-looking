@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import {
   CartesianGrid,
   Legend,
+  ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -16,6 +18,17 @@ import { buildScatterTooltipRows } from '../../utils/statcastDisplay'
 import { inningHalfBucket } from '../../utils/inningHalf'
 import { statcastHalfFillColors } from '../../utils/statcastHalfColors'
 import StatcastMetricTooltipContent from './StatcastMetricTooltipContent'
+import { StatcastScatterShapeCircle, StatcastScatterShapeDiamond } from './statcastMarkers'
+import {
+  type LaunchAngleBandKey,
+  launchAngleBandSlices,
+} from '../../utils/statcastLaunchAngleBands'
+
+const LA_BAND_FILL: Record<LaunchAngleBandKey, string> = {
+  grounder: 'var(--statcast-la-grounder)',
+  line_drive: 'var(--statcast-la-linedrive)',
+  fly_ball: 'var(--statcast-la-fly)',
+}
 
 export type GameStatcastScatterPoint = {
   launchAngle: number
@@ -55,7 +68,7 @@ export default function GameStatcastScatter({
 }: GameStatcastScatterProps) {
   const surfaceHex = useChartSurfaceHex()
 
-  const { points, top, bottom, other, xDomain, yDomain } = useMemo(() => {
+  const { points, top, bottom, other, xDomain, yDomain, launchAngleBands } = useMemo(() => {
     const all = toPoints(battedBalls)
     const topBat: GameStatcastScatterPoint[] = []
     const botBat: GameStatcastScatterPoint[] = []
@@ -80,16 +93,18 @@ export default function GameStatcastScatter({
     const evMax = ev.length ? Math.max(...ev) : 110
     const laPad = Math.max(5, (laMax - laMin) * 0.08)
     const evPad = Math.max(4, (evMax - evMin) * 0.06)
+    const xDomain = [Math.floor(laMin - laPad), Math.ceil(laMax + laPad)] as [number, number]
     return {
       points: all,
       top: topBat,
       bottom: botBat,
       other,
-      xDomain: [Math.floor(laMin - laPad), Math.ceil(laMax + laPad)] as [number, number],
+      xDomain,
       yDomain: [Math.max(30, Math.floor(evMin - evPad)), Math.ceil(evMax + evPad)] as [
         number,
         number,
       ],
+      launchAngleBands: launchAngleBandSlices(xDomain),
     }
   }, [battedBalls])
 
@@ -106,10 +121,29 @@ export default function GameStatcastScatter({
     )
   }
 
+  const showLevelReference = xDomain[0] < 0 && xDomain[1] > 0
+
   return (
     <div className="game-statcast-scatter">
+      <p className="muted small game-statcast-scatter__caption">
+        Each point is one batted ball. Tinted bands mark typical grounder, line drive, and fly-ball
+        launch-angle ranges (see key below). Read left to right as more lofted contact; read bottom
+        to top as harder-hit contact. Hover a point for the batter and play result—where the ball
+        went on the field is on the spray chart.
+      </p>
       <ResponsiveContainer width="100%" height={320}>
         <ScatterChart margin={{ top: 10, right: 12, left: 4, bottom: 28 }}>
+          {launchAngleBands.map((b) => (
+            <ReferenceArea
+              key={b.key}
+              x1={b.x1}
+              x2={b.x2}
+              y1={yDomain[0]}
+              y2={yDomain[1]}
+              fill={LA_BAND_FILL[b.key]}
+              stroke="none"
+            />
+          ))}
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             type="number"
@@ -140,22 +174,58 @@ export default function GameStatcastScatter({
               fontSize: 11,
             }}
           />
+          {showLevelReference ? (
+            <ReferenceLine
+              x={0}
+              stroke="var(--border)"
+              strokeDasharray="4 4"
+              strokeOpacity={0.85}
+            />
+          ) : null}
           <Tooltip cursor={{ strokeDasharray: '3 3' }} content={StatcastTooltip} />
           <Legend
             wrapperStyle={{ fontSize: '0.82rem', paddingTop: 6 }}
             formatter={(value) => <span style={{ color: 'var(--text)' }}>{value}</span>}
           />
           {top.length > 0 ? (
-            <Scatter name="Away batting" data={top} fill={topColor} />
+            <Scatter
+              name="Away — blue (circles)"
+              data={top}
+              fill={topColor}
+              shape={StatcastScatterShapeCircle}
+            />
           ) : null}
           {bottom.length > 0 ? (
-            <Scatter name="Home batting" data={bottom} fill={bottomColor} />
+            <Scatter
+              name="Home — orange (diamonds)"
+              data={bottom}
+              fill={bottomColor}
+              shape={StatcastScatterShapeDiamond}
+            />
           ) : null}
           {other.length > 0 ? (
             <Scatter name="Inning half unknown" data={other} fill={otherColor} />
           ) : null}
         </ScatterChart>
       </ResponsiveContainer>
+      <ul className="game-statcast-scatter__band-legend muted small" aria-hidden="true">
+        <li>
+          <span
+            className="game-statcast-scatter__band-swatch game-statcast-scatter__band-swatch--grounder"
+          />
+          Grounder (&lt;10°)
+        </li>
+        <li>
+          <span
+            className="game-statcast-scatter__band-swatch game-statcast-scatter__band-swatch--linedrive"
+          />
+          Line drive (10°–25°)
+        </li>
+        <li>
+          <span className="game-statcast-scatter__band-swatch game-statcast-scatter__band-swatch--fly" />
+          Fly ball (&gt;25°)
+        </li>
+      </ul>
     </div>
   )
 }
