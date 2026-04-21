@@ -22,7 +22,7 @@ func (h *Handlers) GameStatcastPitches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cacheKey := "game-statcast-pitches-v3:" + pkStr
+	cacheKey := "game-statcast-pitches-v4:" + pkStr
 	if body, ok := h.cache.Get(cacheKey); ok {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(body)
@@ -72,10 +72,8 @@ func parseStatcastPitchesCSV(raw []byte) []models.StatcastPitch {
 
 	pxi := columnIndex(idx, "plate_x")
 	pzi := columnIndex(idx, "plate_z")
-	pitchI := columnIndex(idx, "pitch_name")
-	if pitchI < 0 {
-		pitchI = columnIndex(idx, "pitch_type")
-	}
+	nameI := columnIndex(idx, "pitch_name")
+	typeI := columnIndex(idx, "pitch_type")
 	pi := columnIndex(idx, "pitcher")
 	rsI := columnIndex(idx, "release_speed")
 	th := columnIndex(idx, "inning_topbot")
@@ -107,8 +105,17 @@ func parseStatcastPitchesCSV(raw []byte) []models.StatcastPitch {
 			PlateZ:  pz,
 			Pitcher: parseCSVInt(rec, pi),
 		}
-		if pitchI >= 0 && pitchI < len(rec) {
-			row.PitchName = strings.TrimSpace(rec[pitchI])
+		if nameI >= 0 && nameI < len(rec) {
+			row.PitchName = strings.TrimSpace(rec[nameI])
+		}
+		if typeI >= 0 && typeI < len(rec) {
+			if pt := strings.TrimSpace(rec[typeI]); pt != "" {
+				row.PitchType = strings.ToUpper(pt)
+			}
+		}
+		// Legacy CSVs: only `pitch_type` (abbrev) with no `pitch_name` column.
+		if row.PitchName == "" && typeI >= 0 && typeI < len(rec) {
+			row.PitchName = strings.TrimSpace(rec[typeI])
 		}
 		if rsI >= 0 {
 			if rs, ok := parseCSVFloat(rec, rsI); ok {

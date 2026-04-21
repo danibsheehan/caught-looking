@@ -72,7 +72,6 @@ const PITCHING_ROWS: Row[] = [
 
 const tdNum = {
   textAlign: 'right' as const,
-  fontVariantNumeric: 'tabular-nums' as const,
 }
 
 type Props = {

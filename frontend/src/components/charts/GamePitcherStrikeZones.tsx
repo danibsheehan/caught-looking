@@ -4,7 +4,13 @@ import {
   buildPitcherStrikeZoneRows,
   type PitcherStatcastRow,
 } from '../../utils/gameStatcastPitchers'
-import { pitchTypeColor } from '../../utils/pitchTypeColors'
+import {
+  opacityFromUsageShare,
+  pitchHexForCode,
+  pitchMarkerFillStyle,
+  pitchShareByCode,
+  resolvePitchCode,
+} from '../../utils/pitchTypeColors'
 import { buildPitchZoneTooltipRows } from '../../utils/statcastDisplay'
 import {
   NORM_X_MAX,
@@ -22,27 +28,36 @@ type GamePitcherStrikeZonesProps = {
   box: GameBoxscoreResponse | null
 }
 
-function groupByPitchName(pitches: StatcastPitch[]): [string, StatcastPitch[]][] {
-  const m = new Map<string, StatcastPitch[]>()
-  for (const p of pitches) {
-    const key = (p.pitchName && p.pitchName.trim()) || 'Unknown'
-    const arr = m.get(key) ?? []
-    arr.push(p)
-    m.set(key, arr)
+type PitchCodeGroup = { code: string; label: string; pitches: StatcastPitch[] }
+
+function legendLabelForGroup(code: string, pitches: StatcastPitch[]): string {
+  const first = pitches[0]
+  const name = first?.pitchName?.trim()
+  const pt = first?.pitchType?.trim()
+  if (name && pt && name.toUpperCase() !== pt.toUpperCase()) {
+    return `${name} (${pt.toUpperCase()})`
   }
-  return [...m.entries()].sort((a, b) => b[1].length - a[1].length)
+  if (name) {
+    return name
+  }
+  return code
 }
 
-function mixSummary(pitches: StatcastPitch[]): string {
-  const counts = new Map<string, number>()
+function groupPitchesByCode(pitches: StatcastPitch[]): PitchCodeGroup[] {
+  const m = new Map<string, StatcastPitch[]>()
   for (const p of pitches) {
-    const k = (p.pitchName && p.pitchName.trim()) || 'Unknown'
-    counts.set(k, (counts.get(k) ?? 0) + 1)
+    const c = resolvePitchCode(p)
+    const arr = m.get(c) ?? []
+    arr.push(p)
+    m.set(c, arr)
   }
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, n]) => `${name} ${n}`)
-    .join(' · ')
+  return [...m.entries()]
+    .sort((a, b) => b[1].length - a[1].length)
+    .map(([code, pts]) => ({
+      code,
+      pitches: pts,
+      label: legendLabelForGroup(code, pts),
+    }))
 }
 
 /** Label for the pitcher dropdown (team context + name). */
@@ -77,16 +92,22 @@ type HoverTip = { pitch: StatcastPitch; clientX: number; clientY: number }
 
 function PitcherStrikeZoneSvg({
   pitches,
+  repertoirePitches,
   variant = 'default',
+  isolated = false,
   ariaLabel = 'Pitch locations from catcher view, normalized to the batter strike zone',
 }: {
   pitches: StatcastPitch[]
+  /** Full sample for usage share → opacity (not the filtered subset when a legend type is isolated). */
+  repertoirePitches: StatcastPitch[]
   variant?: 'default' | 'featured'
+  isolated?: boolean
   ariaLabel?: string
 }) {
   const svgId = useId()
   const gradId = `${svgId}-zoneFill`
   const [tip, setTip] = useState<HoverTip | null>(null)
+  const shareByCode = useMemo(() => pitchShareByCode(repertoirePitches), [repertoirePitches])
 
   const zonePoints = useMemo(
     () => ZONE_POLYGON_NORM.map(([x, z]) => svgPointStringStrikeSquare(x, z)).join(' '),
@@ -206,7 +227,7 @@ function PitcherStrikeZoneSvg({
         {pitches.map((p, i) => {
           const { xN, zN } = normalizedPlateLocation(p)
           const { x, y } = projNormToSvgStrikeSquare(xN, zN)
-          const fill = pitchTypeColor((p.pitchName && p.pitchName.trim()) || 'Unknown')
+          const { fill, fillOpacity } = pitchMarkerFillStyle(p, shareByCode, { isolated })
           const r = variant === 'featured' ? 1.55 : 1.35
           return (
             <circle
@@ -215,7 +236,7 @@ function PitcherStrikeZoneSvg({
               cy={y}
               r={r}
               fill={fill}
-              fillOpacity={0.92}
+              fillOpacity={fillOpacity}
               stroke="var(--bg)"
               strokeWidth={0.35}
               vectorEffect="non-scaling-stroke"
@@ -239,6 +260,7 @@ function FloatingPitchTooltip({ tip }: { tip: HoverTip }) {
   const p = tip.pitch
   const rows = buildPitchZoneTooltipRows({
     pitchName: p.pitchName,
+    pitchType: p.pitchType,
     releaseSpeed: p.releaseSpeed,
   })
   return (
@@ -284,6 +306,17 @@ function OnePitcherCard({
   featured?: boolean
 }) {
   const titleId = useId()
+  const [isolatedCode, setIsolatedCode] = useState<string | null>(null)
+
+  const legendGroups = useMemo(() => groupPitchesByCode(row.pitches), [row.pitches])
+  const shareByCode = useMemo(() => pitchShareByCode(row.pitches), [row.pitches])
+  const plotPitches = useMemo(() => {
+    if (!isolatedCode) {
+      return row.pitches
+    }
+    return row.pitches.filter((p) => resolvePitchCode(p) === isolatedCode)
+  }, [row.pitches, isolatedCode])
+
   return (
     <article
       className={`game-pitcher-zones__card${featured ? ' game-pitcher-zones__card--featured' : ''}`}
@@ -300,28 +333,44 @@ function OnePitcherCard({
               {row.side === 'away' ? box.away.teamName : box.home.teamName}
             </p>
           ) : null}
-          <p className="muted small game-pitcher-zones__mix">{mixSummary(row.pitches)}</p>
         </header>
-      ) : (
-        <p className="muted small game-pitcher-zones__mix">{mixSummary(row.pitches)}</p>
-      )}
+      ) : null}
       <PitcherStrikeZoneSvg
-        pitches={row.pitches}
+        pitches={plotPitches}
+        repertoirePitches={row.pitches}
         variant={featured ? 'featured' : 'default'}
+        isolated={isolatedCode != null}
         ariaLabel={`Pitch locations for ${row.name}`}
       />
       <ul className="game-pitcher-zones__legend" aria-label="Pitch types">
-        {groupByPitchName(row.pitches).map(([name, pts]) => (
-          <li key={name} className="game-pitcher-zones__legend-item">
-            <span
-              className="game-pitcher-zones__legend-swatch"
-              style={{ background: pitchTypeColor(name) }}
-            />
-            <span>
-              {name} <span className="muted">({pts.length})</span>
-            </span>
-          </li>
-        ))}
+        {legendGroups.map((g) => {
+          const share = shareByCode.get(g.code) ?? 0
+          const swatchOpacity = opacityFromUsageShare(share)
+          const active = isolatedCode === g.code
+          return (
+            <li key={g.code} className="game-pitcher-zones__legend-item">
+              <button
+                type="button"
+                className={`game-pitcher-zones__legend-btn${active ? ' game-pitcher-zones__legend-btn--active' : ''}`}
+                aria-pressed={active}
+                onClick={() =>
+                  setIsolatedCode((prev) => (prev === g.code ? null : g.code))
+                }
+              >
+                <span
+                  className="game-pitcher-zones__legend-swatch"
+                  style={{
+                    backgroundColor: pitchHexForCode(g.code),
+                    opacity: swatchOpacity,
+                  }}
+                />
+                <span>
+                  {g.label} <span className="muted">({g.pitches.length})</span>
+                </span>
+              </button>
+            </li>
+          )
+        })}
       </ul>
     </article>
   )
@@ -416,6 +465,7 @@ export default function GamePitcherStrikeZones({ pitches, box }: GamePitcherStri
 
       {viewMode === 'single' && selectedRow ? (
         <OnePitcherCard
+          key={selectedRow.id}
           row={selectedRow}
           box={box}
           showTeamUnderName={false}

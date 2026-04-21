@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react'
+import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
+import { obsidianTeamChartPairsRegistryPrimary } from '../../utils/mlbTeamColors'
 import { GamePitcherStrikeZones, GameScoreBar } from '../charts'
+import GameFinalScoreStrip from './GameFinalScoreStrip'
 import type {
   BatterLine,
   GameBoxscoreResponse,
@@ -128,6 +131,18 @@ export default function GameBoxscorePanel({
   const [pitAway, setPitAway] = useState<SortState>(null)
   const [pitHome, setPitHome] = useState<SortState>(null)
 
+  const surfaceHex = useChartSurfaceHex()
+  const scoreStripLabelColors = useMemo(() => {
+    const pairs = obsidianTeamChartPairsRegistryPrimary(
+      [data.away.teamId, data.home.teamId],
+      surfaceHex,
+    )
+    return {
+      away: pairs[0]?.label ?? '#c8d8e8',
+      home: pairs[1]?.label ?? '#c8d8e8',
+    }
+  }, [data.away.teamId, data.home.teamId, surfaceHex])
+
   const batAwayRows = useMemo(() => {
     const batting = data.away.batting ?? []
     if (!batAway) return batting
@@ -212,10 +227,18 @@ export default function GameBoxscorePanel({
         <div className="game-boxscore__runs-panel panel chart-panel">
           <h2>Runs by inning</h2>
           <p className="muted small">
-            Away runs are blue and home runs are orange (same fixed colors as the batted-ball charts,
-            not team uniforms).
+            Stacked bars use each team’s primary color, brightened for readability on a dark
+            background (fast-read scoring by inning).
           </p>
-          <GameScoreBar key={String(gamePk)} gamePk={gamePk} />
+          <GameFinalScoreStrip
+            awayTeamName={data.away.teamName}
+            homeTeamName={data.home.teamName}
+            awayRuns={data.away.totals.runs}
+            homeRuns={data.home.totals.runs}
+            awayScoreColor={scoreStripLabelColors.away}
+            homeScoreColor={scoreStripLabelColors.home}
+          />
+          <GameScoreBar key={String(gamePk)} gamePk={gamePk} showCaption={false} />
         </div>
       ) : null}
 

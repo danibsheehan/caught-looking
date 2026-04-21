@@ -10,6 +10,7 @@ import TeamPageSkeleton from '../components/skeletons/TeamPageSkeleton'
 import { PlayerCard, StatCard, TeamSelector } from '../components/ui'
 import { useStandings, useTeamSeasonStats, useTeams } from '../hooks/useMLB'
 import { sortStandingTeams, standingTeamForId, teamLabelMap } from '../utils/standings'
+import { getObsidianTeamColor } from '../utils/mlbTeamObsidianRegistry'
 
 const DEFAULT_SEASON = 2026
 
@@ -53,6 +54,23 @@ export default function TeamOverview() {
     if (!snapshot) return []
     return sortStandingTeams(snapshot.division.teams).map((t) => t.teamId)
   }, [snapshot])
+
+  const divisionRaceHeroIds = useMemo(() => {
+    if (divisionTeamIds.length === 0) return []
+    if (divisionTeamIds.length === 1) return [divisionTeamIds[0]!]
+    const leader = divisionTeamIds[0]!
+    const second = divisionTeamIds[1]!
+    const sid = selected?.id
+    if (sid != null && sid !== leader && divisionTeamIds.includes(sid)) {
+      return [leader, sid]
+    }
+    return [leader, second]
+  }, [divisionTeamIds, selected?.id])
+
+  const teamPageRegistry = useMemo(
+    () => (selected ? getObsidianTeamColor(selected.id) : null),
+    [selected],
+  )
 
   const scatterPoints = useMemo(() => {
     if (!snapshot) return []
@@ -131,6 +149,14 @@ export default function TeamOverview() {
           <PlayerCard
             title={`${selected.abbreviation} — ${selected.teamName}`}
             subtitle={`${selected.leagueName} · ${selected.divisionName}`}
+            style={
+              teamPageRegistry
+                ? {
+                    background: `linear-gradient(105deg, ${teamPageRegistry.tint} 0%, transparent 42%)`,
+                    boxShadow: `inset 4px 0 0 ${teamPageRegistry.primary}`,
+                  }
+                : undefined
+            }
           >
             <dl className="player-card__meta">
               <div>
@@ -277,7 +303,7 @@ export default function TeamOverview() {
                     teamIds={divisionTeamIds}
                     season={season}
                     getLabel={(id) => abbrevById.get(id) ?? String(id)}
-                    focusTeamId={selected.id}
+                    heroTeamIds={divisionRaceHeroIds}
                   />
                 ) : (
                   <WinLossChart

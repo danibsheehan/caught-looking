@@ -94,9 +94,21 @@ export function buildSprayTooltipRows(p: {
 /** Pitch location (strike zone) chart: pitch type as title, velocity only. */
 export function buildPitchZoneTooltipRows(p: {
   pitchName?: string
+  pitchType?: string
   releaseSpeed?: number | null
 }): StatcastChartTooltipRow[] {
-  const title = p.pitchName?.trim() || 'Unknown'
+  const name = p.pitchName?.trim()
+  const pt = p.pitchType?.trim().toUpperCase()
+  let title: string
+  if (name && pt && name.toUpperCase() !== pt) {
+    title = `${name} (${pt})`
+  } else if (name) {
+    title = name
+  } else if (pt) {
+    title = pt
+  } else {
+    title = 'Unknown'
+  }
   return [
     { variant: 'title', text: title },
     {

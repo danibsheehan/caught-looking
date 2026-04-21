@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   PlayerCompareAheadChart,
   PlayerCompareCareerLines,
@@ -8,6 +8,7 @@ import {
 } from '../components/charts'
 import ChartSkeleton from '../components/skeletons/ChartSkeleton'
 import { PlayerPicker, type PlayerPick } from '../components/ui'
+import { useChartSurfaceHex } from '../hooks/useChartSurfaceHex'
 import { usePlayerCurrentTeams } from '../hooks/usePlayerCurrentTeams'
 import {
   usePlayerCompareGameLog,
@@ -15,6 +16,14 @@ import {
 } from '../hooks/usePlayerCompareTrends'
 import { usePlayersCompare } from '../hooks/usePlayersCompare'
 import type { YearByYearMetric } from '../types/api'
+import {
+  adjustChartColorForSurface,
+  CHART_INK_MIN_CONTRAST,
+} from '../utils/chartColorContrast'
+import {
+  getObsidianTeamColor,
+  resolveObsidianMatchupFills,
+} from '../utils/mlbTeamObsidianRegistry'
 import {
   HITTING_CAREER_METRICS,
   PITCHING_CAREER_METRICS,
@@ -72,6 +81,29 @@ export default function PlayerComparison() {
     valid,
   )
 
+  const surfaceHex = useChartSurfaceHex()
+  const compareRegistryChrome = useMemo(() => {
+    if (radarTeam1 == null || radarTeam2 == null) return null
+    const fills = resolveObsidianMatchupFills(radarTeam1, radarTeam2)
+    if (!fills) return null
+    const r1 = getObsidianTeamColor(radarTeam1)
+    const r2 = getObsidianTeamColor(radarTeam2)
+    return {
+      swatchA: adjustChartColorForSurface(
+        fills.awayFill,
+        surfaceHex,
+        CHART_INK_MIN_CONTRAST,
+      ),
+      swatchB: adjustChartColorForSurface(
+        fills.homeFill,
+        surfaceHex,
+        CHART_INK_MIN_CONTRAST,
+      ),
+      abbrevA: r1?.abbrev ?? 'P1',
+      abbrevB: r2?.abbrev ?? 'P2',
+    }
+  }, [radarTeam1, radarTeam2, surfaceHex])
+
   const compareIds =
     valid && p1 != null && p2 != null ? `${p1},${p2}` : ''
 
@@ -99,6 +131,31 @@ export default function PlayerComparison() {
             Search by name (MLB stats API via this app), then compare season or career
             stats — including career arcs and recent-game trends when available.
           </p>
+          {valid && compareRegistryChrome ? (
+            <p className="muted small players-compare__registry-key" aria-label="Chart color key">
+              <span className="players-compare__registry-key-label">Series colors</span>
+              <span className="players-compare__registry-swatch-wrap">
+                <span
+                  className="players-compare__registry-swatch"
+                  style={{ background: compareRegistryChrome.swatchA }}
+                  aria-hidden
+                />
+                {compareRegistryChrome.abbrevA}
+              </span>
+              <span className="players-compare__registry-key-sep">·</span>
+              <span className="players-compare__registry-swatch-wrap">
+                <span
+                  className="players-compare__registry-swatch"
+                  style={{ background: compareRegistryChrome.swatchB }}
+                  aria-hidden
+                />
+                {compareRegistryChrome.abbrevB}
+              </span>
+              <span className="players-compare__registry-key-hint">
+                Current team · obsidian registry
+              </span>
+            </p>
+          ) : null}
         </div>
       </header>
 

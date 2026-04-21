@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { MultiTeamWinPctChart, TeamWinsBarChart } from '../components/charts'
 import { StatCard, TeamSelector } from '../components/ui'
+import { useChartSurfaceHex } from '../hooks/useChartSurfaceHex'
 import { useStandings, useTeams } from '../hooks/useMLB'
 import StandingsPageSkeleton from '../components/skeletons/StandingsPageSkeleton'
+import { obsidianRegistryLabelMap } from '../utils/mlbTeamColors'
 import {
   divisionIndexForTeam,
   sortStandingTeams,
@@ -12,10 +14,11 @@ import {
 export default function Standings() {
   const { data: teamsData } = useTeams({ sportId: '1' })
   const { data, error, loading } = useStandings({})
+  const surfaceHex = useChartSurfaceHex()
 
   const abbrevById = useMemo(() => teamLabelMap(teamsData), [teamsData])
 
-  const divisions = data?.divisions ?? []
+  const divisions = useMemo(() => data?.divisions ?? [], [data])
   const teams = teamsData?.teams ?? []
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [focusTeamId, setFocusTeamId] = useState<number | ''>('')
@@ -35,10 +38,26 @@ export default function Standings() {
     }))
   }, [selected, abbrevById])
 
-  const divisionTeamIds = useMemo(
-    () => (selected?.teams ?? []).map((t) => t.teamId),
+  /** Division rank order — matches bar + win-% colors. */
+  const divisionTeamIdsByRank = useMemo(
+    () => sortStandingTeams(selected?.teams ?? []).map((t) => t.teamId),
     [selected],
   )
+
+  const divisionHeroTeamIds = useMemo(() => {
+    const rows = sortStandingTeams(selected?.teams ?? [])
+    if (rows.length < 2) return rows.map((t) => t.teamId)
+    return [rows[0]!.teamId, rows[1]!.teamId]
+  }, [selected])
+
+  const standingsLabelByTeamId = useMemo(() => {
+    const ids = new Set<number>()
+    for (const d of divisions) {
+      for (const t of d.teams) ids.add(t.teamId)
+    }
+    const list = [...ids]
+    return list.length ? obsidianRegistryLabelMap(list, surfaceHex) : new Map()
+  }, [divisions, surfaceHex])
 
   function onTeamSelected(id: number | '') {
     setFocusTeamId(id)
@@ -146,9 +165,10 @@ export default function Standings() {
               completed (pace), not the calendar.
             </p>
             <MultiTeamWinPctChart
-              teamIds={divisionTeamIds}
+              teamIds={divisionTeamIdsByRank}
               season={data?.season ?? null}
               getLabel={(id: number) => abbrevById.get(id) ?? String(id)}
+              heroTeamIds={divisionHeroTeamIds}
             />
           </div>
 
@@ -174,7 +194,14 @@ export default function Standings() {
                         <td>{t.divisionRank}</td>
                         <td>
                           <span className="standings-page__team-cell">
-                            <span className="standings-page__team-abbr">
+                            <span
+                              className="standings-page__team-abbr"
+                              style={{
+                                color:
+                                  standingsLabelByTeamId.get(t.teamId) ??
+                                  'var(--text-h)',
+                              }}
+                            >
                               {abbrevById.get(t.teamId) ?? '—'}
                             </span>
                             <span className="standings-page__team-name">{t.teamName}</span>

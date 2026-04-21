@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import type { GameLogPlayer, PlayersGameLogResponse } from '../../types/api'
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
+import { chartCartesianTick } from '../../utils/rechartsAxis'
 
 function gamesToRows(games: GameLogPlayer['games'], key: 'a' | 'b') {
   return games.map((g, i) => ({
@@ -56,17 +57,18 @@ function SparkBlock({
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
           <XAxis
             dataKey="i"
-            tick={{ fill: 'var(--text)', fontSize: 10 }}
+            tick={{ ...chartCartesianTick, fontSize: 10 }}
             label={{
               value: 'Recent games (chronological)',
               position: 'insideBottom',
               offset: -2,
               fill: 'var(--muted)',
               fontSize: 10,
+              fontFamily: 'var(--sans)',
             }}
           />
           <YAxis
-            tick={{ fill: 'var(--text)', fontSize: 10 }}
+            tick={{ ...chartCartesianTick, fontSize: 10 }}
             width={36}
             domain={['auto', 'auto']}
           />
@@ -81,6 +83,7 @@ function SparkBlock({
                 fill: 'var(--muted)',
                 fontSize: 10,
                 position: 'insideTopRight',
+                fontFamily: 'var(--sans)',
               }}
             />
           ) : null}

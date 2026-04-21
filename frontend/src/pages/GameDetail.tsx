@@ -152,8 +152,9 @@ export default function GameDetail() {
       <div className="panel chart-panel game-statcast">
         <h2>Batted balls</h2>
         <p className="muted small">
-          The field view shows roughly where each ball was put in play. The chart below uses the same
-          batted balls to summarize how hard and how lofted each contact was.
+          The field view shows roughly where each ball was put in play. The scatter chart uses the
+          same batted balls for exit velocity and launch angle. Team colors for away vs home batting
+          match the runs-by-inning chart (circles vs diamonds repeat the away/home split).
         </p>
         {statcastLoading ? (
           <p className="muted">Loading batted-ball data…</p>

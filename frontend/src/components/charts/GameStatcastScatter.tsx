@@ -16,13 +16,14 @@ import type { StatcastBattedBall } from '../../types/api'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { buildScatterTooltipRows } from '../../utils/statcastDisplay'
 import { inningHalfBucket } from '../../utils/inningHalf'
-import { statcastHalfFillColors } from '../../utils/statcastHalfColors'
+import { gameStatcastHalfTeamFills } from '../../utils/gameChartColors'
 import StatcastMetricTooltipContent from './StatcastMetricTooltipContent'
 import { StatcastScatterShapeCircle, StatcastScatterShapeDiamond } from './statcastMarkers'
 import {
   type LaunchAngleBandKey,
   launchAngleBandSlices,
 } from '../../utils/statcastLaunchAngleBands'
+import { chartCartesianTick } from '../../utils/rechartsAxis'
 
 const LA_BAND_FILL: Record<LaunchAngleBandKey, string> = {
   grounder: 'var(--statcast-la-grounder)',
@@ -109,7 +110,7 @@ export default function GameStatcastScatter({
   }, [battedBalls])
 
   const { topHalf: topColor, bottomHalf: bottomColor, other: otherColor } = useMemo(
-    () => statcastHalfFillColors(awayTeamId, homeTeamId, surfaceHex),
+    () => gameStatcastHalfTeamFills(awayTeamId, homeTeamId, surfaceHex),
     [awayTeamId, homeTeamId, surfaceHex],
   )
 
@@ -126,10 +127,11 @@ export default function GameStatcastScatter({
   return (
     <div className="game-statcast-scatter">
       <p className="muted small game-statcast-scatter__caption">
-        Each point is one batted ball. Tinted bands mark typical grounder, line drive, and fly-ball
-        launch-angle ranges (see key below). Read left to right as more lofted contact; read bottom
-        to top as harder-hit contact. Hover a point for the batter and play result—where the ball
-        went on the field is on the spray chart.
+        Each point is one batted ball. Away and home batting use each team’s color (circles vs
+        diamonds), matching the spray chart. Tinted bands mark typical grounder, line drive, and
+        fly-ball launch-angle ranges (see key below). Read left to right as more lofted contact;
+        read bottom to top as harder-hit contact. Hover a point for the batter and play result—where
+        the ball went on the field is on the spray chart.
       </p>
       <ResponsiveContainer width="100%" height={320}>
         <ScatterChart margin={{ top: 10, right: 12, left: 4, bottom: 28 }}>
@@ -144,19 +146,20 @@ export default function GameStatcastScatter({
               stroke="none"
             />
           ))}
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
           <XAxis
             type="number"
             dataKey="launchAngle"
             name="Launch angle"
             domain={xDomain}
-            tick={{ fill: 'var(--text)', fontSize: 11 }}
+            tick={chartCartesianTick}
             label={{
               value: 'Launch angle (°)',
               position: 'insideBottom',
               offset: -4,
-              fill: 'var(--text)',
+              fill: 'var(--muted)',
               fontSize: 11,
+              fontFamily: 'var(--sans)',
             }}
           />
           <YAxis
@@ -164,14 +167,15 @@ export default function GameStatcastScatter({
             dataKey="launchSpeed"
             name="Exit velo"
             domain={yDomain}
-            tick={{ fill: 'var(--text)', fontSize: 11 }}
+            tick={chartCartesianTick}
             width={44}
             label={{
               value: 'Exit velocity (mph)',
               angle: -90,
               position: 'insideLeft',
-              fill: 'var(--text)',
+              fill: 'var(--muted)',
               fontSize: 11,
+              fontFamily: 'var(--sans)',
             }}
           />
           {showLevelReference ? (
@@ -189,7 +193,7 @@ export default function GameStatcastScatter({
           />
           {top.length > 0 ? (
             <Scatter
-              name="Away — blue (circles)"
+              name="Away batting (circles)"
               data={top}
               fill={topColor}
               shape={StatcastScatterShapeCircle}
@@ -197,7 +201,7 @@ export default function GameStatcastScatter({
           ) : null}
           {bottom.length > 0 ? (
             <Scatter
-              name="Home — orange (diamonds)"
+              name="Home batting (diamonds)"
               data={bottom}
               fill={bottomColor}
               shape={StatcastScatterShapeDiamond}

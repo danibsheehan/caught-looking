@@ -5,10 +5,29 @@ import {
   MLB_TEAM_PRIMARY_HEX,
   distinctChartColorsForTeamIds,
   mlbTeamPrimaryHex,
+  obsidianTeamChartPairs,
+  obsidianTeamChartPairsRegistryPrimary,
   resolveGameScoreBarFills,
   rgbDistance,
   teamSplitChartColors,
 } from './mlbTeamColors'
+import { MLB_TEAM_OBSIDIAN_REGISTRY } from './mlbTeamObsidianRegistry'
+
+describe('obsidianTeamChartPairsRegistryPrimary vs distinctness', () => {
+  const surface = '#070b10'
+  /** AL East–style sample: distinctness swap used to give BOS a non-red “ink”. */
+  const alEastLike = [147, 139, 110, 141, 111]
+
+  it('uses registry primary ink so bars match strip (BOS stays red family)', () => {
+    const reg = obsidianTeamChartPairsRegistryPrimary(alEastLike, surface)
+    const distinct = obsidianTeamChartPairs(alEastLike, surface)
+    const bosIdx = 4
+    const bReg = reg[bosIdx]!.ink
+    const bDistinct = distinct[bosIdx]!.ink
+    expect(rgbDistance(bReg, bDistinct)).toBeGreaterThan(15)
+    expect(rgbDistance(bReg, '#c03030')).toBeLessThan(rgbDistance(bDistinct, '#c03030'))
+  })
+})
 
 describe('rgbDistance', () => {
   it('returns Euclidean distance in RGB space', () => {
@@ -42,12 +61,12 @@ describe('distinctChartColorsForTeamIds', () => {
 })
 
 describe('resolveGameScoreBarFills', () => {
-  it('uses both primaries when they are far apart in RGB', () => {
+  it('uses obsidian registry primaries when hues are distinct', () => {
     const awayId = 112
     const homeId = 120
-    const pAway = MLB_TEAM_PRIMARY_HEX[awayId]
-    const pHome = MLB_TEAM_PRIMARY_HEX[homeId]
-    expect(rgbDistance(pAway, pHome)).toBeGreaterThanOrEqual(72)
+    const pAway = MLB_TEAM_OBSIDIAN_REGISTRY[awayId].primary
+    const pHome = MLB_TEAM_OBSIDIAN_REGISTRY[homeId].primary
+    expect(rgbDistance(pAway, pHome)).toBeGreaterThan(40)
 
     const { awayFill, homeFill } = resolveGameScoreBarFills(
       awayId,

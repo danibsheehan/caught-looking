@@ -64,7 +64,8 @@ export function contrastRatio(fgHex: string, bgHex: string): number {
   return (hi + 0.05) / (lo + 0.05)
 }
 
-function mixHex(fg: string, pole: string, t: number): string {
+/** Linear RGB mix between two hex colors (`t`=0 → `fg`, `t`=1 → `pole`). */
+export function mixHex(fg: string, pole: string, t: number): string {
   const a = hexToRgb(fg)
   const b = hexToRgb(pole)
   if (!a || !b) return fg
@@ -106,10 +107,13 @@ export function adjustChartColorForSurface(
 }
 
 /** Resolved `html` background as hex (matches CSS `background` on :root). */
+/** Matches `frontend/src/styles/_base.scss` `--bg` when CSS is unavailable. */
+const CHART_SURFACE_FALLBACK = '#070b10'
+
 export function chartSurfaceHexFromDocument(): string {
-  if (typeof document === 'undefined') return '#ffffff'
+  if (typeof document === 'undefined') return CHART_SURFACE_FALLBACK
   const css = getComputedStyle(document.documentElement).backgroundColor
   const rgb = parseRgbCss(css)
   if (rgb) return rgbToHex(rgb.r, rgb.g, rgb.b)
-  return '#ffffff'
+  return CHART_SURFACE_FALLBACK
 }

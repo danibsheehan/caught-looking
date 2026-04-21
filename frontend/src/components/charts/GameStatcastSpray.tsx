@@ -10,7 +10,7 @@ import {
 import type { StatcastBattedBall } from '../../types/api'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { inningHalfBucket } from '../../utils/inningHalf'
-import { statcastHalfFillColors } from '../../utils/statcastHalfColors'
+import { gameStatcastHalfTeamFills } from '../../utils/gameChartColors'
 import { buildSprayTooltipRows, type StatcastChartTooltipRow } from '../../utils/statcastDisplay'
 import { statcastHcToFieldFeet } from '../../utils/statcastHitCoordinates'
 import StatcastMetricTooltipContent from './StatcastMetricTooltipContent'
@@ -190,7 +190,7 @@ export default function GameStatcastSpray({
   }, [points, scaledField])
 
   const { topHalf: topColor, bottomHalf: bottomColor, other: otherColor } = useMemo(
-    () => statcastHalfFillColors(awayTeamId, homeTeamId, surfaceHex),
+    () => gameStatcastHalfTeamFills(awayTeamId, homeTeamId, surfaceHex),
     [awayTeamId, homeTeamId, surfaceHex],
   )
 
@@ -327,15 +327,16 @@ export default function GameStatcastSpray({
           <>
             Outline matches <strong>{venueName}</strong>&apos;s published left, center, and right
             field distances ({fieldDims.lf} / {fieldDims.cf} / {fieldDims.rf} ft); power alleys are
-            approximate. Each dot is a batted ball; brighter green is fair territory inside the fence,
-            duller green beyond the wall. Fouls and pop-ups behind the plate may sit outside the
-            outline.
+            approximate. Each marker is a batted ball — team colors for away (circles) vs home
+            (diamonds), brightened for this dark field. Brighter green is fair territory inside the
+            fence, duller green beyond the wall. Fouls and pop-ups behind the plate may sit outside
+            the outline.
           </>
         ) : (
           <>
-            Outline uses generic outfield distances (venue unknown). Each dot is a batted ball;
-            brighter green is in play inside the fence, duller green beyond the wall. Fouls and
-            unusual paths may sit outside the diagram.
+            Outline uses generic outfield distances (venue unknown). Each marker uses away/home team
+            colors (circles vs diamonds). Brighter green is in play inside the fence, duller green
+            beyond the wall. Fouls and unusual paths may sit outside the diagram.
           </>
         )}
       </p>
@@ -554,14 +555,14 @@ export default function GameStatcastSpray({
             className="game-statcast-spray__swatch game-statcast-spray__swatch--circle"
             style={{ background: topColor }}
           />
-          Away batting — blue (circles)
+          Away batting (circles)
         </li>
         <li>
           <span
             className="game-statcast-spray__swatch game-statcast-spray__swatch--diamond"
             style={{ background: bottomColor }}
           />
-          Home batting — orange (diamonds)
+          Home batting (diamonds)
         </li>
       </ul>
     </div>

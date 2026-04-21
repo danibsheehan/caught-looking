@@ -17,6 +17,7 @@ import {
   formatYearByYearTooltipValue,
   yearByYearMetricShortLabel,
 } from '../../utils/yearByYearMetric'
+import { chartCartesianTick } from '../../utils/rechartsAxis'
 
 type Row = {
   season: number
@@ -71,11 +72,11 @@ export default function PlayerCompareCareerLines({
         <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
         <XAxis
           dataKey="season"
-          tick={{ fill: 'var(--text)', fontSize: 11 }}
+          tick={chartCartesianTick}
           tickFormatter={(s) => String(s)}
         />
         <YAxis
-          tick={{ fill: 'var(--text)', fontSize: 11 }}
+          tick={chartCartesianTick}
           domain={['auto', 'auto']}
           tickFormatter={(v) => formatYearByYearAxisValue(metric, Number(v))}
           label={{
@@ -84,6 +85,7 @@ export default function PlayerCompareCareerLines({
             position: 'insideLeft',
             fill: 'var(--muted)',
             fontSize: 11,
+            fontFamily: 'var(--sans)',
           }}
         />
         <Tooltip

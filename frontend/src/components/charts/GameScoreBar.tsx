@@ -13,13 +13,19 @@ import { fetchGameTimeline } from '../../api/client'
 import type { GameTimelineResponse } from '../../types/api'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
-import { statcastHalfFillColors } from '../../utils/statcastHalfColors'
+import { gameInningBarFills } from '../../utils/gameChartColors'
+import { chartCartesianTick } from '../../utils/rechartsAxis'
 
 type GameScoreBarProps = {
   gamePk: number | string | null | undefined
+  /** When false, omits the one-line away @ home · final caption (e.g. when a score strip is above). */
+  showCaption?: boolean
 }
 
-export default function GameScoreBar({ gamePk }: GameScoreBarProps) {
+export default function GameScoreBar({
+  gamePk,
+  showCaption = true,
+}: GameScoreBarProps) {
   const surfaceHex = useChartSurfaceHex()
   const [data, setData] = useState<GameTimelineResponse | null>(null)
   const [error, setError] = useState<Error | null>(null)
@@ -71,14 +77,10 @@ export default function GameScoreBar({ gamePk }: GameScoreBarProps) {
   const awayKey = data?.awayTeam || 'Away'
   const homeKey = data?.homeTeam || 'Home'
 
-  const { awayFill, homeFill } = useMemo(() => {
-    const { topHalf, bottomHalf } = statcastHalfFillColors(
-      data?.awayId,
-      data?.homeId,
-      surfaceHex,
-    )
-    return { awayFill: topHalf, homeFill: bottomHalf }
-  }, [data?.awayId, data?.homeId, surfaceHex])
+  const { awayFill, homeFill } = useMemo(
+    () => gameInningBarFills(data?.awayId, data?.homeId, surfaceHex),
+    [data?.awayId, data?.homeId, surfaceHex],
+  )
 
   if (pk == null || !Number.isFinite(pk) || pk <= 0) {
     return (
@@ -106,18 +108,26 @@ export default function GameScoreBar({ gamePk }: GameScoreBarProps) {
 
   return (
     <div>
-      <p className="muted small" style={{ marginBottom: '0.5rem' }}>
-        {awayKey} @ {homeKey} · final {data.awayTotal}–{data.homeTotal}
-      </p>
+      {showCaption ? (
+        <p className="muted small" style={{ marginBottom: '0.5rem' }}>
+          {awayKey} @ {homeKey} · final {data.awayTotal}–{data.homeTotal}
+        </p>
+      ) : null}
       <ResponsiveContainer width="100%" height={360}>
         <BarChart data={rows} margin={{ top: 10, right: 10, left: 4, bottom: 28 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
           <XAxis
             dataKey="inning"
-            tick={{ fill: 'var(--text)' }}
-            label={{ value: 'Inning', position: 'insideBottom', offset: -2, fill: 'var(--text)' }}
+            tick={chartCartesianTick}
+            label={{
+              value: 'Inning',
+              position: 'insideBottom',
+              offset: -2,
+              fill: 'var(--muted)',
+              fontFamily: 'var(--sans)',
+            }}
           />
-          <YAxis allowDecimals={false} tick={{ fill: 'var(--text)' }} width={36} />
+          <YAxis allowDecimals={false} tick={chartCartesianTick} width={36} />
           <Tooltip
             contentStyle={{
               background: 'var(--bg)',

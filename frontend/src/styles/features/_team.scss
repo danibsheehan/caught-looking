@@ -26,11 +26,13 @@
     cursor: default;
 
     &--win {
-      background: #15803d;
+      background: #22c55e;
+      color: #052e16;
     }
 
     &--loss {
-      background: #b91c1c;
+      background: #ef4444;
+      color: #450a0a;
     }
 
     &--tie {
@@ -47,35 +49,17 @@
     font-weight: 700;
 
     &--win {
-      color: #15803d;
+      color: #22c55e;
     }
 
     &--loss {
-      color: #b91c1c;
+      color: #f87171;
     }
 
     &--tie {
       color: var(--text-h);
     }
   }
-}
-
-html[data-theme='dark'] .record-timeline__cell--win {
-  background: #22c55e;
-  color: #052e16;
-}
-
-html[data-theme='dark'] .record-timeline__cell--loss {
-  background: #ef4444;
-  color: #450a0a;
-}
-
-html[data-theme='dark'] .record-timeline__abbr--win {
-  color: #22c55e;
-}
-
-html[data-theme='dark'] .record-timeline__abbr--loss {
-  color: #f87171;
 }
 
 /* /teams — season stats deep dive (bars + R/G dumbbell) */

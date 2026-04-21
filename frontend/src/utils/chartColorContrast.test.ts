@@ -57,11 +57,11 @@ describe('chartSurfaceHexFromDocument', () => {
     expect(chartSurfaceHexFromDocument()).toBe('#111827')
   })
 
-  it('falls back to white when background is not parseable', () => {
+  it('falls back to app default surface when background is not parseable', () => {
     vi.spyOn(window, 'getComputedStyle').mockReturnValue({
       backgroundColor: 'transparent',
     } as CSSStyleDeclaration)
 
-    expect(chartSurfaceHexFromDocument()).toBe('#ffffff')
+    expect(chartSurfaceHexFromDocument()).toBe('#070b10')
   })
 })

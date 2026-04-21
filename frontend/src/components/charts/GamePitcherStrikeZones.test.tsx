@@ -9,6 +9,7 @@ const samplePitches: StatcastPitch[] = [
     plateX: -0.2,
     plateZ: 2.1,
     pitchName: '4-Seam Fastball',
+    pitchType: 'FF',
     pitcher: 42,
     releaseSpeed: 94,
   },
@@ -16,6 +17,7 @@ const samplePitches: StatcastPitch[] = [
     plateX: 0.4,
     plateZ: 3.0,
     pitchName: 'Slider',
+    pitchType: 'SL',
     pitcher: 42,
   },
 ]
@@ -57,7 +59,9 @@ describe('GamePitcherStrikeZones', () => {
     expect(
       screen.getByRole('option', { name: /Away Club — Casey Pitcher/ }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/4-Seam Fastball 1/)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /4-Seam Fastball \(FF\)/i }),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('img', { name: /Pitch locations for Casey Pitcher/i }),
     ).toBeInTheDocument()
@@ -77,5 +81,16 @@ describe('GamePitcherStrikeZones', () => {
     expect(
       screen.getByText(/No pitch tracking data for this game/i),
     ).toBeInTheDocument()
+  })
+
+  it('toggles legend isolation for a pitch type', async () => {
+    const user = userEvent.setup()
+    render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />)
+    const sliderBtn = screen.getByRole('button', { name: /Slider/i })
+    expect(sliderBtn).toHaveAttribute('aria-pressed', 'false')
+    await user.click(sliderBtn)
+    expect(sliderBtn).toHaveAttribute('aria-pressed', 'true')
+    await user.click(sliderBtn)
+    expect(sliderBtn).toHaveAttribute('aria-pressed', 'false')
   })
 })

@@ -89,6 +89,14 @@ describe('buildPitchZoneTooltipRows', () => {
     expect(rows[0]).toEqual({ variant: 'title', text: 'Unknown' })
     expect(rows[1]).toMatchObject({ title: 'Velocity', body: '—' })
   })
+
+  it('combines pitch name and pitch type in the title when both differ', () => {
+    const rows = buildPitchZoneTooltipRows({
+      pitchName: '4-Seam Fastball',
+      pitchType: 'FF',
+    })
+    expect(rows[0]).toEqual({ variant: 'title', text: '4-Seam Fastball (FF)' })
+  })
 })
 
 describe('buildScatterTooltipRows', () => {
