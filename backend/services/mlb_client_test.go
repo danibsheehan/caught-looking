@@ -2,13 +2,31 @@ package services
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 )
+
+// roundTripperFunc is shared by MLB and Savant client tests in this package.
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+// mlbTestNetTimeout implements net.Error with Timeout() == true for mlbRetryable tests.
+type mlbTestNetTimeout struct{}
+
+func (mlbTestNetTimeout) Error() string   { return "timeout" }
+func (mlbTestNetTimeout) Timeout() bool   { return true }
+func (mlbTestNetTimeout) Temporary() bool { return false }
 
 func TestNewMLBClient_trimsTrailingSlash(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -160,6 +178,168 @@ func TestMLBClient_Get_retriesAfterSlowHeaders(t *testing.T) {
 		t.Fatalf("server invocations: got %d want 2 (retry after header timeout)", n.Load())
 	}
 	if string(body) != `{"ok":true}` {
+		t.Fatalf("body: got %s", body)
+	}
+}
+
+func Test_mlbRetryable(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"nil", nil, false},
+		{"canceled", context.Canceled, false},
+		{"wrapped canceled", fmt.Errorf("wrap: %w", context.Canceled), false},
+		{"deadline exceeded", context.DeadlineExceeded, true},
+		{"wrapped deadline", fmt.Errorf("wrap: %w", context.DeadlineExceeded), true},
+		{"url wraps deadline", &url.Error{Op: "Get", URL: "http://x", Err: context.DeadlineExceeded}, true},
+		{"net timeout", mlbTestNetTimeout{}, true},
+		{"client timeout string", errors.New("Get http://x: Client.Timeout exceeded while awaiting headers"), true},
+		{"awaiting headers", errors.New(`Get "http://x": net/http: timeout awaiting response headers`), true},
+		{"connection reset", errors.New("read tcp: connection reset by peer"), true},
+		{"broken pipe", errors.New("write tcp: broken pipe"), true},
+		{"tls handshake", errors.New("net/http: TLS handshake timeout"), true},
+		{"unexpected EOF", errors.New("unexpected EOF"), true},
+		{"closed network", errors.New("use of closed network connection"), true},
+		{"generic", errors.New("something else"), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := mlbRetryable(tt.err); got != tt.want {
+				t.Fatalf("mlbRetryable(%v) = %v want %v", tt.err, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_sleepContext(t *testing.T) {
+	t.Run("canceled before wait", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		err := sleepContext(ctx, time.Hour)
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("got %v want context.Canceled", err)
+		}
+	})
+	t.Run("completes", func(t *testing.T) {
+		err := sleepContext(context.Background(), 5*time.Millisecond)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestMLBClient_Get_doesNotRetryOnContextCanceled(t *testing.T) {
+	var n atomic.Int32
+	c := NewMLBClient("http://127.0.0.1:9", 0, time.Minute)
+	c.httpClient.Transport = roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		n.Add(1)
+		return nil, context.Canceled
+	})
+
+	_, err := c.Get(context.Background(), "/x")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("got %v want context.Canceled", err)
+	}
+	if n.Load() != 1 {
+		t.Fatalf("RoundTrip calls: got %d want 1 (no retry)", n.Load())
+	}
+}
+
+func TestMLBClient_Get_retriesAfterDeadlineExceededOnDo(t *testing.T) {
+	var n atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n.Add(1)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	c := NewMLBClient(srv.URL, 0, time.Minute)
+	inner := c.transport
+	var rtCalls atomic.Int32
+	c.httpClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		if rtCalls.Add(1) == 1 {
+			return nil, context.DeadlineExceeded
+		}
+		return inner.RoundTrip(req)
+	})
+
+	body, err := c.Get(context.Background(), "/y")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n.Load() != 1 {
+		t.Fatalf("server hits: got %d want 1", n.Load())
+	}
+	if rtCalls.Load() != 2 {
+		t.Fatalf("RoundTrip calls: got %d want 2", rtCalls.Load())
+	}
+	if string(body) != `{"ok":true}` {
+		t.Fatalf("body: got %s", body)
+	}
+}
+
+func TestMLBClient_Get_sleepContextRespectsCancel(t *testing.T) {
+	var n atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cur := n.Add(1)
+		if cur == 1 {
+			time.Sleep(400 * time.Millisecond)
+		}
+		_, _ = w.Write([]byte(`ok`))
+	}))
+	t.Cleanup(srv.Close)
+
+	c := NewMLBClient(srv.URL, 0, 200*time.Millisecond)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		// With 200ms req timeout, response-header timeout is 100ms, so the first attempt fails ~100ms
+		// then sleepContext runs 100ms. Cancel mid-sleep so Get returns before the second attempt.
+		time.Sleep(150 * time.Millisecond)
+		cancel()
+		close(done)
+	}()
+
+	_, err := c.Get(ctx, "/x")
+	<-done
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("got %v want context.Canceled", err)
+	}
+}
+
+func TestMLBClient_Get_retriesOnRetryableReadBodyError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"x":1}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	c := NewMLBClient(srv.URL, 0, time.Minute)
+	inner := c.transport
+	var rtCalls atomic.Int32
+	c.httpClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		if rtCalls.Add(1) == 1 {
+			return &http.Response{
+				StatusCode:    http.StatusOK,
+				ContentLength: -1,
+				Body:          io.NopCloser(errReader{err: context.DeadlineExceeded}),
+				Header:        make(http.Header),
+				Request:       req,
+			}, nil
+		}
+		return inner.RoundTrip(req)
+	})
+
+	body, err := c.Get(context.Background(), "/z")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rtCalls.Load() != 2 {
+		t.Fatalf("RoundTrip calls: got %d want 2", rtCalls.Load())
+	}
+	if string(body) != `{"x":1}` {
 		t.Fatalf("body: got %s", body)
 	}
 }
