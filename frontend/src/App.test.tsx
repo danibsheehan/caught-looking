@@ -18,6 +18,9 @@ import type {
   TeamsResponse,
 } from './types/api'
 
+/** CI + coverage runs can exceed Testing Library’s default 1000ms wait. */
+const asyncWait = { timeout: 10_000 }
+
 const api = vi.hoisted(() => {
   const standings: StandingsResponse = {
     season: 2026,
@@ -210,22 +213,22 @@ describe('App routes', () => {
     renderRoute('/')
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1, name: 'Standings' })).toBeInTheDocument()
-    })
+    }, asyncWait)
     expect(screen.getByText(/Wins by team/i)).toBeInTheDocument()
-    await waitFor(() => expect(api.fetchStandings).toHaveBeenCalled())
-    await waitFor(() => expect(api.fetchTeams).toHaveBeenCalled())
-    await waitFor(() => expect(api.fetchRecordTimelinesBatch).toHaveBeenCalled())
+    await waitFor(() => expect(api.fetchStandings).toHaveBeenCalled(), asyncWait)
+    await waitFor(() => expect(api.fetchTeams).toHaveBeenCalled(), asyncWait)
+    await waitFor(() => expect(api.fetchRecordTimelinesBatch).toHaveBeenCalled(), asyncWait)
   })
 
   it('shows game detail for /games/:gamePk and fetches box score + statcast', async () => {
     renderRoute('/games/662000')
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1, name: 'Box score' })).toBeInTheDocument()
-    })
-    await waitFor(() => expect(api.fetchGameBoxscore).toHaveBeenCalledWith(662000))
-    await waitFor(() => expect(api.fetchGameStatcast).toHaveBeenCalledWith(662000))
-    await waitFor(() => expect(api.fetchGameStatcastPitches).toHaveBeenCalledWith(662000))
-    await waitFor(() => expect(api.fetchGameTimeline).toHaveBeenCalled())
+    }, asyncWait)
+    await waitFor(() => expect(api.fetchGameBoxscore).toHaveBeenCalledWith(662000), asyncWait)
+    await waitFor(() => expect(api.fetchGameStatcast).toHaveBeenCalledWith(662000), asyncWait)
+    await waitFor(() => expect(api.fetchGameStatcastPitches).toHaveBeenCalledWith(662000), asyncWait)
+    await waitFor(() => expect(api.fetchGameTimeline).toHaveBeenCalled(), asyncWait)
   })
 
   it('shows player comparison and issues compare API calls', async () => {
@@ -234,11 +237,11 @@ describe('App routes', () => {
       expect(
         screen.getByRole('heading', { level: 1, name: 'Player comparison' }),
       ).toBeInTheDocument()
-    })
-    await waitFor(() => expect(api.fetchPlayersCompare).toHaveBeenCalled())
-    await waitFor(() => expect(api.fetchPlayersCompareYearByYear).toHaveBeenCalled())
-    await waitFor(() => expect(api.fetchPlayersCompareGameLog).toHaveBeenCalled())
-    await waitFor(() => expect(api.fetchPlayerCurrentTeam).toHaveBeenCalled())
+    }, asyncWait)
+    await waitFor(() => expect(api.fetchPlayersCompare).toHaveBeenCalled(), asyncWait)
+    await waitFor(() => expect(api.fetchPlayersCompareYearByYear).toHaveBeenCalled(), asyncWait)
+    await waitFor(() => expect(api.fetchPlayersCompareGameLog).toHaveBeenCalled(), asyncWait)
+    await waitFor(() => expect(api.fetchPlayerCurrentTeam).toHaveBeenCalled(), asyncWait)
   })
 
   it('navigates from Standings to Players via primary nav', async () => {
@@ -246,12 +249,12 @@ describe('App routes', () => {
     renderRoute('/standings')
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1, name: 'Standings' })).toBeInTheDocument()
-    })
+    }, asyncWait)
     await user.click(screen.getByRole('link', { name: 'Players' }))
     await waitFor(() => {
       expect(
         screen.getByRole('heading', { level: 1, name: 'Player comparison' }),
       ).toBeInTheDocument()
-    })
+    }, asyncWait)
   })
 })
