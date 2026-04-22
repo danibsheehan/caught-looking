@@ -1,13 +1,13 @@
 # caught-looking
 
-Web app for exploring **MLB statistics** with charts and comparisons. The UI talks to a small **Go** backend that proxies and caches requests to the public **MLB Stats API** (`statsapi.mlb.com`).
+Web app for exploring **MLB statistics** with charts and comparisons. The UI talks to a small **Go** backend that proxies and caches requests to the public **MLB Stats API** (`statsapi.mlb.com`) and, for some game views, **Baseball Savant** (Statcast CSV over HTTPS).
 
 ## Features
 
 - **Standings** — league standings for the configured season.
 - **Teams** — team overview with season stats and record timelines.
 - **Players** — side-by-side player comparison (radar, trends, game log) with hitting/pitching views.
-- **Games** — date-based slate and **per-game** detail (timeline, boxscore-style views).
+- **Games** — date-based slate and **per-game** detail (timeline, boxscore-style views, Statcast-backed panels where data is available).
 
 Routes in the SPA: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk` (default landing: `/standings`).
 
@@ -16,8 +16,8 @@ Routes in the SPA: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk
 | Layer    | Technology |
 | -------- | ---------- |
 | Frontend | React 19, TypeScript, Vite, React Router, Recharts |
-| Backend  | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, MLB upstream QPS cap |
-| Data     | MLB Stats API v1 (JSON over HTTPS) |
+| Backend  | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, token-bucket QPS caps for MLB and Savant outbound traffic |
+| Data     | MLB Stats API v1 (JSON); Baseball Savant (CSV) for Statcast-oriented game data |
 
 Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — ESLint, TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests (same-repo workflows), **two** [**cobertura-action**](https://github.com/5monkeys/cobertura-action) comments (frontend and backend tables) are added or updated from the Cobertura reports (fork PRs may not receive them due to token limits; those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
 
@@ -80,14 +80,18 @@ Backend tests live as `*_test.go` next to packages under `backend/`. Frontend te
 | -------- | ------- |
 | `PORT` or `HTTP_ADDR` | Listen address (default `:8080`; `PORT` is prefixed with `:` if set) |
 | `MLB_BASE_URL` | MLB Stats API base (default `https://statsapi.mlb.com/api/v1`) |
+| `SAVANT_BASE_URL` | Baseball Savant base URL (default `https://baseballsavant.mlb.com`; trailing slashes stripped) |
 | `ALLOWED_ORIGINS` | Comma-separated CORS origins (defaults include Vite on `5173`) |
 | `MLB_SEASON` | Default season integer (e.g. `2026`) |
 | `MLB_LEAGUE_IDS` | Default league ids for standings (default `103,104`) |
-| `CACHE_TTL_STANDINGS` | Standings cache TTL (Go duration, e.g. `1h`) |
-| `CACHE_TTL_SCORES` | Scores-related cache TTL (e.g. `5m`) |
+| `CACHE_TTL_STANDINGS` | Standings cache TTL (Go duration, e.g. `1h`; default `1h`) |
+| `CACHE_TTL_SCORES` | Scores-related cache TTL (default `5m`) |
+| `CACHE_TTL_STATCAST` | Statcast / Savant CSV cache TTL per game (default `6h`) |
 | `RATE_LIMIT_REQUESTS` | Max requests per client IP per sliding window (default `120`; set `0` to disable) |
 | `RATE_LIMIT_WINDOW` | Sliding window for that limit (default `1m`) |
-| `MLB_MAX_QPS` | Max outbound GETs per second to the MLB API **per Cloud Run instance** (token bucket, default `20`; `0` = unlimited) |
+| `MLB_MAX_QPS` | Max outbound GETs per second to the MLB API **per process** (token bucket, default `20`; `0` = unlimited) |
+| `MLB_HTTP_TIMEOUT` | Per-attempt timeout for outbound MLB GETs (Go duration; default `15s`; `0s` or negative values use the client default `15s`) |
+| `SAVANT_MAX_QPS` | Max outbound GETs per second to Savant **per process** (token bucket, default `5`; `0` = unlimited) |
 
 ### Frontend (Vite)
 
@@ -131,12 +135,12 @@ Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [
 
 After the first successful deploy, **`CORS_ALLOWED_ORIGINS`** must include the real **`*.pages.dev`** (or custom domain) origin. If you add or change origins, update the variable and push to **`main`** (or update the Cloud Run service env) so CORS matches the browser.
 
-**Cost / abuse (optional, no extra GCP products)** — The API defaults to per-IP HTTP rate limiting and an outbound MLB QPS cap (see env vars above). On Cloud Run you can also set **maximum instances** (and concurrency) on the service to cap worst-case spend; defaults are in Google Cloud Console or `gcloud run services update … --max-instances=…`.
+**Cost / abuse (optional, no extra GCP products)** — The API defaults to per-IP HTTP rate limiting and outbound QPS caps for MLB and Savant (see env vars above). On Cloud Run you can also set **maximum instances** (and concurrency) on the service to cap worst-case spend; defaults are in Google Cloud Console or `gcloud run services update … --max-instances=…`.
 
 ## Repository layout
 
 ```
-backend/    # Go HTTP API, MLB client, handlers, models
+backend/    # Go HTTP API, MLB + Savant clients, handlers, models
 frontend/   # React SPA (src/, Vite, Vitest)
 Makefile    # install, dev, backend, frontend, test-*, cover-*
 ```
