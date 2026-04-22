@@ -187,3 +187,171 @@ func TestGameBoxscore_upstreamError(t *testing.T) {
 		t.Fatalf("status: got %d", rec.Code)
 	}
 }
+
+func Test_flexInt(t *testing.T) {
+	tests := []struct {
+		name string
+		m    map[string]interface{}
+		key  string
+		want int
+	}{
+		{"nil map", nil, "runs", 0},
+		{"missing key", map[string]interface{}{"hits": 1}, "runs", 0},
+		{"nil value", map[string]interface{}{"runs": nil}, "runs", 0},
+		{"float64", map[string]interface{}{"runs": 4.0}, "runs", 4},
+		{"int", map[string]interface{}{"runs": 5}, "runs", 5},
+		{"string int", map[string]interface{}{"runs": "7"}, "runs", 7},
+		{"string float trunc", map[string]interface{}{"runs": "2.9"}, "runs", 2},
+		{"empty string", map[string]interface{}{"runs": "  "}, "runs", 0},
+		{"dash stat", map[string]interface{}{"runs": "-.--"}, "runs", 0},
+		{"invalid string", map[string]interface{}{"runs": "nope"}, "runs", 0},
+		{"bool default", map[string]interface{}{"runs": true}, "runs", 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := flexInt(tt.m, tt.key); got != tt.want {
+				t.Fatalf("flexInt(%v, %q) = %d want %d", tt.m, tt.key, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_flexString(t *testing.T) {
+	tests := []struct {
+		name string
+		m    map[string]interface{}
+		key  string
+		want string
+	}{
+		{"nil map", nil, "inningsPitched", ""},
+		{"missing", map[string]interface{}{}, "inningsPitched", ""},
+		{"nil value", map[string]interface{}{"inningsPitched": nil}, "inningsPitched", ""},
+		{"string", map[string]interface{}{"inningsPitched": "6.1"}, "inningsPitched", "6.1"},
+		{"float64", map[string]interface{}{"inningsPitched": 7.2}, "inningsPitched", "7.2"},
+		{"int", map[string]interface{}{"inningsPitched": 9}, "inningsPitched", "9"},
+		{"bool default", map[string]interface{}{"inningsPitched": false}, "inningsPitched", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := flexString(tt.m, tt.key); got != tt.want {
+				t.Fatalf("flexString(%v, %q) = %q want %q", tt.m, tt.key, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_hasPitchingLine(t *testing.T) {
+	tests := []struct {
+		name string
+		pit  map[string]interface{}
+		want bool
+	}{
+		{"innings 1.0", map[string]interface{}{"inningsPitched": "1.0"}, true},
+		{"innings with spaces", map[string]interface{}{"inningsPitched": "  0.1 "}, true},
+		{"ip 0.0 only", map[string]interface{}{"inningsPitched": "0.0", "battersFaced": 0, "outs": 0}, false},
+		{"ip 0 only", map[string]interface{}{"inningsPitched": "0"}, false},
+		{"empty ip battersFaced", map[string]interface{}{"inningsPitched": "", "battersFaced": 1}, true},
+		{"empty ip outs", map[string]interface{}{"inningsPitched": "0.0", "outs": 1}, true},
+		{"float ip nonzero", map[string]interface{}{"inningsPitched": 6.1}, true},
+		{"nothing", map[string]interface{}{}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := hasPitchingLine(tt.pit); got != tt.want {
+				t.Fatalf("hasPitchingLine(%v) = %v want %v", tt.pit, got, tt.want)
+			}
+		})
+	}
+}
+
+// edgeCaseBoxscoreJSON exercises stringified team totals, empty batter position (→ "—"),
+// pitcher with no IP string but battersFaced, and inningsPitched as JSON number.
+const edgeCaseBoxscoreJSON = `{
+  "teams": {
+    "away": {
+      "team": {"id": 121, "name": "Away"},
+      "teamStats": {
+        "batting": {"runs": "4", "hits": "9", "leftOnBase": 3, "doubles": 1, "triples": 0, "homeRuns": 1},
+        "pitching": {},
+        "fielding": {"errors": "2"}
+      },
+      "batters": [5001],
+      "pitchers": [6001, 6002],
+      "players": {
+        "ID5001": {
+          "person": {"id": 5001, "fullName": "Pinch"},
+          "position": {"abbreviation": ""},
+          "stats": {"batting": {"atBats": 1, "plateAppearances": 1, "runs": 0, "hits": 0, "doubles": 0, "triples": 0, "homeRuns": 0, "rbi": 0, "baseOnBalls": 0, "strikeOuts": 0}}
+        },
+        "ID6001": {
+          "person": {"id": 6001, "fullName": "Hidden IP"},
+          "position": {"abbreviation": "P"},
+          "stats": {"pitching": {"inningsPitched": "0", "battersFaced": 4, "hits": 1, "runs": 0, "earnedRuns": 0, "baseOnBalls": 0, "strikeOuts": 1, "homeRuns": 0}}
+        },
+        "ID6002": {
+          "person": {"id": 6002, "fullName": "Numeric IP"},
+          "position": {"abbreviation": "P"},
+          "stats": {"pitching": {"inningsPitched": 5.1, "hits": 2, "runs": 1, "earnedRuns": 1, "baseOnBalls": 0, "strikeOuts": 7, "homeRuns": 0}}
+        }
+      }
+    },
+    "home": {
+      "team": {"id": 144, "name": "Home"},
+      "teamStats": {
+        "batting": {"runs": 1, "hits": 4, "leftOnBase": 2, "doubles": 0, "triples": 0, "homeRuns": 0},
+        "pitching": {},
+        "fielding": {"errors": 0}
+      },
+      "batters": [],
+      "pitchers": [],
+      "players": {}
+    }
+  }
+}`
+
+func TestGameBoxscore_edgeCaseParsing(t *testing.T) {
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/game/777/boxscore" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(edgeCaseBoxscoreJSON))
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/games/{gamePk}/boxscore", h.GameBoxscore)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/games/777/boxscore", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var out models.GameBoxscoreResponse
+	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if out.Away.Totals.Runs != 4 || out.Away.Totals.Hits != 9 || out.Away.Totals.Errors != 2 {
+		t.Fatalf("away totals: %+v", out.Away.Totals)
+	}
+	if len(out.Away.Batting) != 1 {
+		t.Fatalf("batting rows: %d", len(out.Away.Batting))
+	}
+	if out.Away.Batting[0].Pos != "—" {
+		t.Fatalf("empty position: got %q want em dash", out.Away.Batting[0].Pos)
+	}
+	if len(out.Away.Pitching) != 2 {
+		t.Fatalf("pitching rows: %d", len(out.Away.Pitching))
+	}
+	// Pitcher 6001: no traditional IP but battersFaced > 0
+	if out.Away.Pitching[0].IP != "0" {
+		t.Fatalf("pitcher 1 IP: got %q", out.Away.Pitching[0].IP)
+	}
+	// Pitcher 6002: JSON number inningsPitched → flexString
+	if out.Away.Pitching[1].IP != "5.1" {
+		t.Fatalf("pitcher 2 IP: got %q want 5.1", out.Away.Pitching[1].IP)
+	}
+}
