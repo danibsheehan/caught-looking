@@ -41,11 +41,28 @@ describe('api client', () => {
       expect(API_BASE).toBe('/api')
     })
 
+    it('defaults to /api when VITE_API_BASE is only whitespace', async () => {
+      const { API_BASE } = await loadClient({ viteApiBase: '   \t  ' })
+      expect(API_BASE).toBe('/api')
+    })
+
     it('uses VITE_API_BASE and strips trailing slash', async () => {
       const { API_BASE } = await loadClient({
         viteApiBase: 'http://127.0.0.1:8080/',
       })
       expect(API_BASE).toBe('http://127.0.0.1:8080')
+    })
+
+    it('strips only one trailing slash (double slash leaves one slash)', async () => {
+      const { API_BASE } = await loadClient({
+        viteApiBase: 'http://127.0.0.1:8080//',
+      })
+      expect(API_BASE).toBe('http://127.0.0.1:8080/')
+    })
+
+    it('accepts numeric env as string (Vite may stringify)', async () => {
+      const { API_BASE } = await loadClient({ viteApiBase: '8080' as unknown as string })
+      expect(API_BASE).toBe('8080')
     })
   })
 
@@ -69,6 +86,37 @@ describe('api client', () => {
       fetchMock.mockResolvedValueOnce(new Response('', { status: 502, statusText: 'Bad Gateway' }))
       const { apiGet } = await loadClient({ viteApiBase: '' })
       await expect(apiGet('/x')).rejects.toThrow('502 Bad Gateway')
+    })
+
+    it('throws HTML error bodies as message text (non-JSON)', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response('<html><body>Gateway timeout</body></html>', {
+          status: 504,
+          statusText: 'Gateway Timeout',
+          headers: { 'Content-Type': 'text/html' },
+        }),
+      )
+      const { apiGet } = await loadClient({ viteApiBase: '' })
+      await expect(apiGet('/x')).rejects.toThrow(/Gateway timeout/)
+    })
+
+    it('rejects when response is ok but body is not JSON', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response('plain text ok', {
+          status: 200,
+          statusText: 'OK',
+          headers: { 'Content-Type': 'text/plain' },
+        }),
+      )
+      const { apiGet } = await loadClient({ viteApiBase: '' })
+      await expect(apiGet('/x')).rejects.toThrow()
+    })
+
+    it('uses leading slash on path when path already starts with /', async () => {
+      fetchMock.mockResolvedValueOnce(jsonResponse({ ok: true }))
+      const { apiGet, API_BASE } = await loadClient({ viteApiBase: '' })
+      await apiGet('/standings')
+      expect(fetchMock).toHaveBeenCalledWith(`${API_BASE}/standings`)
     })
   })
 
