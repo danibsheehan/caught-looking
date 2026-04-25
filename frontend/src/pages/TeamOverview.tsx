@@ -316,10 +316,6 @@ export default function TeamOverview() {
             ) : (
               <>
                 <h2>Team stats (season)</h2>
-                <p className="muted small">
-                  Rate stats as horizontal bars (fixed scales); R/G vs RA/G on one
-                  track at the top when both sides have games.
-                </p>
                 {deepLoading ? (
                   <p className="muted small">Loading team stats…</p>
                 ) : deepError ? (

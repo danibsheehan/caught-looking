@@ -41,7 +41,7 @@ func (h *Handlers) TeamSeasonStats(w http.ResponseWriter, r *http.Request) {
 		season = n
 	}
 
-	cacheKey := "team-season-stats:" + strconv.Itoa(teamID) + ":" + strconv.Itoa(season)
+	cacheKey := "team-season-stats-v4:" + strconv.Itoa(teamID) + ":" + strconv.Itoa(season)
 	if body, ok := h.cache.Get(cacheKey); ok {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(body)
@@ -52,6 +52,7 @@ func (h *Handlers) TeamSeasonStats(w http.ResponseWriter, r *http.Request) {
 	g, gctx := errgroup.WithContext(ctx)
 	var hit models.TeamHittingLine
 	var pit models.TeamPitchingLine
+	var venue models.TeamVenueSplits
 
 	g.Go(func() error {
 		var err error
@@ -63,16 +64,21 @@ func (h *Handlers) TeamSeasonStats(w http.ResponseWriter, r *http.Request) {
 		pit, err = h.fetchTeamPitchingSeason(gctx, teamID, season)
 		return err
 	})
+	g.Go(func() error {
+		venue = h.fetchTeamVenueSplitsBestEffort(gctx, teamID, season)
+		return nil
+	})
 	if err := g.Wait(); err != nil {
 		respondUpstreamError(w, r, err)
 		return
 	}
 
 	out := models.TeamSeasonStatsResponse{
-		Season:   season,
-		TeamID:   teamID,
-		Hitting:  hit,
-		Pitching: pit,
+		Season:      season,
+		TeamID:      teamID,
+		Hitting:     hit,
+		Pitching:    pit,
+		VenueSplits: venue,
 	}
 
 	body, err := json.Marshal(out)
@@ -122,6 +128,28 @@ func (h *Handlers) fetchTeamHittingSeason(ctx context.Context, teamID int, seaso
 	line.Obp = statFloat(statMap["obp"])
 	line.Slg = statFloat(statMap["slg"])
 	line.Avg = statFloat(statMap["avg"])
+
+	line.Doubles = intFromStat(statMap["doubles"])
+	line.StolenBases = intFromStat(statMap["stolenBases"])
+	hr := intFromStat(statMap["homeRuns"])
+	line.HomeRuns = hr
+	if line.GamesPlayed > 0 {
+		line.HomeRunsPerGame = float64(hr) / float64(line.GamesPlayed)
+	}
+	pa := intFromStat(statMap["plateAppearances"])
+	bb := intFromStat(statMap["baseOnBalls"])
+	so := intFromStat(statMap["strikeOuts"])
+	if pa > 0 {
+		line.BbPct = 100 * float64(bb) / float64(pa)
+		line.KPct = 100 * float64(so) / float64(pa)
+	}
+	tb := intFromStat(statMap["totalBases"])
+	hits := intFromStat(statMap["hits"])
+	ab := intFromStat(statMap["atBats"])
+	if ab > 0 {
+		line.IsolatedPower = float64(tb-hits) / float64(ab)
+	}
+	line.Babip = statFloat(statMap["babip"])
 	return line, nil
 }
 
@@ -161,6 +189,9 @@ func (h *Handlers) fetchTeamPitchingSeason(ctx context.Context, teamID int, seas
 	line.Whip = statFloat(statMap["whip"])
 	line.K9 = statFloat(statMap["strikeoutsPer9Inn"])
 	line.BB9 = statFloat(statMap["walksPer9Inn"])
+	line.Hr9 = statFloat(statMap["homeRunsPer9"])
+	line.H9 = statFloat(statMap["hitsPer9"])
+	line.Kbb = statFloat(statMap["strikeoutWalkRatio"])
 	return line, nil
 }
 

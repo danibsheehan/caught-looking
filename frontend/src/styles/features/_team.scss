@@ -180,6 +180,44 @@
     flex-shrink: 0;
   }
 
+  &__venue {
+    margin-bottom: 1rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  }
+
+  &__venue-table {
+    width: 100%;
+    max-width: 22rem;
+    border-collapse: collapse;
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+
+    th,
+    td {
+      padding: 0.28rem 0.45rem;
+      text-align: right;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+    }
+
+    thead th {
+      font-weight: 600;
+      color: var(--text-h);
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    }
+
+    th[scope='row'] {
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-h);
+    }
+
+    th[scope='col']:first-child {
+      text-align: left;
+    }
+  }
+
   &__bar-list {
     display: flex;
     flex-direction: column;
@@ -238,10 +276,15 @@
     }
   }
 
+  /* Season counting totals (RS/RA + 2B/HR/SB) — top of deep dive for visibility */
   &__totals {
-    margin: 0.85rem 0 0;
-    padding-top: 0.65rem;
-    border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15rem 0.35rem;
+    margin: 0 0 0.85rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   }
 
   &__total-item {
