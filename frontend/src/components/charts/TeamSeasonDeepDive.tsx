@@ -1,5 +1,5 @@
 import { useMemo, type CSSProperties } from 'react'
-import type { TeamSeasonStatsResponse } from '../../types/api'
+import type { TeamSeasonStatsResponse, TeamVenueSplitLine, TeamVenueSplits } from '../../types/api'
 import { teamSplitChartColors } from '../../utils/mlbTeamColors'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 
@@ -19,6 +19,18 @@ function formatSlashThree(v: number | undefined): string {
   return s.startsWith('0.') ? s.slice(1) : s
 }
 
+/** Like `formatSlashThree` but allows numeric zero (e.g. ISO). */
+function formatRateThree(v: number | undefined): string {
+  if (v == null || Number.isNaN(v)) return '—'
+  const s = v.toFixed(3)
+  return s.startsWith('0.') ? s.slice(1) : s
+}
+
+function formatPctOne(v: number | undefined): string {
+  if (v == null || Number.isNaN(v)) return '—'
+  return `${v.toFixed(1)}%`
+}
+
 function fillHigherBetter(value: number, ceiling: number): number {
   if (!Number.isFinite(value) || ceiling <= 0) return 0
   return Math.max(0, Math.min(100, (value / ceiling) * 100))
@@ -32,11 +44,26 @@ function fillLowerBetter(value: number, good: number, bad: number): number {
   return ((bad - value) / (bad - good)) * 100
 }
 
-const HIT_CEIL = { ops: 1.0, obp: 0.45, slg: 0.55, avg: 0.33, rpg: 7, k9: 11 } as const
+const HIT_CEIL = {
+  ops: 1.0,
+  obp: 0.45,
+  slg: 0.55,
+  avg: 0.33,
+  rpg: 7,
+  k9: 11,
+  iso: 0.22,
+  hrpg: 1.65,
+  bbPct: 10.5,
+  babip: 0.32,
+} as const
+const HIT_KPCT = { good: 19.0, bad: 26.5 } as const
 const PITCH_RA = { good: 3.4, bad: 6.2 } as const
 const PITCH_ERA = { good: 2.9, bad: 5.8 } as const
 const PITCH_WHIP = { good: 1.08, bad: 1.52 } as const
 const PITCH_BB9 = { good: 2.4, bad: 4.8 } as const
+const PITCH_HR9 = { good: 0.95, bad: 1.38 } as const
+const PITCH_H9 = { good: 7.35, bad: 9.15 } as const
+const PITCH_KBB_CEIL = 3.85 as const
 
 export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDiveProps) {
   const surfaceHex = useChartSurfaceHex()
@@ -83,6 +110,31 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
     add('obp', 'OBP', hitting.obp, HIT_CEIL.obp, formatSlashThree)
     add('slg', 'SLG', hitting.slg, HIT_CEIL.slg, formatSlashThree)
     add('avg', 'AVG', hitting.avg, HIT_CEIL.avg, formatSlashThree)
+    add('iso', 'ISO', hitting.isolatedPower, HIT_CEIL.iso, formatRateThree)
+    add('hrpg', 'HR/G', hitting.homeRunsPerGame, HIT_CEIL.hrpg, formatTwo)
+    add('bbpct', 'BB%', hitting.bbPct, HIT_CEIL.bbPct, formatPctOne)
+    const addKpct = (
+      key: string,
+      label: string,
+      raw: number | undefined,
+      good: number,
+      bad: number,
+      fmt: (v: number) => string,
+    ) => {
+      if (raw == null || Number.isNaN(raw)) {
+        rows.push({ key, label, display: '—', fill: 0, empty: true })
+        return
+      }
+      rows.push({
+        key,
+        label,
+        display: fmt(raw),
+        fill: fillLowerBetter(raw, good, bad),
+        empty: false,
+      })
+    }
+    addKpct('kpct', 'K%', hitting.kPct, HIT_KPCT.good, HIT_KPCT.bad, formatPctOne)
+    add('babip', 'BABIP', hitting.babip, HIT_CEIL.babip, formatRateThree)
     return rows
   }, [hasHitting, hitting])
 
@@ -139,6 +191,9 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
     addLower('whip', 'WHIP', pitching.whip, PITCH_WHIP.good, PITCH_WHIP.bad, formatTwo)
     addHigher('k9', 'K/9', pitching.k9, HIT_CEIL.k9, formatTwo)
     addLower('bb9', 'BB/9', pitching.bb9, PITCH_BB9.good, PITCH_BB9.bad, formatTwo)
+    addLower('hr9', 'HR/9', pitching.hr9, PITCH_HR9.good, PITCH_HR9.bad, formatTwo)
+    addLower('h9', 'H/9', pitching.h9, PITCH_H9.good, PITCH_H9.bad, formatTwo)
+    addHigher('kbb', 'K/BB', pitching.kbb, PITCH_KBB_CEIL, formatTwo)
     return rows
   }, [hasPitching, pitching])
 
@@ -152,6 +207,32 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
         } as CSSProperties
       }
     >
+      <p className="muted small teams-deep-dive__totals">
+        <span className="teams-deep-dive__total-item">
+          Runs scored (season): <strong>{hitting.runs}</strong>
+        </span>
+        <span aria-hidden="true"> · </span>
+        <span className="teams-deep-dive__total-item">
+          Runs allowed: <strong>{pitching.runsAllowed}</strong>
+        </span>
+        {hasHitting ? (
+          <>
+            <span aria-hidden="true"> · </span>
+            <span className="teams-deep-dive__total-item">
+              2B: <strong>{hitting.doubles ?? 0}</strong>
+            </span>
+            <span aria-hidden="true"> · </span>
+            <span className="teams-deep-dive__total-item">
+              HR: <strong>{hitting.homeRuns ?? 0}</strong>
+            </span>
+            <span aria-hidden="true"> · </span>
+            <span className="teams-deep-dive__total-item">
+              SB: <strong>{hitting.stolenBases ?? 0}</strong>
+            </span>
+          </>
+        ) : null}
+      </p>
+
       {hasHitting && hasPitching ? (
         <RgDumbbell
           runsPerGame={hitting.runsPerGame}
@@ -161,11 +242,14 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
         />
       ) : null}
 
+      <VenueSplitsPanel splits={stats.venueSplits} />
+
       {hasHitting ? (
         <>
           <h3 className="teams-deep-dive__section-title">Offense</h3>
           <p className="muted small teams-deep-dive__hint">
-            Bar length vs rough full-season ceilings (not league rank).
+            Bar length vs rough full-season ceilings (not league rank). For K%, a longer
+            bar means less strikeout-heavy team offense on this scale.
           </p>
           <div className="teams-deep-dive__bar-list" role="list">
             {hitRows.map((row) => (
@@ -186,8 +270,8 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
         <>
           <h3 className="teams-deep-dive__section-title">Pitching</h3>
           <p className="muted small teams-deep-dive__hint">
-            For ERA / WHIP / BB/9 / RA/G, a longer bar means stronger run prevention on
-            this scale.
+            For ERA / WHIP / BB/9 / RA/G / HR/9 / H/9, a longer bar means stronger run
+            prevention on this scale. K/9 and K/BB use higher-is-better bars.
           </p>
           <div className="teams-deep-dive__bar-list" role="list">
             {pitchRows.map((row) => (
@@ -203,18 +287,77 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
           </div>
         </>
       ) : null}
-
-      <p className="muted small teams-deep-dive__totals">
-        <span className="teams-deep-dive__total-item">
-          Runs scored (season): <strong>{hitting.runs}</strong>
-        </span>
-        <span aria-hidden="true"> · </span>
-        <span className="teams-deep-dive__total-item">
-          Runs allowed: <strong>{pitching.runsAllowed}</strong>
-        </span>
-      </p>
     </div>
   )
+}
+
+function VenueSplitsPanel({ splits }: { splits: TeamVenueSplits }) {
+  const gamesTotal = splits.home.games + splits.away.games
+  if (gamesTotal === 0) {
+    return (
+      <div className="teams-deep-dive__venue">
+        <h3 className="teams-deep-dive__section-title">Home and road</h3>
+        <p className="muted small teams-deep-dive__hint">
+          Run environment and record by venue from the regular-season schedule (completed
+          games with scores). Loads when the schedule feed is available.
+        </p>
+        <p className="muted small">No completed home/road games in this response yet.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="teams-deep-dive__venue">
+      <h3 className="teams-deep-dive__section-title">Home and road</h3>
+      <p className="muted small teams-deep-dive__hint">
+        Completed regular-season games only: runs and record at home vs on the road,
+        derived from the same schedule feed as the game-by-game strip.
+      </p>
+      <table className="teams-deep-dive__venue-table">
+        <thead>
+          <tr>
+            <th scope="col" />
+            <th scope="col">Home</th>
+            <th scope="col">Road</th>
+          </tr>
+        </thead>
+        <tbody>
+          <VenueRow label="Record" home={fmtRecord(splits.home)} away={fmtRecord(splits.away)} />
+          <VenueRow label="Games" home={String(splits.home.games)} away={String(splits.away.games)} />
+          <VenueRow
+            label="R/G"
+            home={fmtOptionalTwo(splits.home.runsPerGame)}
+            away={fmtOptionalTwo(splits.away.runsPerGame)}
+          />
+          <VenueRow
+            label="RA/G"
+            home={fmtOptionalTwo(splits.home.runsAllowedPerGame)}
+            away={fmtOptionalTwo(splits.away.runsAllowedPerGame)}
+          />
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function VenueRow({ label, home, away }: { label: string; home: string; away: string }) {
+  return (
+    <tr>
+      <th scope="row">{label}</th>
+      <td>{home}</td>
+      <td>{away}</td>
+    </tr>
+  )
+}
+
+function fmtRecord(line: TeamVenueSplitLine): string {
+  if (line.games === 0) return '—'
+  return `${line.wins}-${line.losses}`
+}
+
+function fmtOptionalTwo(v: number | undefined): string {
+  if (v == null || Number.isNaN(v)) return '—'
+  return v.toFixed(2)
 }
 
 const RG_DOMAIN: [number, number] = [2.25, 7.85]

@@ -21,11 +21,17 @@ const mockStandings: StandingsResponse = {
 
 const mockTeams: TeamsResponse = { teams: [] }
 
+const emptyVenue = {
+  home: { games: 0, wins: 0, losses: 0, runsScored: 0, runsAllowed: 0 },
+  away: { games: 0, wins: 0, losses: 0, runsScored: 0, runsAllowed: 0 },
+}
+
 const mockTeamStats: TeamSeasonStatsResponse = {
   season: 2024,
   teamId: 147,
-  hitting: { gamesPlayed: 1, runs: 1, runsPerGame: 1 },
+  hitting: { gamesPlayed: 1, runs: 1, runsPerGame: 1, doubles: 0, stolenBases: 0 },
   pitching: { gamesPlayed: 1, runsAllowed: 1, runsAllowedPerGame: 1 },
+  venueSplits: emptyVenue,
 }
 
 describe('useStandings', () => {

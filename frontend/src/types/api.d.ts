@@ -366,12 +366,29 @@ export interface TeamSeasonStatsQuery {
   season?: number
 }
 
+/** Home or road bucket from the regular-season schedule (runs + record). */
+export interface TeamVenueSplitLine {
+  games: number
+  wins: number
+  losses: number
+  runsScored: number
+  runsAllowed: number
+  runsPerGame?: number
+  runsAllowedPerGame?: number
+}
+
+export interface TeamVenueSplits {
+  home: TeamVenueSplitLine
+  away: TeamVenueSplitLine
+}
+
 /** Team hitting & pitching season aggregates */
 export interface TeamSeasonStatsResponse {
   season: number
   teamId: number
   hitting: TeamHittingLine
   pitching: TeamPitchingLine
+  venueSplits: TeamVenueSplits
 }
 
 export interface TeamHittingLine {
@@ -382,6 +399,16 @@ export interface TeamHittingLine {
   obp?: number
   slg?: number
   avg?: number
+  /** Team doubles (season); omit on very old cached payloads — UI treats as 0. */
+  doubles?: number
+  /** Team stolen bases (season); omit on very old cached payloads — UI treats as 0. */
+  stolenBases?: number
+  homeRuns?: number
+  homeRunsPerGame?: number
+  isolatedPower?: number
+  bbPct?: number
+  kPct?: number
+  babip?: number
 }
 
 export interface TeamPitchingLine {
@@ -392,4 +419,7 @@ export interface TeamPitchingLine {
   whip?: number
   k9?: number
   bb9?: number
+  hr9?: number
+  h9?: number
+  kbb?: number
 }

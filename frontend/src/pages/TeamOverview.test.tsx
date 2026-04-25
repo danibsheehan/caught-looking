@@ -59,8 +59,12 @@ const api = vi.hoisted(() => {
   const seasonStats: TeamSeasonStatsResponse = {
     season: 2026,
     teamId: 121,
-    hitting: { gamesPlayed: 15, runs: 75, runsPerGame: 5 },
+    hitting: { gamesPlayed: 15, runs: 75, runsPerGame: 5, doubles: 28, stolenBases: 12 },
     pitching: { gamesPlayed: 15, runsAllowed: 60, runsAllowedPerGame: 4 },
+    venueSplits: {
+      home: { games: 0, wins: 0, losses: 0, runsScored: 0, runsAllowed: 0 },
+      away: { games: 0, wins: 0, losses: 0, runsScored: 0, runsAllowed: 0 },
+    },
   }
 
   const recordTimeline: RecordTimelineResponse = {

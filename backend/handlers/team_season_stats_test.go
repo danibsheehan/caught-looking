@@ -105,6 +105,12 @@ func TestTeamSeasonStats_usesCache(t *testing.T) {
 	var mlbCalls atomic.Int32
 	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mlbCalls.Add(1)
+		if r.URL.Path == "/schedule" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"dates":[]}`))
+			return
+		}
 		if r.URL.Path != "/teams/121/stats" {
 			http.NotFound(w, r)
 			return
@@ -135,8 +141,8 @@ func TestTeamSeasonStats_usesCache(t *testing.T) {
 			t.Fatalf("iter %d: status %d: %s", i, rec.Code, rec.Body.String())
 		}
 	}
-	if n := mlbCalls.Load(); n != 2 {
-		t.Fatalf("expected 2 MLB fetches (hitting+pitching) for cache miss, got %d", n)
+	if n := mlbCalls.Load(); n != 3 {
+		t.Fatalf("expected 3 MLB fetches (hitting+pitching+schedule) for cache miss, got %d", n)
 	}
 }
 
@@ -380,5 +386,114 @@ func TestTeamSeasonStats_zeroGames_skipsPerGameRates(t *testing.T) {
 	}
 	if out.Hitting.RunsPerGame != 0 || out.Pitching.RunsAllowedPerGame != 0 {
 		t.Fatalf("per-game rates should be 0 when GP=0: hitting=%+v pitching=%+v", out.Hitting, out.Pitching)
+	}
+}
+
+func TestTeamSeasonStats_extendedMLBFields(t *testing.T) {
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/teams/121/stats" {
+			http.NotFound(w, r)
+			return
+		}
+		q := r.URL.Query()
+		g := q.Get("group")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		switch g {
+		case "hitting":
+			_, _ = w.Write([]byte(`{"stats":[{"splits":[{"stat":{"gamesPlayed":80,"runs":400,"ops":0.78,"obp":0.34,"slg":0.44,"avg":0.26,"doubles":140,"stolenBases":42,"homeRuns":100,"plateAppearances":3000,"baseOnBalls":300,"strikeOuts":750,"totalBases":1200,"hits":900,"atBats":2600,"babip":".295"}}]}]}`))
+		case "pitching":
+			_, _ = w.Write([]byte(`{"stats":[{"splits":[{"stat":{"gamesPlayed":80,"runs":360,"era":3.8,"whip":1.25,"strikeoutsPer9Inn":9.2,"walksPer9Inn":3.2,"homeRunsPer9":1.05,"hitsPer9":8.1,"strikeoutWalkRatio":"2.55"}}]}]}`))
+		default:
+			http.Error(w, "bad group", http.StatusBadRequest)
+		}
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/teams/{teamID}/season-stats", h.TeamSeasonStats)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/teams/121/season-stats?season=2026", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+	var out models.TeamSeasonStatsResponse
+	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if out.Hitting.HomeRuns != 100 || out.Hitting.HomeRunsPerGame != 1.25 {
+		t.Fatalf("HR: %+v", out.Hitting)
+	}
+	if out.Hitting.Doubles != 140 || out.Hitting.StolenBases != 42 {
+		t.Fatalf("counting: %+v", out.Hitting)
+	}
+	wantISO := (1200.0 - 900.0) / 2600.0
+	if out.Hitting.IsolatedPower < wantISO-1e-9 || out.Hitting.IsolatedPower > wantISO+1e-9 {
+		t.Fatalf("isolatedPower: got %v want %v", out.Hitting.IsolatedPower, wantISO)
+	}
+	if out.Hitting.BbPct < 9.99 || out.Hitting.BbPct > 10.01 {
+		t.Fatalf("bbPct: %v", out.Hitting.BbPct)
+	}
+	if out.Hitting.KPct < 24.99 || out.Hitting.KPct > 25.01 {
+		t.Fatalf("kPct: %v", out.Hitting.KPct)
+	}
+	if out.Hitting.Babip < 0.294 || out.Hitting.Babip > 0.296 {
+		t.Fatalf("babip: %v", out.Hitting.Babip)
+	}
+	if out.Pitching.Hr9 < 1.04 || out.Pitching.Hr9 > 1.06 {
+		t.Fatalf("hr9: %v", out.Pitching.Hr9)
+	}
+	if out.Pitching.H9 < 8.09 || out.Pitching.H9 > 8.11 {
+		t.Fatalf("h9: %v", out.Pitching.H9)
+	}
+	if out.Pitching.Kbb < 2.54 || out.Pitching.Kbb > 2.56 {
+		t.Fatalf("kbb: %v", out.Pitching.Kbb)
+	}
+}
+
+func TestTeamSeasonStats_venueSplitsFromSchedule(t *testing.T) {
+	const scheduleJSON = `{"dates":[{"games":[
+		{"status":{"abstractGameState":"Final","detailedState":"Final"},"isTie":false,
+		 "teams":{"away":{"team":{"id":158},"isWinner":false,"score":1},"home":{"team":{"id":121},"isWinner":true,"score":6}}}
+	]}]}`
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/teams/121/stats":
+			q := r.URL.Query()
+			g := q.Get("group")
+			w.WriteHeader(http.StatusOK)
+			switch g {
+			case "hitting":
+				_, _ = w.Write([]byte(`{"stats":[{"splits":[{"stat":{"gamesPlayed":1,"runs":1,"ops":0.5,"obp":0.3,"slg":0.4,"avg":0.2}}]}]}`))
+			case "pitching":
+				_, _ = w.Write([]byte(`{"stats":[{"splits":[{"stat":{"gamesPlayed":1,"runs":1,"era":3.0,"whip":1.1,"strikeoutsPer9Inn":9.0,"walksPer9Inn":3.0}}]}]}`))
+			default:
+				http.Error(w, "bad group", http.StatusBadRequest)
+			}
+		case "/schedule":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(scheduleJSON))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/teams/{teamID}/season-stats", h.TeamSeasonStats)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/teams/121/season-stats?season=2026", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+	var out models.TeamSeasonStatsResponse
+	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if out.VenueSplits.Home.Games != 1 || out.VenueSplits.Home.RunsScored != 6 || out.VenueSplits.Away.Games != 0 {
+		t.Fatalf("venue: %+v", out.VenueSplits)
 	}
 }
