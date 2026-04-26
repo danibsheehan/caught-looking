@@ -8,9 +8,11 @@ import type {
   LeagueSeasonBaselineResponse,
   PlayerCurrentTeamResponse,
   PlayersCompareGameLogQuery,
+  PlayersComparePlatoonQuery,
   PlayersCompareQuery,
   PlayersCompareYearByYearQuery,
   PlayersGameLogResponse,
+  PlayersPlatoonResponse,
   PlayersRadarResponse,
   PlayersYearByYearResponse,
   PlayersSearchQuery,
@@ -193,6 +195,18 @@ export async function fetchPlayersCompareGameLog(
   if (query.limit != null) qs.set('limit', String(query.limit))
   return apiGet<PlayersGameLogResponse>(
     `/players/compare/game-log?${qs.toString()}`,
+  )
+}
+
+export async function fetchPlayersComparePlatoon(
+  query: PlayersComparePlatoonQuery,
+): Promise<PlayersPlatoonResponse> {
+  const qs = new URLSearchParams()
+  qs.set('ids', query.ids)
+  if (query.season != null) qs.set('season', String(query.season))
+  if (query.group) qs.set('group', query.group)
+  return apiGet<PlayersPlatoonResponse>(
+    `/players/compare/platoon?${qs.toString()}`,
   )
 }
 

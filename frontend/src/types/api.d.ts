@@ -326,6 +326,32 @@ export interface PlayersGameLogResponse {
   leagueBaseline: number
 }
 
+export interface PlatoonSplitRow {
+  code: string
+  description: string
+  ops: number
+  sample: number
+}
+
+export interface PlatoonPlayer {
+  id: number
+  fullName: string
+  splits: PlatoonSplitRow[]
+}
+
+export interface PlayersPlatoonResponse {
+  season: number
+  group: string
+  metric: string
+  players: PlatoonPlayer[]
+}
+
+export interface PlayersComparePlatoonQuery {
+  ids: string
+  season?: number
+  group?: 'hitting' | 'pitching'
+}
+
 export interface PlayersCompareYearByYearQuery {
   ids: string
   group?: 'hitting' | 'pitching'
