@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PlayersGameLogResponse } from '../../types/api'
 import PlayerCompareRecentSparklines from './PlayerCompareRecentSparklines'
 
-const rollingTrailingMeanMock = vi.fn((values: number[]) => values)
+const rollingTrailingMeanMock = vi.fn(
+  (values: number[], _window: number) => values,
+)
 
 vi.mock('../../utils/rollingMean', () => ({
   rollingTrailingMean: (values: number[], window: number) =>
@@ -15,6 +17,7 @@ const sample: PlayersGameLogResponse = {
   season: 2026,
   group: 'hitting',
   metric: 'ops',
+  limit: 28,
   players: [
     {
       id: 1,
