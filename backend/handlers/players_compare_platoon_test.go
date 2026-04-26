@@ -84,3 +84,44 @@ func TestPlayersComparePlatoon_success_hitting(t *testing.T) {
 		t.Fatalf("vl row: %+v", out.Players[0].Splits[0])
 	}
 }
+
+func TestPlayersComparePlatoon_keepsZeroOpsSplit(t *testing.T) {
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/people/") || !strings.HasSuffix(r.URL.Path, "/stats") {
+			http.NotFound(w, r)
+			return
+		}
+		parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		id := parts[1]
+		body := `{"stats":[{"splits":[
+			{"split":{"code":"vl","description":"vs Left"},"player":{"id":` + id + `,"fullName":"P` + id + `"},"stat":{"ops":0.0,"plateAppearances":12}},
+			{"split":{"code":"vr","description":"vs Right"},"player":{"id":` + id + `,"fullName":"P` + id + `"},"stat":{"ops":0.9,"plateAppearances":200}}
+		]}]}`
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(body))
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/players/compare/platoon", h.PlayersComparePlatoon)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/players/compare/platoon?ids=7,8&group=hitting&season=2026", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+	var out models.PlayersPlatoonResponse
+	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Players) != 2 {
+		t.Fatalf("players: %d", len(out.Players))
+	}
+	if len(out.Players[0].Splits) != 2 {
+		t.Fatalf("p1 splits: %+v", out.Players[0].Splits)
+	}
+	if out.Players[0].Splits[0].Code != "vl" || out.Players[0].Splits[0].Ops != 0 {
+		t.Fatalf("want vl split with zero ops, got: %+v", out.Players[0].Splits[0])
+	}
+}

@@ -272,6 +272,31 @@ describe('App routes', () => {
     await waitFor(() => expect(api.fetchPlayerCurrentTeam).toHaveBeenCalled(), asyncWait)
   })
 
+  it('loads year-by-year data only after switching Compare to Career', async () => {
+    const user = userEvent.setup()
+    renderRoute('/players')
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Player comparison' }),
+      ).toBeInTheDocument()
+    }, asyncWait)
+
+    await waitFor(() => expect(api.fetchPlayersCompareGameLog).toHaveBeenCalled(), asyncWait)
+    await waitFor(() => expect(api.fetchPlayersComparePlatoon).toHaveBeenCalled(), asyncWait)
+    await waitFor(
+      () => expect(api.fetchPlayersCompareYearByYear).not.toHaveBeenCalled(),
+      asyncWait,
+    )
+
+    vi.clearAllMocks()
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Compare' }), 'career')
+
+    await waitFor(() => expect(api.fetchPlayersCompareYearByYear).toHaveBeenCalled(), asyncWait)
+    expect(api.fetchPlayersCompareGameLog).not.toHaveBeenCalled()
+    expect(api.fetchPlayersComparePlatoon).not.toHaveBeenCalled()
+  })
+
   it('navigates from Standings to Players via primary nav', async () => {
     const user = userEvent.setup()
     renderRoute('/standings')

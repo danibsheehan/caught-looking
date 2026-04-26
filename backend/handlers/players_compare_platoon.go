@@ -149,7 +149,7 @@ func (h *Handlers) fetchPlayerPlatoonSplits(ctx context.Context, id int64, group
 			continue
 		}
 		ops := statFloat(statMap["ops"])
-		if ops <= 0 {
+		if ops < 0 {
 			continue
 		}
 		sample := int(statFloat(statMap["plateAppearances"]))
