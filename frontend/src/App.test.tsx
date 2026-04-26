@@ -10,6 +10,7 @@ import type {
   GameTimelineResponse,
   PlayerCurrentTeamResponse,
   PlayersGameLogResponse,
+  PlayersPlatoonResponse,
   PlayersRadarResponse,
   PlayersYearByYearResponse,
   RecordTimelineResponse,
@@ -121,6 +122,30 @@ const api = vi.hoisted(() => {
     leagueBaseline: 0.75,
   }
 
+  const platoon: PlayersPlatoonResponse = {
+    season: 2026,
+    group: 'hitting',
+    metric: 'ops',
+    players: [
+      {
+        id: 660271,
+        fullName: 'Shohei Ohtani',
+        splits: [
+          { code: 'vl', description: 'vs Left', ops: 0.9, sample: 100 },
+          { code: 'vr', description: 'vs Right', ops: 0.85, sample: 400 },
+        ],
+      },
+      {
+        id: 592450,
+        fullName: 'Aaron Judge',
+        splits: [
+          { code: 'vl', description: 'vs Left', ops: 1.0, sample: 90 },
+          { code: 'vr', description: 'vs Right', ops: 0.88, sample: 410 },
+        ],
+      },
+    ],
+  }
+
   const currentTeam = (id: number): PlayerCurrentTeamResponse => ({
     playerId: id,
     teamId: id === 660271 ? 119 : 147,
@@ -174,6 +199,7 @@ const api = vi.hoisted(() => {
     fetchPlayerCurrentTeam: vi.fn((id: number) => Promise.resolve(currentTeam(id))),
     fetchPlayersCompareYearByYear: vi.fn(() => Promise.resolve(yearly)),
     fetchPlayersCompareGameLog: vi.fn(() => Promise.resolve(gameLog)),
+    fetchPlayersComparePlatoon: vi.fn(() => Promise.resolve(platoon)),
   }
 })
 
@@ -193,6 +219,7 @@ vi.mock('./api/client', async (importOriginal) => {
     fetchPlayerCurrentTeam: api.fetchPlayerCurrentTeam,
     fetchPlayersCompareYearByYear: api.fetchPlayersCompareYearByYear,
     fetchPlayersCompareGameLog: api.fetchPlayersCompareGameLog,
+    fetchPlayersComparePlatoon: api.fetchPlayersComparePlatoon,
   }
 })
 
@@ -239,9 +266,35 @@ describe('App routes', () => {
       ).toBeInTheDocument()
     }, asyncWait)
     await waitFor(() => expect(api.fetchPlayersCompare).toHaveBeenCalled(), asyncWait)
-    await waitFor(() => expect(api.fetchPlayersCompareYearByYear).toHaveBeenCalled(), asyncWait)
+    await waitFor(() => expect(api.fetchPlayersCompareYearByYear).not.toHaveBeenCalled(), asyncWait)
     await waitFor(() => expect(api.fetchPlayersCompareGameLog).toHaveBeenCalled(), asyncWait)
+    await waitFor(() => expect(api.fetchPlayersComparePlatoon).toHaveBeenCalled(), asyncWait)
     await waitFor(() => expect(api.fetchPlayerCurrentTeam).toHaveBeenCalled(), asyncWait)
+  })
+
+  it('loads year-by-year data only after switching Compare to Career', async () => {
+    const user = userEvent.setup()
+    renderRoute('/players')
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Player comparison' }),
+      ).toBeInTheDocument()
+    }, asyncWait)
+
+    await waitFor(() => expect(api.fetchPlayersCompareGameLog).toHaveBeenCalled(), asyncWait)
+    await waitFor(() => expect(api.fetchPlayersComparePlatoon).toHaveBeenCalled(), asyncWait)
+    await waitFor(
+      () => expect(api.fetchPlayersCompareYearByYear).not.toHaveBeenCalled(),
+      asyncWait,
+    )
+
+    vi.clearAllMocks()
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Compare' }), 'career')
+
+    await waitFor(() => expect(api.fetchPlayersCompareYearByYear).toHaveBeenCalled(), asyncWait)
+    expect(api.fetchPlayersCompareGameLog).not.toHaveBeenCalled()
+    expect(api.fetchPlayersComparePlatoon).not.toHaveBeenCalled()
   })
 
   it('navigates from Standings to Players via primary nav', async () => {

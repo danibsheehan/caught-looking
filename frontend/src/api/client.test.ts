@@ -269,6 +269,15 @@ describe('api client', () => {
       )
     })
 
+    it('fetchPlayersComparePlatoon builds query string', async () => {
+      fetchMock.mockResolvedValue(jsonResponse({}))
+      const { fetchPlayersComparePlatoon } = await getClient()
+      await fetchPlayersComparePlatoon({ ids: '1,2', season: 2025, group: 'hitting' })
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/players/compare/platoon?ids=1%2C2&season=2025&group=hitting',
+      )
+    })
+
     it('fetchPlayersSearch sets names query', async () => {
       fetchMock.mockResolvedValue(jsonResponse({ hits: [] }))
       const { fetchPlayersSearch } = await getClient()

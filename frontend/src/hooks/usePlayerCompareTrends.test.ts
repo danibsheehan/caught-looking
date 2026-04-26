@@ -2,14 +2,24 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   fetchPlayersCompareGameLog,
+  fetchPlayersComparePlatoon,
   fetchPlayersCompareYearByYear,
 } from '../api/client'
-import type { PlayersGameLogResponse, PlayersYearByYearResponse } from '../types/api'
-import { usePlayerCompareGameLog, usePlayerCompareYearByYear } from './usePlayerCompareTrends'
+import type {
+  PlayersGameLogResponse,
+  PlayersPlatoonResponse,
+  PlayersYearByYearResponse,
+} from '../types/api'
+import {
+  usePlayerCompareGameLog,
+  usePlayerComparePlatoon,
+  usePlayerCompareYearByYear,
+} from './usePlayerCompareTrends'
 
 vi.mock('../api/client', () => ({
   fetchPlayersCompareYearByYear: vi.fn(),
   fetchPlayersCompareGameLog: vi.fn(),
+  fetchPlayersComparePlatoon: vi.fn(),
 }))
 
 const mockYearByYear: PlayersYearByYearResponse = {
@@ -26,6 +36,13 @@ const mockGameLog: PlayersGameLogResponse = {
   limit: 28,
   players: [],
   leagueBaseline: 0.7,
+}
+
+const mockPlatoon: PlayersPlatoonResponse = {
+  season: 2024,
+  group: 'hitting',
+  metric: 'ops',
+  players: [],
 }
 
 describe('usePlayerCompareYearByYear', () => {
@@ -110,5 +127,31 @@ describe('usePlayerCompareGameLog', () => {
     )
 
     await waitFor(() => expect(result.current.error?.message).toBe('gamelog'))
+  })
+})
+
+describe('usePlayerComparePlatoon', () => {
+  beforeEach(() => {
+    vi.mocked(fetchPlayersComparePlatoon).mockReset()
+  })
+
+  it('does not fetch when season before 1900', () => {
+    renderHook(() => usePlayerComparePlatoon('1,2', 1899, 'hitting', true))
+    expect(fetchPlayersComparePlatoon).not.toHaveBeenCalled()
+  })
+
+  it('fetches platoon splits', async () => {
+    vi.mocked(fetchPlayersComparePlatoon).mockResolvedValue(mockPlatoon)
+
+    const { result } = renderHook(() =>
+      usePlayerComparePlatoon('5,6', 2024, 'pitching', true),
+    )
+
+    await waitFor(() => expect(result.current.data).toEqual(mockPlatoon))
+    expect(fetchPlayersComparePlatoon).toHaveBeenCalledWith({
+      ids: '5,6',
+      season: 2024,
+      group: 'pitching',
+    })
   })
 })

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -13,11 +13,21 @@ import {
 import type { GameLogPlayer, PlayersGameLogResponse } from '../../types/api'
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
 import { chartCartesianTick } from '../../utils/rechartsAxis'
+import { rollingTrailingMean } from '../../utils/rollingMean'
 
-function gamesToRows(games: GameLogPlayer['games'], key: 'a' | 'b') {
+const ROLLING_OPTIONS = [3, 5, 10, 15] as const
+
+function gamesToRows(
+  games: GameLogPlayer['games'],
+  key: 'a' | 'b',
+  rollingWindow: number,
+) {
+  const vals = games.map((g) => g.value)
+  const roll = rollingTrailingMean(vals, rollingWindow)
   return games.map((g, i) => ({
     i: i + 1,
     [key]: g.value,
+    [`${key}Roll`]: roll[i],
     date: g.date,
   }))
 }
@@ -26,14 +36,16 @@ function SparkBlock({
   title,
   rows,
   dataKey,
+  rollKey,
   name,
   color,
   metric,
   leagueBaseline,
 }: {
   title: string
-  rows: { i: number; date: string; a?: number; b?: number }[]
+  rows: { i: number; date: string; a?: number; b?: number; aRoll?: number; bRoll?: number }[]
   dataKey: 'a' | 'b'
+  rollKey: 'aRoll' | 'bRoll'
   name: string
   color: string
   metric: 'ops' | 'era'
@@ -52,7 +64,7 @@ function SparkBlock({
         <span className="player-game-spark__title">{title}</span>
         <span className="muted small">{name}</span>
       </div>
-      <ResponsiveContainer width="100%" height={140}>
+      <ResponsiveContainer width="100%" height={160}>
         <LineChart data={rows} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
           <XAxis
@@ -93,9 +105,12 @@ function SparkBlock({
               border: '1px solid var(--border)',
               fontSize: 11,
             }}
-            formatter={(v: TooltipValueType | undefined) => [
+            formatter={(
+              v: TooltipValueType | undefined,
+              name: string | number | undefined,
+            ) => [
               fmt(typeof v === 'number' ? v : undefined),
-              metric.toUpperCase(),
+              String(name ?? ''),
             ]}
             labelFormatter={(_lab, payload) => {
               const row = payload?.[0]?.payload as { date?: string } | undefined
@@ -108,7 +123,18 @@ function SparkBlock({
             stroke={color}
             strokeWidth={2}
             dot={{ r: 2 }}
-            name={name}
+            name={metric === 'ops' ? 'Game OPS' : 'Game ERA'}
+            isAnimationActive={false}
+          />
+          <Line
+            type="monotone"
+            dataKey={rollKey}
+            stroke={color}
+            strokeWidth={2}
+            strokeOpacity={0.55}
+            strokeDasharray="6 4"
+            dot={false}
+            name="Rolling avg"
             isAnimationActive={false}
           />
         </LineChart>
@@ -129,17 +155,19 @@ export default function PlayerCompareRecentSparklines({
   teamId2,
 }: Props) {
   const { colorA, colorB } = usePlayerCompareChartColors(teamId1, teamId2)
+  const [rollingWindow, setRollingWindow] =
+    useState<(typeof ROLLING_OPTIONS)[number]>(10)
   const [p1, p2] = data.players
   const metric = data.metric
   const lb = data.leagueBaseline
 
   const rowsA = useMemo(
-    () => gamesToRows(p1?.games ?? [], 'a'),
-    [p1?.games],
+    () => gamesToRows(p1?.games ?? [], 'a', rollingWindow),
+    [p1?.games, rollingWindow],
   )
   const rowsB = useMemo(
-    () => gamesToRows(p2?.games ?? [], 'b'),
-    [p2?.games],
+    () => gamesToRows(p2?.games ?? [], 'b', rollingWindow),
+    [p2?.games, rollingWindow],
   )
 
   if (!rowsA.length && !rowsB.length) {
@@ -150,11 +178,34 @@ export default function PlayerCompareRecentSparklines({
 
   return (
     <div className="player-game-spark">
+      <div className="player-game-spark__rolling-toolbar">
+        <label className="player-game-spark__rolling-label" htmlFor="player-compare-rolling-window">
+          Rolling average window
+        </label>
+        <select
+          id="player-compare-rolling-window"
+          className="player-game-spark__rolling-select players-compare__select"
+          value={rollingWindow}
+          onChange={(e) =>
+            setRollingWindow(Number(e.target.value) as (typeof ROLLING_OPTIONS)[number])
+          }
+        >
+          {ROLLING_OPTIONS.map((n) => (
+            <option key={n} value={n}>
+              Last {n} games
+            </option>
+          ))}
+        </select>
+        <span className="player-game-spark__rolling-hint muted small">
+          Solid: per-game {metric.toUpperCase()}. Dashed: trailing mean over the window.
+        </span>
+      </div>
       {rowsA.length > 0 ? (
         <SparkBlock
           title="Player 1"
           rows={rowsA}
           dataKey="a"
+          rollKey="aRoll"
           name={p1?.fullName ?? 'A'}
           color={colorA}
           metric={metric}
@@ -166,6 +217,7 @@ export default function PlayerCompareRecentSparklines({
           title="Player 2"
           rows={rowsB}
           dataKey="b"
+          rollKey="bRoll"
           name={p2?.fullName ?? 'B'}
           color={colorB}
           metric={metric}

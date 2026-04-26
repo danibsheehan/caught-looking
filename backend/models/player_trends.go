@@ -48,3 +48,26 @@ type GamePoint struct {
 	GamePk int64   `json:"gamePk"`
 	Value  float64 `json:"value"`
 }
+
+// PlatoonSplitRow is one MLB statSplits bucket (sitCodes vl or vr).
+type PlatoonSplitRow struct {
+	Code        string  `json:"code"`
+	Description string  `json:"description"`
+	Ops         float64 `json:"ops"`
+	Sample      int     `json:"sample"`
+}
+
+// PlatoonPlayer is one player’s vl/vr rows for GET /players/compare/platoon.
+type PlatoonPlayer struct {
+	ID       int64             `json:"id"`
+	FullName string            `json:"fullName"`
+	Splits   []PlatoonSplitRow `json:"splits"`
+}
+
+// PlayersPlatoonResponse is GET /players/compare/platoon.
+type PlayersPlatoonResponse struct {
+	Season  int             `json:"season"`
+	Group   string          `json:"group"`
+	Metric  string          `json:"metric"`
+	Players []PlatoonPlayer `json:"players"`
+}
