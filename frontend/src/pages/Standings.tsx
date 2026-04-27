@@ -172,9 +172,9 @@ export default function Standings() {
             />
           </div>
 
-          {divisions.map((div) => (
-            <div key={div.divisionId} className="standings-page__panel">
-              <h2>{div.divisionName || `Division ${div.divisionId}`}</h2>
+          {selected ? (
+            <div key={selected.divisionId} className="standings-page__panel">
+              <h2>{selected.divisionName || `Division ${selected.divisionId}`}</h2>
               <div className="standings-page__table-scroll">
                 <table className="standings-page__table">
                   <thead>
@@ -189,7 +189,7 @@ export default function Standings() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortStandingTeams(div.teams).map((t) => (
+                    {sortStandingTeams(selected.teams).map((t) => (
                       <tr key={t.teamId}>
                         <td>{t.divisionRank}</td>
                         <td>
@@ -218,7 +218,7 @@ export default function Standings() {
                 </table>
               </div>
             </div>
-          ))}
+          ) : null}
         </>
       )}
     </section>
