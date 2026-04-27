@@ -110,6 +110,10 @@ function renderTeamOverview() {
 describe('TeamOverview', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    api.fetchTeams.mockResolvedValue(api.teams)
+    api.fetchStandings.mockResolvedValue(api.standings)
+    api.fetchTeamSeasonStats.mockResolvedValue(api.seasonStats)
+    api.fetchRecordTimeline.mockResolvedValue(api.recordTimeline)
   })
 
   it('loads teams and standings, then charts after selecting a club', async () => {
@@ -138,5 +142,46 @@ describe('TeamOverview', () => {
 
     await waitFor(() => expect(api.fetchTeamSeasonStats).toHaveBeenCalledWith(121, { season: 2026 }), asyncWait)
     await waitFor(() => expect(api.fetchRecordTimeline).toHaveBeenCalled(), asyncWait)
+  })
+
+  it('shows API error state when teams request fails', async () => {
+    api.fetchTeams.mockRejectedValueOnce(new Error('teams failed'))
+    renderTeamOverview()
+
+    expect(await screen.findByRole('alert', asyncWait)).toHaveTextContent('teams failed')
+    expect(screen.getByRole('heading', { level: 1, name: 'Teams' })).toBeInTheDocument()
+  })
+
+  it('shows no standings row and no games copy for selected team', async () => {
+    const user = userEvent.setup()
+    api.fetchStandings.mockResolvedValueOnce({ season: 2026, divisions: [] })
+    renderTeamOverview()
+
+    await screen.findByRole('heading', { level: 1, name: 'Teams' }, asyncWait)
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Club' }), '121')
+
+    expect(
+      await screen.findByText(/No standings row for this club and season yet/i, asyncWait),
+    ).toBeInTheDocument()
+    const noGames = await screen.findAllByText(/No completed games in this sample yet/i, {}, asyncWait)
+    expect(noGames.length).toBeGreaterThan(0)
+  })
+
+  it('switches tabs and conditionally renders trend vs deep-dive sections', async () => {
+    const user = userEvent.setup()
+    renderTeamOverview()
+
+    await screen.findByRole('heading', { level: 1, name: 'Teams' }, asyncWait)
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Club' }), '121')
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: /Division race — cumulative win %/i }, asyncWait),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 2, name: /Team stats \(season\)/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Deep dive' }))
+    expect(await screen.findByRole('heading', { level: 2, name: 'Team stats (season)' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 2, name: /Division race — cumulative win %/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: 'Home and road' })).toBeInTheDocument()
   })
 })
