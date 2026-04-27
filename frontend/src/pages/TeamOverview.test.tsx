@@ -148,7 +148,7 @@ describe('TeamOverview', () => {
     api.fetchTeams.mockRejectedValueOnce(new Error('teams failed'))
     renderTeamOverview()
 
-    expect(await screen.findByRole('alert', asyncWait)).toHaveTextContent('teams failed')
+    expect(await screen.findByRole('alert', {}, asyncWait)).toHaveTextContent('teams failed')
     expect(screen.getByRole('heading', { level: 1, name: 'Teams' })).toBeInTheDocument()
   })
 
@@ -161,7 +161,7 @@ describe('TeamOverview', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Club' }), '121')
 
     expect(
-      await screen.findByText(/No standings row for this club and season yet/i, asyncWait),
+      await screen.findByText(/No standings row for this club and season yet/i, {}, asyncWait),
     ).toBeInTheDocument()
     const noGames = await screen.findAllByText(/No completed games in this sample yet/i, {}, asyncWait)
     expect(noGames.length).toBeGreaterThan(0)
