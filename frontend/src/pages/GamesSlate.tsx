@@ -4,7 +4,7 @@ import GameListSkeleton from '../components/skeletons/GameListSkeleton'
 import { TeamSelector } from '../components/ui'
 import { fetchGamesForDate } from '../api/client'
 import { useTeams } from '../hooks/useMLB'
-import type { GameSummary } from '../types/api'
+import type { GameSummary } from '../types/api.compat'
 
 function localISODate(d = new Date()): string {
   const y = d.getFullYear()

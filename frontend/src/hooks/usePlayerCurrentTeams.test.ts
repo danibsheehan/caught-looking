@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchPlayerCurrentTeam } from '../api/client'
-import type { PlayerCurrentTeamResponse } from '../types/api'
+import type { PlayerCurrentTeamResponse } from '../types/api.compat'
 import { usePlayerCurrentTeams } from './usePlayerCurrentTeams'
 
 vi.mock('../api/client', () => ({

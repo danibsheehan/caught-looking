@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchPlayersCompare } from '../api/client'
-import type { PlayersRadarResponse } from '../types/api'
+import type { PlayersRadarResponse } from '../types/api.compat'
 import { usePlayersCompare } from './usePlayersCompare'
 
 vi.mock('../api/client', () => ({

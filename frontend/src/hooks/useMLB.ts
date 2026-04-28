@@ -6,7 +6,7 @@ import type {
   TeamSeasonStatsResponse,
   TeamsQuery,
   TeamsResponse,
-} from '../types/api'
+} from '../types/api.compat'
 
 export function useStandings(params: StandingsQuery = {}) {
   const { season, leagueId, standingsTypes } = params

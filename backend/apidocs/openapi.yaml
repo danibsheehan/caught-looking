@@ -1,0 +1,1065 @@
+openapi: 3.0.3
+info:
+  title: Caught Looking API
+  version: 0.1.0
+  description: Read-only baseball analytics endpoints.
+servers:
+  - url: /
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+  /teams:
+    get:
+      summary: List teams
+      operationId: listTeams
+      parameters:
+        - in: query
+          name: sportId
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Teams list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamsResponse"
+  /standings:
+    get:
+      summary: Get standings
+      operationId: getStandings
+      parameters:
+        - in: query
+          name: season
+          schema:
+            type: integer
+        - in: query
+          name: leagueId
+          schema:
+            type: string
+        - in: query
+          name: standingsTypes
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Division standings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StandingsResponse"
+  /teams/{teamID}/record-timeline:
+    get:
+      summary: Team record over season
+      operationId: getRecordTimeline
+      parameters:
+        - in: path
+          name: teamID
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: season
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team timeline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordTimelineResponse"
+  /teams/{teamID}/season-stats:
+    get:
+      summary: Team season stats
+      operationId: getTeamSeasonStats
+      parameters:
+        - in: path
+          name: teamID
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: season
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Team season stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamSeasonStatsResponse"
+  /record-timelines/batch:
+    get:
+      summary: Fetch record timelines for many teams
+      operationId: getRecordTimelinesBatch
+      parameters:
+        - in: query
+          name: teamIds
+          required: true
+          schema:
+            type: string
+            description: Comma-separated MLB team ids
+        - in: query
+          name: season
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Record timelines batch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordTimelinesBatchResponse"
+  /games/for-date:
+    get:
+      summary: Games scheduled for date
+      operationId: getGamesForDate
+      parameters:
+        - in: query
+          name: date
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: teamId
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Games for date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GamesForDateResponse"
+  /games/{gamePk}/timeline:
+    get:
+      summary: Inning-by-inning game runs
+      operationId: getGameTimeline
+      parameters:
+        - in: path
+          name: gamePk
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Game timeline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameTimelineResponse"
+  /games/{gamePk}/boxscore:
+    get:
+      summary: Game boxscore
+      operationId: getGameBoxscore
+      parameters:
+        - in: path
+          name: gamePk
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Game boxscore
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameBoxscoreResponse"
+  /games/{gamePk}/statcast:
+    get:
+      summary: Game statcast batted balls
+      operationId: getGameStatcast
+      parameters:
+        - in: path
+          name: gamePk
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Statcast batted-ball events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameStatcastResponse"
+  /games/{gamePk}/statcast/pitches:
+    get:
+      summary: Game statcast pitch rows
+      operationId: getGameStatcastPitches
+      parameters:
+        - in: path
+          name: gamePk
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Statcast pitch rows
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameStatcastPitchesResponse"
+  /players/search:
+    get:
+      summary: Player lookup by names string
+      operationId: searchPlayers
+      parameters:
+        - in: query
+          name: names
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayersSearchResponse"
+  /players/{playerID}/current-team:
+    get:
+      summary: Player current team
+      operationId: getPlayerCurrentTeam
+      parameters:
+        - in: path
+          name: playerID
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Current team id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerCurrentTeamResponse"
+  /players/compare:
+    get:
+      summary: Multi-player compare snapshot
+      operationId: comparePlayers
+      parameters:
+        - in: query
+          name: ids
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: season
+          schema:
+            type: integer
+        - in: query
+          name: group
+          schema:
+            type: string
+            enum: [hitting, pitching]
+        - in: query
+          name: scope
+          schema:
+            type: string
+            enum: [season, career]
+      responses:
+        "200":
+          description: Player compare data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayersRadarResponse"
+  /players/compare/year-by-year:
+    get:
+      summary: Multi-player year-by-year trend
+      operationId: comparePlayersYearByYear
+      parameters:
+        - in: query
+          name: ids
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: group
+          schema:
+            type: string
+            enum: [hitting, pitching]
+        - in: query
+          name: metric
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Year-by-year values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayersYearByYearResponse"
+  /players/compare/game-log:
+    get:
+      summary: Multi-player rolling game log
+      operationId: comparePlayersGameLog
+      parameters:
+        - in: query
+          name: ids
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: season
+          schema:
+            type: integer
+        - in: query
+          name: group
+          schema:
+            type: string
+            enum: [hitting, pitching]
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player game log compare
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayersGameLogResponse"
+  /players/compare/platoon:
+    get:
+      summary: Multi-player platoon split comparison
+      operationId: comparePlayersPlatoon
+      parameters:
+        - in: query
+          name: ids
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: season
+          schema:
+            type: integer
+        - in: query
+          name: group
+          schema:
+            type: string
+            enum: [hitting, pitching]
+      responses:
+        "200":
+          description: Platoon split comparison
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayersPlatoonResponse"
+  /league/season-baseline:
+    get:
+      summary: League baseline for season
+      operationId: getLeagueSeasonBaseline
+      parameters:
+        - in: query
+          name: season
+          schema:
+            type: integer
+        - in: query
+          name: group
+          schema:
+            type: string
+            enum: [hitting, pitching]
+      responses:
+        "200":
+          description: League baseline values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeagueSeasonBaselineResponse"
+components:
+  schemas:
+    Team:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        abbreviation:
+          type: string
+        teamName:
+          type: string
+        leagueId:
+          type: integer
+        leagueName:
+          type: string
+        divisionId:
+          type: integer
+        divisionName:
+          type: string
+        active:
+          type: boolean
+      required:
+        - id
+        - name
+        - abbreviation
+        - teamName
+        - leagueId
+        - leagueName
+        - divisionId
+        - divisionName
+        - active
+    TeamsResponse:
+      type: object
+      properties:
+        teams:
+          type: array
+          items:
+            $ref: "#/components/schemas/Team"
+      required:
+        - teams
+    StandingTeam:
+      type: object
+      properties:
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        wins:
+          type: integer
+        losses:
+          type: integer
+        pct:
+          type: string
+        gamesPlayed:
+          type: integer
+        divisionRank:
+          type: string
+        gamesBack:
+          type: string
+        wildCardGamesBack:
+          type: string
+        runsScored:
+          type: integer
+        runsAllowed:
+          type: integer
+        runDifferential:
+          type: integer
+        streak:
+          type: string
+        homeWins:
+          type: integer
+        homeLosses:
+          type: integer
+        awayWins:
+          type: integer
+        awayLosses:
+          type: integer
+        lastTenWins:
+          type: integer
+        lastTenLosses:
+          type: integer
+      required:
+        - teamId
+        - teamName
+        - wins
+        - losses
+        - pct
+        - gamesPlayed
+        - divisionRank
+        - gamesBack
+    StandingDivision:
+      type: object
+      properties:
+        divisionId:
+          type: integer
+        divisionName:
+          type: string
+        leagueId:
+          type: integer
+        teams:
+          type: array
+          items:
+            $ref: "#/components/schemas/StandingTeam"
+      required:
+        - divisionId
+        - divisionName
+        - leagueId
+        - teams
+    StandingsResponse:
+      type: object
+      properties:
+        season:
+          type: integer
+        divisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/StandingDivision"
+      required:
+        - season
+        - divisions
+    RecordPoint:
+      type: object
+      properties:
+        gameIndex:
+          type: integer
+        officialDate:
+          type: string
+        result:
+          type: string
+        wins:
+          type: integer
+        losses:
+          type: integer
+        pct:
+          type: number
+      required: [gameIndex, officialDate, result, wins, losses, pct]
+    RecordTimelineResponse:
+      type: object
+      properties:
+        teamId:
+          type: integer
+        season:
+          type: integer
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecordPoint"
+        finishedGames:
+          type: integer
+      required: [teamId, season, points, finishedGames]
+    RecordTimelinesBatchResponse:
+      type: object
+      properties:
+        season:
+          type: integer
+        timelines:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecordTimelineResponse"
+      required: [season, timelines]
+    TeamSeasonStatsResponse:
+      type: object
+      properties:
+        season:
+          type: integer
+        teamId:
+          type: integer
+        hitting:
+          $ref: "#/components/schemas/TeamHittingLine"
+        pitching:
+          $ref: "#/components/schemas/TeamPitchingLine"
+        venueSplits:
+          $ref: "#/components/schemas/TeamVenueSplits"
+      required: [season, teamId, hitting, pitching, venueSplits]
+    TeamVenueSplitLine:
+      type: object
+      properties:
+        games:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        runsScored:
+          type: integer
+        runsAllowed:
+          type: integer
+        runsPerGame:
+          type: number
+        runsAllowedPerGame:
+          type: number
+      required: [games, wins, losses, runsScored, runsAllowed]
+    TeamVenueSplits:
+      type: object
+      properties:
+        home:
+          $ref: "#/components/schemas/TeamVenueSplitLine"
+        away:
+          $ref: "#/components/schemas/TeamVenueSplitLine"
+      required: [home, away]
+    TeamHittingLine:
+      type: object
+      properties:
+        gamesPlayed:
+          type: integer
+        runs:
+          type: integer
+        runsPerGame:
+          type: number
+        ops:
+          type: number
+        obp:
+          type: number
+        slg:
+          type: number
+        avg:
+          type: number
+        doubles:
+          type: integer
+        stolenBases:
+          type: integer
+        homeRuns:
+          type: integer
+        homeRunsPerGame:
+          type: number
+        isolatedPower:
+          type: number
+        bbPct:
+          type: number
+        kPct:
+          type: number
+        babip:
+          type: number
+      required: [gamesPlayed, runs, runsPerGame, doubles, stolenBases]
+    TeamPitchingLine:
+      type: object
+      properties:
+        gamesPlayed:
+          type: integer
+        runsAllowed:
+          type: integer
+        runsAllowedPerGame:
+          type: number
+        era:
+          type: number
+        whip:
+          type: number
+        k9:
+          type: number
+        bb9:
+          type: number
+        hr9:
+          type: number
+        h9:
+          type: number
+        kbb:
+          type: number
+      required: [gamesPlayed, runsAllowed, runsAllowedPerGame]
+    InningScore:
+      type: object
+      properties:
+        inning:
+          type: integer
+        homeRuns:
+          type: integer
+        awayRuns:
+          type: integer
+      required: [inning, homeRuns, awayRuns]
+    GameTimelineResponse:
+      type: object
+      properties:
+        gamePk:
+          type: integer
+        homeTeam:
+          type: string
+        awayTeam:
+          type: string
+        homeId:
+          type: integer
+        awayId:
+          type: integer
+        innings:
+          type: array
+          items:
+            $ref: "#/components/schemas/InningScore"
+        homeTotal:
+          type: integer
+        awayTotal:
+          type: integer
+      required: [gamePk, homeTeam, awayTeam, homeId, awayId, innings, homeTotal, awayTotal]
+    TeamBoxSide:
+      type: object
+      properties:
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        totals:
+          $ref: "#/components/schemas/TeamGameTotals"
+        batting:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatterLine"
+        pitching:
+          type: array
+          items:
+            $ref: "#/components/schemas/PitcherLine"
+      required: [teamId, teamName, totals, batting, pitching]
+    TeamGameTotals:
+      type: object
+      properties:
+        runs:
+          type: integer
+        hits:
+          type: integer
+        errors:
+          type: integer
+        leftOnBase:
+          type: integer
+        doubles:
+          type: integer
+        triples:
+          type: integer
+        homeRuns:
+          type: integer
+      required: [runs, hits, errors]
+    BatterLine:
+      type: object
+      properties:
+        playerId:
+          type: integer
+        name:
+          type: string
+        pos:
+          type: string
+        ab:
+          type: integer
+        r:
+          type: integer
+        h:
+          type: integer
+        doubles:
+          type: integer
+        triples:
+          type: integer
+        hr:
+          type: integer
+        rbi:
+          type: integer
+        bb:
+          type: integer
+        so:
+          type: integer
+      required: [playerId, name, pos, ab, r, h, doubles, triples, hr, rbi, bb, so]
+    PitcherLine:
+      type: object
+      properties:
+        playerId:
+          type: integer
+        name:
+          type: string
+        ip:
+          type: string
+        h:
+          type: integer
+        r:
+          type: integer
+        er:
+          type: integer
+        bb:
+          type: integer
+        so:
+          type: integer
+        hr:
+          type: integer
+      required: [playerId, name, ip, h, r, er, bb, so, hr]
+    GameBoxscoreResponse:
+      type: object
+      properties:
+        gamePk:
+          type: integer
+        away:
+          $ref: "#/components/schemas/TeamBoxSide"
+        home:
+          $ref: "#/components/schemas/TeamBoxSide"
+      required: [gamePk, away, home]
+    GameStatcastResponse:
+      type: object
+      properties:
+        gamePk:
+          type: integer
+        venueId:
+          type: integer
+        venueName:
+          type: string
+        battedBalls:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatcastBattedBall"
+      required: [gamePk, battedBalls]
+    StatcastBattedBall:
+      type: object
+      properties:
+        launchSpeed:
+          type: number
+        launchAngle:
+          type: number
+        hcX:
+          type: number
+        hcY:
+          type: number
+        batter:
+          type: integer
+        pitcher:
+          type: integer
+        playerName:
+          type: string
+        events:
+          type: string
+        inningHalf:
+          type: string
+      required: [batter, pitcher, playerName]
+    GameStatcastPitchesResponse:
+      type: object
+      properties:
+        gamePk:
+          type: integer
+        pitches:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatcastPitch"
+      required: [gamePk, pitches]
+    StatcastPitch:
+      type: object
+      properties:
+        plateX:
+          type: number
+        plateZ:
+          type: number
+        pitchName:
+          type: string
+        pitchType:
+          type: string
+        pitcher:
+          type: integer
+        releaseSpeed:
+          type: number
+        inningHalf:
+          type: string
+        szTop:
+          type: number
+        szBot:
+          type: number
+        batterStand:
+          type: string
+          enum: [L, R, S]
+      required: [plateX, plateZ, pitcher]
+    PlayerSearchHit:
+      type: object
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        position:
+          type: string
+        active:
+          type: boolean
+        primaryNumber:
+          type: string
+      required: [id, fullName, active]
+    PlayersSearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        people:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerSearchHit"
+        truncated:
+          type: boolean
+      required: [query, people]
+    PlayerCurrentTeamResponse:
+      type: object
+      properties:
+        playerId:
+          type: integer
+        teamId:
+          type: integer
+      required: [playerId, teamId]
+    PlayersRadarResponse:
+      type: object
+      properties:
+        scope:
+          type: string
+          enum: [season, career]
+        season:
+          type: integer
+        group:
+          type: string
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerStatSnapshot"
+      required: [scope, season, group, players]
+    PlayerStatSnapshot:
+      type: object
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        group:
+          type: string
+        stats:
+          type: object
+          additionalProperties:
+            type: number
+      required: [id, fullName, group, stats]
+    PlayersYearByYearResponse:
+      type: object
+      properties:
+        group:
+          type: string
+        metric:
+          type: string
+          enum: [ops, avg, obp, slg, woba, era, whip, k9, bb9, fip]
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/YearSeriesPlayer"
+        leagueBySeason:
+          type: object
+          additionalProperties:
+            type: number
+      required: [group, metric, players, leagueBySeason]
+    YearSeriesPlayer:
+      type: object
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeasonPoint"
+      required: [id, fullName, points]
+    SeasonPoint:
+      type: object
+      properties:
+        season:
+          type: integer
+        value:
+          type: number
+      required: [season, value]
+    PlayersGameLogResponse:
+      type: object
+      properties:
+        season:
+          type: integer
+        group:
+          type: string
+        metric:
+          type: string
+          enum: [ops, era]
+        limit:
+          type: integer
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/GameLogPlayer"
+        leagueBaseline:
+          type: number
+      required: [season, group, metric, limit, players, leagueBaseline]
+    GameLogPlayer:
+      type: object
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        games:
+          type: array
+          items:
+            $ref: "#/components/schemas/GamePoint"
+      required: [id, fullName, games]
+    GamePoint:
+      type: object
+      properties:
+        date:
+          type: string
+        gamePk:
+          type: integer
+        value:
+          type: number
+      required: [date, gamePk, value]
+    PlayersPlatoonResponse:
+      type: object
+      properties:
+        season:
+          type: integer
+        group:
+          type: string
+        metric:
+          type: string
+          enum: [ops]
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlatoonPlayer"
+      required: [season, group, metric, players]
+    PlatoonPlayer:
+      type: object
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        splits:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlatoonSplitRow"
+      required: [id, fullName, splits]
+    PlatoonSplitRow:
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+        ops:
+          type: number
+        sample:
+          type: integer
+      required: [code, description, ops, sample]
+    LeagueSeasonBaselineResponse:
+      type: object
+      properties:
+        season:
+          type: integer
+        group:
+          type: string
+        ops:
+          type: number
+        era:
+          type: number
+      required: [season, group, ops, era]
+    GameSummary:
+      type: object
+      properties:
+        gamePk:
+          type: integer
+        awayTeam:
+          type: string
+        homeTeam:
+          type: string
+        awayId:
+          type: integer
+        homeId:
+          type: integer
+        status:
+          type: string
+        awayScore:
+          type: integer
+        homeScore:
+          type: integer
+        officialDate:
+          type: string
+      required: [gamePk, awayTeam, homeTeam, awayId, homeId, status, awayScore, homeScore]
+    GamesForDateResponse:
+      type: object
+      properties:
+        date:
+          type: string
+        games:
+          type: array
+          items:
+            $ref: "#/components/schemas/GameSummary"
+      required: [date, games]

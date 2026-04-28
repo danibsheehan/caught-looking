@@ -7,7 +7,7 @@ import {
   buildSprayFenceGeometry,
   expandSprayOutfieldCornerFromHome,
 } from '../../data/parkSprayOutline'
-import type { StatcastBattedBall } from '../../types/api'
+import type { StatcastBattedBall } from '../../types/api.compat'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { inningHalfBucket } from '../../utils/inningHalf'
 import { gameStatcastHalfTeamFills } from '../../utils/gameChartColors'

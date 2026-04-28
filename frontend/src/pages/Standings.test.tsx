@@ -2,7 +2,11 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { RecordTimelinesBatchResponse, StandingsResponse, TeamsResponse } from '../types/api'
+import type {
+  RecordTimelinesBatchResponse,
+  StandingsResponse,
+  TeamsResponse,
+} from '../types/api.compat'
 import Standings from './Standings'
 
 const asyncWait = { timeout: 10_000 }

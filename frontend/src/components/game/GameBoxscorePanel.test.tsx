@@ -5,7 +5,7 @@ import type {
   GameBoxscoreResponse,
   GameStatcastPitchesResponse,
   GameTimelineResponse,
-} from '../../types/api'
+} from '../../types/api.compat'
 import GameBoxscorePanel from './GameBoxscorePanel'
 
 const asyncWait = { timeout: 10_000 }

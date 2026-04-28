@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchPlayersCompare } from '../api/client'
-import type { PlayersRadarResponse } from '../types/api'
+import type { PlayersRadarResponse } from '../types/api.compat'
 
 type Args = {
   playerId1: number | null | undefined

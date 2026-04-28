@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { StatcastPitch } from '../types/api'
+import type { StatcastPitch } from '../types/api.compat'
 import {
   PITCH_COLORS,
   opacityFromUsageShare,

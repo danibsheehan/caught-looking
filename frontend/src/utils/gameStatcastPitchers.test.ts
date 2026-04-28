@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildPitcherStrikeZoneRows } from './gameStatcastPitchers'
-import type { GameBoxscoreResponse, StatcastPitch } from '../types/api'
+import type { GameBoxscoreResponse, StatcastPitch } from '../types/api.compat'
 
 const pitch = (
   pitcher: number,

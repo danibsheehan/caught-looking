@@ -7,7 +7,7 @@ import type {
   GameBoxscoreResponse,
   GameStatcastPitchesResponse,
   GameStatcastResponse,
-} from '../types/api'
+} from '../types/api.compat'
 
 export default function GameDetail() {
   const { gamePk: gamePkParam } = useParams()

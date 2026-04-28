@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchPlayersSearch } from '../../api/client'
-import type { PlayersSearchResponse } from '../../types/api'
+import type { PlayersSearchResponse } from '../../types/api.compat'
 import type { PlayerPick } from './PlayerPicker'
 import PlayerPicker from './PlayerPicker'
 

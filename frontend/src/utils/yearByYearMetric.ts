@@ -1,4 +1,4 @@
-import type { YearByYearMetric } from '../types/api'
+import type { YearByYearMetric } from '../types/api.compat'
 
 export const HITTING_CAREER_METRICS: { value: YearByYearMetric; label: string }[] = [
   { value: 'ops', label: 'OPS' },

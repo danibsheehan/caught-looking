@@ -9,7 +9,7 @@ import type {
   GameStatcastPitchesResponse,
   PitcherLine,
   TeamBoxSide,
-} from '../../types/api'
+} from '../../types/api.compat'
 
 /** MLB IP string to outs (e.g. 9.0 → 27, 0.1 → 1). */
 function ipToOuts(ip: string): number {

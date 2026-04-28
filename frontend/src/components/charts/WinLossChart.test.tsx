@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import type { PropsWithChildren } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import type { RecordTimelineResponse } from '../../types/api'
+import type { RecordTimelineResponse } from '../../types/api.compat'
 import WinLossChart from './WinLossChart'
 
 const api = vi.hoisted(() => ({

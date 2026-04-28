@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { fetchPlayersSearch } from '../../api/client'
-import type { PlayerSearchHit } from '../../types/api'
+import type { PlayerSearchHit } from '../../types/api.compat'
 
 export type PlayerPick = { id: number; fullName: string }
 

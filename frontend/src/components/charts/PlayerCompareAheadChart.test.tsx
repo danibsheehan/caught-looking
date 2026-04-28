@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { PlayersRadarResponse } from '../../types/api'
+import type { PlayersRadarResponse } from '../../types/api.compat'
 import PlayerCompareAheadChart from './PlayerCompareAheadChart'
 
 vi.mock('../../hooks/usePlayerCompareChartColors', () => ({

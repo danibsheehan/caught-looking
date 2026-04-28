@@ -10,7 +10,7 @@ import {
   YAxis,
   type TooltipValueType,
 } from 'recharts'
-import type { PlayersPlatoonResponse } from '../../types/api'
+import type { PlayersPlatoonResponse } from '../../types/api.compat'
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
 import { chartCartesianTick } from '../../utils/rechartsAxis'
 import { buildPlatoonBarData } from '../../utils/playerPlatoonBarRows'

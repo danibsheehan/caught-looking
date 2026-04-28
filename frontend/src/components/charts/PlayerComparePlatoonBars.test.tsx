@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { PlayersPlatoonResponse } from '../../types/api'
+import type { PlayersPlatoonResponse } from '../../types/api.compat'
 import PlayerComparePlatoonBars from './PlayerComparePlatoonBars'
 
 const sample: PlayersPlatoonResponse = {

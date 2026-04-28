@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"caught-looking/backend/apidocs"
 	"caught-looking/backend/config"
 	"caught-looking/backend/handlers"
 	"caught-looking/backend/middleware"
@@ -25,6 +26,11 @@ func newRouter(cfg config.Config, h *handlers.Handlers) http.Handler {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
+	r.Get("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
+		apidocs.OpenAPISpec().ServeHTTP(w, r)
+	})
+	r.Get("/docs", apidocs.SwaggerUI().ServeHTTP)
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.HTTPRateLimit(cfg.RateLimitRequests, cfg.RateLimitWindow))

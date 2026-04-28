@@ -11,7 +11,7 @@ import {
   YAxis,
 } from 'recharts'
 import { fetchRecordTimelinesBatch } from '../../api/client'
-import type { RecordTimelinesBatchResponse } from '../../types/api'
+import type { RecordTimelinesBatchResponse } from '../../types/api.compat'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { obsidianTeamChartPairsRegistryPrimary } from '../../utils/mlbTeamColors'

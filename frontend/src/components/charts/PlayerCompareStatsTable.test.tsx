@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { PlayersRadarResponse } from '../../types/api'
+import type { PlayersRadarResponse } from '../../types/api.compat'
 import PlayerCompareStatsTable from './PlayerCompareStatsTable'
 
 function makeHittingData(): PlayersRadarResponse {

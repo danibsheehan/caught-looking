@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { GamesForDateResponse, TeamsResponse } from '../types/api'
+import type { GamesForDateResponse, TeamsResponse } from '../types/api.compat'
 import GamesSlate from './GamesSlate'
 
 const asyncWait = { timeout: 10_000 }

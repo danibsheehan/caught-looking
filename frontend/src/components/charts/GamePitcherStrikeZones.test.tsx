@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import GamePitcherStrikeZones from './GamePitcherStrikeZones'
-import type { GameBoxscoreResponse, StatcastPitch } from '../../types/api'
+import type { GameBoxscoreResponse, StatcastPitch } from '../../types/api.compat'
 
 const samplePitches: StatcastPitch[] = [
   {

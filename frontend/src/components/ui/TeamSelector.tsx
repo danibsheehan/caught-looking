@@ -1,4 +1,4 @@
-import type { Team } from '../../types/api'
+import type { Team } from '../../types/api.compat'
 
 type TeamSelectorProps = {
   id?: string

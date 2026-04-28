@@ -19,7 +19,7 @@ Routes in the SPA: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk
 | Backend  | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, token-bucket QPS caps for MLB and Savant outbound traffic |
 | Data     | MLB Stats API v1 (JSON); Baseball Savant (CSV) for Statcast-oriented game data |
 
-Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — ESLint, TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests (same-repo workflows), **two** [**cobertura-action**](https://github.com/5monkeys/cobertura-action) comments (frontend and backend tables) are added or updated from the Cobertura reports (fork PRs may not receive them due to token limits; those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
+Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests (same-repo workflows), **two** [**cobertura-action**](https://github.com/5monkeys/cobertura-action) comments (frontend and backend tables) are added or updated from the Cobertura reports (fork PRs may not receive them due to token limits; those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
 
 ## Prerequisites
 
@@ -54,16 +54,27 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 | `npm run preview` | Preview production build |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript `--noEmit` |
+| `npm run api:validate` | Lint OpenAPI (`backend/apidocs/openapi.yaml`) |
+| `npm run api:types` | Generate `src/types/api.generated.ts` from OpenAPI |
+| `npm run api:types:check` | Regenerate + fail if `api.generated.ts` is stale |
 | `npm run test` | Vitest (watch mode) |
 | `npm run test:run` | Vitest once (matches CI) |
 | `npm run test:coverage` | Vitest once with V8 coverage (`frontend/coverage/`, open `index.html`) |
 
 Tests use **Vitest** (jsdom), **Testing Library**, and **`@testing-library/jest-dom`** matchers (`frontend/src/test/setup.ts`). Prefer mocking **`frontend/src/api/client`** in unit tests rather than calling the real API.
 
+### OpenAPI workflow
+
+- Source of truth: `backend/apidocs/openapi.yaml`
+- Validate spec: `cd frontend && npm run api:validate`
+- Regenerate types: `cd frontend && npm run api:types`
+- App-facing type surface: `frontend/src/types/api.compat.ts` (backed by generated `frontend/src/types/api.generated.ts`)
+
 ### Tests from the repo root (`Makefile`)
 
 | Target | Purpose |
 | ------ | ------- |
+| `make check-openapi` | Lint OpenAPI + verify generated frontend API types are current |
 | `make test-backend` | `go test ./...` in `backend/` |
 | `make test-frontend` | `npm run test:run` in `frontend/` |
 | `make cover-backend` | Go coverage summary (`backend/coverage.out`) |
@@ -147,4 +158,4 @@ Makefile    # install, dev, backend, frontend, test-*, cover-*
 
 ## Contributing
 
-Use the [pull request template](.github/pull_request_template.md). Before opening a PR, run the same checks as CI (e.g. `make test-backend`, `make test-frontend`, plus `npm run lint` / `npm run typecheck` / `npm run build` in `frontend/`, and `go vet ./...`, `go test ./...`, `go build` in `backend/`). Keep API changes in sync: **Go JSON** ↔ **`frontend/src/types/api.d.ts`** and **`frontend/src/api/client.ts`**.
+Use the [pull request template](.github/pull_request_template.md). Before opening a PR, run the same checks as CI (e.g. `make test-backend`, `make test-frontend`, plus `npm run api:validate` / `npm run api:types:check` / `npm run lint` / `npm run typecheck` / `npm run build` in `frontend/`, and `go vet ./...`, `go test ./...`, `go build` in `backend/`). Keep API changes in sync: **Go JSON / OpenAPI** ↔ generated frontend types (`frontend/src/types/api.generated.ts`) and `frontend/src/api/client.ts`.

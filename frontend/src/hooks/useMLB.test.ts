@@ -5,7 +5,11 @@ import {
   fetchTeamSeasonStats,
   fetchTeams,
 } from '../api/client'
-import type { StandingsResponse, TeamSeasonStatsResponse, TeamsResponse } from '../types/api'
+import type {
+  StandingsResponse,
+  TeamSeasonStatsResponse,
+  TeamsResponse,
+} from '../types/api.compat'
 import { useStandings, useTeamSeasonStats, useTeams } from './useMLB'
 
 vi.mock('../api/client', () => ({

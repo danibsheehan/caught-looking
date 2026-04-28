@@ -1,5 +1,9 @@
 import { useMemo, type CSSProperties } from 'react'
-import type { TeamSeasonStatsResponse, TeamVenueSplitLine, TeamVenueSplits } from '../../types/api'
+import type {
+  TeamSeasonStatsResponse,
+  TeamVenueSplitLine,
+  TeamVenueSplits,
+} from '../../types/api.compat'
 import { teamSplitChartColors } from '../../utils/mlbTeamColors'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchRecordTimeline } from '../../api/client'
-import type { RecordPoint, RecordTimelineResponse } from '../../types/api'
+import type { RecordPoint, RecordTimelineResponse } from '../../types/api.compat'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
 
 type RecordTimelineStripProps = {

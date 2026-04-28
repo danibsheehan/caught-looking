@@ -9,7 +9,7 @@ import type {
   PlayersGameLogResponse,
   PlayersPlatoonResponse,
   PlayersYearByYearResponse,
-} from '../types/api'
+} from '../types/api.compat'
 import {
   usePlayerCompareGameLog,
   usePlayerComparePlatoon,

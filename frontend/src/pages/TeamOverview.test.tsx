@@ -7,7 +7,7 @@ import type {
   StandingsResponse,
   TeamSeasonStatsResponse,
   TeamsResponse,
-} from '../types/api'
+} from '../types/api.compat'
 import TeamOverview from './TeamOverview'
 
 const asyncWait = { timeout: 10_000 }

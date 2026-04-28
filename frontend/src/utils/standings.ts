@@ -2,7 +2,7 @@ import type {
   StandingDivision,
   StandingTeam,
   TeamsResponse,
-} from '../types/api'
+} from '../types/api.compat'
 
 export function teamLabelMap(
   teamsPayload: TeamsResponse | null | undefined,
