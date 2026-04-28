@@ -17,7 +17,7 @@ import {
   usePlayerCompareYearByYear,
 } from '../hooks/usePlayerCompareTrends'
 import { usePlayersCompare } from '../hooks/usePlayersCompare'
-import type { YearByYearMetric } from '../types/api'
+import type { YearByYearMetric } from '../types/api.compat'
 import {
   adjustChartColorForSurface,
   CHART_INK_MIN_CONTRAST,

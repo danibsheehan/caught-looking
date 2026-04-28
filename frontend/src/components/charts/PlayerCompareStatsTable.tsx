@@ -1,4 +1,4 @@
-import type { PlayersRadarResponse } from '../../types/api'
+import type { PlayersRadarResponse } from '../../types/api.compat'
 
 function slashStat(n: number): string {
   const s = n.toFixed(3)

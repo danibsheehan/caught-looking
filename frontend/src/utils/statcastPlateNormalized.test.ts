@@ -9,7 +9,7 @@ import {
   projNormToSvgStrikeSquare,
   resolveStrikeZoneFeet,
 } from './statcastPlateNormalized'
-import type { StatcastPitch } from '../types/api'
+import type { StatcastPitch } from '../types/api.compat'
 
 const pitch = (overrides: Partial<StatcastPitch>): StatcastPitch => ({
   plateX: 0,

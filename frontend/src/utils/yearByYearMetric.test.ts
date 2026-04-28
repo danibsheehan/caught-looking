@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { YearByYearMetric } from '../types/api'
+import type { YearByYearMetric } from '../types/api.compat'
 import {
   formatYearByYearAxisValue,
   formatYearByYearTooltipValue,

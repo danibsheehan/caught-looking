@@ -1,4 +1,4 @@
-import type { GameBoxscoreResponse, StatcastPitch } from '../types/api'
+import type { GameBoxscoreResponse, StatcastPitch } from '../types/api.compat'
 
 export type PitcherStatcastRow = {
   id: number

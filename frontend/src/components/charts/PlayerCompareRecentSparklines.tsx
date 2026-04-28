@@ -10,7 +10,7 @@ import {
   YAxis,
   type TooltipValueType,
 } from 'recharts'
-import type { GameLogPlayer, PlayersGameLogResponse } from '../../types/api'
+import type { GameLogPlayer, PlayersGameLogResponse } from '../../types/api.compat'
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
 import { chartCartesianTick } from '../../utils/rechartsAxis'
 import { rollingTrailingMean } from '../../utils/rollingMean'

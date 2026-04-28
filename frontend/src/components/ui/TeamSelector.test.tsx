@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import type { Team } from '../../types/api'
+import type { Team } from '../../types/api.compat'
 import TeamSelector from './TeamSelector'
 
 function team(partial: Partial<Team> & Pick<Team, 'id' | 'abbreviation' | 'teamName'>): Team {

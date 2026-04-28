@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { PlayersRadarResponse } from '../../types/api'
+import type { PlayersRadarResponse } from '../../types/api.compat'
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
 import {
   buildCompareMetricRows,

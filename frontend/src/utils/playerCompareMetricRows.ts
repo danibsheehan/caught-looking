@@ -1,4 +1,4 @@
-import type { PlayersRadarResponse } from '../types/api'
+import type { PlayersRadarResponse } from '../types/api.compat'
 
 export type CompareAxis = {
   key: string

@@ -17,7 +17,7 @@ import type {
   RecordTimelinesBatchResponse,
   StandingsResponse,
   TeamsResponse,
-} from './types/api'
+} from './types/api.compat'
 
 /** CI + coverage runs can exceed Testing Library’s default 1000ms wait. */
 const asyncWait = { timeout: 10_000 }

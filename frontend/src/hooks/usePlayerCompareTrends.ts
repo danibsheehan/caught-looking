@@ -9,7 +9,7 @@ import type {
   PlayersPlatoonResponse,
   PlayersYearByYearResponse,
   YearByYearMetric,
-} from '../types/api'
+} from '../types/api.compat'
 
 export function usePlayerCompareYearByYear(
   ids: string,

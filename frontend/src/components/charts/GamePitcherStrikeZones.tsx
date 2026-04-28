@@ -1,5 +1,5 @@
 import { useCallback, useId, useMemo, useState } from 'react'
-import type { GameBoxscoreResponse, StatcastPitch } from '../../types/api'
+import type { GameBoxscoreResponse, StatcastPitch } from '../../types/api.compat'
 import {
   buildPitcherStrikeZoneRows,
   type PitcherStatcastRow,

@@ -10,7 +10,7 @@ import {
   YAxis,
   type TooltipValueType,
 } from 'recharts'
-import type { PlayersYearByYearResponse } from '../../types/api'
+import type { PlayersYearByYearResponse } from '../../types/api.compat'
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
 import {
   formatYearByYearAxisValue,

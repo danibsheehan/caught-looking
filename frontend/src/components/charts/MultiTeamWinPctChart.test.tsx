@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { RecordTimelinesBatchResponse } from '../../types/api'
+import type { RecordTimelinesBatchResponse } from '../../types/api.compat'
 import MultiTeamWinPctChart from './MultiTeamWinPctChart'
 
 const asyncWait = { timeout: 10_000 }

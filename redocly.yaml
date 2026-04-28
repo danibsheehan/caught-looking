@@ -1,0 +1,8 @@
+extends:
+  - recommended
+
+rules:
+  # Public read-only API has no auth today.
+  security-defined: off
+  # Internal project; license metadata is not required.
+  info-license: off

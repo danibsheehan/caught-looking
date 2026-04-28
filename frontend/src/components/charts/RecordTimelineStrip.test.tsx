@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { RecordTimelineResponse } from '../../types/api'
+import type { RecordTimelineResponse } from '../../types/api.compat'
 import RecordTimelineStrip from './RecordTimelineStrip'
 
 const api = vi.hoisted(() => ({

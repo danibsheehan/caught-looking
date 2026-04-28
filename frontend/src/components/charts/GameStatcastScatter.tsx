@@ -12,7 +12,7 @@ import {
   YAxis,
   type TooltipContentProps,
 } from 'recharts'
-import type { StatcastBattedBall } from '../../types/api'
+import type { StatcastBattedBall } from '../../types/api.compat'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { buildScatterTooltipRows } from '../../utils/statcastDisplay'
 import { inningHalfBucket } from '../../utils/inningHalf'

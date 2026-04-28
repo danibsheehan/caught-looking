@@ -10,7 +10,7 @@ import {
   YAxis,
 } from 'recharts'
 import { fetchRecordTimeline } from '../../api/client'
-import type { RecordTimelineResponse } from '../../types/api'
+import type { RecordTimelineResponse } from '../../types/api.compat'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { chartCartesianTick } from '../../utils/rechartsAxis'

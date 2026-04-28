@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
-import type { PlayersRadarResponse } from '../../types/api'
+import type { PlayersRadarResponse } from '../../types/api.compat'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
 import { buildCompareMetricRows } from '../../utils/playerCompareMetricRows'

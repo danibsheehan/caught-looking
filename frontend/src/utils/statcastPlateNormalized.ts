@@ -1,4 +1,4 @@
-import type { StatcastPitch } from '../types/api'
+import type { StatcastPitch } from '../types/api.compat'
 
 /** Plate half-width in feet (17 in / 2). */
 export const PLATE_HALF_FT = 17 / 24

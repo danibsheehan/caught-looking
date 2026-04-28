@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { PlayersGameLogResponse } from '../../types/api'
+import type { PlayersGameLogResponse } from '../../types/api.compat'
 import PlayerCompareRecentSparklines from './PlayerCompareRecentSparklines'
 
 const rollingTrailingMeanMock = vi.fn(

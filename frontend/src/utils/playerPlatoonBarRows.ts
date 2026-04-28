@@ -1,4 +1,4 @@
-import type { PlatoonPlayer } from '../types/api'
+import type { PlatoonPlayer } from '../types/api.compat'
 
 export type PlatoonBarDatum = {
   code: string

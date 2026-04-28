@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { PlayersRadarResponse } from '../types/api'
+import type { PlayersRadarResponse } from '../types/api.compat'
 import {
   buildCompareMetricRows,
   HITTING_COMPARE_AXES,

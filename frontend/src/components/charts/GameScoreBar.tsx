@@ -10,7 +10,7 @@ import {
   YAxis,
 } from 'recharts'
 import { fetchGameTimeline } from '../../api/client'
-import type { GameTimelineResponse } from '../../types/api'
+import type { GameTimelineResponse } from '../../types/api.compat'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { gameInningBarFills } from '../../utils/gameChartColors'

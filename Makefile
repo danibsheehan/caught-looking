@@ -1,7 +1,7 @@
 # Repository root for recipes (run from here, or: make -C /path/to/caught-looking dev).
 PROJECT_ROOT := $(CURDIR)
 
-.PHONY: dev backend frontend install test-backend test-frontend cover-backend cover-backend-html cover-frontend
+.PHONY: dev backend frontend install check-openapi test-backend test-frontend cover-backend cover-backend-html cover-frontend
 
 ## dev: run API (:8080) and Vite dev server together (one terminal)
 dev:
@@ -19,6 +19,11 @@ frontend:
 install:
 	cd "$(PROJECT_ROOT)/backend" && go mod download
 	cd "$(PROJECT_ROOT)/frontend" && npm install
+
+## check-openapi: lint OpenAPI and ensure generated frontend types are up to date
+check-openapi:
+	cd "$(PROJECT_ROOT)/frontend" && npm run api:validate
+	cd "$(PROJECT_ROOT)/frontend" && npm run api:types:check
 
 ## test-backend: run all Go unit tests (backend/)
 test-backend:

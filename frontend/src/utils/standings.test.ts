@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { StandingDivision, TeamsResponse } from '../types/api'
+import type { StandingDivision, TeamsResponse } from '../types/api.compat'
 import {
   divisionIndexForTeam,
   sortStandingTeams,

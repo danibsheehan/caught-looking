@@ -1,4 +1,4 @@
-import type { StatcastPitch } from '../types/api'
+import type { StatcastPitch } from '../types/api.compat'
 
 /** MLB / Savant pitch-type code → scatter color (strike zone & similar charts). */
 export const PITCH_COLORS: Record<string, string> = {

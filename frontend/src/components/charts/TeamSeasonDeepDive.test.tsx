@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { TeamSeasonStatsResponse } from '../../types/api'
+import type { TeamSeasonStatsResponse } from '../../types/api.compat'
 import TeamSeasonDeepDive from './TeamSeasonDeepDive'
 
 function makeStats(overrides: Partial<TeamSeasonStatsResponse> = {}): TeamSeasonStatsResponse {
@@ -86,9 +86,9 @@ describe('TeamSeasonDeepDive', () => {
       hitting: {
         ...base.hitting,
         ops: undefined,
-        doubles: undefined,
+        doubles: 0,
         homeRuns: undefined,
-        stolenBases: undefined,
+        stolenBases: 0,
       },
       pitching: { ...base.pitching, gamesPlayed: 0, runsAllowedPerGame: 0, runsAllowed: 0 },
       venueSplits: {
