@@ -8,6 +8,7 @@ Web app for exploring **MLB statistics** with charts and comparisons. The UI tal
 - **Teams** — team overview with season stats and record timelines.
 - **Players** — side-by-side player comparison (radar, trends, game log) with hitting/pitching views.
 - **Games** — date-based slate and **per-game** detail (timeline, boxscore-style views, Statcast-backed panels where data is available).
+- **API docs (OpenAPI/Redoc)** — [https://docs.caught-looking.com/](https://docs.caught-looking.com/)
 
 Routes in the SPA: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk` (default landing: `/standings`).
 
@@ -66,6 +67,7 @@ Tests use **Vitest** (jsdom), **Testing Library**, and **`@testing-library/jest-
 ### OpenAPI workflow
 
 - Source of truth: `backend/apidocs/openapi.yaml`
+- Deployed docs (Redoc): [https://docs.caught-looking.com/](https://docs.caught-looking.com/)
 - Validate spec: `cd frontend && npm run api:validate`
 - Regenerate types: `cd frontend && npm run api:types`
 - App-facing type surface: `frontend/src/types/api.compat.ts` (backed by generated `frontend/src/types/api.generated.ts`)
