@@ -69,6 +69,7 @@ Tests use **Vitest** (jsdom), **Testing Library**, and **`@testing-library/jest-
 - Validate spec: `cd frontend && npm run api:validate`
 - Regenerate types: `cd frontend && npm run api:types`
 - App-facing type surface: `frontend/src/types/api.compat.ts` (backed by generated `frontend/src/types/api.generated.ts`)
+- GitHub Pages deploy: `.github/workflows/openapi-pages.yml` publishes a static Redoc site from `main` when `backend/apidocs/openapi.yaml` changes.
 
 ### Tests from the repo root (`Makefile`)
 
