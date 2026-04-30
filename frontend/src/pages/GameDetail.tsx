@@ -2,13 +2,7 @@ import { useMemo } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { GameStatcastScatter, GameStatcastSpray } from '../components/charts'
 import GameBoxscorePanel from '../components/game/GameBoxscorePanel'
-import { fetchGameBoxscore, fetchGameStatcast, fetchGameStatcastPitches } from '../api/client'
-import { useAsyncResource } from '../hooks/useAsyncResource'
-import type {
-  GameBoxscoreResponse,
-  GameStatcastPitchesResponse,
-  GameStatcastResponse,
-} from '../types/api.compat'
+import { useGameDetailData } from '../hooks/useGameDetailData'
 
 export default function GameDetail() {
   const { gamePk: gamePkParam } = useParams()
@@ -20,58 +14,7 @@ export default function GameDetail() {
     return Number.isFinite(n) && n > 0 ? n : null
   }, [gamePkParam])
 
-  const pkReady = gamePk != null
-
-  const {
-    data: box,
-    error: boxError,
-    loading: boxLoading,
-  } = useAsyncResource<GameBoxscoreResponse>(
-    {
-      enabled: pkReady,
-      initialPending: true,
-      clearDataBeforeFetch: true,
-      fetch: () => {
-        if (gamePk == null) throw new Error('GameDetail: gamePk required')
-        return fetchGameBoxscore(gamePk)
-      },
-    },
-    [gamePk],
-  )
-
-  const {
-    data: statcast,
-    error: statcastError,
-    loading: statcastLoading,
-  } = useAsyncResource<GameStatcastResponse>(
-    {
-      enabled: pkReady,
-      initialPending: true,
-      clearDataBeforeFetch: true,
-      fetch: () => {
-        if (gamePk == null) throw new Error('GameDetail: gamePk required')
-        return fetchGameStatcast(gamePk)
-      },
-    },
-    [gamePk],
-  )
-
-  const {
-    data: pitchesData,
-    error: pitchesError,
-    loading: pitchesLoading,
-  } = useAsyncResource<GameStatcastPitchesResponse>(
-    {
-      enabled: pkReady,
-      initialPending: true,
-      clearDataBeforeFetch: true,
-      fetch: () => {
-        if (gamePk == null) throw new Error('GameDetail: gamePk required')
-        return fetchGameStatcastPitches(gamePk)
-      },
-    },
-    [gamePk],
-  )
+  const { box, statcast, pitches } = useGameDetailData(gamePk)
 
   const backTo = useMemo(() => {
     if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -101,20 +44,20 @@ export default function GameDetail() {
         </div>
       </header>
 
-      {boxLoading ? (
+      {box.loading ? (
         <p className="muted">Loading box score…</p>
-      ) : boxError ? (
+      ) : box.error ? (
         <p className="error" role="alert">
-          {boxError.message}
+          {box.error.message}
         </p>
-      ) : box ? (
+      ) : box.data ? (
         <GameBoxscorePanel
-          data={box}
+          data={box.data}
           gamePk={gamePk}
           pitchLocation={{
-            loading: pitchesLoading,
-            error: pitchesError,
-            data: pitchesData,
+            loading: pitches.loading,
+            error: pitches.error,
+            data: pitches.data,
           }}
         />
       ) : null}
@@ -126,27 +69,27 @@ export default function GameDetail() {
           same batted balls for exit velocity and launch angle. Team colors for away vs home batting
           match the runs-by-inning chart (circles vs diamonds repeat the away/home split).
         </p>
-        {statcastLoading ? (
+        {statcast.loading ? (
           <p className="muted">Loading batted-ball data…</p>
-        ) : statcastError ? (
+        ) : statcast.error ? (
           <p className="error" role="alert">
-            {statcastError.message}
+            {statcast.error.message}
           </p>
-        ) : statcast ? (
+        ) : statcast.data ? (
           <>
             <h3 className="game-statcast__subhead">Spray (field view)</h3>
             <GameStatcastSpray
-              battedBalls={statcast.battedBalls}
-              venueId={statcast.venueId}
-              venueName={statcast.venueName}
-              awayTeamId={box?.away.teamId}
-              homeTeamId={box?.home.teamId}
+              battedBalls={statcast.data.battedBalls}
+              venueId={statcast.data.venueId}
+              venueName={statcast.data.venueName}
+              awayTeamId={box.data?.away.teamId}
+              homeTeamId={box.data?.home.teamId}
             />
             <h3 className="game-statcast__subhead">How each batted ball was struck</h3>
             <GameStatcastScatter
-              battedBalls={statcast.battedBalls}
-              awayTeamId={box?.away.teamId}
-              homeTeamId={box?.home.teamId}
+              battedBalls={statcast.data.battedBalls}
+              awayTeamId={box.data?.away.teamId}
+              homeTeamId={box.data?.home.teamId}
             />
           </>
         ) : null}
