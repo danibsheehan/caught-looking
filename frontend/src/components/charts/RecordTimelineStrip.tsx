@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
 import { fetchRecordTimeline } from '../../api/client'
-import type { RecordPoint, RecordTimelineResponse } from '../../types/api.compat'
+import type { RecordPoint } from '../../types/api.compat'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
+import { useAsyncResource } from '../../hooks/useAsyncResource'
 
 type RecordTimelineStripProps = {
   teamId: number | null | undefined
@@ -12,34 +12,16 @@ export default function RecordTimelineStrip({
   teamId,
   season,
 }: RecordTimelineStripProps) {
-  const [data, setData] = useState<RecordTimelineResponse | null>(null)
-  const [error, setError] = useState<Error | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (teamId == null || season == null) return
-    let cancelled = false
-    const t = setTimeout(() => {
-      if (cancelled) return
-      setLoading(true)
-      setError(null)
-      fetchRecordTimeline(teamId, { season })
-        .then((d) => {
-          if (!cancelled) setData(d)
-        })
-        .catch((e) => {
-          if (!cancelled)
-            setError(e instanceof Error ? e : new Error(String(e)))
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 0)
-    return () => {
-      cancelled = true
-      clearTimeout(t)
-    }
-  }, [teamId, season])
+  const timelineEnabled = teamId != null && season != null
+  const { data, error, loading } = useAsyncResource(
+    {
+      enabled: timelineEnabled,
+      initialPending: false,
+      resetOnDisable: false,
+      fetch: () => fetchRecordTimeline(teamId!, { season: season! }),
+    },
+    [teamId, season],
+  )
 
   if (teamId == null || season == null) {
     return (

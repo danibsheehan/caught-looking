@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   Bar,
   BarChart,
@@ -10,8 +10,8 @@ import {
   YAxis,
 } from 'recharts'
 import { fetchGameTimeline } from '../../api/client'
-import type { GameTimelineResponse } from '../../types/api.compat'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
+import { useAsyncResource } from '../../hooks/useAsyncResource'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { gameInningBarFills } from '../../utils/gameChartColors'
 import { chartCartesianTick } from '../../utils/rechartsAxis'
@@ -27,9 +27,6 @@ export default function GameScoreBar({
   showCaption = true,
 }: GameScoreBarProps) {
   const surfaceHex = useChartSurfaceHex()
-  const [data, setData] = useState<GameTimelineResponse | null>(null)
-  const [error, setError] = useState<Error | null>(null)
-  const [loading, setLoading] = useState(false)
 
   const pk =
     gamePk === '' || gamePk == null
@@ -38,32 +35,16 @@ export default function GameScoreBar({
         ? Number(gamePk)
         : gamePk
 
-  useEffect(() => {
-    if (pk == null || !Number.isFinite(pk) || pk <= 0) {
-      return
-    }
-    let cancelled = false
-    const t = setTimeout(() => {
-      if (cancelled) return
-      setLoading(true)
-      setError(null)
-      fetchGameTimeline(pk)
-        .then((d) => {
-          if (!cancelled) setData(d)
-        })
-        .catch((e) => {
-          if (!cancelled)
-            setError(e instanceof Error ? e : new Error(String(e)))
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 0)
-    return () => {
-      cancelled = true
-      clearTimeout(t)
-    }
-  }, [pk])
+  const timelineEnabled = pk != null && Number.isFinite(pk) && pk > 0
+  const { data, error, loading } = useAsyncResource(
+    {
+      enabled: timelineEnabled,
+      initialPending: false,
+      resetOnDisable: false,
+      fetch: () => fetchGameTimeline(pk as number),
+    },
+    [pk],
+  )
 
   const rows = useMemo(() => {
     if (!data?.innings?.length) return []

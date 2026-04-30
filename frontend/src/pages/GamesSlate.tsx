@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import GameListSkeleton from '../components/skeletons/GameListSkeleton'
 import { TeamSelector } from '../components/ui'
 import { fetchGamesForDate } from '../api/client'
+import { useAsyncResource } from '../hooks/useAsyncResource'
 import { useTeams } from '../hooks/useMLB'
-import type { GameSummary } from '../types/api.compat'
+import type { GameSummary, GamesForDateResponse } from '../types/api.compat'
 
 function localISODate(d = new Date()): string {
   const y = d.getFullYear()
@@ -50,39 +51,23 @@ export default function GamesSlate() {
   const teams = useMemo(() => teamsData?.teams ?? [], [teamsData])
 
   const [teamId, setTeamId] = useState<number | ''>('')
-  const [games, setGames] = useState<GameSummary[]>([])
-  const [loadError, setLoadError] = useState<string | null>(null)
-  const [loadingList, setLoadingList] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    const t = setTimeout(() => {
-      setLoadingList(true)
-      setLoadError(null)
-      fetchGamesForDate({
-        date,
-        teamId:
-          teamId === '' || teamId === undefined
-            ? undefined
-            : Number(teamId),
-      })
-        .then((res) => {
-          if (cancelled) return
-          setGames(res.games ?? [])
-        })
-        .catch((e) => {
-          if (!cancelled)
-            setLoadError(e instanceof Error ? e.message : String(e))
-        })
-        .finally(() => {
-          if (!cancelled) setLoadingList(false)
-        })
-    }, 0)
-    return () => {
-      cancelled = true
-      clearTimeout(t)
-    }
-  }, [date, teamId])
+  const { data, error, loading: loadingList } = useAsyncResource<GamesForDateResponse>(
+    {
+      fetch: () =>
+        fetchGamesForDate({
+          date,
+          teamId:
+            teamId === '' || teamId === undefined
+              ? undefined
+              : Number(teamId),
+        }),
+      initialPending: false,
+    },
+    [date, teamId],
+  )
+
+  const games = useMemo(() => data?.games ?? [], [data])
 
   function onDateChange(next: string) {
     setSearchParams(
@@ -128,9 +113,9 @@ export default function GamesSlate() {
         </div>
       </header>
 
-      {loadError ? (
+      {error ? (
         <p className="error" role="alert">
-          {loadError}
+          {error.message}
         </p>
       ) : null}
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Legend,
@@ -11,8 +11,8 @@ import {
   YAxis,
 } from 'recharts'
 import { fetchRecordTimelinesBatch } from '../../api/client'
-import type { RecordTimelinesBatchResponse } from '../../types/api.compat'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
+import { useAsyncResource } from '../../hooks/useAsyncResource'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { obsidianTeamChartPairsRegistryPrimary } from '../../utils/mlbTeamColors'
 import { chartCartesianTick } from '../../utils/rechartsAxis'
@@ -129,9 +129,6 @@ export default function MultiTeamWinPctChart({
   heroTeamIds = [],
 }: MultiTeamWinPctChartProps) {
   const surfaceHex = useChartSurfaceHex()
-  const [payload, setPayload] = useState<RecordTimelinesBatchResponse | null>(null)
-  const [error, setError] = useState<Error | null>(null)
-  const [loading, setLoading] = useState(false)
   const [hoveredTeamId, setHoveredTeamId] = useState<number | null>(null)
 
   const orderedIds = useMemo(() => {
@@ -145,6 +142,21 @@ export default function MultiTeamWinPctChart({
     }
     return out
   }, [teamIds])
+
+  const batchEnabled = orderedIds.length > 0 && season != null
+  const { data: payload, error, loading } = useAsyncResource(
+    {
+      enabled: batchEnabled,
+      initialPending: false,
+      resetOnDisable: false,
+      fetch: () =>
+        fetchRecordTimelinesBatch({
+          teamIds: orderedIds,
+          season: season as number,
+        }),
+    },
+    [orderedIds, season],
+  )
 
   const pairs = useMemo(
     () => obsidianTeamChartPairsRegistryPrimary(orderedIds, surfaceHex),
@@ -171,33 +183,6 @@ export default function MultiTeamWinPctChart({
     }
     return m
   }, [payload])
-
-  useEffect(() => {
-    if (orderedIds.length === 0 || season == null) {
-      return
-    }
-    let cancelled = false
-    const t = setTimeout(() => {
-      if (cancelled) return
-      setLoading(true)
-      setError(null)
-      fetchRecordTimelinesBatch({ teamIds: orderedIds, season })
-        .then((d) => {
-          if (!cancelled) setPayload(d)
-        })
-        .catch((e) => {
-          if (!cancelled)
-            setError(e instanceof Error ? e : new Error(String(e)))
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 0)
-    return () => {
-      cancelled = true
-      clearTimeout(t)
-    }
-  }, [orderedIds, season])
 
   const heroSet = useMemo(() => new Set(heroTeamIds), [heroTeamIds])
 
