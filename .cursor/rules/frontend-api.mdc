@@ -8,7 +8,7 @@ alwaysApply: false
 
 - **Base URL**: use `API_BASE` / `VITE_API_BASE` as already documented in `client.ts` — no hard-coded origins in new helpers.
 - **Core helper**: use **`apiGet<T>(path)`** for JSON GETs. Paths are relative to `API_BASE`, start with `/` (e.g. `/standings`, `/teams/42/season-stats`).
-- **New endpoints**: add a **`fetch…`** function that builds `URLSearchParams` for query strings, calls `apiGet<ResponseType>(...)`, and imports **`Query` / `Response` types from `../types/api`**. Export the function; add or adjust types in **`frontend/src/types/api.d.ts`** to match the Go handler’s JSON.
+- **New endpoints**: update **`backend/apidocs/openapi.yaml`**, then from `frontend/` run **`npm run api:types`** and commit **`api.generated.ts`** if it changed. Extend **`frontend/src/types/api.compat.ts`** for re-exports / query aliases. Add a **`fetch…`** function that builds `URLSearchParams`, calls **`apiGet<…>(...)`**, and imports types from **`../types/api.compat`**. Run **`make check-openapi`** before PR.
 - **Naming**: `fetchStandings`, `fetchTeams`, `fetchGameTimeline` — verb + resource; align path segments with **`backend`** route registration.
 - **Validation**: throw `Error` with a clear message for impossible client-side args (see `fetchRecordTimelinesBatch`). Let `apiGet` throw on non-OK HTTP.
 

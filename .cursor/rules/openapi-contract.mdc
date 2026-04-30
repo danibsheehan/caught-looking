@@ -1,0 +1,14 @@
+---
+description: OpenAPI spec — contract with Go JSON handlers and generated TS types
+globs: backend/apidocs/openapi.yaml,backend/handlers/**/*.go,frontend/src/types/api.compat.ts,frontend/src/api/**/*.ts
+alwaysApply: false
+---
+
+# OpenAPI contract
+
+- **Source of truth for HTTP shapes**: `backend/apidocs/openapi.yaml` (served at `/openapi.yaml`, Redoc on GitHub Pages from `main` when the spec changes).
+- **When you change** a handler’s JSON (models, field names, status codes, paths, query params): update **`openapi.yaml`** in the **same change** so docs, lint, and typegen stay accurate.
+- **Generated types**: `frontend/src/types/api.generated.ts` — do not hand-edit. From `frontend/`: `npm run api:types`. CI runs `npm run api:types:check` (must be clean `git diff` after regen).
+- **Compat layer**: `frontend/src/types/api.compat.ts` — re-exports schema types and `QueryOf<operations['…']>` helpers; add exports here when the app needs a stable name or a query shape OpenAPI cannot express cleanly.
+- **Lint**: from `frontend/`, `npm run api:validate` (Redocly, config in repo root `redocly.yaml`). From repo root: **`make check-openapi`** runs validate + types drift check.
+- **Go ↔ YAML**: JSON struct tags on **`models/`** types should match property names in the spec; paths and operationIds should match how **`frontend/src/api/client.ts`** calls the API.

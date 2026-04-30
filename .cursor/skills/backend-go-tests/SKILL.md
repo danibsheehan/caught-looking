@@ -36,7 +36,10 @@ description: >-
 5. **MLB response bodies**
    - Use **minimal valid JSON** shaped like the real API: `stats` → `splits`, `schedule` → `dates` → `games`, etc. Reuse strings from an existing test in the same area when possible (e.g. `scheduleOneFinalGame` for timelines).
 
-6. **Commands**
+6. **OpenAPI**
+   - If the change under test alters **routes, query params, or JSON** the API exposes, update **`backend/apidocs/openapi.yaml`** in the same PR and run **`make check-openapi`** — see **`.cursor/skills/openapi-maintain/SKILL.md`**.
+
+7. **Commands**
    - From repo: `make test-backend` or `cd backend && go test ./... -count=1`.
    - Before finishing: **`go test ./... -race`** and **`go vet ./...`** in `backend/` (matches CI).
 

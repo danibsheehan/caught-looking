@@ -8,7 +8,7 @@ alwaysApply: false
 
 - **Router**: **chi** — register routes in `main.go` (or the established pattern there). Group related routes; keep path prefixes consistent with **`frontend/src/api/client.ts`** paths (`/api` may be stripped by the proxy — match how existing routes are mounted).
 - **Handlers**: live in **`handlers/`**, depend on **`Handlers`** from `handlers.go` for `cfg`, `cache`, `mlb`. Return JSON with appropriate status codes; reuse shared error handling patterns from existing handlers.
-- **Models**: request/response structs in **`models/`** — use JSON tags that match **`frontend/src/types/api.d.ts`** field names.
+- **Models**: request/response structs in **`models/`** — JSON field names must match **`backend/apidocs/openapi.yaml`** component schemas (they drive **`frontend/src/types/api.generated.ts`**). When the JSON contract changes, update the spec in the same PR; see **`.cursor/skills/openapi-maintain/SKILL.md`**.
 - **External MLB data**: use **`services.MLBClient`** and caching (`TTLCache`) rather than ad-hoc HTTP in handlers.
 - **Middleware**: CORS and logging live under **`middleware/`** — extend there if you add cross-cutting behavior.
 - **Tests**: follow **`.cursor/skills/backend-go-tests/SKILL.md`** for httptest MLB fakes, chi routes, and shared `handlers` test helpers.
