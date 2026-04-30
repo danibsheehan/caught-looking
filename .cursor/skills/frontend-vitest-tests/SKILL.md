@@ -34,7 +34,7 @@ description: >-
    - Do **not** call the real backend in unit tests; assert **URLs / params** via mock call args (see existing `client.test.ts`).
 
 3. **Hooks (`renderHook`)**
-   - Mock client functions; resolve with minimal typed payloads from **`frontend/src/types/api.d.ts`**.
+   - Mock client functions; resolve with minimal typed payloads from **`frontend/src/types/api.compat`** (OpenAPI-derived shapes).
    - Effects that use **`setTimeout(0)`** or debounces: **`waitFor` on `result.current.data` / `error` / mock calls**, not only `loading === false`, because some hooks start with `loading: false` and race.
 
 4. **UI components**

@@ -1,11 +1,12 @@
 ---
-description: OpenAPI-shaped TypeScript types for the JSON API
-globs: frontend/src/types/api.d.ts
+description: Generated OpenAPI TypeScript and the api.compat re-export layer
+globs: frontend/src/types/api.generated.ts,frontend/src/types/api.compat.ts
 alwaysApply: false
 ---
 
-# API types (`api.d.ts`)
+# API types (`api.generated.ts` + `api.compat.ts`)
 
-- **Source of truth**: shapes should match what **`backend` handlers serialize** (field names, nesting, optional fields). If the Go struct or JSON tags change, update these types in the same change.
-- **Naming**: `*Response` for payloads, `*Query` for query parameters. Reuse shared pieces (e.g. team/player summaries) instead of duplicating inline object types across endpoints.
-- **Exports**: use `export type` / `export interface` consistently with the rest of the file. Keep types close to how they appear in JSON (camelCase in TS for typical JSON).
+- **Contract source of truth**: **`backend/apidocs/openapi.yaml`**. Handler JSON must match the spec; CI runs Redocly lint and **`api:types:check`** on the generated file.
+- **`api.generated.ts`**: produced by **`openapi-typescript`** — never edit by hand. Regenerate from `frontend/` with **`npm run api:types`** and commit when the spec changes.
+- **`api.compat.ts`**: hand-maintained — re-exports `components['schemas']['…']`, derives query types from `operations['…']` via `QueryOf`, and holds any batch/query helpers the spec models awkwardly. Prefer extending this file over duplicating shapes in components or tests.
+- **Naming**: keep stable app-facing names here (`Team`, `StandingsQuery`, etc.); underlying OpenAPI `operationId` / schema names stay in the YAML.
