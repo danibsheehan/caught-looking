@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -10,8 +10,8 @@ import {
   YAxis,
 } from 'recharts'
 import { fetchRecordTimeline } from '../../api/client'
-import type { RecordTimelineResponse } from '../../types/api.compat'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
+import { useAsyncResource } from '../../hooks/useAsyncResource'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { chartCartesianTick } from '../../utils/rechartsAxis'
 import { obsidianTeamChartPairs } from '../../utils/mlbTeamColors'
@@ -23,36 +23,16 @@ type WinLossChartProps = {
 
 export default function WinLossChart({ teamId, season }: WinLossChartProps) {
   const surfaceHex = useChartSurfaceHex()
-  const [data, setData] = useState<RecordTimelineResponse | null>(null)
-  const [error, setError] = useState<Error | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (teamId == null || season == null) {
-      return
-    }
-    let cancelled = false
-    const t = setTimeout(() => {
-      if (cancelled) return
-      setLoading(true)
-      setError(null)
-      fetchRecordTimeline(teamId, { season })
-        .then((d) => {
-          if (!cancelled) setData(d)
-        })
-        .catch((e) => {
-          if (!cancelled)
-            setError(e instanceof Error ? e : new Error(String(e)))
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 0)
-    return () => {
-      cancelled = true
-      clearTimeout(t)
-    }
-  }, [teamId, season])
+  const timelineEnabled = teamId != null && season != null
+  const { data, error, loading } = useAsyncResource(
+    {
+      enabled: timelineEnabled,
+      initialPending: false,
+      resetOnDisable: false,
+      fetch: () => fetchRecordTimeline(teamId!, { season: season! }),
+    },
+    [teamId, season],
+  )
 
   const { strokeColor, peakLabelColor } = useMemo(() => {
     if (teamId == null || !Number.isFinite(teamId) || teamId <= 0) {

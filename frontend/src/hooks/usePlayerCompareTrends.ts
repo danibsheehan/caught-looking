@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import {
   fetchPlayersCompareGameLog,
   fetchPlayersComparePlatoon,
@@ -10,6 +9,7 @@ import type {
   PlayersYearByYearResponse,
   YearByYearMetric,
 } from '../types/api.compat'
+import { useAsyncResource } from './useAsyncResource'
 
 export function usePlayerCompareYearByYear(
   ids: string,
@@ -17,36 +17,16 @@ export function usePlayerCompareYearByYear(
   enabled: boolean,
   metric: YearByYearMetric,
 ) {
-  const [data, setData] = useState<PlayersYearByYearResponse | null>(null)
-  const [error, setError] = useState<Error | null>(null)
-  const [loading, setLoading] = useState(false)
-
   const inactive = !enabled || !ids
 
-  useEffect(() => {
-    if (inactive) return
-    let cancelled = false
-    const t = setTimeout(() => {
-      if (cancelled) return
-      setLoading(true)
-      setError(null)
-      fetchPlayersCompareYearByYear({ ids, group, metric })
-        .then((d) => {
-          if (!cancelled) setData(d)
-        })
-        .catch((e) => {
-          if (!cancelled)
-            setError(e instanceof Error ? e : new Error(String(e)))
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 0)
-    return () => {
-      cancelled = true
-      clearTimeout(t)
-    }
-  }, [ids, group, inactive, metric])
+  const { data, error, loading } = useAsyncResource<PlayersYearByYearResponse>(
+    {
+      enabled: !inactive,
+      initialPending: false,
+      fetch: () => fetchPlayersCompareYearByYear({ ids, group, metric }),
+    },
+    [ids, group, inactive, metric],
+  )
 
   return {
     data: inactive ? null : data,
@@ -62,36 +42,16 @@ export function usePlayerCompareGameLog(
   enabled: boolean,
   limit = 28,
 ) {
-  const [data, setData] = useState<PlayersGameLogResponse | null>(null)
-  const [error, setError] = useState<Error | null>(null)
-  const [loading, setLoading] = useState(false)
-
   const inactive = !enabled || !ids || season < 1900
 
-  useEffect(() => {
-    if (inactive) return
-    let cancelled = false
-    const t = setTimeout(() => {
-      if (cancelled) return
-      setLoading(true)
-      setError(null)
-      fetchPlayersCompareGameLog({ ids, season, group, limit })
-        .then((d) => {
-          if (!cancelled) setData(d)
-        })
-        .catch((e) => {
-          if (!cancelled)
-            setError(e instanceof Error ? e : new Error(String(e)))
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 0)
-    return () => {
-      cancelled = true
-      clearTimeout(t)
-    }
-  }, [ids, season, group, inactive, limit])
+  const { data, error, loading } = useAsyncResource<PlayersGameLogResponse>(
+    {
+      enabled: !inactive,
+      initialPending: false,
+      fetch: () => fetchPlayersCompareGameLog({ ids, season, group, limit }),
+    },
+    [ids, season, group, inactive, limit],
+  )
 
   return {
     data: inactive ? null : data,
@@ -106,36 +66,16 @@ export function usePlayerComparePlatoon(
   group: 'hitting' | 'pitching',
   enabled: boolean,
 ) {
-  const [data, setData] = useState<PlayersPlatoonResponse | null>(null)
-  const [error, setError] = useState<Error | null>(null)
-  const [loading, setLoading] = useState(false)
-
   const inactive = !enabled || !ids || season < 1900
 
-  useEffect(() => {
-    if (inactive) return
-    let cancelled = false
-    const t = setTimeout(() => {
-      if (cancelled) return
-      setLoading(true)
-      setError(null)
-      fetchPlayersComparePlatoon({ ids, season, group })
-        .then((d) => {
-          if (!cancelled) setData(d)
-        })
-        .catch((e) => {
-          if (!cancelled)
-            setError(e instanceof Error ? e : new Error(String(e)))
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 0)
-    return () => {
-      cancelled = true
-      clearTimeout(t)
-    }
-  }, [ids, season, group, inactive])
+  const { data, error, loading } = useAsyncResource<PlayersPlatoonResponse>(
+    {
+      enabled: !inactive,
+      initialPending: false,
+      fetch: () => fetchPlayersComparePlatoon({ ids, season, group }),
+    },
+    [ids, season, group, inactive],
+  )
 
   return {
     data: inactive ? null : data,

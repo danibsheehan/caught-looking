@@ -1,8 +1,9 @@
-import { startTransition, useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { GameStatcastScatter, GameStatcastSpray } from '../components/charts'
 import GameBoxscorePanel from '../components/game/GameBoxscorePanel'
 import { fetchGameBoxscore, fetchGameStatcast, fetchGameStatcastPitches } from '../api/client'
+import { useAsyncResource } from '../hooks/useAsyncResource'
 import type {
   GameBoxscoreResponse,
   GameStatcastPitchesResponse,
@@ -19,89 +20,58 @@ export default function GameDetail() {
     return Number.isFinite(n) && n > 0 ? n : null
   }, [gamePkParam])
 
-  const [box, setBox] = useState<GameBoxscoreResponse | null>(null)
-  const [boxError, setBoxError] = useState<Error | null>(null)
-  const [boxLoading, setBoxLoading] = useState(true)
+  const pkReady = gamePk != null
 
-  const [statcast, setStatcast] = useState<GameStatcastResponse | null>(null)
-  const [statcastError, setStatcastError] = useState<Error | null>(null)
-  const [statcastLoading, setStatcastLoading] = useState(true)
+  const {
+    data: box,
+    error: boxError,
+    loading: boxLoading,
+  } = useAsyncResource<GameBoxscoreResponse>(
+    {
+      enabled: pkReady,
+      initialPending: true,
+      clearDataBeforeFetch: true,
+      fetch: () => {
+        if (gamePk == null) throw new Error('GameDetail: gamePk required')
+        return fetchGameBoxscore(gamePk)
+      },
+    },
+    [gamePk],
+  )
 
-  const [pitchesData, setPitchesData] = useState<GameStatcastPitchesResponse | null>(null)
-  const [pitchesError, setPitchesError] = useState<Error | null>(null)
-  const [pitchesLoading, setPitchesLoading] = useState(true)
+  const {
+    data: statcast,
+    error: statcastError,
+    loading: statcastLoading,
+  } = useAsyncResource<GameStatcastResponse>(
+    {
+      enabled: pkReady,
+      initialPending: true,
+      clearDataBeforeFetch: true,
+      fetch: () => {
+        if (gamePk == null) throw new Error('GameDetail: gamePk required')
+        return fetchGameStatcast(gamePk)
+      },
+    },
+    [gamePk],
+  )
 
-  useEffect(() => {
-    if (gamePk == null) return
-    let cancelled = false
-    startTransition(() => {
-      setBoxLoading(true)
-      setBoxError(null)
-      setBox(null)
-    })
-    fetchGameBoxscore(gamePk)
-      .then((data) => {
-        if (!cancelled) setBox(data)
-      })
-      .catch((e) => {
-        if (!cancelled)
-          setBoxError(e instanceof Error ? e : new Error(String(e)))
-      })
-      .finally(() => {
-        if (!cancelled) setBoxLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [gamePk])
-
-  useEffect(() => {
-    if (gamePk == null) return
-    let cancelled = false
-    startTransition(() => {
-      setStatcastLoading(true)
-      setStatcastError(null)
-      setStatcast(null)
-    })
-    fetchGameStatcast(gamePk)
-      .then((data) => {
-        if (!cancelled) setStatcast(data)
-      })
-      .catch((e) => {
-        if (!cancelled)
-          setStatcastError(e instanceof Error ? e : new Error(String(e)))
-      })
-      .finally(() => {
-        if (!cancelled) setStatcastLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [gamePk])
-
-  useEffect(() => {
-    if (gamePk == null) return
-    let cancelled = false
-    startTransition(() => {
-      setPitchesLoading(true)
-      setPitchesError(null)
-      setPitchesData(null)
-    })
-    fetchGameStatcastPitches(gamePk)
-      .then((data) => {
-        if (!cancelled) setPitchesData(data)
-      })
-      .catch((e) => {
-        if (!cancelled)
-          setPitchesError(e instanceof Error ? e : new Error(String(e)))
-      })
-      .finally(() => {
-        if (!cancelled) setPitchesLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [gamePk])
+  const {
+    data: pitchesData,
+    error: pitchesError,
+    loading: pitchesLoading,
+  } = useAsyncResource<GameStatcastPitchesResponse>(
+    {
+      enabled: pkReady,
+      initialPending: true,
+      clearDataBeforeFetch: true,
+      fetch: () => {
+        if (gamePk == null) throw new Error('GameDetail: gamePk required')
+        return fetchGameStatcastPitches(gamePk)
+      },
+    },
+    [gamePk],
+  )
 
   const backTo = useMemo(() => {
     if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
