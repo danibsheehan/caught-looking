@@ -1,7 +1,6 @@
-import { fetchRecordTimeline } from '../../api/client'
 import type { RecordPoint } from '../../types/api.compat'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
-import { useAsyncResource } from '../../hooks/useAsyncResource'
+import { useRecordTimeline } from '../../hooks/useRecordTimeline'
 
 type RecordTimelineStripProps = {
   teamId: number | null | undefined
@@ -12,16 +11,7 @@ export default function RecordTimelineStrip({
   teamId,
   season,
 }: RecordTimelineStripProps) {
-  const timelineEnabled = teamId != null && season != null
-  const { data, error, loading } = useAsyncResource(
-    {
-      enabled: timelineEnabled,
-      initialPending: false,
-      resetOnDisable: false,
-      fetch: () => fetchRecordTimeline(teamId!, { season: season! }),
-    },
-    [teamId, season],
-  )
+  const { data, error, loading } = useRecordTimeline(teamId, season)
 
   if (teamId == null || season == null) {
     return (

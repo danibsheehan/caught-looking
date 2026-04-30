@@ -9,10 +9,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { fetchGameTimeline } from '../../api/client'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
-import { useAsyncResource } from '../../hooks/useAsyncResource'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
+import { useGameTimeline } from '../../hooks/useGameTimeline'
 import { gameInningBarFills } from '../../utils/gameChartColors'
 import { chartCartesianTick } from '../../utils/rechartsAxis'
 
@@ -35,16 +34,7 @@ export default function GameScoreBar({
         ? Number(gamePk)
         : gamePk
 
-  const timelineEnabled = pk != null && Number.isFinite(pk) && pk > 0
-  const { data, error, loading } = useAsyncResource(
-    {
-      enabled: timelineEnabled,
-      initialPending: false,
-      resetOnDisable: false,
-      fetch: () => fetchGameTimeline(pk as number),
-    },
-    [pk],
-  )
+  const { data, error, loading } = useGameTimeline(pk)
 
   const rows = useMemo(() => {
     if (!data?.innings?.length) return []
