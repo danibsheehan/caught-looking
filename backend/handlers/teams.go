@@ -39,8 +39,7 @@ func (h *Handlers) Teams(w http.ResponseWriter, r *http.Request) {
 
 	cacheKey := "teams:" + sportID
 	if body, ok := h.cache.Get(cacheKey); ok {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(body)
+		writeJSONBytes(w, body)
 		return
 	}
 
@@ -53,7 +52,7 @@ func (h *Handlers) Teams(w http.ResponseWriter, r *http.Request) {
 
 	var payload mlbTeamsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		http.Error(w, "upstream parse error", http.StatusBadGateway)
+		respondUpstreamJSONParseError(w)
 		return
 	}
 
@@ -74,11 +73,10 @@ func (h *Handlers) Teams(w http.ResponseWriter, r *http.Request) {
 
 	body, err := json.Marshal(models.TeamsResponse{Teams: teams})
 	if err != nil {
-		http.Error(w, "encode error", http.StatusInternalServerError)
+		respondJSONEncodeError(w)
 		return
 	}
 
 	h.cache.Set(cacheKey, body, h.cfg.TTLStandings)
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(body)
+	writeJSONBytes(w, body)
 }

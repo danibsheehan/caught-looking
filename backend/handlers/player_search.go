@@ -40,8 +40,7 @@ func (h *Handlers) PlayerSearch(w http.ResponseWriter, r *http.Request) {
 	const maxHits = 15
 	cacheKey := "player-search:" + strings.ToLower(q)
 	if body, ok := h.cache.Get(cacheKey); ok {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(body)
+		writeJSONBytes(w, body)
 		return
 	}
 
@@ -57,7 +56,7 @@ func (h *Handlers) PlayerSearch(w http.ResponseWriter, r *http.Request) {
 
 	var payload mlbPeopleSearchPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		http.Error(w, "upstream parse error", http.StatusBadGateway)
+		respondUpstreamJSONParseError(w)
 		return
 	}
 
@@ -84,12 +83,11 @@ func (h *Handlers) PlayerSearch(w http.ResponseWriter, r *http.Request) {
 
 	body, err := json.Marshal(out)
 	if err != nil {
-		http.Error(w, "encode error", http.StatusInternalServerError)
+		respondJSONEncodeError(w)
 		return
 	}
 
 	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Result-Count", strconv.Itoa(len(out.People)))
-	_, _ = w.Write(body)
+	writeJSONBytes(w, body)
 }

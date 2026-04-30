@@ -31,8 +31,7 @@ func (h *Handlers) PlayerCurrentTeam(w http.ResponseWriter, r *http.Request) {
 
 	cacheKey := "player-current-team:" + strconv.FormatInt(id, 10)
 	if body, ok := h.cache.Get(cacheKey); ok {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(body)
+		writeJSONBytes(w, body)
 		return
 	}
 
@@ -45,7 +44,7 @@ func (h *Handlers) PlayerCurrentTeam(w http.ResponseWriter, r *http.Request) {
 
 	var payload mlbPersonHydratePayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		http.Error(w, "upstream parse error", http.StatusBadGateway)
+		respondUpstreamJSONParseError(w)
 		return
 	}
 
@@ -61,11 +60,10 @@ func (h *Handlers) PlayerCurrentTeam(w http.ResponseWriter, r *http.Request) {
 
 	body, err := json.Marshal(out)
 	if err != nil {
-		http.Error(w, "encode error", http.StatusInternalServerError)
+		respondJSONEncodeError(w)
 		return
 	}
 
 	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(body)
+	writeJSONBytes(w, body)
 }
