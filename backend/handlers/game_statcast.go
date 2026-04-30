@@ -30,8 +30,7 @@ func (h *Handlers) GameStatcast(w http.ResponseWriter, r *http.Request) {
 
 	cacheKey := "game-statcast:" + pkStr
 	if body, ok := h.cache.Get(cacheKey); ok {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(body)
+		writeJSONBytes(w, body)
 		return
 	}
 
@@ -85,13 +84,12 @@ func (h *Handlers) GameStatcast(w http.ResponseWriter, r *http.Request) {
 
 	body, err := json.Marshal(out)
 	if err != nil {
-		http.Error(w, "encode error", http.StatusInternalServerError)
+		respondJSONEncodeError(w)
 		return
 	}
 
 	h.cache.Set(cacheKey, body, h.cfg.TTLStatcast)
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(body)
+	writeJSONBytes(w, body)
 }
 
 func parseStatcastBattedBallsCSV(raw []byte) []models.StatcastBattedBall {

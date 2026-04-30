@@ -83,8 +83,7 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 
 	cacheKey := "players-yearly:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + metric
 	if body, ok := h.cache.Get(cacheKey); ok {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(body)
+		writeJSONBytes(w, body)
 		return
 	}
 
@@ -137,13 +136,12 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 
 	body, err := json.Marshal(out)
 	if err != nil {
-		http.Error(w, "encode error", http.StatusInternalServerError)
+		respondJSONEncodeError(w)
 		return
 	}
 
 	h.cache.Set(cacheKey, body, h.cfg.TTLStandings)
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(body)
+	writeJSONBytes(w, body)
 }
 
 func validYearByYearMetric(group, metric string) bool {
@@ -294,8 +292,7 @@ func (h *Handlers) PlayersCompareGameLog(w http.ResponseWriter, r *http.Request)
 
 	cacheKey := "players-gamelog:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + strconv.Itoa(season) + ":" + strconv.Itoa(limit)
 	if body, ok := h.cache.Get(cacheKey); ok {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(body)
+		writeJSONBytes(w, body)
 		return
 	}
 
@@ -338,13 +335,12 @@ func (h *Handlers) PlayersCompareGameLog(w http.ResponseWriter, r *http.Request)
 
 	body, err := json.Marshal(out)
 	if err != nil {
-		http.Error(w, "encode error", http.StatusInternalServerError)
+		respondJSONEncodeError(w)
 		return
 	}
 
 	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(body)
+	writeJSONBytes(w, body)
 }
 
 func (h *Handlers) fetchPlayerGameLog(ctx context.Context, id int64, group string, season, limit int) ([]models.GamePoint, string, error) {
