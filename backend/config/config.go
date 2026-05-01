@@ -29,6 +29,8 @@ type Config struct {
 	CacheSweepInterval time.Duration
 	// CacheMaxEntries, if >0, evicts arbitrary live entries after each sweep until count <= ~90% of max.
 	CacheMaxEntries int
+	// HTTPDisableCompression skips chi gzip middleware (for debugging or odd proxies).
+	HTTPDisableCompression bool
 }
 
 // Load reads configuration from environment variables with sensible defaults.
@@ -154,6 +156,10 @@ func Load() Config {
 		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
 			cfg.CacheMaxEntries = n
 		}
+	}
+
+	if v := strings.TrimSpace(strings.ToLower(os.Getenv("HTTP_DISABLE_COMPRESSION"))); v == "1" || v == "true" || v == "yes" {
+		cfg.HTTPDisableCompression = true
 	}
 
 	return cfg

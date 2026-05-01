@@ -26,6 +26,7 @@ var loadEnvKeys = []string{
 	"CACHE_TTL_PLAYER_SEARCH",
 	"CACHE_SWEEP_INTERVAL",
 	"CACHE_MAX_ENTRIES",
+	"HTTP_DISABLE_COMPRESSION",
 	"SAVANT_MAX_QPS",
 }
 
@@ -41,23 +42,24 @@ func TestLoad_defaults(t *testing.T) {
 
 	got := Load()
 	want := Config{
-		HTTPAddr:           ":8080",
-		MLBBaseURL:         "https://statsapi.mlb.com/api/v1",
-		SavantBaseURL:      "https://baseballsavant.mlb.com",
-		AllowedOrigins:     []string{"http://localhost:5173", "http://127.0.0.1:5173"},
-		TTLStandings:       time.Hour,
-		TTLScores:          5 * time.Minute,
-		TTLStatcast:        6 * time.Hour,
-		TTLPlayerSearch:    3 * time.Minute,
-		DefaultSeason:      2026,
-		DefaultLeagueIDs:   "103,104",
-		RateLimitRequests:  120,
-		RateLimitWindow:    time.Minute,
-		MLBMaxQPS:          20,
-		MLBHTTPTimeout:     15 * time.Second,
-		SavantMaxQPS:       5,
-		CacheSweepInterval: 2 * time.Minute,
-		CacheMaxEntries:    0,
+		HTTPAddr:               ":8080",
+		MLBBaseURL:             "https://statsapi.mlb.com/api/v1",
+		SavantBaseURL:          "https://baseballsavant.mlb.com",
+		AllowedOrigins:         []string{"http://localhost:5173", "http://127.0.0.1:5173"},
+		TTLStandings:           time.Hour,
+		TTLScores:              5 * time.Minute,
+		TTLStatcast:            6 * time.Hour,
+		TTLPlayerSearch:        3 * time.Minute,
+		DefaultSeason:          2026,
+		DefaultLeagueIDs:       "103,104",
+		RateLimitRequests:      120,
+		RateLimitWindow:        time.Minute,
+		MLBMaxQPS:              20,
+		MLBHTTPTimeout:         15 * time.Second,
+		SavantMaxQPS:           5,
+		CacheSweepInterval:     2 * time.Minute,
+		CacheMaxEntries:        0,
+		HTTPDisableCompression: false,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Load() mismatch\n got: %+v\nwant: %+v", got, want)
@@ -198,6 +200,16 @@ func TestLoad_MLB_MAX_QPS(t *testing.T) {
 	got := Load()
 	if got.MLBMaxQPS != 35.5 {
 		t.Fatalf("MLBMaxQPS: got %v", got.MLBMaxQPS)
+	}
+}
+
+func TestLoad_HTTP_DISABLE_COMPRESSION(t *testing.T) {
+	resetLoadEnv(t)
+	t.Setenv("HTTP_DISABLE_COMPRESSION", "true")
+
+	got := Load()
+	if !got.HTTPDisableCompression {
+		t.Fatal("expected HTTPDisableCompression true")
 	}
 }
 
