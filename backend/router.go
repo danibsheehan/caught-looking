@@ -20,6 +20,16 @@ func newRouter(cfg config.Config, h *handlers.Handlers) http.Handler {
 	r.Use(chimiddleware.Recoverer)
 	r.Use(middleware.Logger)
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
+	// Large JSON (e.g. game Statcast) shrinks sharply with gzip; clients send Accept-Encoding as usual.
+	if !cfg.HTTPDisableCompression {
+		r.Use(chimiddleware.Compress(5,
+			"application/json",
+			"application/x-yaml",
+			"text/yaml",
+			"text/plain",
+			"text/html",
+		))
+	}
 
 	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
