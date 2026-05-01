@@ -9,10 +9,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { fetchRecordTimeline } from '../../api/client'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
-import { useAsyncResource } from '../../hooks/useAsyncResource'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
+import { useRecordTimeline } from '../../hooks/useRecordTimeline'
 import { chartCartesianTick } from '../../utils/rechartsAxis'
 import { obsidianTeamChartPairs } from '../../utils/mlbTeamColors'
 
@@ -23,16 +22,7 @@ type WinLossChartProps = {
 
 export default function WinLossChart({ teamId, season }: WinLossChartProps) {
   const surfaceHex = useChartSurfaceHex()
-  const timelineEnabled = teamId != null && season != null
-  const { data, error, loading } = useAsyncResource(
-    {
-      enabled: timelineEnabled,
-      initialPending: false,
-      resetOnDisable: false,
-      fetch: () => fetchRecordTimeline(teamId!, { season: season! }),
-    },
-    [teamId, season],
-  )
+  const { data, error, loading } = useRecordTimeline(teamId, season)
 
   const { strokeColor, peakLabelColor } = useMemo(() => {
     if (teamId == null || !Number.isFinite(teamId) || teamId <= 0) {

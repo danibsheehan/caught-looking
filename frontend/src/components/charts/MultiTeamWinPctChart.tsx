@@ -10,10 +10,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { fetchRecordTimelinesBatch } from '../../api/client'
 import ChartSkeleton from '../skeletons/ChartSkeleton'
-import { useAsyncResource } from '../../hooks/useAsyncResource'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
+import { useRecordTimelinesBatch } from '../../hooks/useRecordTimelinesBatch'
 import { obsidianTeamChartPairsRegistryPrimary } from '../../utils/mlbTeamColors'
 import { chartCartesianTick } from '../../utils/rechartsAxis'
 
@@ -131,31 +130,9 @@ export default function MultiTeamWinPctChart({
   const surfaceHex = useChartSurfaceHex()
   const [hoveredTeamId, setHoveredTeamId] = useState<number | null>(null)
 
-  const orderedIds = useMemo(() => {
-    const seen = new Set<number>()
-    const out: number[] = []
-    for (const id of teamIds) {
-      if (id > 0 && !seen.has(id)) {
-        seen.add(id)
-        out.push(id)
-      }
-    }
-    return out
-  }, [teamIds])
-
-  const batchEnabled = orderedIds.length > 0 && season != null
-  const { data: payload, error, loading } = useAsyncResource(
-    {
-      enabled: batchEnabled,
-      initialPending: false,
-      resetOnDisable: false,
-      fetch: () =>
-        fetchRecordTimelinesBatch({
-          teamIds: orderedIds,
-          season: season as number,
-        }),
-    },
-    [orderedIds, season],
+  const { data: payload, error, loading, orderedIds } = useRecordTimelinesBatch(
+    teamIds,
+    season,
   )
 
   const pairs = useMemo(
