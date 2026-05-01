@@ -35,13 +35,7 @@ func NewMLBClient(baseURL string, maxQPS float64, reqTimeout time.Duration) *MLB
 		reqTimeout = defaultMLBHTTPTimeout
 	}
 
-	t := http.DefaultTransport.(*http.Transport).Clone()
-	t.MaxIdleConns = 100
-	t.MaxIdleConnsPerHost = 32
-	t.IdleConnTimeout = 60 * time.Second
-	t.ResponseHeaderTimeout = mlbResponseHeaderTimeout(reqTimeout)
-	t.TLSHandshakeTimeout = 10 * time.Second
-	t.ExpectContinueTimeout = 1 * time.Second
+	t := cloneUpstreamTransport(reqTimeout)
 
 	c := &MLBClient{
 		baseURL:   strings.TrimRight(baseURL, "/"),
@@ -56,20 +50,6 @@ func NewMLBClient(baseURL string, maxQPS float64, reqTimeout time.Duration) *MLB
 		c.upstream = rate.NewLimiter(rate.Limit(maxQPS), burst)
 	}
 	return c
-}
-
-func mlbResponseHeaderTimeout(reqTimeout time.Duration) time.Duration {
-	if reqTimeout <= 5*time.Second {
-		if reqTimeout <= 2*time.Second {
-			return reqTimeout / 2
-		}
-		return reqTimeout - time.Second
-	}
-	ht := reqTimeout * 2 / 3
-	if ht < 5*time.Second {
-		return 5 * time.Second
-	}
-	return ht
 }
 
 // Get issues GET baseURL+path (path must start with /) and returns the response body.
