@@ -21,8 +21,8 @@ type mlbBoxscoreSide struct {
 		Pitching map[string]interface{} `json:"pitching"`
 		Fielding map[string]interface{} `json:"fielding"`
 	} `json:"teamStats"`
-	Batters  []int             `json:"batters"`
-	Pitchers []int             `json:"pitchers"`
+	Batters  []int                `json:"batters"`
+	Pitchers []int                `json:"pitchers"`
 	Players  map[string]boxPlayer `json:"players"`
 }
 

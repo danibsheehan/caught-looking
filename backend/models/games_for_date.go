@@ -7,9 +7,9 @@ type GameSummary struct {
 	HomeTeam     string `json:"homeTeam"`
 	AwayID       int    `json:"awayId"`
 	HomeID       int    `json:"homeId"`
-	Status    string `json:"status"`
-	AwayScore int    `json:"awayScore"`
-	HomeScore int    `json:"homeScore"`
+	Status       string `json:"status"`
+	AwayScore    int    `json:"awayScore"`
+	HomeScore    int    `json:"homeScore"`
 	OfficialDate string `json:"officialDate,omitempty"`
 }
 

@@ -10,7 +10,7 @@ type PlayerStatSnapshot struct {
 
 // PlayersRadarResponse is GET /players/compare.
 type PlayersRadarResponse struct {
-	Scope   string               `json:"scope"` // season | career
+	Scope   string               `json:"scope"`  // season | career
 	Season  int                  `json:"season"` // set when scope=season; 0 when career
 	Group   string               `json:"group"`
 	Players []PlayerStatSnapshot `json:"players"`

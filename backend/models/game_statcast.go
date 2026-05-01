@@ -13,11 +13,11 @@ type StatcastBattedBall struct {
 	LaunchSpeed *float64 `json:"launchSpeed,omitempty"`
 	LaunchAngle *float64 `json:"launchAngle,omitempty"`
 	// HCX/HCY are Statcast Search grid coordinates (hc_x / hc_y); consumers map to field feet for spray plots.
-	HCX *float64 `json:"hcX,omitempty"`
-	HCY *float64 `json:"hcY,omitempty"`
-	Batter      int      `json:"batter"`
-	Pitcher     int      `json:"pitcher"`
-	PlayerName  string   `json:"playerName"`
-	Events      string   `json:"events,omitempty"`
-	InningHalf  string   `json:"inningHalf,omitempty"` // "Top" or "Bottom" (Savant CSV uses "Bot")
+	HCX        *float64 `json:"hcX,omitempty"`
+	HCY        *float64 `json:"hcY,omitempty"`
+	Batter     int      `json:"batter"`
+	Pitcher    int      `json:"pitcher"`
+	PlayerName string   `json:"playerName"`
+	Events     string   `json:"events,omitempty"`
+	InningHalf string   `json:"inningHalf,omitempty"` // "Top" or "Bottom" (Savant CSV uses "Bot")
 }

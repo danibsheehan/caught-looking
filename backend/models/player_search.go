@@ -11,7 +11,7 @@ type PlayerSearchHit struct {
 
 // PlayersSearchResponse is GET /players/search.
 type PlayersSearchResponse struct {
-	Query   string            `json:"query"`
-	People  []PlayerSearchHit `json:"people"`
-	Truncated bool            `json:"truncated,omitempty"`
+	Query     string            `json:"query"`
+	People    []PlayerSearchHit `json:"people"`
+	Truncated bool              `json:"truncated,omitempty"`
 }

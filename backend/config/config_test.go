@@ -23,6 +23,9 @@ var loadEnvKeys = []string{
 	"MLB_HTTP_TIMEOUT",
 	"SAVANT_BASE_URL",
 	"CACHE_TTL_STATCAST",
+	"CACHE_TTL_PLAYER_SEARCH",
+	"CACHE_SWEEP_INTERVAL",
+	"CACHE_MAX_ENTRIES",
 	"SAVANT_MAX_QPS",
 }
 
@@ -38,20 +41,23 @@ func TestLoad_defaults(t *testing.T) {
 
 	got := Load()
 	want := Config{
-		HTTPAddr:          ":8080",
-		MLBBaseURL:        "https://statsapi.mlb.com/api/v1",
-		SavantBaseURL:     "https://baseballsavant.mlb.com",
-		AllowedOrigins:    []string{"http://localhost:5173", "http://127.0.0.1:5173"},
-		TTLStandings:      time.Hour,
-		TTLScores:         5 * time.Minute,
-		TTLStatcast:       6 * time.Hour,
-		DefaultSeason:     2026,
-		DefaultLeagueIDs:  "103,104",
-		RateLimitRequests: 120,
-		RateLimitWindow:   time.Minute,
-		MLBMaxQPS:         20,
-		MLBHTTPTimeout:    15 * time.Second,
-		SavantMaxQPS:      5,
+		HTTPAddr:           ":8080",
+		MLBBaseURL:         "https://statsapi.mlb.com/api/v1",
+		SavantBaseURL:      "https://baseballsavant.mlb.com",
+		AllowedOrigins:     []string{"http://localhost:5173", "http://127.0.0.1:5173"},
+		TTLStandings:       time.Hour,
+		TTLScores:          5 * time.Minute,
+		TTLStatcast:        6 * time.Hour,
+		TTLPlayerSearch:    3 * time.Minute,
+		DefaultSeason:      2026,
+		DefaultLeagueIDs:   "103,104",
+		RateLimitRequests:  120,
+		RateLimitWindow:    time.Minute,
+		MLBMaxQPS:          20,
+		MLBHTTPTimeout:     15 * time.Second,
+		SavantMaxQPS:       5,
+		CacheSweepInterval: 2 * time.Minute,
+		CacheMaxEntries:    0,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Load() mismatch\n got: %+v\nwant: %+v", got, want)
@@ -192,5 +198,23 @@ func TestLoad_MLB_MAX_QPS(t *testing.T) {
 	got := Load()
 	if got.MLBMaxQPS != 35.5 {
 		t.Fatalf("MLBMaxQPS: got %v", got.MLBMaxQPS)
+	}
+}
+
+func TestLoad_cache_sweep_max_player_search_ttl(t *testing.T) {
+	resetLoadEnv(t)
+	t.Setenv("CACHE_SWEEP_INTERVAL", "45s")
+	t.Setenv("CACHE_MAX_ENTRIES", "5000")
+	t.Setenv("CACHE_TTL_PLAYER_SEARCH", "2m")
+
+	got := Load()
+	if got.CacheSweepInterval != 45*time.Second {
+		t.Fatalf("CacheSweepInterval: got %v", got.CacheSweepInterval)
+	}
+	if got.CacheMaxEntries != 5000 {
+		t.Fatalf("CacheMaxEntries: got %d", got.CacheMaxEntries)
+	}
+	if got.TTLPlayerSearch != 2*time.Minute {
+		t.Fatalf("TTLPlayerSearch: got %v", got.TTLPlayerSearch)
 	}
 }

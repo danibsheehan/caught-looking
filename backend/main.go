@@ -17,6 +17,11 @@ import (
 func main() {
 	cfg := config.Load()
 	cache := services.NewTTLCache()
+	sweeperCtx, stopSweeper := context.WithCancel(context.Background())
+	defer stopSweeper()
+	if cfg.CacheSweepInterval > 0 {
+		go cache.RunSweeper(sweeperCtx, cfg.CacheSweepInterval, cfg.CacheMaxEntries, log.Printf)
+	}
 	mlb := services.NewMLBClient(cfg.MLBBaseURL, cfg.MLBMaxQPS, cfg.MLBHTTPTimeout)
 	savant := services.NewSavantClient(cfg.SavantBaseURL, cfg.SavantMaxQPS)
 	h := handlers.New(cfg, cache, mlb, savant)
@@ -37,6 +42,8 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
+
+	stopSweeper()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
