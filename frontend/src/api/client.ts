@@ -42,10 +42,17 @@ export const API_BASE =
     ? String(envBase).replace(/\/$/, '')
     : '/api'
 
-export async function apiGet<T>(path: string): Promise<T> {
+export type ApiGetOptions = {
+  signal?: AbortSignal
+}
+
+export async function apiGet<T>(path: string, options?: ApiGetOptions): Promise<T> {
   const p = path.startsWith('/') ? path : `/${path}`
   const url = `${API_BASE}${p}`
-  const res = await fetch(url)
+  const res =
+    options?.signal !== undefined
+      ? await fetch(url, { signal: options.signal })
+      : await fetch(url)
   if (!res.ok) {
     const text = await res.text()
     throw new Error(text || `${res.status} ${res.statusText}`)
@@ -53,50 +60,63 @@ export async function apiGet<T>(path: string): Promise<T> {
   return (await res.json()) as T
 }
 
+function apiOpts(signal?: AbortSignal): ApiGetOptions | undefined {
+  return signal !== undefined ? { signal } : undefined
+}
+
 export async function fetchStandings(
   query: StandingsQuery = {},
+  signal?: AbortSignal,
 ): Promise<StandingsResponse> {
   const qs = new URLSearchParams()
   if (query.season != null) qs.set('season', String(query.season))
   if (query.leagueId) qs.set('leagueId', query.leagueId)
   if (query.standingsTypes) qs.set('standingsTypes', query.standingsTypes)
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
-  return apiGet<StandingsResponse>(`/standings${suffix}`)
+  return apiGet<StandingsResponse>(`/standings${suffix}`, apiOpts(signal))
 }
 
-export async function fetchTeams(query: TeamsQuery = {}): Promise<TeamsResponse> {
+export async function fetchTeams(
+  query: TeamsQuery = {},
+  signal?: AbortSignal,
+): Promise<TeamsResponse> {
   const qs = new URLSearchParams()
   if (query.sportId) qs.set('sportId', query.sportId)
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
-  return apiGet<TeamsResponse>(`/teams${suffix}`)
+  return apiGet<TeamsResponse>(`/teams${suffix}`, apiOpts(signal))
 }
 
 export async function fetchTeamSeasonStats(
   teamId: number,
   query: TeamSeasonStatsQuery = {},
+  signal?: AbortSignal,
 ): Promise<TeamSeasonStatsResponse> {
   const qs = new URLSearchParams()
   if (query.season != null) qs.set('season', String(query.season))
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
   return apiGet<TeamSeasonStatsResponse>(
     `/teams/${teamId}/season-stats${suffix}`,
+    apiOpts(signal),
   )
 }
 
 export async function fetchRecordTimeline(
   teamId: number,
   query: RecordTimelineQuery = {},
+  signal?: AbortSignal,
 ): Promise<RecordTimelineResponse> {
   const qs = new URLSearchParams()
   if (query.season != null) qs.set('season', String(query.season))
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
   return apiGet<RecordTimelineResponse>(
     `/teams/${teamId}/record-timeline${suffix}`,
+    apiOpts(signal),
   )
 }
 
 export async function fetchRecordTimelinesBatch(
   query: RecordTimelinesBatchQuery,
+  signal?: AbortSignal,
 ): Promise<RecordTimelinesBatchResponse> {
   const ids = query.teamIds.filter((id) => id > 0)
   if (ids.length === 0) {
@@ -107,60 +127,81 @@ export async function fetchRecordTimelinesBatch(
   if (query.season != null) qs.set('season', String(query.season))
   return apiGet<RecordTimelinesBatchResponse>(
     `/record-timelines/batch?${qs.toString()}`,
+    apiOpts(signal),
   )
 }
 
 export async function fetchGameTimeline(
   gamePk: number | string,
+  signal?: AbortSignal,
 ): Promise<GameTimelineResponse> {
-  return apiGet<GameTimelineResponse>(`/games/${gamePk}/timeline`)
+  return apiGet<GameTimelineResponse>(
+    `/games/${gamePk}/timeline`,
+    apiOpts(signal),
+  )
 }
 
 export async function fetchGameBoxscore(
   gamePk: number | string,
+  signal?: AbortSignal,
 ): Promise<GameBoxscoreResponse> {
-  return apiGet<GameBoxscoreResponse>(`/games/${gamePk}/boxscore`)
+  return apiGet<GameBoxscoreResponse>(`/games/${gamePk}/boxscore`, apiOpts(signal))
 }
 
 export async function fetchGameStatcast(
   gamePk: number | string,
+  signal?: AbortSignal,
 ): Promise<GameStatcastResponse> {
-  return apiGet<GameStatcastResponse>(`/games/${gamePk}/statcast`)
+  return apiGet<GameStatcastResponse>(`/games/${gamePk}/statcast`, apiOpts(signal))
 }
 
 export async function fetchGameStatcastPitches(
   gamePk: number | string,
+  signal?: AbortSignal,
 ): Promise<GameStatcastPitchesResponse> {
-  return apiGet<GameStatcastPitchesResponse>(`/games/${gamePk}/statcast/pitches`)
+  return apiGet<GameStatcastPitchesResponse>(
+    `/games/${gamePk}/statcast/pitches`,
+    apiOpts(signal),
+  )
 }
 
 export async function fetchGamesForDate(
   query: GamesForDateQuery,
+  signal?: AbortSignal,
 ): Promise<GamesForDateResponse> {
   const qs = new URLSearchParams()
   qs.set('date', query.date)
   if (query.teamId != null && query.teamId > 0) {
     qs.set('teamId', String(query.teamId))
   }
-  return apiGet<GamesForDateResponse>(`/games/for-date?${qs.toString()}`)
+  return apiGet<GamesForDateResponse>(
+    `/games/for-date?${qs.toString()}`,
+    apiOpts(signal),
+  )
 }
 
 export async function fetchPlayersCompare(
   query: PlayersCompareQuery,
+  signal?: AbortSignal,
 ): Promise<PlayersRadarResponse> {
   const qs = new URLSearchParams()
   qs.set('ids', query.ids)
   if (query.scope) qs.set('scope', query.scope)
   if (query.season != null) qs.set('season', String(query.season))
   if (query.group) qs.set('group', query.group)
-  return apiGet<PlayersRadarResponse>(`/players/compare?${qs.toString()}`)
+  return apiGet<PlayersRadarResponse>(
+    `/players/compare?${qs.toString()}`,
+    apiOpts(signal),
+  )
 }
 
 export async function fetchPlayerCurrentTeam(
   playerId: number,
+  signal?: AbortSignal,
 ): Promise<PlayerCurrentTeamResponse> {
   return apiGet<PlayerCurrentTeamResponse>(
     `/players/${playerId}/current-team`,
+    apiOpts(signal),
   )
 }
 
@@ -168,6 +209,7 @@ export async function fetchPlayerCurrentTeam(
 export async function fetchPlayersCurrentTeams(
   playerId1: number,
   playerId2: number,
+  signal?: AbortSignal,
 ): Promise<PlayersCurrentTeamsResponse> {
   if (!Number.isFinite(playerId1) || !Number.isFinite(playerId2) || playerId1 <= 0 || playerId2 <= 0) {
     throw new Error('fetchPlayersCurrentTeams: player ids must be positive numbers')
@@ -177,21 +219,29 @@ export async function fetchPlayersCurrentTeams(
   }
   const qs = new URLSearchParams()
   qs.set('ids', `${playerId1},${playerId2}`)
-  return apiGet<PlayersCurrentTeamsResponse>(`/players/current-teams?${qs.toString()}`)
+  return apiGet<PlayersCurrentTeamsResponse>(
+    `/players/current-teams?${qs.toString()}`,
+    apiOpts(signal),
+  )
 }
 
 export async function fetchLeagueSeasonBaseline(
   query: { season?: number; group?: 'hitting' | 'pitching' },
+  signal?: AbortSignal,
 ): Promise<LeagueSeasonBaselineResponse> {
   const qs = new URLSearchParams()
   if (query.season != null) qs.set('season', String(query.season))
   if (query.group) qs.set('group', query.group)
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
-  return apiGet<LeagueSeasonBaselineResponse>(`/league/season-baseline${suffix}`)
+  return apiGet<LeagueSeasonBaselineResponse>(
+    `/league/season-baseline${suffix}`,
+    apiOpts(signal),
+  )
 }
 
 export async function fetchPlayersCompareYearByYear(
   query: PlayersCompareYearByYearQuery,
+  signal?: AbortSignal,
 ): Promise<PlayersYearByYearResponse> {
   const qs = new URLSearchParams()
   qs.set('ids', query.ids)
@@ -199,11 +249,13 @@ export async function fetchPlayersCompareYearByYear(
   if (query.metric) qs.set('metric', query.metric)
   return apiGet<PlayersYearByYearResponse>(
     `/players/compare/year-by-year?${qs.toString()}`,
+    apiOpts(signal),
   )
 }
 
 export async function fetchPlayersCompareGameLog(
   query: PlayersCompareGameLogQuery,
+  signal?: AbortSignal,
 ): Promise<PlayersGameLogResponse> {
   const qs = new URLSearchParams()
   qs.set('ids', query.ids)
@@ -212,11 +264,13 @@ export async function fetchPlayersCompareGameLog(
   if (query.limit != null) qs.set('limit', String(query.limit))
   return apiGet<PlayersGameLogResponse>(
     `/players/compare/game-log?${qs.toString()}`,
+    apiOpts(signal),
   )
 }
 
 export async function fetchPlayersComparePlatoon(
   query: PlayersComparePlatoonQuery,
+  signal?: AbortSignal,
 ): Promise<PlayersPlatoonResponse> {
   const qs = new URLSearchParams()
   qs.set('ids', query.ids)
@@ -224,13 +278,18 @@ export async function fetchPlayersComparePlatoon(
   if (query.group) qs.set('group', query.group)
   return apiGet<PlayersPlatoonResponse>(
     `/players/compare/platoon?${qs.toString()}`,
+    apiOpts(signal),
   )
 }
 
 export async function fetchPlayersSearch(
   query: PlayersSearchQuery,
+  signal?: AbortSignal,
 ): Promise<PlayersSearchResponse> {
   const qs = new URLSearchParams()
   qs.set('names', query.names)
-  return apiGet<PlayersSearchResponse>(`/players/search?${qs.toString()}`)
+  return apiGet<PlayersSearchResponse>(
+    `/players/search?${qs.toString()}`,
+    apiOpts(signal),
+  )
 }

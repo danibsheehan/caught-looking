@@ -81,11 +81,14 @@ describe('usePlayersCompare', () => {
 
     await waitFor(() => expect(result.current.data).toEqual(mockRadar))
 
-    expect(fetchPlayersCompare).toHaveBeenCalledWith({
-      ids: `${baseArgs.playerId1},${baseArgs.playerId2}`,
-      scope: 'career',
-      group: 'hitting',
-    })
+    expect(fetchPlayersCompare).toHaveBeenCalledWith(
+      {
+        ids: `${baseArgs.playerId1},${baseArgs.playerId2}`,
+        scope: 'career',
+        group: 'hitting',
+      },
+      expect.any(AbortSignal),
+    )
   })
 
   it('includes season for season scope', async () => {
@@ -102,12 +105,15 @@ describe('usePlayersCompare', () => {
 
     await waitFor(() => expect(result.current.data).toEqual(mockRadar))
 
-    expect(fetchPlayersCompare).toHaveBeenCalledWith({
-      ids: `${baseArgs.playerId1},${baseArgs.playerId2}`,
-      scope: 'season',
-      season: 2023,
-      group: 'hitting',
-    })
+    expect(fetchPlayersCompare).toHaveBeenCalledWith(
+      {
+        ids: `${baseArgs.playerId1},${baseArgs.playerId2}`,
+        scope: 'season',
+        season: 2023,
+        group: 'hitting',
+      },
+      expect.any(AbortSignal),
+    )
     expect(result.current.error).toBeNull()
   })
 

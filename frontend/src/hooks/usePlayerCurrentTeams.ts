@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchPlayersCurrentTeams } from '../api/client'
+import { isAbortError } from './useAsyncResource'
 
 /**
  * Resolves each player's current MLB team id (Stats API) for chart colors.
@@ -24,22 +25,23 @@ export function usePlayerCurrentTeams(
     if (invalid) return
 
     let cancelled = false
-    fetchPlayersCurrentTeams(playerId1, playerId2)
+    const ac = new AbortController()
+    fetchPlayersCurrentTeams(playerId1, playerId2, ac.signal)
       .then((res) => {
         if (cancelled) return
         const [a, b] = res.players
         setTeamId1(a && a.teamId > 0 ? a.teamId : null)
         setTeamId2(b && b.teamId > 0 ? b.teamId : null)
       })
-      .catch(() => {
-        if (!cancelled) {
-          setTeamId1(null)
-          setTeamId2(null)
-        }
+      .catch((e) => {
+        if (cancelled || isAbortError(e)) return
+        setTeamId1(null)
+        setTeamId2(null)
       })
 
     return () => {
       cancelled = true
+      ac.abort()
     }
   }, [invalid, playerId1, playerId2])
 

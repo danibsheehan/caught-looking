@@ -1,6 +1,17 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { useAsyncResource } from './useAsyncResource'
+import { isAbortError, useAsyncResource } from './useAsyncResource'
+
+describe('isAbortError', () => {
+  it('detects DOMException AbortError', () => {
+    expect(isAbortError(new DOMException('Aborted', 'AbortError'))).toBe(true)
+  })
+
+  it('returns false for other errors', () => {
+    expect(isAbortError(new Error('fail'))).toBe(false)
+    expect(isAbortError(null)).toBe(false)
+  })
+})
 
 describe('useAsyncResource', () => {
   it('resolves data and clears loading', async () => {
@@ -15,6 +26,7 @@ describe('useAsyncResource', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(fetch).toHaveBeenCalledTimes(1)
+    expect(fetch.mock.calls[0]![0]).toBeInstanceOf(AbortSignal)
     expect(result.current.data).toEqual({ ok: true })
     expect(result.current.error).toBeNull()
   })
@@ -103,5 +115,32 @@ describe('useAsyncResource', () => {
     rerender({ n: 2 })
 
     await waitFor(() => expect(result.current.data).toBe(2))
+  })
+
+  it('ignores AbortError when deps change aborts the prior request', async () => {
+    let invocations = 0
+    const fetch = vi.fn((signal: AbortSignal) => {
+      invocations++
+      if (invocations === 1) {
+        return new Promise<number>((_, reject) => {
+          signal.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError')),
+          )
+        })
+      }
+      return Promise.resolve(2)
+    })
+
+    const { result, rerender } = renderHook(
+      ({ n }: { n: number }) =>
+        useAsyncResource({ fetch, initialPending: false }, [n]),
+      { initialProps: { n: 1 } },
+    )
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+    rerender({ n: 2 })
+
+    await waitFor(() => expect(result.current.data).toBe(2))
+    expect(result.current.error).toBeNull()
   })
 })

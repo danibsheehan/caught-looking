@@ -36,10 +36,13 @@ describe('useRecordTimelinesBatch', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.orderedIds).toEqual([121, 144])
-    expect(fetchRecordTimelinesBatch).toHaveBeenCalledWith({
-      teamIds: [121, 144],
-      season: 2026,
-    })
+    expect(fetchRecordTimelinesBatch).toHaveBeenCalledWith(
+      {
+        teamIds: [121, 144],
+        season: 2026,
+      },
+      expect.any(AbortSignal),
+    )
   })
 
   it('surfaces errors', async () => {

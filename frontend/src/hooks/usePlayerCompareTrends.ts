@@ -23,7 +23,8 @@ export function usePlayerCompareYearByYear(
     {
       enabled: !inactive,
       initialPending: false,
-      fetch: () => fetchPlayersCompareYearByYear({ ids, group, metric }),
+      fetch: (signal) =>
+        fetchPlayersCompareYearByYear({ ids, group, metric }, signal),
     },
     [ids, group, inactive, metric],
   )
@@ -48,7 +49,8 @@ export function usePlayerCompareGameLog(
     {
       enabled: !inactive,
       initialPending: false,
-      fetch: () => fetchPlayersCompareGameLog({ ids, season, group, limit }),
+      fetch: (signal) =>
+        fetchPlayersCompareGameLog({ ids, season, group, limit }, signal),
     },
     [ids, season, group, inactive, limit],
   )
@@ -72,7 +74,8 @@ export function usePlayerComparePlatoon(
     {
       enabled: !inactive,
       initialPending: false,
-      fetch: () => fetchPlayersComparePlatoon({ ids, season, group }),
+      fetch: (signal) =>
+        fetchPlayersComparePlatoon({ ids, season, group }, signal),
     },
     [ids, season, group, inactive],
   )

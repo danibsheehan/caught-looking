@@ -42,7 +42,7 @@ describe('useGameTimeline', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    expect(fetchGameTimeline).toHaveBeenCalledWith(662000)
+    expect(fetchGameTimeline).toHaveBeenCalledWith(662000, expect.any(AbortSignal))
     expect(result.current.data).toEqual(mockTimeline)
   })
 

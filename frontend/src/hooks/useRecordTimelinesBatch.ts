@@ -30,11 +30,14 @@ export function useRecordTimelinesBatch(
       enabled,
       initialPending: false,
       resetOnDisable: false,
-      fetch: () =>
-        fetchRecordTimelinesBatch({
-          teamIds: orderedIds,
-          season: season as number,
-        }),
+      fetch: (signal) =>
+        fetchRecordTimelinesBatch(
+          {
+            teamIds: orderedIds,
+            season: season as number,
+          },
+          signal,
+        ),
     },
     [orderedIds, season],
   )

@@ -109,10 +109,17 @@ describe('MultiTeamWinPctChart', () => {
       <MultiTeamWinPctChart teamIds={[121, 144]} season={2026} getLabel={getLabel} />,
     )
 
-    await waitFor(() => expect(api.fetchRecordTimelinesBatch).toHaveBeenCalledWith({
-      teamIds: [121, 144],
-      season: 2026,
-    }), asyncWait)
+    await waitFor(
+      () =>
+        expect(api.fetchRecordTimelinesBatch).toHaveBeenCalledWith(
+          {
+            teamIds: [121, 144],
+            season: 2026,
+          },
+          expect.any(AbortSignal),
+        ),
+      asyncWait,
+    )
 
     expect(await screen.findByText('Game #', undefined, asyncWait)).toBeInTheDocument()
 

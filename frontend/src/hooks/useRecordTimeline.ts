@@ -12,11 +12,11 @@ export function useRecordTimeline(
       enabled,
       initialPending: false,
       resetOnDisable: false,
-      fetch: () => {
+      fetch: (signal) => {
         if (teamId == null || season == null) {
           throw new Error('useRecordTimeline: teamId and season required')
         }
-        return fetchRecordTimeline(teamId, { season })
+        return fetchRecordTimeline(teamId, { season }, signal)
       },
     },
     [teamId, season],

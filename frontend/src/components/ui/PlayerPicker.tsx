@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { fetchPlayersSearch } from '../../api/client'
+import { isAbortError } from '../../hooks/useAsyncResource'
 import type { PlayerSearchHit } from '../../types/api.compat'
 
 export type PlayerPick = { id: number; fullName: string }
@@ -44,16 +45,19 @@ export default function PlayerPicker({
     }
 
     let cancelled = false
+    let searchAbort: AbortController | null = null
     const timer = setTimeout(() => {
+      if (cancelled) return
+      searchAbort = new AbortController()
       setSearching(true)
       setSearchError(null)
-      fetchPlayersSearch({ names: t })
+      fetchPlayersSearch({ names: t }, searchAbort.signal)
         .then((res) => {
           if (!cancelled) setHits(res.people ?? [])
         })
         .catch((e) => {
-          if (!cancelled)
-            setSearchError(e instanceof Error ? e.message : String(e))
+          if (cancelled || isAbortError(e)) return
+          setSearchError(e instanceof Error ? e.message : String(e))
         })
         .finally(() => {
           if (!cancelled) setSearching(false)
@@ -63,6 +67,7 @@ export default function PlayerPicker({
     return () => {
       cancelled = true
       clearTimeout(timer)
+      searchAbort?.abort()
     }
   }, [q])
 

@@ -61,7 +61,10 @@ describe('PlayerPicker', () => {
     await flushSearchDebounce()
 
     await waitFor(() => {
-      expect(fetchPlayersSearch).toHaveBeenCalledWith({ names: 'Pl' })
+      expect(fetchPlayersSearch).toHaveBeenCalledWith(
+        { names: 'Pl' },
+        expect.any(AbortSignal),
+      )
     })
 
     const list = document.getElementById(listId!)

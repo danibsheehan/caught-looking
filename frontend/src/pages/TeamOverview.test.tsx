@@ -140,7 +140,15 @@ describe('TeamOverview', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Runs scored vs. allowed' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Game-by-game results' })).toBeInTheDocument()
 
-    await waitFor(() => expect(api.fetchTeamSeasonStats).toHaveBeenCalledWith(121, { season: 2026 }), asyncWait)
+    await waitFor(
+      () =>
+        expect(api.fetchTeamSeasonStats).toHaveBeenCalledWith(
+          121,
+          { season: 2026 },
+          expect.any(AbortSignal),
+        ),
+      asyncWait,
+    )
     await waitFor(() => expect(api.fetchRecordTimeline).toHaveBeenCalled(), asyncWait)
   })
 

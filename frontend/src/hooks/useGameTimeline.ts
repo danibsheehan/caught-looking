@@ -12,11 +12,11 @@ export function useGameTimeline(pk: number | null): AsyncResourceResult<GameTime
       enabled,
       initialPending: false,
       resetOnDisable: false,
-      fetch: () => {
+      fetch: (signal) => {
         if (pk == null || !Number.isFinite(pk) || pk <= 0) {
           throw new Error('useGameTimeline: valid pk required')
         }
-        return fetchGameTimeline(pk)
+        return fetchGameTimeline(pk, signal)
       },
     },
     [pk],

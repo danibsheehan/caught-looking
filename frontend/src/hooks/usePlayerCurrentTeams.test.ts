@@ -43,7 +43,11 @@ describe('usePlayerCurrentTeams', () => {
     })
 
     expect(fetchPlayersCurrentTeams).toHaveBeenCalledTimes(1)
-    expect(fetchPlayersCurrentTeams).toHaveBeenCalledWith(1, 2)
+    expect(fetchPlayersCurrentTeams).toHaveBeenCalledWith(
+      1,
+      2,
+      expect.any(AbortSignal),
+    )
   })
 
   it('treats non-positive teamId as null', async () => {

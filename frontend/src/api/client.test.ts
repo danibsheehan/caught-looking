@@ -118,6 +118,14 @@ describe('api client', () => {
       await apiGet('/standings')
       expect(fetchMock).toHaveBeenCalledWith(`${API_BASE}/standings`)
     })
+
+    it('forwards AbortSignal to fetch when provided', async () => {
+      fetchMock.mockResolvedValueOnce(jsonResponse({ ok: true }))
+      const { apiGet, API_BASE } = await loadClient({ viteApiBase: '' })
+      const ac = new AbortController()
+      await apiGet('/foo', { signal: ac.signal })
+      expect(fetchMock).toHaveBeenCalledWith(`${API_BASE}/foo`, { signal: ac.signal })
+    })
   })
 
   describe('fetch helpers — query strings and paths', () => {
@@ -291,6 +299,16 @@ describe('api client', () => {
       const { fetchPlayersSearch } = await getClient()
       await fetchPlayersSearch({ names: 'Ohtani' })
       expect(fetchMock).toHaveBeenCalledWith('/api/players/search?names=Ohtani')
+    })
+
+    it('fetchPlayersSearch forwards optional AbortSignal', async () => {
+      fetchMock.mockResolvedValue(jsonResponse({ people: [] }))
+      const { fetchPlayersSearch } = await getClient()
+      const ac = new AbortController()
+      await fetchPlayersSearch({ names: 'Ohtani' }, ac.signal)
+      expect(fetchMock).toHaveBeenCalledWith('/api/players/search?names=Ohtani', {
+        signal: ac.signal,
+      })
     })
   })
 

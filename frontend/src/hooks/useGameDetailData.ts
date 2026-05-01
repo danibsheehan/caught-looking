@@ -28,9 +28,9 @@ export function useGameDetailData(gamePk: number | null): GameDetailData {
       enabled: pkReady,
       initialPending: true,
       clearDataBeforeFetch: true,
-      fetch: () => {
+      fetch: (signal) => {
         if (gamePk == null) throw new Error('useGameDetailData: gamePk required')
-        return fetchGameBoxscore(gamePk)
+        return fetchGameBoxscore(gamePk, signal)
       },
     },
     [gamePk],
@@ -41,9 +41,9 @@ export function useGameDetailData(gamePk: number | null): GameDetailData {
       enabled: pkReady,
       initialPending: true,
       clearDataBeforeFetch: true,
-      fetch: () => {
+      fetch: (signal) => {
         if (gamePk == null) throw new Error('useGameDetailData: gamePk required')
-        return fetchGameStatcast(gamePk)
+        return fetchGameStatcast(gamePk, signal)
       },
     },
     [gamePk],
@@ -54,9 +54,9 @@ export function useGameDetailData(gamePk: number | null): GameDetailData {
       enabled: pkReady,
       initialPending: true,
       clearDataBeforeFetch: true,
-      fetch: () => {
+      fetch: (signal) => {
         if (gamePk == null) throw new Error('useGameDetailData: gamePk required')
-        return fetchGameStatcastPitches(gamePk)
+        return fetchGameStatcastPitches(gamePk, signal)
       },
     },
     [gamePk],

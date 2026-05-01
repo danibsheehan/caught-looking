@@ -31,13 +31,16 @@ export function usePlayersCompare({
     {
       enabled: !inactive,
       initialPending: false,
-      fetch: () =>
-        fetchPlayersCompare({
-          ids: `${playerId1},${playerId2}`,
-          scope,
-          ...(needSeason && season != null ? { season } : {}),
-          group,
-        }),
+      fetch: (signal) =>
+        fetchPlayersCompare(
+          {
+            ids: `${playerId1},${playerId2}`,
+            scope,
+            ...(needSeason && season != null ? { season } : {}),
+            group,
+          },
+          signal,
+        ),
     },
     [inactive, needSeason, playerId1, playerId2, season, scope, group],
   )

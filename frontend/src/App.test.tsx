@@ -255,9 +255,24 @@ describe('App routes', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1, name: 'Box score' })).toBeInTheDocument()
     }, asyncWait)
-    await waitFor(() => expect(api.fetchGameBoxscore).toHaveBeenCalledWith(662000), asyncWait)
-    await waitFor(() => expect(api.fetchGameStatcast).toHaveBeenCalledWith(662000), asyncWait)
-    await waitFor(() => expect(api.fetchGameStatcastPitches).toHaveBeenCalledWith(662000), asyncWait)
+    await waitFor(
+      () =>
+        expect(api.fetchGameBoxscore).toHaveBeenCalledWith(662000, expect.any(AbortSignal)),
+      asyncWait,
+    )
+    await waitFor(
+      () =>
+        expect(api.fetchGameStatcast).toHaveBeenCalledWith(662000, expect.any(AbortSignal)),
+      asyncWait,
+    )
+    await waitFor(
+      () =>
+        expect(api.fetchGameStatcastPitches).toHaveBeenCalledWith(
+          662000,
+          expect.any(AbortSignal),
+        ),
+      asyncWait,
+    )
     await waitFor(() => expect(api.fetchGameTimeline).toHaveBeenCalled(), asyncWait)
   })
 

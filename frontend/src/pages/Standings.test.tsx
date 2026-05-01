@@ -146,10 +146,13 @@ describe('Standings', () => {
     await waitFor(() => expect(api.fetchTeams).toHaveBeenCalled(), asyncWait)
     await waitFor(
       () =>
-        expect(api.fetchRecordTimelinesBatch).toHaveBeenCalledWith({
-          teamIds: [121],
-          season: 2026,
-        }),
+        expect(api.fetchRecordTimelinesBatch).toHaveBeenCalledWith(
+          {
+            teamIds: [121],
+            season: 2026,
+          },
+          expect.any(AbortSignal),
+        ),
       asyncWait,
     )
   })
