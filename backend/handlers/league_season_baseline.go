@@ -14,9 +14,13 @@ import (
 type mlbTeamSeasonSplitsPayload struct {
 	Stats []struct {
 		Splits []struct {
-			Stat   json.RawMessage `json:"stat"`
-			Team   struct{ ID int `json:"id"` } `json:"team"`
-			League struct{ ID int `json:"id"` } `json:"league"`
+			Stat json.RawMessage `json:"stat"`
+			Team struct {
+				ID int `json:"id"`
+			} `json:"team"`
+			League struct {
+				ID int `json:"id"`
+			} `json:"league"`
 		} `json:"splits"`
 	} `json:"stats"`
 }

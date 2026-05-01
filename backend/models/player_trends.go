@@ -29,12 +29,12 @@ type SeasonPoint struct {
 
 // PlayersGameLogResponse is GET /players/compare/game-log.
 type PlayersGameLogResponse struct {
-	Season         int               `json:"season"`
-	Group          string            `json:"group"`
-	Metric         string            `json:"metric"` // ops | era
-	Limit          int               `json:"limit"`
-	Players        []GameLogPlayer   `json:"players"`
-	LeagueBaseline float64           `json:"leagueBaseline"`
+	Season         int             `json:"season"`
+	Group          string          `json:"group"`
+	Metric         string          `json:"metric"` // ops | era
+	Limit          int             `json:"limit"`
+	Players        []GameLogPlayer `json:"players"`
+	LeagueBaseline float64         `json:"leagueBaseline"`
 }
 
 type GameLogPlayer struct {

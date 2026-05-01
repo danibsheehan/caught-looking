@@ -37,9 +37,9 @@ type TeamHittingLine struct {
 	Slg         float64 `json:"slg,omitempty"`
 	Avg         float64 `json:"avg,omitempty"`
 	// Counts and derived rates from the same MLB hitting split (statsapi field names).
-	Doubles         int `json:"doubles"`
-	StolenBases     int `json:"stolenBases"`
-	HomeRuns        int `json:"homeRuns,omitempty"`
+	Doubles         int     `json:"doubles"`
+	StolenBases     int     `json:"stolenBases"`
+	HomeRuns        int     `json:"homeRuns,omitempty"`
 	HomeRunsPerGame float64 `json:"homeRunsPerGame,omitempty"`
 	IsolatedPower   float64 `json:"isolatedPower,omitempty"`
 	BbPct           float64 `json:"bbPct,omitempty"`

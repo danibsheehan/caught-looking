@@ -58,8 +58,8 @@ func Test_normalizeBatterStand(t *testing.T) {
 func Test_parseCSVFloat(t *testing.T) {
 	rec := []string{"  95.1  ", "null", "", "x", "1e2"}
 	tests := []struct {
-		i       int
-		want    float64
+		i      int
+		want   float64
 		wantOK bool
 	}{
 		{0, 95.1, true},

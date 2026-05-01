@@ -19,12 +19,16 @@ type venueScheduleGame struct {
 	IsTie bool `json:"isTie"`
 	Teams struct {
 		Away struct {
-			Team     struct{ ID int `json:"id"` } `json:"team"`
+			Team struct {
+				ID int `json:"id"`
+			} `json:"team"`
 			IsWinner bool `json:"isWinner"`
 			Score    *int `json:"score"`
 		} `json:"away"`
 		Home struct {
-			Team     struct{ ID int `json:"id"` } `json:"team"`
+			Team struct {
+				ID int `json:"id"`
+			} `json:"team"`
 			IsWinner bool `json:"isWinner"`
 			Score    *int `json:"score"`
 		} `json:"home"`

@@ -12,12 +12,15 @@ import (
 
 func testConfig() config.Config {
 	return config.Config{
-		HTTPAddr:         ":8080",
-		DefaultSeason:    2026,
-		DefaultLeagueIDs: "103,104",
-		TTLScores:        time.Hour,
-		TTLStandings:     time.Hour,
-		TTLStatcast:      time.Hour,
+		HTTPAddr:           ":8080",
+		DefaultSeason:      2026,
+		DefaultLeagueIDs:   "103,104",
+		TTLScores:          time.Hour,
+		TTLStandings:       time.Hour,
+		TTLStatcast:        time.Hour,
+		TTLPlayerSearch:    time.Hour,
+		CacheSweepInterval: 0,
+		CacheMaxEntries:    0,
 	}
 }
 

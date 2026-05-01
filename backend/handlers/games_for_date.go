@@ -66,11 +66,17 @@ func (h *Handlers) GamesForDate(w http.ResponseWriter, r *http.Request) {
 				} `json:"status"`
 				Teams struct {
 					Away struct {
-						Team  struct{ ID int `json:"id"`; Name string `json:"name"` } `json:"team"`
+						Team struct {
+							ID   int    `json:"id"`
+							Name string `json:"name"`
+						} `json:"team"`
 						Score int `json:"score"`
 					} `json:"away"`
 					Home struct {
-						Team  struct{ ID int `json:"id"`; Name string `json:"name"` } `json:"team"`
+						Team struct {
+							ID   int    `json:"id"`
+							Name string `json:"name"`
+						} `json:"team"`
 						Score int `json:"score"`
 					} `json:"home"`
 				} `json:"teams"`

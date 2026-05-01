@@ -12,10 +12,10 @@ import (
 
 type mlbPeopleSearchPayload struct {
 	People []struct {
-		ID             int64  `json:"id"`
-		FullName       string `json:"fullName"`
-		Active         bool   `json:"active"`
-		PrimaryNumber  string `json:"primaryNumber"`
+		ID              int64  `json:"id"`
+		FullName        string `json:"fullName"`
+		Active          bool   `json:"active"`
+		PrimaryNumber   string `json:"primaryNumber"`
 		PrimaryPosition struct {
 			Abbreviation string `json:"abbreviation"`
 		} `json:"primaryPosition"`
@@ -87,7 +87,7 @@ func (h *Handlers) PlayerSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
+	h.cache.Set(cacheKey, body, h.cfg.TTLPlayerSearch)
 	w.Header().Set("X-Result-Count", strconv.Itoa(len(out.People)))
 	writeJSONBytes(w, body)
 }
