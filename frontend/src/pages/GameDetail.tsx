@@ -1,6 +1,11 @@
-import { useMemo } from 'react'
+import { lazy, useMemo } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { GameStatcastScatter, GameStatcastSpray } from '../components/charts'
+import { ChartSuspense } from '../components/charts/ChartSuspense'
+import GameStatcastSpray from '../components/charts/GameStatcastSpray'
+
+const GameStatcastScatter = lazy(
+  () => import('../components/charts/GameStatcastScatter'),
+)
 import GameBoxscorePanel from '../components/game/GameBoxscorePanel'
 import { useGameDetailData } from '../hooks/useGameDetailData'
 
@@ -86,11 +91,13 @@ export default function GameDetail() {
               homeTeamId={box.data?.home.teamId}
             />
             <h3 className="game-statcast__subhead">How each batted ball was struck</h3>
-            <GameStatcastScatter
-              battedBalls={statcast.data.battedBalls}
-              awayTeamId={box.data?.away.teamId}
-              homeTeamId={box.data?.home.teamId}
-            />
+            <ChartSuspense height={400} label="Loading Statcast scatter">
+              <GameStatcastScatter
+                battedBalls={statcast.data.battedBalls}
+                awayTeamId={box.data?.away.teamId}
+                homeTeamId={box.data?.home.teamId}
+              />
+            </ChartSuspense>
           </>
         ) : null}
       </div>

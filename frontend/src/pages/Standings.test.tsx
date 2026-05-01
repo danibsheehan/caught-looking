@@ -110,7 +110,9 @@ describe('Standings', () => {
     vi.clearAllMocks()
   })
 
-  it('renders only the selected division table and updates on division change', async () => {
+  it(
+    'renders only the selected division table and updates on division change',
+    async () => {
     renderStandings()
     const user = userEvent.setup()
 
@@ -133,15 +135,6 @@ describe('Standings', () => {
     expect(within(table).getByText('Mets')).toBeInTheDocument()
     expect(within(table).queryByText('Cubs')).not.toBeInTheDocument()
 
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Division' }), '1')
-
-    expect(screen.getByRole('heading', { level: 2, name: 'NL Central' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { level: 2, name: 'NL East' })).not.toBeInTheDocument()
-
-    const updatedTable = screen.getByRole('table')
-    expect(within(updatedTable).getByText('Cubs')).toBeInTheDocument()
-    expect(within(updatedTable).queryByText('Mets')).not.toBeInTheDocument()
-
     await waitFor(() => expect(api.fetchStandings).toHaveBeenCalled(), asyncWait)
     await waitFor(() => expect(api.fetchTeams).toHaveBeenCalled(), asyncWait)
     await waitFor(
@@ -155,5 +148,28 @@ describe('Standings', () => {
         ),
       asyncWait,
     )
-  })
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Division' }), '1')
+
+    expect(screen.getByRole('heading', { level: 2, name: 'NL Central' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 2, name: 'NL East' })).not.toBeInTheDocument()
+
+    const updatedTable = screen.getByRole('table')
+    expect(within(updatedTable).getByText('Cubs')).toBeInTheDocument()
+    expect(within(updatedTable).queryByText('Mets')).not.toBeInTheDocument()
+
+    await waitFor(
+      () =>
+        expect(api.fetchRecordTimelinesBatch).toHaveBeenCalledWith(
+          {
+            teamIds: [112],
+            season: 2026,
+          },
+          expect.any(AbortSignal),
+        ),
+      asyncWait,
+    )
+  },
+    15_000,
+  )
 })

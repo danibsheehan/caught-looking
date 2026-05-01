@@ -1,11 +1,15 @@
-import { useMemo, useState } from 'react'
-import {
-  DivisionRunsScatter,
-  MultiTeamWinPctChart,
-  RecordTimelineStrip,
-  TeamSeasonDeepDive,
-  WinLossChart,
-} from '../components/charts'
+import { lazy, useMemo, useState } from 'react'
+import { ChartSuspense } from '../components/charts/ChartSuspense'
+import RecordTimelineStrip from '../components/charts/RecordTimelineStrip'
+import TeamSeasonDeepDive from '../components/charts/TeamSeasonDeepDive'
+
+const DivisionRunsScatter = lazy(
+  () => import('../components/charts/DivisionRunsScatter'),
+)
+const MultiTeamWinPctChart = lazy(
+  () => import('../components/charts/MultiTeamWinPctChart'),
+)
+const WinLossChart = lazy(() => import('../components/charts/WinLossChart'))
 import TeamPageSkeleton from '../components/skeletons/TeamPageSkeleton'
 import { PlayerCard, StatCard, TeamSelector } from '../components/ui'
 import { useStandings, useTeamSeasonStats, useTeams } from '../hooks/useMLB'
@@ -253,10 +257,12 @@ export default function TeamOverview() {
                 Season totals for every club in this division. The dashed line is
                 even run differential (RS = RA). Above it scores more than it allows.
               </p>
-              <DivisionRunsScatter
-                points={scatterPoints}
-                focusTeamId={selected.id}
-              />
+              <ChartSuspense height={360} label="Loading run differential chart">
+                <DivisionRunsScatter
+                  points={scatterPoints}
+                  focusTeamId={selected.id}
+                />
+              </ChartSuspense>
             </div>
             <div className="teams-page__panel teams-page__panel--chart">
               <h2>Game-by-game results</h2>
@@ -297,21 +303,23 @@ export default function TeamOverview() {
                   Every team in this division on the same pace axis (games
                   completed). Your club is emphasized.
                 </p>
-                {divisionTeamIds.length > 1 ? (
-                  <MultiTeamWinPctChart
-                    key={`${selected.id}-${season}-div`}
-                    teamIds={divisionTeamIds}
-                    season={season}
-                    getLabel={(id) => abbrevById.get(id) ?? String(id)}
-                    heroTeamIds={divisionRaceHeroIds}
-                  />
-                ) : (
-                  <WinLossChart
-                    key={`${selected.id}-${season}`}
-                    teamId={selected.id}
-                    season={season}
-                  />
-                )}
+                <ChartSuspense height={400} label="Loading win % chart">
+                  {divisionTeamIds.length > 1 ? (
+                    <MultiTeamWinPctChart
+                      key={`${selected.id}-${season}-div`}
+                      teamIds={divisionTeamIds}
+                      season={season}
+                      getLabel={(id) => abbrevById.get(id) ?? String(id)}
+                      heroTeamIds={divisionRaceHeroIds}
+                    />
+                  ) : (
+                    <WinLossChart
+                      key={`${selected.id}-${season}`}
+                      teamId={selected.id}
+                      season={season}
+                    />
+                  )}
+                </ChartSuspense>
               </div>
             ) : (
               <>
