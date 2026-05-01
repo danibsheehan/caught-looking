@@ -1,12 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
-import {
-  PlayerCompareAheadChart,
-  PlayerCompareCareerLines,
-  PlayerComparePlatoonBars,
-  PlayerCompareRecentSparklines,
-  PlayerCompareStatsTable,
-  PlayerRadar,
-} from '../components/charts'
+import { lazy, useEffect, useMemo, useState } from 'react'
+import { ChartSuspense } from '../components/charts/ChartSuspense'
+import PlayerCompareAheadChart from '../components/charts/PlayerCompareAheadChart'
+import PlayerCompareStatsTable from '../components/charts/PlayerCompareStatsTable'
+
+const PlayerRadar = lazy(() => import('../components/charts/PlayerRadar'))
+const PlayerCompareCareerLines = lazy(
+  () => import('../components/charts/PlayerCompareCareerLines'),
+)
+const PlayerCompareRecentSparklines = lazy(
+  () => import('../components/charts/PlayerCompareRecentSparklines'),
+)
+const PlayerComparePlatoonBars = lazy(
+  () => import('../components/charts/PlayerComparePlatoonBars'),
+)
 import ChartSkeleton from '../components/skeletons/ChartSkeleton'
 import { PlayerPicker, type PlayerPick } from '../components/ui'
 import { useChartSurfaceHex } from '../hooks/useChartSurfaceHex'
@@ -303,16 +309,24 @@ export default function PlayerComparison() {
               : 'Season totals (pair-normalized per spoke).'}{' '}
             Better stat fills the spoke vs the other player.
           </p>
-          <PlayerRadar
-            key={`${p1}-${p2}-${compareScope}-${season}-${group}`}
-            ready={valid}
-            data={compareData}
-            loading={compareLoading}
-            error={compareError}
-            group={group}
-            teamId1={radarTeam1}
-            teamId2={radarTeam2}
-          />
+          {valid ? (
+            <ChartSuspense height={420} label="Loading radar chart">
+              <PlayerRadar
+                key={`${p1}-${p2}-${compareScope}-${season}-${group}`}
+                ready
+                data={compareData}
+                loading={compareLoading}
+                error={compareError}
+                group={group}
+                teamId1={radarTeam1}
+                teamId2={radarTeam2}
+              />
+            </ChartSuspense>
+          ) : (
+            <p className="muted">
+              Enter two different MLB player IDs and a season to compare.
+            </p>
+          )}
         </div>
 
         {valid && compareData ? (
@@ -392,11 +406,13 @@ export default function PlayerComparison() {
               </p>
             ) : null}
             {yearlyData ? (
-              <PlayerCompareCareerLines
-                data={yearlyData}
-                teamId1={radarTeam1}
-                teamId2={radarTeam2}
-              />
+              <ChartSuspense height={400} label="Loading career trajectory chart">
+                <PlayerCompareCareerLines
+                  data={yearlyData}
+                  teamId1={radarTeam1}
+                  teamId2={radarTeam2}
+                />
+              </ChartSuspense>
             ) : null}
           </div>
         </div>
@@ -438,11 +454,13 @@ export default function PlayerComparison() {
               </p>
             ) : null}
             {gameLogData ? (
-              <PlayerCompareRecentSparklines
-                data={gameLogData}
-                teamId1={radarTeam1}
-                teamId2={radarTeam2}
-              />
+              <ChartSuspense height={340} label="Loading game log chart">
+                <PlayerCompareRecentSparklines
+                  data={gameLogData}
+                  teamId1={radarTeam1}
+                  teamId2={radarTeam2}
+                />
+              </ChartSuspense>
             ) : null}
           </div>
           <div className="players-compare__panel players-compare__panel--chart">
@@ -461,11 +479,13 @@ export default function PlayerComparison() {
               </p>
             ) : null}
             {platoonData ? (
-              <PlayerComparePlatoonBars
-                data={platoonData}
-                teamId1={radarTeam1}
-                teamId2={radarTeam2}
-              />
+              <ChartSuspense height={320} label="Loading platoon chart">
+                <PlayerComparePlatoonBars
+                  data={platoonData}
+                  teamId1={radarTeam1}
+                  teamId2={radarTeam2}
+                />
+              </ChartSuspense>
             ) : null}
           </div>
         </div>

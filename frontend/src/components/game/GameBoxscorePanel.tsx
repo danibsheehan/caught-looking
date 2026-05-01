@@ -1,7 +1,10 @@
-import { useMemo, useState } from 'react'
+import { lazy, useMemo, useState } from 'react'
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
 import { gameInningBarFills } from '../../utils/gameChartColors'
-import { GamePitcherStrikeZones, GameScoreBar } from '../charts'
+import { ChartSuspense } from '../charts/ChartSuspense'
+import GamePitcherStrikeZones from '../charts/GamePitcherStrikeZones'
+
+const GameScoreBar = lazy(() => import('../charts/GameScoreBar'))
 import GameFinalScoreStrip from './GameFinalScoreStrip'
 import type {
   BatterLine,
@@ -233,7 +236,9 @@ export default function GameBoxscorePanel({
             awayScoreColor={runsByInningTeamFills.awayFill}
             homeScoreColor={runsByInningTeamFills.homeFill}
           />
-          <GameScoreBar key={String(gamePk)} gamePk={gamePk} showCaption={false} />
+          <ChartSuspense height={260} label="Loading runs-by-inning chart">
+            <GameScoreBar key={String(gamePk)} gamePk={gamePk} showCaption={false} />
+          </ChartSuspense>
         </div>
       ) : null}
 

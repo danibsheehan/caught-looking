@@ -1,5 +1,10 @@
-import { useMemo, useState } from 'react'
-import { MultiTeamWinPctChart, TeamWinsBarChart } from '../components/charts'
+import { lazy, useMemo, useState } from 'react'
+import { ChartSuspense } from '../components/charts/ChartSuspense'
+
+const MultiTeamWinPctChart = lazy(
+  () => import('../components/charts/MultiTeamWinPctChart'),
+)
+const TeamWinsBarChart = lazy(() => import('../components/charts/TeamWinsBarChart'))
 import { StatCard, TeamSelector } from '../components/ui'
 import { useChartSurfaceHex } from '../hooks/useChartSurfaceHex'
 import { useStandings, useTeams } from '../hooks/useMLB'
@@ -155,7 +160,9 @@ export default function Standings() {
               Selected division:{' '}
               {selected?.divisionName || `ID ${selected?.divisionId}`}
             </p>
-            <TeamWinsBarChart data={chartRows} />
+            <ChartSuspense height={320} label="Loading wins chart">
+              <TeamWinsBarChart data={chartRows} />
+            </ChartSuspense>
           </div>
 
           <div className="standings-page__panel standings-page__panel--chart">
@@ -164,12 +171,14 @@ export default function Standings() {
               All clubs in this division load together. The horizontal axis is games
               completed (pace), not the calendar.
             </p>
-            <MultiTeamWinPctChart
-              teamIds={divisionTeamIdsByRank}
-              season={data?.season ?? null}
-              getLabel={(id: number) => abbrevById.get(id) ?? String(id)}
-              heroTeamIds={divisionHeroTeamIds}
-            />
+            <ChartSuspense height={360} label="Loading win % chart">
+              <MultiTeamWinPctChart
+                teamIds={divisionTeamIdsByRank}
+                season={data?.season ?? null}
+                getLabel={(id: number) => abbrevById.get(id) ?? String(id)}
+                heroTeamIds={divisionHeroTeamIds}
+              />
+            </ChartSuspense>
           </div>
 
           {selected ? (

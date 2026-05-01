@@ -9,6 +9,12 @@ export default defineConfig([
   globalIgnores(['dist', 'coverage']),
   ...tseslint.configs.recommended,
   {
+    files: ['vite.config.ts'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,
