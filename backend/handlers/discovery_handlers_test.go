@@ -181,6 +181,67 @@ func TestPlayerCurrentTeam_withTeam(t *testing.T) {
 	}
 }
 
+func TestPlayersCurrentTeams_ok(t *testing.T) {
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		var body string
+		switch r.URL.Path {
+		case "/people/10":
+			body = `{"people":[{"id":10,"currentTeam":{"id":121}}]}`
+		case "/people/20":
+			body = `{"people":[{"id":20,"currentTeam":{"id":147}}]}`
+		default:
+			http.NotFound(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(body))
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/players/current-teams", h.PlayersCurrentTeams)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/players/current-teams?ids=10,20", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+	var out models.PlayersCurrentTeamsResponse
+	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Players) != 2 {
+		t.Fatalf("players len: %+v", out.Players)
+	}
+	if out.Players[0].PlayerID != 10 || out.Players[0].TeamID != 121 {
+		t.Fatalf("p0: %+v", out.Players[0])
+	}
+	if out.Players[1].PlayerID != 20 || out.Players[1].TeamID != 147 {
+		t.Fatalf("p1: %+v", out.Players[1])
+	}
+}
+
+func TestPlayersCurrentTeams_badIds(t *testing.T) {
+	h := newTestHandlers(t, http.NotFoundHandler())
+	rt := chi.NewRouter()
+	rt.Get("/players/current-teams", h.PlayersCurrentTeams)
+
+	for _, path := range []string{
+		"/players/current-teams",
+		"/players/current-teams?ids=1",
+		"/players/current-teams?ids=1,1",
+		"/players/current-teams?ids=x,y",
+	} {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rt.ServeHTTP(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s: status got %d want 400", path, rec.Code)
+		}
+	}
+}
+
 func TestPlayerCurrentTeam_noTeam(t *testing.T) {
 	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/people/1" {

@@ -7,6 +7,7 @@ import type {
   GamesForDateResponse,
   LeagueSeasonBaselineResponse,
   PlayerCurrentTeamResponse,
+  PlayersCurrentTeamsResponse,
   PlayersCompareGameLogQuery,
   PlayersComparePlatoonQuery,
   PlayersCompareQuery,
@@ -161,6 +162,22 @@ export async function fetchPlayerCurrentTeam(
   return apiGet<PlayerCurrentTeamResponse>(
     `/players/${playerId}/current-team`,
   )
+}
+
+/** Two players in one request (compare page); order matches {@link PlayersCurrentTeamsResponse.players}. */
+export async function fetchPlayersCurrentTeams(
+  playerId1: number,
+  playerId2: number,
+): Promise<PlayersCurrentTeamsResponse> {
+  if (!Number.isFinite(playerId1) || !Number.isFinite(playerId2) || playerId1 <= 0 || playerId2 <= 0) {
+    throw new Error('fetchPlayersCurrentTeams: player ids must be positive numbers')
+  }
+  if (playerId1 === playerId2) {
+    throw new Error('fetchPlayersCurrentTeams: player ids must differ')
+  }
+  const qs = new URLSearchParams()
+  qs.set('ids', `${playerId1},${playerId2}`)
+  return apiGet<PlayersCurrentTeamsResponse>(`/players/current-teams?${qs.toString()}`)
 }
 
 export async function fetchLeagueSeasonBaseline(

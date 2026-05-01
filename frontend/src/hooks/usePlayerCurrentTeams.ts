@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { fetchPlayerCurrentTeam } from '../api/client'
+import { fetchPlayersCurrentTeams } from '../api/client'
 
 /**
  * Resolves each player's current MLB team id (Stats API) for chart colors.
  * Falls back to null so {@link PlayerRadar} uses default comparison colors.
+ * Uses a single batched API request for both players.
  */
 export function usePlayerCurrentTeams(
   playerId1: number | null | undefined,
@@ -23,14 +24,12 @@ export function usePlayerCurrentTeams(
     if (invalid) return
 
     let cancelled = false
-    Promise.all([
-      fetchPlayerCurrentTeam(playerId1),
-      fetchPlayerCurrentTeam(playerId2),
-    ])
-      .then(([a, b]) => {
+    fetchPlayersCurrentTeams(playerId1, playerId2)
+      .then((res) => {
         if (cancelled) return
-        setTeamId1(a.teamId > 0 ? a.teamId : null)
-        setTeamId2(b.teamId > 0 ? b.teamId : null)
+        const [a, b] = res.players
+        setTeamId1(a && a.teamId > 0 ? a.teamId : null)
+        setTeamId2(b && b.teamId > 0 ? b.teamId : null)
       })
       .catch(() => {
         if (!cancelled) {
