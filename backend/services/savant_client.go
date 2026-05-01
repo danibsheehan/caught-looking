@@ -14,6 +14,8 @@ import (
 
 const savantUserAgent = "caught-looking/0.1 (+https://github.com) savant csv client"
 
+const defaultSavantHTTPTimeout = 30 * time.Second
+
 // SavantClient performs GET requests against baseballsavant.mlb.com (or a compatible base URL).
 type SavantClient struct {
 	baseURL    string
@@ -22,12 +24,16 @@ type SavantClient struct {
 }
 
 // NewSavantClient returns a client for the given base URL. maxQPS caps outbound GET rate per process
-// (token bucket); use 0 for no limit (e.g. tests).
+// (token bucket); use 0 for no limit (e.g. tests). Uses the same pooled Transport tuning as MLBClient
+// (idle connections, header/TLS deadlines); no automatic retries (single GET per call).
 func NewSavantClient(baseURL string, maxQPS float64) *SavantClient {
+	reqTimeout := defaultSavantHTTPTimeout
+	t := cloneUpstreamTransport(reqTimeout)
 	c := &SavantClient{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout:   reqTimeout,
+			Transport: t,
 		},
 	}
 	if maxQPS > 0 {
