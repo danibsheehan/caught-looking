@@ -54,14 +54,17 @@ export default function GamesSlate() {
 
   const { data, error, loading: loadingList } = useAsyncResource<GamesForDateResponse>(
     {
-      fetch: () =>
-        fetchGamesForDate({
-          date,
-          teamId:
-            teamId === '' || teamId === undefined
-              ? undefined
-              : Number(teamId),
-        }),
+      fetch: (signal) =>
+        fetchGamesForDate(
+          {
+            date,
+            teamId:
+              teamId === '' || teamId === undefined
+                ? undefined
+                : Number(teamId),
+          },
+          signal,
+        ),
       initialPending: false,
     },
     [date, teamId],

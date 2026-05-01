@@ -131,7 +131,11 @@ describe('GameBoxscorePanel', () => {
     render(<GameBoxscorePanel data={box} gamePk={662001} />)
 
     expect(screen.getByRole('heading', { name: 'Runs by inning', level: 2 })).toBeInTheDocument()
-    await waitFor(() => expect(api.fetchGameTimeline).toHaveBeenCalledWith(662001), asyncWait)
+    await waitFor(
+      () =>
+        expect(api.fetchGameTimeline).toHaveBeenCalledWith(662001, expect.any(AbortSignal)),
+      asyncWait,
+    )
     expect(await screen.findByText('Inning', undefined, asyncWait)).toBeInTheDocument()
   })
 

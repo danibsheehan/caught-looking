@@ -52,11 +52,14 @@ describe('useStandings', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    expect(fetchStandings).toHaveBeenCalledWith({
-      season: 2024,
-      leagueId: '103',
-      standingsTypes: 'regularSeason',
-    })
+    expect(fetchStandings).toHaveBeenCalledWith(
+      {
+        season: 2024,
+        leagueId: '103',
+        standingsTypes: 'regularSeason',
+      },
+      expect.any(AbortSignal),
+    )
     expect(result.current.data).toEqual(mockStandings)
     expect(result.current.error).toBeNull()
   })
@@ -85,7 +88,7 @@ describe('useTeams', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    expect(fetchTeams).toHaveBeenCalledWith({ sportId: '1' })
+    expect(fetchTeams).toHaveBeenCalledWith({ sportId: '1' }, expect.any(AbortSignal))
     expect(result.current.data).toEqual(mockTeams)
   })
 })
@@ -102,7 +105,11 @@ describe('useTeamSeasonStats', () => {
 
     await waitFor(() => expect(result.current.data).toEqual(mockTeamStats))
 
-    expect(fetchTeamSeasonStats).toHaveBeenCalledWith(147, { season: 2024 })
+    expect(fetchTeamSeasonStats).toHaveBeenCalledWith(
+      147,
+      { season: 2024 },
+      expect.any(AbortSignal),
+    )
     expect(result.current.error).toBeNull()
   })
 

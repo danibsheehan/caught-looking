@@ -35,7 +35,11 @@ describe('useRecordTimeline', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    expect(fetchRecordTimeline).toHaveBeenCalledWith(121, { season: 2026 })
+    expect(fetchRecordTimeline).toHaveBeenCalledWith(
+      121,
+      { season: 2026 },
+      expect.any(AbortSignal),
+    )
     expect(result.current.data).toEqual(mockTimeline)
     expect(result.current.error).toBeNull()
   })

@@ -70,11 +70,14 @@ describe('usePlayerCompareYearByYear', () => {
 
     await waitFor(() => expect(result.current.data).toEqual(mockYearByYear))
 
-    expect(fetchPlayersCompareYearByYear).toHaveBeenCalledWith({
-      ids: '10,20',
-      group: 'pitching',
-      metric: 'era',
-    })
+    expect(fetchPlayersCompareYearByYear).toHaveBeenCalledWith(
+      {
+        ids: '10,20',
+        group: 'pitching',
+        metric: 'era',
+      },
+      expect.any(AbortSignal),
+    )
   })
 
   it('surfaces errors', async () => {
@@ -111,12 +114,15 @@ describe('usePlayerCompareGameLog', () => {
 
     await waitFor(() => expect(result.current.data).toEqual(mockGameLog))
 
-    expect(fetchPlayersCompareGameLog).toHaveBeenCalledWith({
-      ids: '1,2',
-      season: 2024,
-      group: 'pitching',
-      limit: 50,
-    })
+    expect(fetchPlayersCompareGameLog).toHaveBeenCalledWith(
+      {
+        ids: '1,2',
+        season: 2024,
+        group: 'pitching',
+        limit: 50,
+      },
+      expect.any(AbortSignal),
+    )
   })
 
   it('surfaces errors', async () => {
@@ -148,10 +154,13 @@ describe('usePlayerComparePlatoon', () => {
     )
 
     await waitFor(() => expect(result.current.data).toEqual(mockPlatoon))
-    expect(fetchPlayersComparePlatoon).toHaveBeenCalledWith({
-      ids: '5,6',
-      season: 2024,
-      group: 'pitching',
-    })
+    expect(fetchPlayersComparePlatoon).toHaveBeenCalledWith(
+      {
+        ids: '5,6',
+        season: 2024,
+        group: 'pitching',
+      },
+      expect.any(AbortSignal),
+    )
   })
 })

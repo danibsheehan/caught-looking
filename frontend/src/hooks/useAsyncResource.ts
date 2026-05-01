@@ -10,6 +10,12 @@ export function normalizeAsyncError(e: unknown): Error {
   return e instanceof Error ? e : new Error(String(e))
 }
 
+/** True when {@link fetch} was aborted (user navigated away or deps changed). */
+export function isAbortError(e: unknown): boolean {
+  if (e == null || typeof e !== 'object') return false
+  return (e as { name?: string }).name === 'AbortError'
+}
+
 export type AsyncResourceResult<T> = {
   data: T | null
   error: Error | null
@@ -19,7 +25,8 @@ export type AsyncResourceResult<T> = {
 export type UseAsyncResourceInput<T> = {
   /** When false, no request runs; see `resetOnDisable` for `data` / `error` handling. */
   enabled?: boolean
-  fetch: () => Promise<T>
+  /** Passed to app `fetch*` helpers so in-flight work aborts on unmount or dependency change. */
+  fetch: (signal: AbortSignal) => Promise<T>
   /**
    * When true (default), `loading` is true on first mount while enabled until the first request settles.
    * When false, `loading` is only true while a request is in flight.
@@ -38,8 +45,8 @@ export type UseAsyncResourceInput<T> = {
 }
 
 /**
- * Shared async API loading: cancellation, {@link normalizeAsyncError}, and
- * `startTransition` for loading/error resets (replaces ad hoc `setTimeout(0)` + setState).
+ * Shared async API loading: {@link AbortController} abort on cleanup, {@link normalizeAsyncError},
+ * and `startTransition` for loading/error resets (replaces ad hoc `setTimeout(0)` + setState).
  */
 export function useAsyncResource<T>(
   input: UseAsyncResourceInput<T>,
@@ -67,6 +74,8 @@ export function useAsyncResource<T>(
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(() => active && initialPending)
+  /** Incremented on each cleanup so superseded fetches (e.g. mocks that ignore abort) do not clear `loading`. */
+  const requestSeqRef = useRef(0)
 
   useEffect(() => {
     if (!active) {
@@ -80,7 +89,9 @@ export function useAsyncResource<T>(
       return
     }
 
+    const seq = ++requestSeqRef.current
     let cancelled = false
+    const ac = new AbortController()
 
     startTransition(() => {
       setLoading(true)
@@ -90,19 +101,24 @@ export function useAsyncResource<T>(
       }
     })
 
-    fetchRef.current()
+    fetchRef
+      .current(ac.signal)
       .then((json) => {
         if (!cancelled) setData(json)
       })
       .catch((e) => {
-        if (!cancelled) setError(normalizeAsyncError(e))
+        if (cancelled || isAbortError(e)) return
+        setError(normalizeAsyncError(e))
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (seq !== requestSeqRef.current) return
+        setLoading(false)
       })
 
     return () => {
       cancelled = true
+      requestSeqRef.current += 1
+      ac.abort()
     }
     // `deps` is the caller’s full dependency list (same contract as `useEffect(fn, deps)`).
     // eslint-disable-next-line react-hooks/exhaustive-deps

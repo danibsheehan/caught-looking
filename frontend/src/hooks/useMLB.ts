@@ -12,7 +12,8 @@ export function useStandings(params: StandingsQuery = {}) {
   const { season, leagueId, standingsTypes } = params
   return useAsyncResource<StandingsResponse>(
     {
-      fetch: () => fetchStandings({ season, leagueId, standingsTypes }),
+      fetch: (signal) =>
+        fetchStandings({ season, leagueId, standingsTypes }, signal),
     },
     [season, leagueId, standingsTypes],
   )
@@ -24,7 +25,8 @@ export function useTeamSeasonStats(teamId: number | '', season: number) {
     {
       enabled: valid,
       initialPending: false,
-      fetch: () => fetchTeamSeasonStats(teamId as number, { season }),
+      fetch: (signal) =>
+        fetchTeamSeasonStats(teamId as number, { season }, signal),
     },
     [valid, teamId, season],
   )
@@ -39,7 +41,7 @@ export function useTeams(params: TeamsQuery = {}) {
   const { sportId } = params
   return useAsyncResource<TeamsResponse>(
     {
-      fetch: () => fetchTeams({ sportId }),
+      fetch: (signal) => fetchTeams({ sportId }, signal),
     },
     [sportId],
   )

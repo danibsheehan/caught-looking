@@ -72,9 +72,9 @@ describe('useGameDetailData', () => {
     await waitFor(() => expect(result.current.statcast.loading).toBe(false))
     await waitFor(() => expect(result.current.pitches.loading).toBe(false))
 
-    expect(fetchGameBoxscore).toHaveBeenCalledWith(662000)
-    expect(fetchGameStatcast).toHaveBeenCalledWith(662000)
-    expect(fetchGameStatcastPitches).toHaveBeenCalledWith(662000)
+    expect(fetchGameBoxscore).toHaveBeenCalledWith(662000, expect.any(AbortSignal))
+    expect(fetchGameStatcast).toHaveBeenCalledWith(662000, expect.any(AbortSignal))
+    expect(fetchGameStatcastPitches).toHaveBeenCalledWith(662000, expect.any(AbortSignal))
 
     expect(result.current.box.data).toEqual(mockBox)
     expect(result.current.statcast.data).toEqual(mockStatcast)
@@ -110,11 +110,15 @@ describe('useGameDetailData', () => {
       initialProps: { pk: 100 },
     })
 
-    await waitFor(() => expect(fetchGameBoxscore).toHaveBeenCalledWith(100))
+    await waitFor(() =>
+      expect(fetchGameBoxscore).toHaveBeenCalledWith(100, expect.any(AbortSignal)),
+    )
 
     rerender({ pk: 200 })
 
-    await waitFor(() => expect(fetchGameBoxscore).toHaveBeenCalledWith(200))
+    await waitFor(() =>
+      expect(fetchGameBoxscore).toHaveBeenCalledWith(200, expect.any(AbortSignal)),
+    )
     expect(fetchGameBoxscore).toHaveBeenCalledTimes(2)
   })
 })
