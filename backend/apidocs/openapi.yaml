@@ -229,6 +229,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlayersSearchResponse"
+  /players/current-teams:
+    get:
+      summary: Current team for two players (single request)
+      description: >-
+        Same per-player data and cache behavior as GET /players/{playerID}/current-team,
+        but fetches two ids in parallel. Response `players` order matches the `ids` query order.
+      operationId: getPlayersCurrentTeams
+      parameters:
+        - in: query
+          name: ids
+          required: true
+          description: Two comma-separated MLB person ids (distinct, positive).
+          schema:
+            type: string
+            example: "660271,592450"
+      responses:
+        "200":
+          description: Current team id per player
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayersCurrentTeamsResponse"
+        "400":
+          description: Invalid or duplicate ids
   /players/{playerID}/current-team:
     get:
       summary: Player current team
@@ -873,6 +897,16 @@ components:
         teamId:
           type: integer
       required: [playerId, teamId]
+    PlayersCurrentTeamsResponse:
+      type: object
+      properties:
+        players:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            $ref: "#/components/schemas/PlayerCurrentTeamResponse"
+      required: [players]
     PlayersRadarResponse:
       type: object
       properties:

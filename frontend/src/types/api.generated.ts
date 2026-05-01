@@ -208,6 +208,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/players/current-teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Current team for two players (single request)
+         * @description Same per-player data and cache behavior as GET /players/{playerID}/current-team, but fetches two ids in parallel. Response `players` order matches the `ids` query order.
+         */
+        get: operations["getPlayersCurrentTeams"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/players/{playerID}/current-team": {
         parameters: {
             query?: never;
@@ -536,6 +556,9 @@ export interface components {
         PlayerCurrentTeamResponse: {
             playerId: number;
             teamId: number;
+        };
+        PlayersCurrentTeamsResponse: {
+            players: components["schemas"]["PlayerCurrentTeamResponse"][];
         };
         PlayersRadarResponse: {
             /** @enum {string} */
@@ -904,6 +927,36 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PlayersSearchResponse"];
                 };
+            };
+        };
+    };
+    getPlayersCurrentTeams: {
+        parameters: {
+            query: {
+                /** @description Two comma-separated MLB person ids (distinct, positive). */
+                ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current team id per player */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayersCurrentTeamsResponse"];
+                };
+            };
+            /** @description Invalid or duplicate ids */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

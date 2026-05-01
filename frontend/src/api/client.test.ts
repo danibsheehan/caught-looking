@@ -237,6 +237,14 @@ describe('api client', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/players/12345/current-team')
     })
 
+    it('fetchPlayersCurrentTeams builds ids query and rejects invalid args', async () => {
+      fetchMock.mockResolvedValue(jsonResponse({ players: [] }))
+      const { fetchPlayersCurrentTeams } = await getClient()
+      await fetchPlayersCurrentTeams(10, 20)
+      expect(fetchMock).toHaveBeenCalledWith('/api/players/current-teams?ids=10%2C20')
+      await expect(fetchPlayersCurrentTeams(1, 1)).rejects.toThrow(/must differ/)
+    })
+
     it('fetchLeagueSeasonBaseline adds optional query', async () => {
       fetchMock.mockResolvedValue(jsonResponse({}))
       const { fetchLeagueSeasonBaseline } = await getClient()

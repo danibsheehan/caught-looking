@@ -8,7 +8,7 @@ import type {
   GameStatcastPitchesResponse,
   GameStatcastResponse,
   GameTimelineResponse,
-  PlayerCurrentTeamResponse,
+  PlayersCurrentTeamsResponse,
   PlayersGameLogResponse,
   PlayersPlatoonResponse,
   PlayersRadarResponse,
@@ -146,9 +146,11 @@ const api = vi.hoisted(() => {
     ],
   }
 
-  const currentTeam = (id: number): PlayerCurrentTeamResponse => ({
-    playerId: id,
-    teamId: id === 660271 ? 119 : 147,
+  const currentTeamsBatch = (id1: number, id2: number): PlayersCurrentTeamsResponse => ({
+    players: [
+      { playerId: id1, teamId: id1 === 660271 ? 119 : 147 },
+      { playerId: id2, teamId: id2 === 660271 ? 119 : 147 },
+    ],
   })
 
   const timelinesBatch: RecordTimelinesBatchResponse = {
@@ -183,7 +185,6 @@ const api = vi.hoisted(() => {
     compare,
     yearly,
     gameLog,
-    currentTeam,
     timelinesBatch,
     recordTimeline,
     gameTimeline,
@@ -196,7 +197,9 @@ const api = vi.hoisted(() => {
     fetchGameStatcast: vi.fn(() => Promise.resolve(statcast)),
     fetchGameStatcastPitches: vi.fn(() => Promise.resolve(pitches)),
     fetchPlayersCompare: vi.fn(() => Promise.resolve(compare)),
-    fetchPlayerCurrentTeam: vi.fn((id: number) => Promise.resolve(currentTeam(id))),
+    fetchPlayersCurrentTeams: vi.fn((id1: number, id2: number) =>
+      Promise.resolve(currentTeamsBatch(id1, id2)),
+    ),
     fetchPlayersCompareYearByYear: vi.fn(() => Promise.resolve(yearly)),
     fetchPlayersCompareGameLog: vi.fn(() => Promise.resolve(gameLog)),
     fetchPlayersComparePlatoon: vi.fn(() => Promise.resolve(platoon)),
@@ -216,7 +219,7 @@ vi.mock('./api/client', async (importOriginal) => {
     fetchGameStatcast: api.fetchGameStatcast,
     fetchGameStatcastPitches: api.fetchGameStatcastPitches,
     fetchPlayersCompare: api.fetchPlayersCompare,
-    fetchPlayerCurrentTeam: api.fetchPlayerCurrentTeam,
+    fetchPlayersCurrentTeams: api.fetchPlayersCurrentTeams,
     fetchPlayersCompareYearByYear: api.fetchPlayersCompareYearByYear,
     fetchPlayersCompareGameLog: api.fetchPlayersCompareGameLog,
     fetchPlayersComparePlatoon: api.fetchPlayersComparePlatoon,
@@ -269,7 +272,7 @@ describe('App routes', () => {
     await waitFor(() => expect(api.fetchPlayersCompareYearByYear).not.toHaveBeenCalled(), asyncWait)
     await waitFor(() => expect(api.fetchPlayersCompareGameLog).toHaveBeenCalled(), asyncWait)
     await waitFor(() => expect(api.fetchPlayersComparePlatoon).toHaveBeenCalled(), asyncWait)
-    await waitFor(() => expect(api.fetchPlayerCurrentTeam).toHaveBeenCalled(), asyncWait)
+    await waitFor(() => expect(api.fetchPlayersCurrentTeams).toHaveBeenCalled(), asyncWait)
   })
 
   it('loads year-by-year data only after switching Compare to Career', async () => {
