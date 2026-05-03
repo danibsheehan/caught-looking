@@ -2,27 +2,40 @@
 
 [![CI](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml/badge.svg)](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml)
 [![OpenAPI docs](https://img.shields.io/badge/docs-Redoc-f472b6?style=flat-square&labelColor=070b10)](https://docs.caught-looking.com/)
+[![Live app](https://img.shields.io/badge/live-caught--looking.com-00f5c4?style=flat-square&labelColor=070b10)](https://caught-looking.com/standings)
 [![Go](https://img.shields.io/badge/Go-1.22-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=0a1018)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 ![UI](https://img.shields.io/badge/UI-neon_on_obsidian-00f5c4?style=flat-square&labelColor=070b10)
 
-```
-    ╭────────────────────────────────────────────────────────────╮
-    │  caught looking  ·  MLB stats & charts  ·  dark-first UI   │
-    ╰────────────────────────────────────────────────────────────╯
-```
+[![Neon on obsidian — caught looking](./docs/readme-banner.svg)](https://caught-looking.com/standings)
+
+> League tables, spray geometry, and Statcast-backed panels—**built for a dark dugout**, not a bright dashboard template.
 
 **Neon on obsidian** — near-black fields (`#070b10`, `#0a1018`), **teal** (`--accent`, `#00f5c4`) for links, focus, and primary chart chrome, cool gray body type for readable contrast. Multi-series charts cycle **teal, violet, and pink-tinted companion** hex seeds via [`frontend/src/utils/neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) (not extra `html` CSS variables). **DM Sans** carries prose; **Space Mono** carries numerals and axes so stats scan like telemetry, not wallpaper.
 
 Web app for exploring **MLB statistics** with charts and comparisons. The UI talks to a small **Go** backend that proxies and caches requests to the public **MLB Stats API** (`statsapi.mlb.com`) and, for some game views, **Baseball Savant** (Statcast CSV over HTTPS).
+
+| ◆ | What stands out |
+| :---: | :--- |
+| **Contract** | Handlers and the SPA share one **OpenAPI** spec → generated TypeScript types + Redoc. |
+| **Color** | **Shell** tokens in SCSS; **team ink** from registry + MLB brand picks, contrast-adjusted per chart surface. |
+| **Ops** | Per-IP limits, outbound **QPS caps**, and TTL caches so public upstreams stay friendly at scale. |
+
+> [!TIP]
+> Ship shape in one command: **`make install`** then **`make dev`** — API on **`:8080`**, Vite on **`:5173`**, browser hits **`/api`** through the proxy.
+
+> [!NOTE]
+> **Live app:** [caught-looking.com/standings](https://caught-looking.com/standings) · [www.caught-looking.com/standings](https://www.caught-looking.com/standings) · **API reference (Redoc):** [docs.caught-looking.com](https://docs.caught-looking.com/)
 
 **Jump:** [Overview](#overview) · [Architecture](#architecture) · [Design tokens](#design-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing)
 
 ---
 
 ## Overview
+
+**Production:** [caught-looking.com/standings](https://caught-looking.com/standings) or [www.caught-looking.com/standings](https://www.caught-looking.com/standings) — same SPA (Cloudflare Pages + Cloud Run API — see [Deployment (CI)](#deployment-ci)).
 
 **Standings → Teams → Players → Games** — from league table to slate to **per-game** detail (timeline, boxscore-style views, Statcast-backed panels where data exists). **OpenAPI / Redoc**: [https://docs.caught-looking.com/](https://docs.caught-looking.com/)
 
@@ -50,6 +63,25 @@ flowchart LR
   SPA -->|"GET /api/*"| SRV
   SRV --> MLB
   SRV --> SAV
+```
+
+### Request path (happy path)
+
+Typical **read** from the SPA: JSON in, JSON out; the Go layer adds cache keys, rate limits, and upstream timeouts.
+
+```mermaid
+%%{init: {'theme':'dark'}}%%
+sequenceDiagram
+    autonumber
+    participant SPA as React SPA
+    participant API as Go API chi
+    participant MLB as MLB Stats API
+    participant SV as Savant
+    SPA->>+API: GET /api/…
+    API->>MLB: proxied GET (TTL cache)
+    MLB-->>API: JSON
+    API-->>-SPA: 200 + JSON
+    Note over API, SV: Game / Statcast views may also pull CSV over HTTPS from Savant
 ```
 
 **App chrome (CSS)** — the global shell is fixed: obsidian base below, surface and teal **`--accent`** above (bottom → top). This stack does **not** include chart series colors.
@@ -149,7 +181,7 @@ Continuous integration runs in **GitHub Actions** on **every branch push** and o
 | Concern        | Path                                                                                                                   |
 | :------------- | :--------------------------------------------------------------------------------------------------------------------- |
 | Shell / routes | [`frontend/src/App.tsx`](frontend/src/App.tsx), [`frontend/src/styles/_shell.scss`](frontend/src/styles/_shell.scss)   |
-| Global theme   | [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss); feature SCSS under `frontend/src/styles/features/` |
+| Global theme   | [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss); feature SCSS under `frontend/src/styles/features/`; README banner [`docs/readme-banner.svg`](docs/readme-banner.svg) |
 | Pages          | `frontend/src/pages/`                                                                                                  |
 | API client     | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev                          |
 | Types          | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts`                                              |
@@ -250,7 +282,7 @@ Backend tests live as `*_test.go` next to packages under `backend/`. Frontend te
 
 | Variable        | Purpose                                                                                                                                                                         |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_API_BASE` | API base URL **without** trailing slash. In dev, omit it to use `/api` + the Vite proxy. For a direct backend URL (e.g. production or tools), set e.g. `http://localhost:8080`. |
+| `VITE_API_BASE` | API base URL **without** trailing slash. In dev, omit it to use `/api` + the Vite proxy. Production builds served at [caught-looking.com](https://caught-looking.com/standings) or [www.caught-looking.com](https://www.caught-looking.com/standings) set this to the deployed Cloud Run API URL. |
 
 ---
 
@@ -277,7 +309,7 @@ Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [
 | `GCP_REGION`                    | `us-central1`                    | Cloud Run and Artifact Registry region                                                         |
 | `GCP_ARTIFACT_REPOSITORY`       | `caught-looking`                 | Artifact Registry repo name (image: `…/api:<git-sha>`)                                         |
 | `CLOUDRUN_SERVICE_NAME`         | `caught-looking-api`             | Cloud Run service name                                                                         |
-| `CORS_ALLOWED_ORIGINS`          | `https://your-project.pages.dev` | Comma-separated **`ALLOWED_ORIGINS`** for the API (must include your Cloudflare Pages origin). |
+| `CORS_ALLOWED_ORIGINS`          | `https://caught-looking.com,https://www.caught-looking.com` | Comma-separated **`ALLOWED_ORIGINS`** for the API (must include every browser origin that calls the API, e.g. apex + `www`, and/or `*.pages.dev`). |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | `your-project`                   | If **unset**, only the API deploy runs (useful while wiring Cloudflare).                       |
 
 **GitHub repository secrets**
@@ -288,7 +320,7 @@ Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [
 | `CLOUDFLARE_API_TOKEN`  | Cloudflare API token         |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account id        |
 
-After the first successful deploy, **`CORS_ALLOWED_ORIGINS`** must include the real **`*.pages.dev`** (or custom domain) origin. If you add or change origins, update the variable and push to **`main`** (or update the Cloud Run service env) so CORS matches the browser.
+After the first successful deploy, **`CORS_ALLOWED_ORIGINS`** must include the real SPA origins (this project: **`https://caught-looking.com`** and **`https://www.caught-looking.com`**, plus any **`*.pages.dev`** host you still use). If you add or change origins, update the variable and push to **`main`** (or update the Cloud Run service env) so CORS matches the browser.
 
 **Cost / abuse (optional, no extra GCP products)** — The API defaults to per-IP HTTP rate limiting and outbound QPS caps for MLB and Savant (see env vars above). On Cloud Run you can also set **maximum instances** (and concurrency) on the service to cap worst-case spend; defaults are in Google Cloud Console or `gcloud run services update … --max-instances=…`.
 
