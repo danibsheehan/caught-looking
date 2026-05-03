@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="188" height="20" role="img" aria-label="live: caught-looking.com">
+  <title>live: caught-looking.com</title>
+  <defs>
+    <linearGradient id="liveBadgeBg" x1="0" y1="0" x2="0" y2="20" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0a1018"/>
+      <stop offset="1" stop-color="#070b10"/>
+    </linearGradient>
+  </defs>
+  <rect width="188" height="20" rx="4" fill="url(#liveBadgeBg)" stroke="#0f1e2d" stroke-width="1"/>
+  <rect x="1" y="1" width="36" height="18" rx="3" fill="#070b10"/>
+  <text x="8" y="14" fill="#00f5c4" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="700">live</text>
+  <text x="44" y="14" fill="#8b9cad" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10" letter-spacing="0.02em">caught-looking.com</text>
+</svg>
