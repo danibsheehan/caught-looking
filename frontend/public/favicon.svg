@@ -9,6 +9,6 @@
     stroke-linejoin="round"
     d="M10 7h12l3 9-9 11-9-11 3-9Z"
   />
-  <!-- Tiny rose tick at the point — reads at 16×16 without a second stroke -->
-  <circle cx="16" cy="27" r="1" fill="#ff4f9a" />
+  <!-- Secondary accent tick at the point — reads at 16×16 without a second stroke -->
+  <circle cx="16" cy="27" r="1" fill="#f472b6" />
 </svg>
