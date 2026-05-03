@@ -2,14 +2,14 @@
 
 [![CI](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml/badge.svg)](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml)
 [![OpenAPI docs](https://img.shields.io/badge/docs-Redoc-f472b6?style=flat-square&labelColor=070b10)](https://docs.caught-looking.com/)
-[![Live app — caught-looking.com](https://raw.githubusercontent.com/danibsheehan/caught-looking/main/docs/badge-live.svg)](https://caught-looking.com/standings)
+[![Live app — caught-looking.com](./docs/badge-live.svg)](https://caught-looking.com/standings)
 [![Go](https://img.shields.io/badge/Go-1.22-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=0a1018)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 ![UI](https://img.shields.io/badge/UI-neon_on_obsidian-00f5c4?style=flat-square&labelColor=070b10)
 
-[![Neon on obsidian — caught looking](https://raw.githubusercontent.com/danibsheehan/caught-looking/main/docs/readme-banner.svg)](https://caught-looking.com/standings)
+[![Neon on obsidian — caught looking](./docs/readme-banner.svg)](https://caught-looking.com/standings)
 
 > League tables, spray geometry, and Statcast-backed panels—**built for a dark dugout**, not a bright dashboard template.
 
@@ -181,7 +181,7 @@ Continuous integration runs in **GitHub Actions** on **every branch push** and o
 | Concern        | Path                                                                                                                   |
 | :------------- | :--------------------------------------------------------------------------------------------------------------------- |
 | Shell / routes | [`frontend/src/App.tsx`](frontend/src/App.tsx), [`frontend/src/styles/_shell.scss`](frontend/src/styles/_shell.scss)   |
-| Global theme   | [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss); feature SCSS under `frontend/src/styles/features/`; README art [`docs/readme-banner.svg`](docs/readme-banner.svg), [`docs/badge-live.svg`](docs/badge-live.svg) |
+| Global theme   | [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss); feature SCSS under `frontend/src/styles/features/`; README hero + live badge: [`docs/readme-banner.svg`](docs/readme-banner.svg), [`docs/badge-live.svg`](docs/badge-live.svg) (`./docs/…` in README so images work on PRs, not only `main`) |
 | Pages          | `frontend/src/pages/`                                                                                                  |
 | API client     | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev                          |
 | Types          | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts`                                              |
