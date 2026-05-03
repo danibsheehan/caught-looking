@@ -1,31 +1,78 @@
-# caught-looking
+# Caught looking
+
+**Neon on obsidian** — a dark, low-noise UI: near-black fields, **teal** and **rose** accents for navigation and charts, cool gray body type, **DM Sans** for prose and **Space Mono** for numbers. Same tokens drive this doc’s palette table and the app; source: [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss) (`html`).
 
 Web app for exploring **MLB statistics** with charts and comparisons. The UI talks to a small **Go** backend that proxies and caches requests to the public **MLB Stats API** (`statsapi.mlb.com`) and, for some game views, **Baseball Savant** (Statcast CSV over HTTPS).
 
+---
+
+## Overview
+
+**Standings → Teams → Players → Games** — from league table to slate to **per-game** detail (timeline, boxscore-style views, Statcast-backed panels where data exists). **OpenAPI / Redoc**: [https://docs.caught-looking.com/](https://docs.caught-looking.com/)
+
+SPA routes: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk` (default landing: `/standings`). Routing: [`frontend/src/App.tsx`](frontend/src/App.tsx).
+
+### Color tokens (`_base.scss`)
+
+Update this table when `:root` / `html` values change.
+
+| CSS variable | Hex / value | Role |
+| :--- | :--- | :--- |
+| `--bg` | `#070b10` | Deepest background |
+| `--surface` | `#0a1018` | Panels and cards |
+| `--text` | `#8b9cad` | Body (AA vs `--bg`) |
+| `--text-h` | `#c8d8e8` | Headings, code |
+| `--muted` | `#5a6b7c` | Secondary labels |
+| `--accent` | `#00f5c4` | Teal neon — links, active chrome, chart emphasis |
+| `--accent-2` | `#ff4f9a` | Rose — secondary highlights |
+| `--border` | `#0f1e2d` | Shell edges, dividers |
+| `--chart-grid-faint` | `#0d1a26` | Faint chart grid |
+
+---
+
 ## Features
 
-- **Standings** — league standings for the configured season.
-- **Teams** — team overview with season stats and record timelines.
-- **Players** — side-by-side player comparison (radar, trends, game log) with hitting/pitching views.
-- **Games** — date-based slate and **per-game** detail (timeline, boxscore-style views, Statcast-backed panels where data is available).
-- **API docs (OpenAPI/Redoc)** — [https://docs.caught-looking.com/](https://docs.caught-looking.com/)
+| Area | What you get |
+| :--- | :--- |
+| **Standings** | League standings for the configured season. |
+| **Teams** | Team overview with season stats and record timelines. |
+| **Players** | Side-by-side comparison (radar, trends, game log); hitting / pitching views. |
+| **Games** | Date slate + **per-game** detail (timeline, boxscore-style views, Statcast panels when available). |
+| **Docs** | [OpenAPI/Redoc](https://docs.caught-looking.com/) from `backend/apidocs/openapi.yaml`. |
 
-Routes in the SPA: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk` (default landing: `/standings`).
+---
 
 ## Tech stack
 
-| Layer    | Technology |
+| Layer | Technology |
 | -------- | ---------- |
 | Frontend | React 19, TypeScript, Vite, React Router, Recharts |
-| Backend  | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, token-bucket QPS caps for MLB and Savant outbound traffic |
-| Data     | MLB Stats API v1 (JSON); Baseball Savant (CSV) for Statcast-oriented game data |
+| Backend | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, token-bucket QPS caps for MLB and Savant outbound traffic |
+| Data | MLB Stats API v1 (JSON); Baseball Savant (CSV) for Statcast-oriented game data |
 
 Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests (same-repo workflows), **two** [**cobertura-action**](https://github.com/5monkeys/cobertura-action) comments (frontend and backend tables) are added or updated from the Cobertura reports (fork PRs may not receive them due to token limits; those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
+
+---
+
+## Project layout
+
+| Concern | Path |
+| :--- | :--- |
+| Shell / routes | [`frontend/src/App.tsx`](frontend/src/App.tsx), [`frontend/src/styles/_shell.scss`](frontend/src/styles/_shell.scss) |
+| Global theme | [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss); feature SCSS under `frontend/src/styles/features/` |
+| Pages | `frontend/src/pages/` |
+| API client | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev |
+| Types | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts` |
+| Backend | `backend/` — chi, MLB + Savant clients, `backend/apidocs/openapi.yaml` |
+
+---
 
 ## Prerequisites
 
 - **Go** 1.22+
 - **Node.js** 22+ and **npm** (CI uses Node 22; newer LTS generally works)
+
+---
 
 ## Run locally
 
@@ -86,6 +133,8 @@ Tests use **Vitest** (jsdom), **Testing Library**, and **`@testing-library/jest-
 
 Backend tests live as `*_test.go` next to packages under `backend/`. Frontend tests are colocated as `*.test.ts` / `*.test.tsx` next to sources. Conventions for agents and contributors are summarized in **`.cursor/skills/backend-go-tests/SKILL.md`** (Go) and **`.cursor/skills/frontend-vitest-tests/SKILL.md`** (frontend).
 
+---
+
 ## Configuration
 
 ### Backend (environment variables)
@@ -112,6 +161,8 @@ Backend tests live as `*_test.go` next to packages under `backend/`. Frontend te
 | Variable | Purpose |
 | -------- | ------- |
 | `VITE_API_BASE` | API base URL **without** trailing slash. In dev, omit it to use `/api` + the Vite proxy. For a direct backend URL (e.g. production or tools), set e.g. `http://localhost:8080`. |
+
+---
 
 ## Deployment (CI)
 
@@ -151,6 +202,8 @@ After the first successful deploy, **`CORS_ALLOWED_ORIGINS`** must include the r
 
 **Cost / abuse (optional, no extra GCP products)** — The API defaults to per-IP HTTP rate limiting and outbound QPS caps for MLB and Savant (see env vars above). On Cloud Run you can also set **maximum instances** (and concurrency) on the service to cap worst-case spend; defaults are in Google Cloud Console or `gcloud run services update … --max-instances=…`.
 
+---
+
 ## Repository layout
 
 ```
@@ -158,6 +211,8 @@ backend/    # Go HTTP API, MLB + Savant clients, handlers, models
 frontend/   # React SPA (src/, Vite, Vitest)
 Makefile    # install, dev, backend, frontend, test-*, cover-*
 ```
+
+---
 
 ## Contributing
 
