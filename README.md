@@ -1,8 +1,24 @@
 # Caught looking
 
-**Neon on obsidian** — a dark, low-noise UI: near-black fields, **teal** and **rose** accents for navigation and charts, cool gray body type, **DM Sans** for prose and **Space Mono** for numbers. Same tokens drive this doc’s palette table and the app; source: [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss) (`html`).
+[![CI](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml/badge.svg)](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml)
+[![OpenAPI docs](https://img.shields.io/badge/docs-Redoc-ff4f9a?style=flat-square&labelColor=070b10)](https://docs.caught-looking.com/)
+[![Go](https://img.shields.io/badge/Go-1.22-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=0a1018)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+![UI](https://img.shields.io/badge/UI-neon_on_obsidian-00f5c4?style=flat-square&labelColor=070b10)
+
+```
+    ╭────────────────────────────────────────────────────────────╮
+    │  caught looking  ·  MLB stats & charts  ·  dark-first UI   │
+    ╰────────────────────────────────────────────────────────────╯
+```
+
+**Neon on obsidian** — near-black fields (`#070b10`, `#0a1018`), **teal** (`#00f5c4`) and **rose** (`#ff4f9a`) for interactive and chart emphasis, cool gray body type for readable contrast. **DM Sans** carries prose; **Space Mono** carries numerals and axes so stats scan like telemetry, not wallpaper.
 
 Web app for exploring **MLB statistics** with charts and comparisons. The UI talks to a small **Go** backend that proxies and caches requests to the public **MLB Stats API** (`statsapi.mlb.com`) and, for some game views, **Baseball Savant** (Statcast CSV over HTTPS).
+
+**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Color tokens](#color-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing)
 
 ---
 
@@ -12,9 +28,47 @@ Web app for exploring **MLB statistics** with charts and comparisons. The UI tal
 
 SPA routes: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk` (default landing: `/standings`). Routing: [`frontend/src/App.tsx`](frontend/src/App.tsx).
 
-### Color tokens (`_base.scss`)
+---
 
-Update this table when `:root` / `html` values change.
+## Architecture
+
+Browser **React** app calls same-origin **`/api`** (Vite proxy in dev, `VITE_API_BASE` in prod). **Go** applies cache TTLs, per-IP limits, and outbound QPS caps before fanning out to **MLB** JSON and **Savant** CSV.
+
+```mermaid
+%%{init: {'theme':'dark'}}%%
+flowchart LR
+  subgraph ui["Browser"]
+    SPA["React SPA<br/>Recharts · neon chrome"]
+  end
+  subgraph api["Go API · chi"]
+    SRV["Handlers + cache<br/>rate limit · QPS caps"]
+  end
+  subgraph up["Upstream"]
+    MLB["MLB Stats API<br/>JSON"]
+    SAV["Baseball Savant<br/>CSV / Statcast"]
+  end
+  SPA -->|"GET /api/*"| SRV
+  SRV --> MLB
+  SRV --> SAV
+```
+
+Hue flow in the theme (read left → right like a single chart readout):
+
+```mermaid
+%%{init: {'theme':'dark'}}%%
+flowchart LR
+  A["#070b10<br/>void"] --> B["#0a1018<br/>surface"] --> C["#00f5c4<br/>teal neon"] --> D["#ff4f9a<br/>rose"]
+  style A fill:#070b10,stroke:#0f1e2d,color:#8b9cad
+  style B fill:#0a1018,stroke:#0f1e2d,color:#c8d8e8
+  style C fill:#0a1018,stroke:#00f5c4,color:#00f5c4
+  style D fill:#0a1018,stroke:#ff4f9a,color:#ff4f9a
+```
+
+---
+
+## Color tokens
+
+Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss). Update this table when those values change.
 
 | CSS variable | Hex / value | Role |
 | :--- | :--- | :--- |
@@ -50,7 +104,12 @@ Update this table when `:root` / `html` values change.
 | Backend | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, token-bucket QPS caps for MLB and Savant outbound traffic |
 | Data | MLB Stats API v1 (JSON); Baseball Savant (CSV) for Statcast-oriented game data |
 
+<details>
+<summary><strong>CI & quality gates</strong> (expand)</summary>
+
 Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests (same-repo workflows), **two** [**cobertura-action**](https://github.com/5monkeys/cobertura-action) comments (frontend and backend tables) are added or updated from the Cobertura reports (fork PRs may not receive them due to token limits; those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
+
+</details>
 
 ---
 
