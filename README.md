@@ -2,14 +2,14 @@
 
 [![CI](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml/badge.svg)](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml)
 [![OpenAPI docs](https://img.shields.io/badge/docs-Redoc-f472b6?style=flat-square&labelColor=070b10)](https://docs.caught-looking.com/)
-[![Live app](https://img.shields.io/badge/live-caught--looking.com-00f5c4?style=flat-square&labelColor=070b10)](https://caught-looking.com/standings)
+[![Live app](https://img.shields.io/static/v1?label=live&message=caught-looking.com&color=00f5c4&labelColor=070b10&style=flat-square)](https://caught-looking.com/standings)
 [![Go](https://img.shields.io/badge/Go-1.22-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=0a1018)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 ![UI](https://img.shields.io/badge/UI-neon_on_obsidian-00f5c4?style=flat-square&labelColor=070b10)
 
-[![Neon on obsidian — caught looking](./docs/readme-banner.svg)](https://caught-looking.com/standings)
+[![Neon on obsidian — caught looking](https://raw.githubusercontent.com/danibsheehan/caught-looking/main/docs/readme-banner.svg)](https://caught-looking.com/standings)
 
 > League tables, spray geometry, and Statcast-backed panels—**built for a dark dugout**, not a bright dashboard template.
 
