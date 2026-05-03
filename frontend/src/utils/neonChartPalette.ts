@@ -5,8 +5,9 @@ import {
 
 /**
  * Series fills for charts that should **not** use MLB team primaries — cycles the
- * Neon on Obsidian accent pair (`_base.scss`: `--accent`, `--accent-2`, etc.) and
- * close teal/rose derivatives. Keep in sync when those CSS tokens change.
+ * Neon on Obsidian chart fills: seeds align with `--accent` teal and rose/teal
+ * companions used for multi-series contrast. Keep hex seeds in sync when
+ * `_base.scss` accent colors change.
  */
 const THEME_SERIES_SEEDS = [
   '#00f5c4',

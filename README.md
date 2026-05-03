@@ -14,11 +14,11 @@
     ╰────────────────────────────────────────────────────────────╯
 ```
 
-**Neon on obsidian** — near-black fields (`#070b10`, `#0a1018`), **teal** (`#00f5c4`) and **rose** (`#ff4f9a`) for interactive and chart emphasis, cool gray body type for readable contrast. **DM Sans** carries prose; **Space Mono** carries numerals and axes so stats scan like telemetry, not wallpaper.
+**Neon on obsidian** — near-black fields (`#070b10`, `#0a1018`), **teal** (`--accent`, `#00f5c4`) for links, focus, and primary chart chrome, cool gray body type for readable contrast. Multi-series charts add **rose and teal-tint companions** via [`frontend/src/utils/neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) (hex seeds, not extra `html` CSS variables). **DM Sans** carries prose; **Space Mono** carries numerals and axes so stats scan like telemetry, not wallpaper.
 
 Web app for exploring **MLB statistics** with charts and comparisons. The UI talks to a small **Go** backend that proxies and caches requests to the public **MLB Stats API** (`statsapi.mlb.com`) and, for some game views, **Baseball Savant** (Statcast CSV over HTTPS).
 
-**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Color tokens](#color-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing)
+**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Design tokens](#design-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing)
 
 ---
 
@@ -52,35 +52,56 @@ flowchart LR
   SRV --> SAV
 ```
 
-Hue flow in the theme (read left → right like a single chart readout):
+**Theme stack** — obsidian base below, surface and **CSS** teal accent above (bottom → top). Extra chart hues (e.g. rose `#ff4f9a`) live in [`neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts), not as `html` variables.
+
+*Arrows = stacking narrative, not layout or data flow.*
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
-flowchart LR
-  A["#070b10<br/>void"] --> B["#0a1018<br/>surface"] --> C["#00f5c4<br/>teal neon"] --> D["#ff4f9a<br/>rose"]
-  style A fill:#070b10,stroke:#0f1e2d,color:#8b9cad
-  style B fill:#0a1018,stroke:#0f1e2d,color:#c8d8e8
-  style C fill:#0a1018,stroke:#00f5c4,color:#00f5c4
-  style D fill:#0a1018,stroke:#ff4f9a,color:#ff4f9a
+flowchart BT
+  void["#070b10<br/>void"] --> surface["#0a1018<br/>surface"] --> teal["#00f5c4<br/>--accent"]
+  style void fill:#070b10,stroke:#0f1e2d,color:#8b9cad
+  style surface fill:#0a1018,stroke:#0f1e2d,color:#c8d8e8
+  style teal fill:#0a1018,stroke:#00f5c4,color:#00f5c4
 ```
 
 ---
 
-## Color tokens
+## Design tokens
 
-Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss). Update this table when those values change.
+Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss). Update these tables when values change.
+
+**Typography** — `--sans`, `--heading`, and `--mono` are font stacks (DM Sans for UI and headings, Space Mono for numerals/ticks); see the file for full fallbacks.
+
+### Colors & surfaces
 
 | CSS variable | Hex / value | Role |
 | :--- | :--- | :--- |
 | `--bg` | `#070b10` | Deepest background |
 | `--surface` | `#0a1018` | Panels and cards |
 | `--text` | `#8b9cad` | Body (AA vs `--bg`) |
-| `--text-h` | `#c8d8e8` | Headings, code |
+| `--text-h` | `#c8d8e8` | Headings, `code` foreground |
 | `--muted` | `#5a6b7c` | Secondary labels |
-| `--accent` | `#00f5c4` | Teal neon — links, active chrome, chart emphasis |
-| `--accent-2` | `#ff4f9a` | Rose — secondary highlights |
 | `--border` | `#0f1e2d` | Shell edges, dividers |
-| `--chart-grid-faint` | `#0d1a26` | Faint chart grid |
+| `--code-bg` | `#0d121a` | Inline `code` background |
+
+### Charts
+
+| CSS variable | Hex / value | Role |
+| :--- | :--- | :--- |
+| `--chart-tick` | `#4a5f72` | Default axis tick color |
+| `--chart-grid-faint` | `#0d1a26` | Faint grid lines |
+| `--chart-y-mid` | `#0f2030` | Reference band (e.g. 50% win line) |
+| `--chart-y-mid-tick` | `#1a3a30` | Tick on that reference |
+
+### Accent & depth
+
+| CSS variable | Hex / value | Role |
+| :--- | :--- | :--- |
+| `--accent` | `#00f5c4` | Teal neon — links, active chrome, primary chart emphasis |
+| `--accent-bg` | `rgba(0,245,196,0.08)` | Soft teal wash on surfaces |
+| `--accent-border` | `rgba(0,245,196,0.45)` | Focus / selected borders |
+| `--shadow` | layered `rgba` blacks | Panel depth (see file) |
 
 ---
 
