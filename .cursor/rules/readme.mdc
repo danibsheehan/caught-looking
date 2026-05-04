@@ -1,17 +1,20 @@
 ---
-description: Keep README.md accurate for caught-looking (features, run, stack, config)
-globs: README.md
+description: Keep README.md accurate (features, tokens, theme narrative, assets, run, stack, CI, config)
+globs: README.md,frontend/src/styles/_base.scss
 alwaysApply: false
 ---
 
 # README maintenance
 
-When editing **README.md**, keep it aligned with the repo:
+When editing **README.md** (or changing global tokens in **`frontend/src/styles/_base.scss`**), keep the doc aligned with the repo:
 
 - **Features**: reflect actual SPA routes and major screens (`frontend/src/App.tsx`). Do not list planned work as shipped.
+- **Design tokens**: the **Design tokens** section and its tables mirror `:root` / `html` custom properties in **`frontend/src/styles/_base.scss`** — update the README when those values or roles change.
+- **Architecture / theme**: prose and mermaid around shell vs chart color paths must match the real pipeline (`mlbTeamObsidianRegistry`, `mlbTeamColors`, `chartColorContrast`, `neonChartPalette` under **`frontend/src/utils/`**). Do not describe chart series colors as if they were the same as the three-node shell stack unless that is literally true.
+- **README assets**: markdown image links must point at committed files (badges and hero art are usually **`./docs/*.svg`** from the repo root). If an asset moves (for example under **`frontend/public/`**), update every README reference **and** the **Project layout** row that lists README art.
 - **Run locally**: document **`make install`** / **`make dev`** from the repo root; note API `:8080`, Vite default port, and `/api` proxy behavior (`frontend/vite.config.ts`).
 - **Tech stack**: match **`frontend/package.json`**, **`backend/go.mod`**, and real integrations (MLB Stats API, not generic “real time” unless behavior is described accurately).
 - **Configuration**: env vars must match **`backend/config/config.go`** and **`VITE_API_BASE`** usage in **`frontend/src/api/client.ts`**.
-- **CI**: if check commands change, update the README and **`.github/workflows/ci.yml`** / PR template in the same spirit.
+- **CI**: if check commands, jobs, or coverage-comment behavior change, update the README (including the **CI & quality gates** summary and Makefile tables where relevant), **`.github/workflows/ci.yml`**, and the PR template in the same spirit.
 
 Prefer short tables and copy-pasteable commands. Link to **`.github/pull_request_template.md`** for contribution expectations rather than duplicating long policy text.

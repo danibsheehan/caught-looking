@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 160" width="880" height="160">
+  <title>Caught looking banner</title>
+  <rect width="880" height="160" fill="#070b10"/>
+  <rect width="880" height="160" fill="#0a1018" opacity="0.55"/>
+  <path d="M0 40h880M0 80h880M0 120h880" stroke="#00f5c4" stroke-opacity="0.08" stroke-width="0.75"/>
+  <path d="M110 0v160M220 0v160M330 0v160M440 0v160M550 0v160M660 0v160M770 0v160" stroke="#00f5c4" stroke-opacity="0.05" stroke-width="0.75"/>
+  <path d="M48 108 C140 52 220 118 300 72 S460 95 600 58 S780 88 832 42" stroke="#00f5c4" stroke-width="2.25" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <path d="M48 108 C140 52 220 118 300 72 S460 95 600 58 S780 88 832 42" stroke="#c8d8e8" stroke-width="0.65" fill="none" stroke-linecap="round" opacity="0.3"/>
+  <circle cx="300" cy="72" r="3.25" fill="#00f5c4"/>
+  <circle cx="600" cy="58" r="3.25" fill="#f472b6"/>
+  <circle cx="832" cy="42" r="3" fill="#00f5c4" opacity="0.6"/>
+  <rect x="0" y="154" width="880" height="4" fill="#00f5c4" opacity="0.15"/>
+</svg>

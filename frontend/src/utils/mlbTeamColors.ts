@@ -22,7 +22,7 @@ export const CHART_NEUTRAL_FALLBACK_ALT = '#94a3b8'
 
 /** Two-player / two-series charts when team IDs are not passed (distinct from each other). */
 export const CHART_COMPARISON_A = '#00f5c4'
-export const CHART_COMPARISON_B = '#ff4f9a'
+export const CHART_COMPARISON_B = '#f472b6'
 export const MLB_TEAM_PRIMARY_HEX = {
   108: '#BA0021',
   109: '#A71930',
