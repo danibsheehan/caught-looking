@@ -20,7 +20,8 @@ permissions:
 
 jobs:
     frontend:
-        name: Frontend (lint, Prettier, typecheck, test+coverage, build)
+        # Must match the branch protection "required status check" name exactly.
+        name: Frontend (lint, typecheck, test+coverage, build)
         runs-on: ubuntu-latest
         # cobertura-action (PR-only step below) uses Issues API and Checks API.
         permissions:
