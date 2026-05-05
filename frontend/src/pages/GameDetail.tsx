@@ -1,35 +1,33 @@
-import { lazy, useMemo } from 'react'
-import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { ChartSuspense } from '../components/charts/ChartSuspense'
-import GameStatcastSpray from '../components/charts/GameStatcastSpray'
+import { lazy, useMemo } from 'react';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { ChartSuspense } from '../components/charts/ChartSuspense';
+import GameStatcastSpray from '../components/charts/GameStatcastSpray';
 
-const GameStatcastScatter = lazy(
-  () => import('../components/charts/GameStatcastScatter'),
-)
-import GameBoxscorePanel from '../components/game/GameBoxscorePanel'
-import { useGameDetailData } from '../hooks/useGameDetailData'
+const GameStatcastScatter = lazy(() => import('../components/charts/GameStatcastScatter'));
+import GameBoxscorePanel from '../components/game/GameBoxscorePanel';
+import { useGameDetailData } from '../hooks/useGameDetailData';
 
 export default function GameDetail() {
-  const { gamePk: gamePkParam } = useParams()
-  const [searchParams] = useSearchParams()
-  const date = searchParams.get('date')
+  const { gamePk: gamePkParam } = useParams();
+  const [searchParams] = useSearchParams();
+  const date = searchParams.get('date');
 
   const gamePk = useMemo(() => {
-    const n = Number(gamePkParam)
-    return Number.isFinite(n) && n > 0 ? n : null
-  }, [gamePkParam])
+    const n = Number(gamePkParam);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [gamePkParam]);
 
-  const { box, statcast, pitches } = useGameDetailData(gamePk)
+  const { box, statcast, pitches } = useGameDetailData(gamePk);
 
   const backTo = useMemo(() => {
     if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return `/games?date=${encodeURIComponent(date)}`
+      return `/games?date=${encodeURIComponent(date)}`;
     }
-    return '/games'
-  }, [date])
+    return '/games';
+  }, [date]);
 
   if (gamePk == null) {
-    return <Navigate to="/games" replace />
+    return <Navigate to="/games" replace />;
   }
 
   return (
@@ -43,9 +41,7 @@ export default function GameDetail() {
             </Link>
           </p>
           <h1>Box score</h1>
-          <p className="muted">
-            Team totals, pitching and batting lines, and runs by inning.
-          </p>
+          <p className="muted">Team totals, pitching and batting lines, and runs by inning.</p>
         </div>
       </header>
 
@@ -102,5 +98,5 @@ export default function GameDetail() {
         ) : null}
       </div>
     </section>
-  )
+  );
 }

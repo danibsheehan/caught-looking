@@ -1,14 +1,14 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import DivisionRunsScatter from './DivisionRunsScatter'
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import DivisionRunsScatter from './DivisionRunsScatter';
 
 describe('DivisionRunsScatter', () => {
   it('shows empty copy when there are no run totals', () => {
-    render(<DivisionRunsScatter points={[]} />)
+    render(<DivisionRunsScatter points={[]} />);
     expect(
       screen.getByText(/Run totals for this division are not available yet/i),
-    ).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+  });
 
   it('renders axis labels when points are present', () => {
     render(
@@ -19,8 +19,8 @@ describe('DivisionRunsScatter', () => {
         ]}
         focusTeamId={121}
       />,
-    )
-    expect(screen.getByText('Runs allowed (season)')).toBeInTheDocument()
-    expect(screen.getByText('Runs scored (season)')).toBeInTheDocument()
-  })
-})
+    );
+    expect(screen.getByText('Runs allowed (season)')).toBeInTheDocument();
+    expect(screen.getByText('Runs scored (season)')).toBeInTheDocument();
+  });
+});

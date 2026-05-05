@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo } from 'react';
 import {
   CartesianGrid,
   Legend,
@@ -11,55 +11,55 @@ import {
   XAxis,
   YAxis,
   type TooltipContentProps,
-} from 'recharts'
-import type { StatcastBattedBall } from '../../types/api.compat'
-import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
-import { buildScatterTooltipRows } from '../../utils/statcastDisplay'
-import { inningHalfBucket } from '../../utils/inningHalf'
-import { gameStatcastHalfTeamFills } from '../../utils/gameChartColors'
-import StatcastMetricTooltipContent from './StatcastMetricTooltipContent'
-import { StatcastScatterShapeCircle, StatcastScatterShapeDiamond } from './statcastMarkers'
+} from 'recharts';
+import type { StatcastBattedBall } from '../../types/api.compat';
+import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
+import { buildScatterTooltipRows } from '../../utils/statcastDisplay';
+import { inningHalfBucket } from '../../utils/inningHalf';
+import { gameStatcastHalfTeamFills } from '../../utils/gameChartColors';
+import StatcastMetricTooltipContent from './StatcastMetricTooltipContent';
+import { StatcastScatterShapeCircle, StatcastScatterShapeDiamond } from './statcastMarkers';
 import {
   type LaunchAngleBandKey,
   launchAngleBandSlices,
-} from '../../utils/statcastLaunchAngleBands'
-import { chartCartesianTick } from '../../utils/rechartsAxis'
+} from '../../utils/statcastLaunchAngleBands';
+import { chartCartesianTick } from '../../utils/rechartsAxis';
 
 const LA_BAND_FILL: Record<LaunchAngleBandKey, string> = {
   grounder: 'var(--statcast-la-grounder)',
   line_drive: 'var(--statcast-la-linedrive)',
   fly_ball: 'var(--statcast-la-fly)',
-}
+};
 
 export type GameStatcastScatterPoint = {
-  launchAngle: number
-  launchSpeed: number
-  playerName: string
-  events?: string
-  inningHalf?: string
-}
+  launchAngle: number;
+  launchSpeed: number;
+  playerName: string;
+  events?: string;
+  inningHalf?: string;
+};
 
 type GameStatcastScatterProps = {
-  battedBalls: StatcastBattedBall[]
+  battedBalls: StatcastBattedBall[];
   /** When set, away batting uses this team color; otherwise a neutral palette. */
-  awayTeamId?: number
+  awayTeamId?: number;
   /** When set, home batting uses this team color. */
-  homeTeamId?: number
-}
+  homeTeamId?: number;
+};
 
 function toPoints(rows: StatcastBattedBall[]): GameStatcastScatterPoint[] {
-  const out: GameStatcastScatterPoint[] = []
+  const out: GameStatcastScatterPoint[] = [];
   for (const r of rows) {
-    if (r.launchSpeed == null || r.launchAngle == null) continue
+    if (r.launchSpeed == null || r.launchAngle == null) continue;
     out.push({
       launchAngle: r.launchAngle,
       launchSpeed: r.launchSpeed,
       playerName: r.playerName,
       events: r.events,
       inningHalf: r.inningHalf,
-    })
+    });
   }
-  return out
+  return out;
 }
 
 export default function GameStatcastScatter({
@@ -67,34 +67,34 @@ export default function GameStatcastScatter({
   awayTeamId,
   homeTeamId,
 }: GameStatcastScatterProps) {
-  const surfaceHex = useChartSurfaceHex()
+  const surfaceHex = useChartSurfaceHex();
 
   const { points, top, bottom, other, xDomain, yDomain, launchAngleBands } = useMemo(() => {
-    const all = toPoints(battedBalls)
-    const topBat: GameStatcastScatterPoint[] = []
-    const botBat: GameStatcastScatterPoint[] = []
-    const other: GameStatcastScatterPoint[] = []
+    const all = toPoints(battedBalls);
+    const topBat: GameStatcastScatterPoint[] = [];
+    const botBat: GameStatcastScatterPoint[] = [];
+    const other: GameStatcastScatterPoint[] = [];
     for (const p of all) {
       switch (inningHalfBucket(p.inningHalf)) {
         case 'top':
-          topBat.push(p)
-          break
+          topBat.push(p);
+          break;
         case 'bottom':
-          botBat.push(p)
-          break
+          botBat.push(p);
+          break;
         default:
-          other.push(p)
+          other.push(p);
       }
     }
-    const la = all.map((p) => p.launchAngle)
-    const ev = all.map((p) => p.launchSpeed)
-    const laMin = la.length ? Math.min(...la) : -30
-    const laMax = la.length ? Math.max(...la) : 50
-    const evMin = ev.length ? Math.min(...ev) : 50
-    const evMax = ev.length ? Math.max(...ev) : 110
-    const laPad = Math.max(6, (laMax - laMin) * 0.12)
-    const evPad = Math.max(5, (evMax - evMin) * 0.1)
-    const xDomain = [Math.floor(laMin - laPad), Math.ceil(laMax + laPad)] as [number, number]
+    const la = all.map((p) => p.launchAngle);
+    const ev = all.map((p) => p.launchSpeed);
+    const laMin = la.length ? Math.min(...la) : -30;
+    const laMax = la.length ? Math.max(...la) : 50;
+    const evMin = ev.length ? Math.min(...ev) : 50;
+    const evMax = ev.length ? Math.max(...ev) : 110;
+    const laPad = Math.max(6, (laMax - laMin) * 0.12);
+    const evPad = Math.max(5, (evMax - evMin) * 0.1);
+    const xDomain = [Math.floor(laMin - laPad), Math.ceil(laMax + laPad)] as [number, number];
     return {
       points: all,
       top: topBat,
@@ -107,23 +107,27 @@ export default function GameStatcastScatter({
         number,
       ],
       launchAngleBands: launchAngleBandSlices(xDomain),
-    }
-  }, [battedBalls])
+    };
+  }, [battedBalls]);
 
-  const { topHalf: topColor, bottomHalf: bottomColor, other: otherColor } = useMemo(
+  const {
+    topHalf: topColor,
+    bottomHalf: bottomColor,
+    other: otherColor,
+  } = useMemo(
     () => gameStatcastHalfTeamFills(awayTeamId, homeTeamId, surfaceHex),
     [awayTeamId, homeTeamId, surfaceHex],
-  )
+  );
 
   if (!points.length) {
     return (
       <p className="muted game-statcast-scatter__empty">
         No tracked batted balls with launch data for this game (or data not available yet).
       </p>
-    )
+    );
   }
 
-  const showLevelReference = xDomain[0] < 0 && xDomain[1] > 0
+  const showLevelReference = xDomain[0] < 0 && xDomain[1] > 0;
 
   return (
     <div className="game-statcast-scatter">
@@ -215,15 +219,11 @@ export default function GameStatcastScatter({
       </ResponsiveContainer>
       <ul className="game-statcast-scatter__band-legend muted small" aria-hidden="true">
         <li>
-          <span
-            className="game-statcast-scatter__band-swatch game-statcast-scatter__band-swatch--grounder"
-          />
+          <span className="game-statcast-scatter__band-swatch game-statcast-scatter__band-swatch--grounder" />
           Grounder (&lt;10°)
         </li>
         <li>
-          <span
-            className="game-statcast-scatter__band-swatch game-statcast-scatter__band-swatch--linedrive"
-          />
+          <span className="game-statcast-scatter__band-swatch game-statcast-scatter__band-swatch--linedrive" />
           Line drive (10°–25°)
         </li>
         <li>
@@ -232,22 +232,22 @@ export default function GameStatcastScatter({
         </li>
       </ul>
     </div>
-  )
+  );
 }
 
 function StatcastTooltip({ active, payload }: TooltipContentProps) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload as GameStatcastScatterPoint | undefined
-  if (!row) return null
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload as GameStatcastScatterPoint | undefined;
+  if (!row) return null;
   const rows = buildScatterTooltipRows({
     playerName: row.playerName,
     launchSpeed: row.launchSpeed,
     launchAngle: row.launchAngle,
     events: row.events,
-  })
+  });
   return (
     <div className="game-statcast-scatter__tooltip statcast-metric-tooltip">
       <StatcastMetricTooltipContent rows={rows} />
     </div>
-  )
+  );
 }

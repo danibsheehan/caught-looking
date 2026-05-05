@@ -4,13 +4,17 @@
  * fair-territory outline per venue — hit dots use Savant grid coords converted to field feet in the chart.
  */
 export type FieldDimensionsFt = {
-  lf: number
-  rf: number
-  cf: number
-}
+  lf: number;
+  rf: number;
+  cf: number;
+};
 
 /** League-average template reference (same as scaling baseline in parkSprayOutline.ts). */
-export const DEFAULT_FIELD_DIMS: FieldDimensionsFt = { lf: 330, rf: 330, cf: 400 }
+export const DEFAULT_FIELD_DIMS: FieldDimensionsFt = {
+  lf: 330,
+  rf: 330,
+  cf: 400,
+};
 
 /** MLB Stats API venue id → published line distances (ft). */
 export const VENUE_FIELD_DIMENSIONS_FT: Record<number, FieldDimensionsFt> = {
@@ -44,9 +48,9 @@ export const VENUE_FIELD_DIMENSIONS_FT: Record<number, FieldDimensionsFt> = {
   5325: { lf: 329, cf: 407, rf: 326 }, // Globe Life Field
   14: { lf: 328, cf: 404, rf: 328 }, // Rogers Centre
   3309: { lf: 337, cf: 402, rf: 335 }, // Nationals Park
-}
+};
 
 export function getFieldDimensionsForVenue(venueId: number | undefined): FieldDimensionsFt {
-  if (venueId == null || venueId <= 0) return DEFAULT_FIELD_DIMS
-  return VENUE_FIELD_DIMENSIONS_FT[venueId] ?? DEFAULT_FIELD_DIMS
+  if (venueId == null || venueId <= 0) return DEFAULT_FIELD_DIMS;
+  return VENUE_FIELD_DIMENSIONS_FT[venueId] ?? DEFAULT_FIELD_DIMS;
 }

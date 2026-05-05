@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { chartCartesianTick, polarAxisTickSans } from './rechartsAxis'
+import { describe, expect, it } from 'vitest';
+import { chartCartesianTick, polarAxisTickSans } from './rechartsAxis';
 
 describe('rechartsAxis tick style tokens', () => {
   it.each([
@@ -22,12 +22,12 @@ describe('rechartsAxis tick style tokens', () => {
       },
     },
   ] as const)('$name matches shared axis contract', ({ value, expected }) => {
-    expect(value).toEqual(expected)
-  })
+    expect(value).toEqual(expected);
+  });
 
   it('uses mono for cartesian values and sans for polar labels', () => {
-    expect(chartCartesianTick.fontFamily).toBe('var(--mono)')
-    expect(polarAxisTickSans.fontFamily).toBe('var(--sans)')
-    expect(chartCartesianTick.fill).not.toBe(polarAxisTickSans.fill)
-  })
-})
+    expect(chartCartesianTick.fontFamily).toBe('var(--mono)');
+    expect(polarAxisTickSans.fontFamily).toBe('var(--sans)');
+    expect(chartCartesianTick.fill).not.toBe(polarAxisTickSans.fill);
+  });
+});

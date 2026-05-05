@@ -1,25 +1,25 @@
-import type { PlayersRadarResponse } from '../../types/api.compat'
+import type { PlayersRadarResponse } from '../../types/api.compat';
 
 function slashStat(n: number): string {
-  const s = n.toFixed(3)
-  return s.startsWith('0.') ? s.slice(1) : s
+  const s = n.toFixed(3);
+  return s.startsWith('0.') ? s.slice(1) : s;
 }
 
 function fmtFixed(n: number, digits: number): string {
-  return n.toFixed(digits)
+  return n.toFixed(digits);
 }
 
 function fmtInt(n: number): string {
-  return String(Math.round(n))
+  return String(Math.round(n));
 }
 
 function fmtBaseballIP(n: number): string {
-  const whole = Math.floor(n)
-  const frac = n - whole
-  if (frac < 0.001) return String(whole)
-  if (Math.abs(frac - 1 / 3) < 0.02) return `${whole}.1`
-  if (Math.abs(frac - 2 / 3) < 0.02) return `${whole}.2`
-  return n.toFixed(1)
+  const whole = Math.floor(n);
+  const frac = n - whole;
+  if (frac < 0.001) return String(whole);
+  if (Math.abs(frac - 1 / 3) < 0.02) return `${whole}.1`;
+  if (Math.abs(frac - 2 / 3) < 0.02) return `${whole}.2`;
+  return n.toFixed(1);
 }
 
 function cell(
@@ -27,12 +27,12 @@ function cell(
   key: string,
   format: (n: number) => string,
 ): string {
-  const v = stats?.[key]
-  if (v === undefined || !Number.isFinite(v)) return '—'
-  return format(v)
+  const v = stats?.[key];
+  if (v === undefined || !Number.isFinite(v)) return '—';
+  return format(v);
 }
 
-type Row = { label: string; key: string; format: (n: number) => string }
+type Row = { label: string; key: string; format: (n: number) => string };
 
 const HITTING_ROWS: Row[] = [
   { label: 'G', key: 'g', format: fmtInt },
@@ -51,7 +51,7 @@ const HITTING_ROWS: Row[] = [
   { label: 'BB', key: 'walks', format: fmtInt },
   { label: 'SO', key: 'strikeouts', format: fmtInt },
   { label: 'SB', key: 'stolenBases', format: fmtInt },
-]
+];
 
 const PITCHING_ROWS: Row[] = [
   { label: 'IP', key: 'ip', format: fmtBaseballIP },
@@ -68,24 +68,24 @@ const PITCHING_ROWS: Row[] = [
   { label: 'BB', key: 'walks', format: fmtInt },
   { label: 'HR', key: 'hrAllowed', format: fmtInt },
   { label: 'FIP', key: 'fip', format: (n) => fmtFixed(n, 2) },
-]
+];
 
 const tdNum = {
   textAlign: 'right' as const,
-}
+};
 
 type Props = {
-  data: PlayersRadarResponse
-  group: 'hitting' | 'pitching'
-}
+  data: PlayersRadarResponse;
+  group: 'hitting' | 'pitching';
+};
 
 export default function PlayerCompareStatsTable({ data, group }: Props) {
-  const [a, b] = data.players ?? []
-  if (!a?.stats || !b?.stats) return null
+  const [a, b] = data.players ?? [];
+  if (!a?.stats || !b?.stats) return null;
 
-  const rows = group === 'pitching' ? PITCHING_ROWS : HITTING_ROWS
-  const nameA = a.fullName || 'Player 1'
-  const nameB = b.fullName || 'Player 2'
+  const rows = group === 'pitching' ? PITCHING_ROWS : HITTING_ROWS;
+  const nameA = a.fullName || 'Player 1';
+  const nameB = b.fullName || 'Player 2';
 
   return (
     <div className="player-compare-stats">
@@ -114,5 +114,5 @@ export default function PlayerCompareStatsTable({ data, group }: Props) {
         </table>
       </div>
     </div>
-  )
+  );
 }

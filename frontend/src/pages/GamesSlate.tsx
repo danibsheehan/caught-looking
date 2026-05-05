@@ -1,20 +1,20 @@
-import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import GameListSkeleton from '../components/skeletons/GameListSkeleton'
-import { TeamSelector } from '../components/ui'
-import { fetchGamesForDate } from '../api/client'
-import { useAsyncResource } from '../hooks/useAsyncResource'
-import { useTeams } from '../hooks/useMLB'
-import type { GameSummary, GamesForDateResponse } from '../types/api.compat'
+import { useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import GameListSkeleton from '../components/skeletons/GameListSkeleton';
+import { TeamSelector } from '../components/ui';
+import { fetchGamesForDate } from '../api/client';
+import { useAsyncResource } from '../hooks/useAsyncResource';
+import { useTeams } from '../hooks/useMLB';
+import type { GameSummary, GamesForDateResponse } from '../types/api.compat';
 
 function localISODate(d = new Date()): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
-const isoDateRe = /^\d{4}-\d{2}-\d{2}$/
+const isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
 
 /** MLB `detailedState` values where we omit the line score (not started or no game). */
 const SLATE_NO_LINE_SCORE_STATUSES = new Set([
@@ -25,62 +25,60 @@ const SLATE_NO_LINE_SCORE_STATUSES = new Set([
   'Cancelled',
   'Canceled',
   'TBD',
-])
+]);
 
 function formatSlateScore(g: GameSummary): string {
   if (SLATE_NO_LINE_SCORE_STATUSES.has(g.status)) {
-    return '—'
+    return '—';
   }
-  return `${g.awayScore}–${g.homeScore}`
+  return `${g.awayScore}–${g.homeScore}`;
 }
 
 function dateFromSearchParams(searchParams: URLSearchParams): string {
-  const q = searchParams.get('date')
-  if (q && isoDateRe.test(q)) return q
-  return localISODate()
+  const q = searchParams.get('date');
+  if (q && isoDateRe.test(q)) return q;
+  return localISODate();
 }
 
 export default function GamesSlate() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const date = useMemo(
-    () => dateFromSearchParams(searchParams),
-    [searchParams],
-  )
+  const [searchParams, setSearchParams] = useSearchParams();
+  const date = useMemo(() => dateFromSearchParams(searchParams), [searchParams]);
 
-  const { data: teamsData } = useTeams({ sportId: '1' })
-  const teams = useMemo(() => teamsData?.teams ?? [], [teamsData])
+  const { data: teamsData } = useTeams({ sportId: '1' });
+  const teams = useMemo(() => teamsData?.teams ?? [], [teamsData]);
 
-  const [teamId, setTeamId] = useState<number | ''>('')
+  const [teamId, setTeamId] = useState<number | ''>('');
 
-  const { data, error, loading: loadingList } = useAsyncResource<GamesForDateResponse>(
+  const {
+    data,
+    error,
+    loading: loadingList,
+  } = useAsyncResource<GamesForDateResponse>(
     {
       fetch: (signal) =>
         fetchGamesForDate(
           {
             date,
-            teamId:
-              teamId === '' || teamId === undefined
-                ? undefined
-                : Number(teamId),
+            teamId: teamId === '' || teamId === undefined ? undefined : Number(teamId),
           },
           signal,
         ),
       initialPending: false,
     },
     [date, teamId],
-  )
+  );
 
-  const games = useMemo(() => data?.games ?? [], [data])
+  const games = useMemo(() => data?.games ?? [], [data]);
 
   function onDateChange(next: string) {
     setSearchParams(
       (prev) => {
-        const p = new URLSearchParams(prev)
-        p.set('date', next)
-        return p
+        const p = new URLSearchParams(prev);
+        p.set('date', next);
+        return p;
       },
       { replace: true },
-    )
+    );
   }
 
   return (
@@ -89,8 +87,8 @@ export default function GamesSlate() {
         <div>
           <h1>Games</h1>
           <p className="muted">
-            Pick a date (and optionally a team), then open a game for runs by inning
-            and the full timeline.
+            Pick a date (and optionally a team), then open a game for runs by inning and the full
+            timeline.
           </p>
         </div>
         <div className="page-controls">
@@ -127,14 +125,12 @@ export default function GamesSlate() {
         {loadingList ? (
           <GameListSkeleton rows={7} />
         ) : games.length === 0 ? (
-          <p className="muted">
-            No games on this date (try another day or clear the team filter).
-          </p>
+          <p className="muted">No games on this date (try another day or clear the team filter).</p>
         ) : (
           <ul className="games-slate__list" role="list">
             {games.map((g) => {
-              const score = formatSlateScore(g)
-              const to = `/games/${g.gamePk}?date=${encodeURIComponent(date)}`
+              const score = formatSlateScore(g);
+              const to = `/games/${g.gamePk}?date=${encodeURIComponent(date)}`;
               return (
                 <li key={g.gamePk} role="none">
                   <Link className="games-slate__link" to={to}>
@@ -146,11 +142,11 @@ export default function GamesSlate() {
                     </span>
                   </Link>
                 </li>
-              )
+              );
             })}
           </ul>
         )}
       </div>
     </section>
-  )
+  );
 }

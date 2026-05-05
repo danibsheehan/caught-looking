@@ -1,7 +1,7 @@
 type ChartSkeletonProps = {
-  height?: number
-  label?: string
-}
+  height?: number;
+  label?: string;
+};
 
 export default function ChartSkeleton({
   height = 320,
@@ -15,5 +15,5 @@ export default function ChartSkeleton({
       aria-busy="true"
       aria-label={label}
     />
-  )
+  );
 }

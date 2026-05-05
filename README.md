@@ -163,14 +163,14 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 
 | Layer    | Technology                                                                                                                                         |
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frontend | React 19, TypeScript, Vite, React Router, Recharts                                                                                                 |
+| Frontend | React 19, TypeScript, Vite, React Router, Recharts, ESLint, Prettier                                                                               |
 | Backend  | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, token-bucket QPS caps for MLB and Savant outbound traffic |
 | Data     | MLB Stats API v1 (JSON); Baseball Savant (CSV) for Statcast-oriented game data                                                                     |
 
 <details>
 <summary><strong>CI & quality gates</strong> (expand)</summary>
 
-Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests (same-repo workflows), **two** [**cobertura-action**](https://github.com/5monkeys/cobertura-action) comments (frontend and backend tables) are added or updated from the Cobertura reports (fork PRs may not receive them due to token limits; those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
+Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, Prettier (`format:check`), TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests (same-repo workflows), **two** [**cobertura-action**](https://github.com/5monkeys/cobertura-action) comments (frontend and backend tables) are added or updated from the Cobertura reports (fork PRs may not receive them due to token limits; those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
 
 </details>
 
@@ -223,6 +223,8 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 | `npm run build`           | Production bundle                                                      |
 | `npm run preview`         | Preview production build                                               |
 | `npm run lint`            | ESLint                                                                 |
+| `npm run format`          | Prettier — write (`src/types/api.generated.ts` is ignored; run `api:types` separately) |
+| `npm run format:check`    | Prettier — check only (CI)                                            |
 | `npm run typecheck`       | TypeScript `--noEmit`                                                  |
 | `npm run api:validate`    | Lint OpenAPI (`backend/apidocs/openapi.yaml`)                          |
 | `npm run api:types`       | Generate `src/types/api.generated.ts` from OpenAPI                     |
@@ -338,4 +340,4 @@ Makefile    # install, dev, backend, frontend, test-*, cover-*
 
 ## Contributing
 
-Use the [pull request template](.github/pull_request_template.md). Before opening a PR, run the same checks as CI (e.g. `make test-backend`, `make test-frontend`, plus `npm run api:validate` / `npm run api:types:check` / `npm run lint` / `npm run typecheck` / `npm run build` in `frontend/`, and `go vet ./...`, `go test ./...`, `go build` in `backend/`). Keep API changes in sync: **Go JSON / OpenAPI** ↔ generated frontend types (`frontend/src/types/api.generated.ts`) and `frontend/src/api/client.ts`.
+Use the [pull request template](.github/pull_request_template.md). Before opening a PR, run the same checks as CI (e.g. `make test-backend`, `make test-frontend`, plus `npm run api:validate` / `npm run api:types:check` / `npm run lint` / `npm run format:check` / `npm run typecheck` / `npm run build` in `frontend/`, and `go vet ./...`, `go test ./...`, `go build` in `backend/`). Keep API changes in sync: **Go JSON / OpenAPI** ↔ generated frontend types (`frontend/src/types/api.generated.ts`) and `frontend/src/api/client.ts`.

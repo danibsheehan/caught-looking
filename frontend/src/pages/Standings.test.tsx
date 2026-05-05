@@ -1,15 +1,15 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   RecordTimelinesBatchResponse,
   StandingsResponse,
   TeamsResponse,
-} from '../types/api.compat'
-import Standings from './Standings'
+} from '../types/api.compat';
+import Standings from './Standings';
 
-const asyncWait = { timeout: 10_000 }
+const asyncWait = { timeout: 10_000 };
 
 const api = vi.hoisted(() => {
   const teams: TeamsResponse = {
@@ -26,7 +26,7 @@ const api = vi.hoisted(() => {
         active: true,
       },
     ],
-  }
+  };
 
   const standings: StandingsResponse = {
     season: 2026,
@@ -68,12 +68,12 @@ const api = vi.hoisted(() => {
         ],
       },
     ],
-  }
+  };
 
   const timelinesBatch: RecordTimelinesBatchResponse = {
     season: 2026,
     timelines: [],
-  }
+  };
 
   return {
     teams,
@@ -82,18 +82,18 @@ const api = vi.hoisted(() => {
     fetchTeams: vi.fn(() => Promise.resolve(teams)),
     fetchStandings: vi.fn(() => Promise.resolve(standings)),
     fetchRecordTimelinesBatch: vi.fn(() => Promise.resolve(timelinesBatch)),
-  }
-})
+  };
+});
 
 vi.mock('../api/client', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../api/client')>()
+  const actual = await importOriginal<typeof import('../api/client')>();
   return {
     ...actual,
     fetchTeams: api.fetchTeams,
     fetchStandings: api.fetchStandings,
     fetchRecordTimelinesBatch: api.fetchRecordTimelinesBatch,
-  }
-})
+  };
+});
 
 function renderStandings() {
   return render(
@@ -102,41 +102,40 @@ function renderStandings() {
         <Route path="/standings" element={<Standings />} />
       </Routes>
     </MemoryRouter>,
-  )
+  );
 }
 
 describe('Standings', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
-  it(
-    'renders only the selected division table and updates on division change',
-    async () => {
-    renderStandings()
-    const user = userEvent.setup()
+  it('renders only the selected division table and updates on division change', async () => {
+    renderStandings();
+    const user = userEvent.setup();
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Standings' }, asyncWait),
-    ).toBeInTheDocument()
+    ).toBeInTheDocument();
 
-    expect(screen.getByText(/regular season · AL/)).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'Wins by team' })).toBeInTheDocument()
+    expect(screen.getByText(/regular season · AL/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Wins by team' })).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { level: 2, name: 'Cumulative win % vs games played' }),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'NL East' })).toBeInTheDocument()
-    expect(
-      screen.queryByRole('heading', { level: 2, name: 'NL Central' }),
-    ).not.toBeInTheDocument()
+      screen.getByRole('heading', {
+        level: 2,
+        name: 'Cumulative win % vs games played',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'NL East' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'NL Central' })).not.toBeInTheDocument();
 
-    const table = screen.getByRole('table')
-    expect(within(table).getByRole('columnheader', { name: 'Team' })).toBeInTheDocument()
-    expect(within(table).getByText('Mets')).toBeInTheDocument()
-    expect(within(table).queryByText('Cubs')).not.toBeInTheDocument()
+    const table = screen.getByRole('table');
+    expect(within(table).getByRole('columnheader', { name: 'Team' })).toBeInTheDocument();
+    expect(within(table).getByText('Mets')).toBeInTheDocument();
+    expect(within(table).queryByText('Cubs')).not.toBeInTheDocument();
 
-    await waitFor(() => expect(api.fetchStandings).toHaveBeenCalled(), asyncWait)
-    await waitFor(() => expect(api.fetchTeams).toHaveBeenCalled(), asyncWait)
+    await waitFor(() => expect(api.fetchStandings).toHaveBeenCalled(), asyncWait);
+    await waitFor(() => expect(api.fetchTeams).toHaveBeenCalled(), asyncWait);
     await waitFor(
       () =>
         expect(api.fetchRecordTimelinesBatch).toHaveBeenCalledWith(
@@ -147,16 +146,16 @@ describe('Standings', () => {
           expect.any(AbortSignal),
         ),
       asyncWait,
-    )
+    );
 
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Division' }), '1')
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Division' }), '1');
 
-    expect(screen.getByRole('heading', { level: 2, name: 'NL Central' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { level: 2, name: 'NL East' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'NL Central' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'NL East' })).not.toBeInTheDocument();
 
-    const updatedTable = screen.getByRole('table')
-    expect(within(updatedTable).getByText('Cubs')).toBeInTheDocument()
-    expect(within(updatedTable).queryByText('Mets')).not.toBeInTheDocument()
+    const updatedTable = screen.getByRole('table');
+    expect(within(updatedTable).getByText('Cubs')).toBeInTheDocument();
+    expect(within(updatedTable).queryByText('Mets')).not.toBeInTheDocument();
 
     await waitFor(
       () =>
@@ -168,8 +167,6 @@ describe('Standings', () => {
           expect.any(AbortSignal),
         ),
       asyncWait,
-    )
-  },
-    15_000,
-  )
-})
+    );
+  }, 15_000);
+});

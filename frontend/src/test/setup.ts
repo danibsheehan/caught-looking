@@ -1,6 +1,6 @@
-import { cleanup } from '@testing-library/react'
-import { afterEach, beforeAll, vi } from 'vitest'
-import '@testing-library/jest-dom/vitest'
+import { cleanup } from '@testing-library/react';
+import { afterEach, beforeAll, vi } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 
 /** Recharts `ResponsiveContainer` measures the parent; jsdom defaults to 0×0 otherwise. */
 beforeAll(() => {
@@ -14,18 +14,18 @@ beforeAll(() => {
     x: 0,
     y: 0,
     toJSON() {
-      return ''
+      return '';
     },
-  }
-  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => stubRect)
+  };
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => stubRect);
 
   globalThis.ResizeObserver ??= class {
     observe() {}
     unobserve() {}
     disconnect() {}
-  }
-})
+  };
+});
 
 afterEach(() => {
-  cleanup()
-})
+  cleanup();
+});

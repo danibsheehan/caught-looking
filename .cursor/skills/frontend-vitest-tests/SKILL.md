@@ -52,7 +52,7 @@ description: >-
    - **`cd frontend && npm run test:run`** (CI parity) or **`npm run test`** (watch).
    - Coverage: **`npm run test:coverage`** — HTML report under **`frontend/coverage/`** (gitignored).
    - From repo root: **`make test-frontend`**.
-   - Before finishing: **`npm run lint`**, **`npm run typecheck`**, **`npm run test:run`** (matches CI).
+   - Before finishing: **`npm run lint`**, **`npm run format:check`**, **`npm run typecheck`**, **`npm run test:run`** (core frontend checks; CI also runs OpenAPI validate/types drift and `build`).
 
 ## Anti-patterns
 

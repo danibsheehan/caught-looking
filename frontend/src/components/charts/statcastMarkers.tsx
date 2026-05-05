@@ -2,21 +2,21 @@ import {
   STATCAST_SCATTER_DOT_R,
   STATCAST_SCATTER_FILL_OPACITY,
   statcastSprayDiamondPath,
-} from '../../utils/statcastMarkerGeometry'
+} from '../../utils/statcastMarkerGeometry';
 
 type ScatterShapeProps = {
-  cx?: number
-  cy?: number
-  fill?: string
-  stroke?: string
-  strokeWidth?: number
-}
+  cx?: number;
+  cy?: number;
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+};
 
 /** Recharts `<Scatter shape={...} />` — away (top) uses circles, home (bottom) diamonds. */
 export function StatcastScatterShapeDiamond(props: ScatterShapeProps) {
-  const { cx = 0, cy = 0, fill } = props
-  const r = STATCAST_SCATTER_DOT_R
-  const sw = props.strokeWidth ?? 1
+  const { cx = 0, cy = 0, fill } = props;
+  const r = STATCAST_SCATTER_DOT_R;
+  const sw = props.strokeWidth ?? 1;
   return (
     <path
       d={statcastSprayDiamondPath(cx, cy, r)}
@@ -25,13 +25,13 @@ export function StatcastScatterShapeDiamond(props: ScatterShapeProps) {
       stroke={props.stroke ?? 'var(--border)'}
       strokeWidth={sw}
     />
-  )
+  );
 }
 
 export function StatcastScatterShapeCircle(props: ScatterShapeProps) {
-  const { cx = 0, cy = 0, fill } = props
-  const r = STATCAST_SCATTER_DOT_R
-  const sw = props.strokeWidth ?? 1
+  const { cx = 0, cy = 0, fill } = props;
+  const r = STATCAST_SCATTER_DOT_R;
+  const sw = props.strokeWidth ?? 1;
   return (
     <circle
       cx={cx}
@@ -42,5 +42,5 @@ export function StatcastScatterShapeCircle(props: ScatterShapeProps) {
       stroke={props.stroke ?? 'var(--border)'}
       strokeWidth={sw}
     />
-  )
+  );
 }

@@ -1,69 +1,66 @@
-import { lazy, useEffect, useMemo, useState } from 'react'
-import { ChartSuspense } from '../components/charts/ChartSuspense'
-import PlayerCompareAheadChart from '../components/charts/PlayerCompareAheadChart'
-import PlayerCompareStatsTable from '../components/charts/PlayerCompareStatsTable'
+import { lazy, useEffect, useMemo, useState } from 'react';
+import { ChartSuspense } from '../components/charts/ChartSuspense';
+import PlayerCompareAheadChart from '../components/charts/PlayerCompareAheadChart';
+import PlayerCompareStatsTable from '../components/charts/PlayerCompareStatsTable';
 
-const PlayerRadar = lazy(() => import('../components/charts/PlayerRadar'))
+const PlayerRadar = lazy(() => import('../components/charts/PlayerRadar'));
 const PlayerCompareCareerLines = lazy(
   () => import('../components/charts/PlayerCompareCareerLines'),
-)
+);
 const PlayerCompareRecentSparklines = lazy(
   () => import('../components/charts/PlayerCompareRecentSparklines'),
-)
+);
 const PlayerComparePlatoonBars = lazy(
   () => import('../components/charts/PlayerComparePlatoonBars'),
-)
-import ChartSkeleton from '../components/skeletons/ChartSkeleton'
-import { PlayerPicker, type PlayerPick } from '../components/ui'
-import { useChartSurfaceHex } from '../hooks/useChartSurfaceHex'
-import { usePlayerCurrentTeams } from '../hooks/usePlayerCurrentTeams'
+);
+import ChartSkeleton from '../components/skeletons/ChartSkeleton';
+import { PlayerPicker, type PlayerPick } from '../components/ui';
+import { useChartSurfaceHex } from '../hooks/useChartSurfaceHex';
+import { usePlayerCurrentTeams } from '../hooks/usePlayerCurrentTeams';
 import {
   usePlayerCompareGameLog,
   usePlayerComparePlatoon,
   usePlayerCompareYearByYear,
-} from '../hooks/usePlayerCompareTrends'
-import { usePlayersCompare } from '../hooks/usePlayersCompare'
-import type { YearByYearMetric } from '../types/api.compat'
-import {
-  adjustChartColorForSurface,
-  CHART_INK_MIN_CONTRAST,
-} from '../utils/chartColorContrast'
+} from '../hooks/usePlayerCompareTrends';
+import { usePlayersCompare } from '../hooks/usePlayersCompare';
+import type { YearByYearMetric } from '../types/api.compat';
+import { adjustChartColorForSurface, CHART_INK_MIN_CONTRAST } from '../utils/chartColorContrast';
 import {
   getObsidianTeamColor,
   resolveObsidianMatchupFills,
-} from '../utils/mlbTeamObsidianRegistry'
+} from '../utils/mlbTeamObsidianRegistry';
 import {
   HITTING_CAREER_METRICS,
   PITCHING_CAREER_METRICS,
   yearByYearMetricShortLabel,
-} from '../utils/yearByYearMetric'
+} from '../utils/yearByYearMetric';
 
-const DEFAULT_SEASON = 2026
+const DEFAULT_SEASON = 2026;
 
 function defaultCareerMetric(group: 'hitting' | 'pitching'): YearByYearMetric {
-  return group === 'pitching' ? 'era' : 'ops'
+  return group === 'pitching' ? 'era' : 'ops';
 }
 
 export default function PlayerComparison() {
   const [pick1, setPick1] = useState<PlayerPick | null>({
     id: 660271,
     fullName: 'Shohei Ohtani',
-  })
+  });
   const [pick2, setPick2] = useState<PlayerPick | null>({
     id: 592450,
     fullName: 'Aaron Judge',
-  })
-  const [season, setSeason] = useState(DEFAULT_SEASON)
-  const [compareScope, setCompareScope] = useState<'season' | 'career'>('season')
-  const [group, setGroup] = useState<'hitting' | 'pitching'>('hitting')
-  const [careerMetric, setCareerMetric] = useState<YearByYearMetric>('ops')
+  });
+  const [season, setSeason] = useState(DEFAULT_SEASON);
+  const [compareScope, setCompareScope] = useState<'season' | 'career'>('season');
+  const [group, setGroup] = useState<'hitting' | 'pitching'>('hitting');
+  const [careerMetric, setCareerMetric] = useState<YearByYearMetric>('ops');
 
   useEffect(() => {
-    setCareerMetric(defaultCareerMetric(group))
-  }, [group])
+    setCareerMetric(defaultCareerMetric(group));
+  }, [group]);
 
-  const p1 = pick1?.id
-  const p2 = pick2?.id
+  const p1 = pick1?.id;
+  const p2 = pick2?.id;
   const valid =
     p1 != null &&
     p2 != null &&
@@ -71,87 +68,77 @@ export default function PlayerComparison() {
     Number.isFinite(p2) &&
     p1 > 0 &&
     p2 > 0 &&
-    p1 !== p2
+    p1 !== p2;
 
-  const { data: compareData, error: compareError, loading: compareLoading } =
-    usePlayersCompare({
-      playerId1: p1,
-      playerId2: p2,
-      season,
-      scope: compareScope,
-      group,
-      enabled: valid,
-    })
+  const {
+    data: compareData,
+    error: compareError,
+    loading: compareLoading,
+  } = usePlayersCompare({
+    playerId1: p1,
+    playerId2: p2,
+    season,
+    scope: compareScope,
+    group,
+    enabled: valid,
+  });
 
-  const { teamId1: radarTeam1, teamId2: radarTeam2 } = usePlayerCurrentTeams(
-    p1,
-    p2,
-    valid,
-  )
+  const { teamId1: radarTeam1, teamId2: radarTeam2 } = usePlayerCurrentTeams(p1, p2, valid);
 
-  const surfaceHex = useChartSurfaceHex()
+  const surfaceHex = useChartSurfaceHex();
   const compareRegistryChrome = useMemo(() => {
-    if (radarTeam1 == null || radarTeam2 == null) return null
-    const fills = resolveObsidianMatchupFills(radarTeam1, radarTeam2)
-    if (!fills) return null
-    const r1 = getObsidianTeamColor(radarTeam1)
-    const r2 = getObsidianTeamColor(radarTeam2)
+    if (radarTeam1 == null || radarTeam2 == null) return null;
+    const fills = resolveObsidianMatchupFills(radarTeam1, radarTeam2);
+    if (!fills) return null;
+    const r1 = getObsidianTeamColor(radarTeam1);
+    const r2 = getObsidianTeamColor(radarTeam2);
     return {
-      swatchA: adjustChartColorForSurface(
-        fills.awayFill,
-        surfaceHex,
-        CHART_INK_MIN_CONTRAST,
-      ),
-      swatchB: adjustChartColorForSurface(
-        fills.homeFill,
-        surfaceHex,
-        CHART_INK_MIN_CONTRAST,
-      ),
+      swatchA: adjustChartColorForSurface(fills.awayFill, surfaceHex, CHART_INK_MIN_CONTRAST),
+      swatchB: adjustChartColorForSurface(fills.homeFill, surfaceHex, CHART_INK_MIN_CONTRAST),
       abbrevA: r1?.abbrev ?? 'P1',
       abbrevB: r2?.abbrev ?? 'P2',
-    }
-  }, [radarTeam1, radarTeam2, surfaceHex])
+    };
+  }, [radarTeam1, radarTeam2, surfaceHex]);
 
-  const compareIds =
-    valid && p1 != null && p2 != null ? `${p1},${p2}` : ''
+  const compareIds = valid && p1 != null && p2 != null ? `${p1},${p2}` : '';
 
-  const showSeasonCharts = compareScope === 'season'
-  const showCareerTrajectory = compareScope === 'career'
-  const seasonChartsEnabled = valid && showSeasonCharts
-  const careerTrajectoryEnabled = valid && showCareerTrajectory
+  const showSeasonCharts = compareScope === 'season';
+  const showCareerTrajectory = compareScope === 'career';
+  const seasonChartsEnabled = valid && showSeasonCharts;
+  const careerTrajectoryEnabled = valid && showCareerTrajectory;
 
   const {
     data: yearlyData,
     error: yearlyError,
     loading: yearlyLoading,
-  } = usePlayerCompareYearByYear(compareIds, group, careerTrajectoryEnabled, careerMetric)
+  } = usePlayerCompareYearByYear(compareIds, group, careerTrajectoryEnabled, careerMetric);
 
   const {
     data: gameLogData,
     error: gameLogError,
     loading: gameLogLoading,
-  } = usePlayerCompareGameLog(compareIds, season, group, seasonChartsEnabled)
+  } = usePlayerCompareGameLog(compareIds, season, group, seasonChartsEnabled);
 
   const {
     data: platoonData,
     error: platoonError,
     loading: platoonLoading,
-  } = usePlayerComparePlatoon(compareIds, season, group, seasonChartsEnabled)
+  } = usePlayerComparePlatoon(compareIds, season, group, seasonChartsEnabled);
 
-  const gameLogRateLabel = group === 'hitting' ? 'OPS' : 'ERA'
-  const careerMetricLabel = yearByYearMetricShortLabel(careerMetric)
+  const gameLogRateLabel = group === 'hitting' ? 'OPS' : 'ERA';
+  const careerMetricLabel = yearByYearMetricShortLabel(careerMetric);
 
   const snapshotSectionTitle = valid
     ? compareScope === 'career'
       ? 'Career snapshot'
       : `Season ${season} snapshot`
-    : 'Comparison snapshot'
+    : 'Comparison snapshot';
 
   const snapshotSectionLede = valid
     ? compareScope === 'career'
       ? 'Radar, matchup view, and totals use each player’s full regular-season career. Below: year-by-year arcs only — no single-season game log or platoon until you switch Compare to Season.'
       : `Radar, matchup view, and totals use ${season} regular-season stats only. Below: ${season} game log and platoon splits (year-by-year arcs appear when Compare is Career).`
-    : 'Choose two different players to load radar, matchup charts, and tables.'
+    : 'Choose two different players to load radar, matchup charts, and tables.';
 
   return (
     <section className="page players-compare">
@@ -203,8 +190,8 @@ export default function PlayerComparison() {
               className="players-compare__select"
               value={compareScope}
               onChange={(e) => {
-                const v = e.target.value
-                setCompareScope(v === 'career' ? 'career' : 'season')
+                const v = e.target.value;
+                setCompareScope(v === 'career' ? 'career' : 'season');
               }}
             >
               <option value="season">Season</option>
@@ -233,8 +220,8 @@ export default function PlayerComparison() {
               className="players-compare__select"
               value={group}
               onChange={(e) => {
-                const v = e.target.value
-                setGroup(v === 'pitching' ? 'pitching' : 'hitting')
+                const v = e.target.value;
+                setGroup(v === 'pitching' ? 'pitching' : 'hitting');
               }}
             >
               <option value="hitting">Hitting</option>
@@ -281,9 +268,7 @@ export default function PlayerComparison() {
           <p className="players-compare__scope-summary-line">
             <span className="players-compare__scope-summary-label">Year-by-year</span>
             {compareScope === 'career' ? (
-              <>
-                Full careers for the metric you pick — not limited to {season}.
-              </>
+              <>Full careers for the metric you pick — not limited to {season}.</>
             ) : (
               <>
                 Hidden in season mode. Switch Compare to <strong>Career</strong> to load
@@ -323,9 +308,7 @@ export default function PlayerComparison() {
               />
             </ChartSuspense>
           ) : (
-            <p className="muted">
-              Enter two different MLB player IDs and a season to compare.
-            </p>
+            <p className="muted">Enter two different MLB player IDs and a season to compare.</p>
           )}
         </div>
 
@@ -334,9 +317,8 @@ export default function PlayerComparison() {
             <div className="players-compare__panel players-compare__panel--chart">
               <h3 className="players-compare__chart-title">Who&apos;s ahead</h3>
               <p className="muted small">
-                Same metrics as the radar: each dumbbell shows pair-normalized strength
-                (100 = better for that stat in this matchup). Hover a row for raw
-                numbers.
+                Same metrics as the radar: each dumbbell shows pair-normalized strength (100 =
+                better for that stat in this matchup). Hover a row for raw numbers.
               </p>
               <PlayerCompareAheadChart
                 data={compareData}
@@ -350,8 +332,8 @@ export default function PlayerComparison() {
                 {compareData.scope === 'career' ? 'Career totals' : 'Season totals'}
               </h3>
               <p className="muted small">
-                Raw values from the same split as the radar. wOBA and FIP appear when
-                provided by the stats API; some seasons or players omit them.
+                Raw values from the same split as the radar. wOBA and FIP appear when provided by
+                the stats API; some seasons or players omit them.
               </p>
               <PlayerCompareStatsTable data={compareData} group={group} />
             </div>
@@ -365,9 +347,9 @@ export default function PlayerComparison() {
             <p className="players-compare__section-eyebrow">Full careers</p>
             <h2 className="players-compare__section-title">Career trajectory</h2>
             <p className="players-compare__section-lede">
-              Year-by-year regular-season rates for both players, plus a league baseline
-              per season. Shown only while Compare is Career so single-season snapshots are not
-              mixed with multi-year trends.
+              Year-by-year regular-season rates for both players, plus a league baseline per season.
+              Shown only while Compare is Career so single-season snapshots are not mixed with
+              multi-year trends.
             </p>
           </div>
           <div className="players-compare__panel players-compare__panel--chart">
@@ -378,24 +360,21 @@ export default function PlayerComparison() {
                 <select
                   className="players-compare__select"
                   value={careerMetric}
-                  onChange={(e) =>
-                    setCareerMetric(e.target.value as YearByYearMetric)
-                  }
+                  onChange={(e) => setCareerMetric(e.target.value as YearByYearMetric)}
                 >
-                  {(group === 'pitching'
-                    ? PITCHING_CAREER_METRICS
-                    : HITTING_CAREER_METRICS
-                  ).map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
+                  {(group === 'pitching' ? PITCHING_CAREER_METRICS : HITTING_CAREER_METRICS).map(
+                    (opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ),
+                  )}
                 </select>
               </label>
             </div>
             <p className="muted small">
-              {careerMetricLabel} each season. Dashed line is league context from AL+NL
-              team season totals (not a player leaderboard average).
+              {careerMetricLabel} each season. Dashed line is league context from AL+NL team season
+              totals (not a player leaderboard average).
             </p>
             {yearlyLoading && !yearlyData ? (
               <ChartSkeleton height={380} label="Loading year-by-year stats" />
@@ -421,8 +400,8 @@ export default function PlayerComparison() {
       {valid && !showCareerTrajectory ? (
         <div className="players-compare__section players-compare__section--trajectory-muted">
           <p className="players-compare__trajectory-hint muted">
-            <strong>Year-by-year</strong> career arcs are off while Compare is set to Season.
-            Switch Compare to <strong>Career</strong> to load them (same players and stat group).
+            <strong>Year-by-year</strong> career arcs are off while Compare is set to Season. Switch
+            Compare to <strong>Career</strong> to load them (same players and stat group).
           </p>
         </div>
       ) : null}
@@ -434,16 +413,15 @@ export default function PlayerComparison() {
             <h2 className="players-compare__section-title">{season} · in-season detail</h2>
             <p className="players-compare__section-lede">
               Game log and platoon splits use the season year in the filters. Shown only while
-              Compare is set to Season so career totals are not mixed with one year of micro
-              stats.
+              Compare is set to Season so career totals are not mixed with one year of micro stats.
             </p>
           </div>
           <div className="players-compare__panel players-compare__panel--chart">
             <h3 className="players-compare__chart-title">Recent games</h3>
             <p className="muted small">
               Per-game {gameLogRateLabel} for the last games logged in {season} (up to 28).
-              Horizontal reference: same league baseline as team-aggregate {gameLogRateLabel}{' '}
-              for {season}.
+              Horizontal reference: same league baseline as team-aggregate {gameLogRateLabel} for{' '}
+              {season}.
             </p>
             {gameLogLoading && !gameLogData ? (
               <ChartSkeleton height={320} label="Loading game logs" />
@@ -495,12 +473,12 @@ export default function PlayerComparison() {
         <div className="players-compare__section players-compare__section--season-year-muted">
           <p className="players-compare__season-charts-hint muted">
             Single-season <strong>game log</strong> and <strong>platoon</strong> charts are off
-            while Compare is set to Career. Switch Compare to <strong>Season</strong> to load
-            them for <strong>{season}</strong> (adjust the season year first if you need a
-            different year).
+            while Compare is set to Career. Switch Compare to <strong>Season</strong> to load them
+            for <strong>{season}</strong> (adjust the season year first if you need a different
+            year).
           </p>
         </div>
       ) : null}
     </section>
-  )
+  );
 }

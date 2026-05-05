@@ -1,22 +1,15 @@
-import { useMemo, useState } from 'react'
-import type { PlayersRadarResponse } from '../../types/api.compat'
-import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
-import {
-  buildCompareMetricRows,
-  type CompareMetricRow,
-} from '../../utils/playerCompareMetricRows'
+import { useMemo, useState } from 'react';
+import type { PlayersRadarResponse } from '../../types/api.compat';
+import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors';
+import { buildCompareMetricRows, type CompareMetricRow } from '../../utils/playerCompareMetricRows';
 
-function formatRadarTooltipValue(
-  key: string,
-  v: number,
-  group: 'hitting' | 'pitching',
-): string {
-  if (!Number.isFinite(v)) return '—'
+function formatRadarTooltipValue(key: string, v: number, group: 'hitting' | 'pitching'): string {
+  if (!Number.isFinite(v)) return '—';
   if (group === 'hitting') {
-    if (key === 'hr' || key === 'rbi') return String(Math.round(v))
-    return v.toFixed(3)
+    if (key === 'hr' || key === 'rbi') return String(Math.round(v));
+    return v.toFixed(3);
   }
-  return v.toFixed(2)
+  return v.toFixed(2);
 }
 
 function DumbbellRowTip({
@@ -25,13 +18,13 @@ function DumbbellRowTip({
   nameB,
   group,
 }: {
-  row: CompareMetricRow
-  nameA: string
-  nameB: string
-  group: 'hitting' | 'pitching'
+  row: CompareMetricRow;
+  nameA: string;
+  nameB: string;
+  group: 'hitting' | 'pitching';
 }) {
-  const v1s = formatRadarTooltipValue(row.key, row.v1, group)
-  const v2s = formatRadarTooltipValue(row.key, row.v2, group)
+  const v1s = formatRadarTooltipValue(row.key, row.v1, group);
+  const v2s = formatRadarTooltipValue(row.key, row.v2, group);
 
   return (
     <div
@@ -49,46 +42,39 @@ function DumbbellRowTip({
     >
       <div style={{ fontWeight: 600, marginBottom: 4 }}>{row.metric}</div>
       <div style={{ fontVariantNumeric: 'tabular-nums' }}>
-        {nameA}: {v1s}{' '}
-        <span className="muted">({Math.round(row.a)}%)</span>
+        {nameA}: {v1s} <span className="muted">({Math.round(row.a)}%)</span>
       </div>
       <div style={{ fontVariantNumeric: 'tabular-nums' }}>
-        {nameB}: {v2s}{' '}
-        <span className="muted">({Math.round(row.b)}%)</span>
+        {nameB}: {v2s} <span className="muted">({Math.round(row.b)}%)</span>
       </div>
     </div>
-  )
+  );
 }
 
 type Props = {
-  data: PlayersRadarResponse
-  group: 'hitting' | 'pitching'
-  teamId1?: number | null
-  teamId2?: number | null
-}
+  data: PlayersRadarResponse;
+  group: 'hitting' | 'pitching';
+  teamId1?: number | null;
+  teamId2?: number | null;
+};
 
-export default function PlayerCompareAheadChart({
-  data,
-  group,
-  teamId1,
-  teamId2,
-}: Props) {
-  const rows = useMemo(() => buildCompareMetricRows(data, group), [data, group])
-  const nameA = data.players?.[0]?.fullName ?? 'Player 1'
-  const nameB = data.players?.[1]?.fullName ?? 'Player 2'
-  const { colorA, colorB } = usePlayerCompareChartColors(teamId1, teamId2)
-  const [tipRow, setTipRow] = useState<CompareMetricRow | null>(null)
+export default function PlayerCompareAheadChart({ data, group, teamId1, teamId2 }: Props) {
+  const rows = useMemo(() => buildCompareMetricRows(data, group), [data, group]);
+  const nameA = data.players?.[0]?.fullName ?? 'Player 1';
+  const nameB = data.players?.[1]?.fullName ?? 'Player 2';
+  const { colorA, colorB } = usePlayerCompareChartColors(teamId1, teamId2);
+  const [tipRow, setTipRow] = useState<CompareMetricRow | null>(null);
 
-  if (!rows.length) return null
+  if (!rows.length) return null;
 
   return (
     <div className="player-ahead-chart">
       <div className="player-ahead-chart__rows">
         {rows.map((row) => {
-          const lo = Math.min(row.a, row.b)
-          const hi = Math.max(row.a, row.b)
-          const span = Math.max(hi - lo, 0.35)
-          const tied = Math.abs(row.a - row.b) < 0.25
+          const lo = Math.min(row.a, row.b);
+          const hi = Math.max(row.a, row.b);
+          const span = Math.max(hi - lo, 0.35);
+          const tied = Math.abs(row.a - row.b) < 0.25;
 
           return (
             <div
@@ -154,7 +140,7 @@ export default function PlayerCompareAheadChart({
                 ) : null}
               </div>
             </div>
-          )
+          );
         })}
       </div>
 
@@ -175,20 +161,14 @@ export default function PlayerCompareAheadChart({
 
       <div className="player-ahead-chart__legend" aria-label="Series">
         <span className="player-ahead-chart__legend-item">
-          <span
-            className="player-ahead-chart__legend-dot"
-            style={{ background: colorA }}
-          />
+          <span className="player-ahead-chart__legend-dot" style={{ background: colorA }} />
           {nameA}
         </span>
         <span className="player-ahead-chart__legend-item">
-          <span
-            className="player-ahead-chart__legend-dot"
-            style={{ background: colorB }}
-          />
+          <span className="player-ahead-chart__legend-dot" style={{ background: colorB }} />
           {nameB}
         </span>
       </div>
     </div>
-  )
+  );
 }

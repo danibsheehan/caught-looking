@@ -1,8 +1,8 @@
-import { SkeletonLine } from './SkeletonPrimitives'
+import { SkeletonLine } from './SkeletonPrimitives';
 
 type GameListSkeletonProps = {
-  rows?: number
-}
+  rows?: number;
+};
 
 export default function GameListSkeleton({ rows = 6 }: GameListSkeletonProps) {
   return (
@@ -14,5 +14,5 @@ export default function GameListSkeleton({ rows = 6 }: GameListSkeletonProps) {
         </div>
       ))}
     </div>
-  )
+  );
 }

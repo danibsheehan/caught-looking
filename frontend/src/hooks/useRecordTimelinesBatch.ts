@@ -1,30 +1,30 @@
-import { useMemo } from 'react'
-import { fetchRecordTimelinesBatch } from '../api/client'
-import type { RecordTimelinesBatchResponse } from '../types/api.compat'
-import { useAsyncResource, type AsyncResourceResult } from './useAsyncResource'
+import { useMemo } from 'react';
+import { fetchRecordTimelinesBatch } from '../api/client';
+import type { RecordTimelinesBatchResponse } from '../types/api.compat';
+import { useAsyncResource, type AsyncResourceResult } from './useAsyncResource';
 
 export type RecordTimelinesBatchHookResult = AsyncResourceResult<RecordTimelinesBatchResponse> & {
   /** Deduped positive ids, preserving first-seen order (e.g. standings order). */
-  orderedIds: number[]
-}
+  orderedIds: number[];
+};
 
 export function useRecordTimelinesBatch(
   teamIds: number[],
   season: number | null | undefined,
 ): RecordTimelinesBatchHookResult {
   const orderedIds = useMemo(() => {
-    const seen = new Set<number>()
-    const out: number[] = []
+    const seen = new Set<number>();
+    const out: number[] = [];
     for (const id of teamIds) {
       if (id > 0 && !seen.has(id)) {
-        seen.add(id)
-        out.push(id)
+        seen.add(id);
+        out.push(id);
       }
     }
-    return out
-  }, [teamIds])
+    return out;
+  }, [teamIds]);
 
-  const enabled = orderedIds.length > 0 && season != null
+  const enabled = orderedIds.length > 0 && season != null;
   const { data, error, loading } = useAsyncResource<RecordTimelinesBatchResponse>(
     {
       enabled,
@@ -40,7 +40,7 @@ export function useRecordTimelinesBatch(
         ),
     },
     [orderedIds, season],
-  )
+  );
 
-  return { data, error, loading, orderedIds }
+  return { data, error, loading, orderedIds };
 }

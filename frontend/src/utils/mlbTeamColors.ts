@@ -1,9 +1,5 @@
-import {
-  adjustChartColorForSurface,
-  CHART_INK_MIN_CONTRAST,
-  mixHex,
-} from './chartColorContrast'
-import { getObsidianTeamColor, resolveObsidianMatchupFills } from './mlbTeamObsidianRegistry'
+import { adjustChartColorForSurface, CHART_INK_MIN_CONTRAST, mixHex } from './chartColorContrast';
+import { getObsidianTeamColor, resolveObsidianMatchupFills } from './mlbTeamObsidianRegistry';
 
 /**
  * Primary / secondary brand hex for MLB Stats API team IDs.
@@ -15,14 +11,14 @@ import { getObsidianTeamColor, resolveObsidianMatchupFills } from './mlbTeamObsi
  */
 
 /** Single-series or unknown-team fallback (slate), not the global UI accent. */
-export const CHART_NEUTRAL_FALLBACK = '#64748b'
+export const CHART_NEUTRAL_FALLBACK = '#64748b';
 
 /** Second neutral when two fallbacks are needed (e.g. inning stack before IDs load). */
-export const CHART_NEUTRAL_FALLBACK_ALT = '#94a3b8'
+export const CHART_NEUTRAL_FALLBACK_ALT = '#94a3b8';
 
 /** Two-player / two-series charts when team IDs are not passed (distinct from each other). */
-export const CHART_COMPARISON_A = '#00f5c4'
-export const CHART_COMPARISON_B = '#f472b6'
+export const CHART_COMPARISON_A = '#00f5c4';
+export const CHART_COMPARISON_B = '#f472b6';
 export const MLB_TEAM_PRIMARY_HEX = {
   108: '#BA0021',
   109: '#A71930',
@@ -54,7 +50,7 @@ export const MLB_TEAM_PRIMARY_HEX = {
   146: '#00A3E0',
   147: '#132448',
   158: '#FFC52F',
-} as const
+} as const;
 
 /** Secondary / accent used when the opponent’s primary is too close on the spectrum. */
 export const MLB_TEAM_SECONDARY_HEX = {
@@ -88,37 +84,37 @@ export const MLB_TEAM_SECONDARY_HEX = {
   146: '#EF3340',
   147: '#C4CED4',
   158: '#12284B',
-} as const
+} as const;
 
-type PrimaryKey = keyof typeof MLB_TEAM_PRIMARY_HEX
-type SecondaryKey = keyof typeof MLB_TEAM_SECONDARY_HEX
+type PrimaryKey = keyof typeof MLB_TEAM_PRIMARY_HEX;
+type SecondaryKey = keyof typeof MLB_TEAM_SECONDARY_HEX;
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const n = hex.replace('#', '')
-  if (n.length !== 6) return null
-  const r = parseInt(n.slice(0, 2), 16)
-  const g = parseInt(n.slice(2, 4), 16)
-  const b = parseInt(n.slice(4, 6), 16)
-  if ([r, g, b].some((x) => Number.isNaN(x))) return null
-  return { r, g, b }
+  const n = hex.replace('#', '');
+  if (n.length !== 6) return null;
+  const r = parseInt(n.slice(0, 2), 16);
+  const g = parseInt(n.slice(2, 4), 16);
+  const b = parseInt(n.slice(4, 6), 16);
+  if ([r, g, b].some((x) => Number.isNaN(x))) return null;
+  return { r, g, b };
 }
 
 /** Euclidean distance in RGB; good enough to flag “both reds” type clashes. */
 export function rgbDistance(hexA: string, hexB: string): number {
-  const a = hexToRgb(hexA)
-  const b = hexToRgb(hexB)
-  if (!a || !b) return 255
-  return Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b)
+  const a = hexToRgb(hexA);
+  const b = hexToRgb(hexB);
+  if (!a || !b) return 255;
+  return Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b);
 }
 
 /** If primaries are at least this far apart, keep them (no secondary swap). */
-const PRIMARY_OK_DISTANCE = 72
+const PRIMARY_OK_DISTANCE = 72;
 
 /**
  * Minimum RGB distance between any two colors in the same multi-team chart so
  * lines/bars remain easy to tell apart (slightly looser than one-on-one games).
  */
-const MULTI_CHART_MIN_DISTANCE = 52
+const MULTI_CHART_MIN_DISTANCE = 52;
 
 /**
  * When primaries/secondaries still clash, use these high-chroma strokes that
@@ -135,42 +131,40 @@ const CHART_DISTINCT_RESERVE: readonly string[] = [
   '#4f46e5',
   '#db2777',
   '#0891b2',
-]
+];
 
 function isNearBlackStroke(hex: string): boolean {
-  const rgb = hexToRgb(hex)
-  if (!rgb) return true
-  return rgb.r + rgb.g + rgb.b < 90
+  const rgb = hexToRgb(hex);
+  if (!rgb) return true;
+  return rgb.r + rgb.g + rgb.b < 90;
 }
 
 function teamChartColorCandidates(teamId: number): string[] {
   if (!Number.isFinite(teamId) || teamId <= 0) {
-    return [CHART_NEUTRAL_FALLBACK]
+    return [CHART_NEUTRAL_FALLBACK];
   }
-  const obs = getObsidianTeamColor(teamId)
+  const obs = getObsidianTeamColor(teamId);
   if (obs) {
-    const uniq = [obs.primary, obs.secondary].filter(
-      (c, i, a) => c && a.indexOf(c) === i,
-    )
-    if (uniq.length > 0) return uniq
+    const uniq = [obs.primary, obs.secondary].filter((c, i, a) => c && a.indexOf(c) === i);
+    if (uniq.length > 0) return uniq;
   }
-  const p = MLB_TEAM_PRIMARY_HEX[teamId as PrimaryKey]
-  const s = MLB_TEAM_SECONDARY_HEX[teamId as SecondaryKey]
-  const out: string[] = []
-  if (p) out.push(p)
-  if (s && s !== p && !isNearBlackStroke(s)) out.push(s)
-  if (out.length === 0) out.push(CHART_NEUTRAL_FALLBACK)
-  return out
+  const p = MLB_TEAM_PRIMARY_HEX[teamId as PrimaryKey];
+  const s = MLB_TEAM_SECONDARY_HEX[teamId as SecondaryKey];
+  const out: string[] = [];
+  if (p) out.push(p);
+  if (s && s !== p && !isNearBlackStroke(s)) out.push(s);
+  if (out.length === 0) out.push(CHART_NEUTRAL_FALLBACK);
+  return out;
 }
 
 function minDistanceToAssigned(hex: string, assigned: string[]): number {
-  if (assigned.length === 0) return 255
-  let m = 255
+  if (assigned.length === 0) return 255;
+  let m = 255;
   for (const a of assigned) {
-    const d = rgbDistance(hex, a)
-    if (d < m) m = d
+    const d = rgbDistance(hex, a);
+    if (d < m) m = d;
   }
-  return m
+  return m;
 }
 
 /**
@@ -178,54 +172,54 @@ function minDistanceToAssigned(hex: string, assigned: string[]): number {
  * contrast adjustment — use for deriving obsidian ink/label pairs.
  */
 export function pickDistinctChartBrandHexes(teamIds: readonly number[]): string[] {
-  const assigned: string[] = []
+  const assigned: string[] = [];
 
   for (const id of teamIds) {
-    const candidates = teamChartColorCandidates(id)
-    const extended = [...candidates, ...CHART_DISTINCT_RESERVE]
+    const candidates = teamChartColorCandidates(id);
+    const extended = [...candidates, ...CHART_DISTINCT_RESERVE];
 
-    let best = candidates[0]
-    let bestMinDist = minDistanceToAssigned(best, assigned)
+    let best = candidates[0];
+    let bestMinDist = minDistanceToAssigned(best, assigned);
 
     for (const c of extended) {
-      if (isNearBlackStroke(c)) continue
-      const m = minDistanceToAssigned(c, assigned)
+      if (isNearBlackStroke(c)) continue;
+      const m = minDistanceToAssigned(c, assigned);
       if (m >= MULTI_CHART_MIN_DISTANCE) {
-        best = c
-        bestMinDist = m
-        break
+        best = c;
+        bestMinDist = m;
+        break;
       }
       if (m > bestMinDist) {
-        best = c
-        bestMinDist = m
+        best = c;
+        bestMinDist = m;
       }
     }
 
-    assigned.push(best)
+    assigned.push(best);
   }
 
-  return assigned
+  return assigned;
 }
 
 /**
  * Darken brand toward a **blue-slate** (not the page bg) so fills stay saturated
  * like the mockup (#1a2a40, #c05020, #8a1a1a) instead of muddy gray.
  */
-const OBSIDIAN_INK_POLE = '#0e1828'
-const INK_MIX_TOWARD_POLE = 0.38
+const OBSIDIAN_INK_POLE = '#0e1828';
+const INK_MIX_TOWARD_POLE = 0.38;
 /**
  * Looser than default chart ink — aggressive 3:1 nudging toward white mutes hue.
  */
-const OBSIDIAN_INK_MIN_CONTRAST = 2.35
+const OBSIDIAN_INK_MIN_CONTRAST = 2.35;
 
-const LABEL_LIGHT_POLE = '#f1f5f9'
+const LABEL_LIGHT_POLE = '#f1f5f9';
 /** Keep chroma: mockup labels (#d06030, #c04040, #8ab0c8) read as team colors. */
-const LABEL_MIX_TOWARD_LIGHT = 0.26
-const LABEL_MIN_CONTRAST = 3.15
+const LABEL_MIX_TOWARD_LIGHT = 0.26;
+const LABEL_MIN_CONTRAST = 3.15;
 
 /** Pull contrast-adjusted hex back toward brand so orange/red/navy don’t go gray. */
 function snapTowardBrand(adjusted: string, brand: string, t: number): string {
-  return mixHex(adjusted, brand, t)
+  return mixHex(adjusted, brand, t);
 }
 
 /**
@@ -238,12 +232,12 @@ export function obsidianRegistryLabelMap(
   teamIds: readonly number[],
   surfaceHex: string,
 ): Map<number, string> {
-  const pairs = obsidianTeamChartPairsRegistryPrimary(teamIds, surfaceHex)
-  const m = new Map<number, string>()
+  const pairs = obsidianTeamChartPairsRegistryPrimary(teamIds, surfaceHex);
+  const m = new Map<number, string>();
   teamIds.forEach((id, i) => {
-    m.set(id, pairs[i]?.label ?? '#c8d8e8')
-  })
-  return m
+    m.set(id, pairs[i]?.label ?? '#c8d8e8');
+  });
+  return m;
 }
 
 /**
@@ -257,73 +251,49 @@ export function obsidianTeamChartPairsRegistryPrimary(
   surfaceHex: string,
 ): { ink: string; label: string }[] {
   return teamIds.map((teamId) => {
-    const reg = getObsidianTeamColor(teamId)
-    const brand = reg?.primary ?? mlbTeamPrimaryHex(teamId, CHART_NEUTRAL_FALLBACK)
+    const reg = getObsidianTeamColor(teamId);
+    const brand = reg?.primary ?? mlbTeamPrimaryHex(teamId, CHART_NEUTRAL_FALLBACK);
 
-    const inkBase = mixHex(brand, OBSIDIAN_INK_POLE, INK_MIX_TOWARD_POLE)
-    const inkAdjusted = adjustChartColorForSurface(
-      inkBase,
-      surfaceHex,
-      OBSIDIAN_INK_MIN_CONTRAST,
-    )
-    const ink = snapTowardBrand(inkAdjusted, brand, 0.22)
+    const inkBase = mixHex(brand, OBSIDIAN_INK_POLE, INK_MIX_TOWARD_POLE);
+    const inkAdjusted = adjustChartColorForSurface(inkBase, surfaceHex, OBSIDIAN_INK_MIN_CONTRAST);
+    const ink = snapTowardBrand(inkAdjusted, brand, 0.22);
 
     if (reg) {
-      const labelAdjusted = adjustChartColorForSurface(
-        reg.label,
-        surfaceHex,
-        LABEL_MIN_CONTRAST,
-      )
-      const label = snapTowardBrand(labelAdjusted, reg.label, 0.28)
-      return { ink, label }
+      const labelAdjusted = adjustChartColorForSurface(reg.label, surfaceHex, LABEL_MIN_CONTRAST);
+      const label = snapTowardBrand(labelAdjusted, reg.label, 0.28);
+      return { ink, label };
     }
 
-    const labelBase = mixHex(brand, LABEL_LIGHT_POLE, LABEL_MIX_TOWARD_LIGHT)
-    const labelAdjusted = adjustChartColorForSurface(
-      labelBase,
-      surfaceHex,
-      LABEL_MIN_CONTRAST,
-    )
-    const label = snapTowardBrand(labelAdjusted, brand, 0.35)
-    return { ink, label }
-  })
+    const labelBase = mixHex(brand, LABEL_LIGHT_POLE, LABEL_MIX_TOWARD_LIGHT);
+    const labelAdjusted = adjustChartColorForSurface(labelBase, surfaceHex, LABEL_MIN_CONTRAST);
+    const label = snapTowardBrand(labelAdjusted, brand, 0.35);
+    return { ink, label };
+  });
 }
 
 export function obsidianTeamChartPairs(
   teamIds: readonly number[],
   surfaceHex: string,
 ): { ink: string; label: string }[] {
-  const brands = pickDistinctChartBrandHexes(teamIds)
+  const brands = pickDistinctChartBrandHexes(teamIds);
   return teamIds.map((teamId, i) => {
-    const brand = brands[i]!
-    const reg = getObsidianTeamColor(teamId)
-    const inkBase = mixHex(brand, OBSIDIAN_INK_POLE, INK_MIX_TOWARD_POLE)
-    const inkAdjusted = adjustChartColorForSurface(
-      inkBase,
-      surfaceHex,
-      OBSIDIAN_INK_MIN_CONTRAST,
-    )
-    const ink = snapTowardBrand(inkAdjusted, brand, 0.22)
+    const brand = brands[i]!;
+    const reg = getObsidianTeamColor(teamId);
+    const inkBase = mixHex(brand, OBSIDIAN_INK_POLE, INK_MIX_TOWARD_POLE);
+    const inkAdjusted = adjustChartColorForSurface(inkBase, surfaceHex, OBSIDIAN_INK_MIN_CONTRAST);
+    const ink = snapTowardBrand(inkAdjusted, brand, 0.22);
 
     if (reg) {
-      const labelAdjusted = adjustChartColorForSurface(
-        reg.label,
-        surfaceHex,
-        LABEL_MIN_CONTRAST,
-      )
-      const label = snapTowardBrand(labelAdjusted, reg.label, 0.28)
-      return { ink, label }
+      const labelAdjusted = adjustChartColorForSurface(reg.label, surfaceHex, LABEL_MIN_CONTRAST);
+      const label = snapTowardBrand(labelAdjusted, reg.label, 0.28);
+      return { ink, label };
     }
 
-    const labelBase = mixHex(brand, LABEL_LIGHT_POLE, LABEL_MIX_TOWARD_LIGHT)
-    const labelAdjusted = adjustChartColorForSurface(
-      labelBase,
-      surfaceHex,
-      LABEL_MIN_CONTRAST,
-    )
-    const label = snapTowardBrand(labelAdjusted, brand, 0.35)
-    return { ink, label }
-  })
+    const labelBase = mixHex(brand, LABEL_LIGHT_POLE, LABEL_MIX_TOWARD_LIGHT);
+    const labelAdjusted = adjustChartColorForSurface(labelBase, surfaceHex, LABEL_MIN_CONTRAST);
+    const label = snapTowardBrand(labelAdjusted, brand, 0.35);
+    return { ink, label };
+  });
 }
 
 /**
@@ -340,7 +310,7 @@ export function distinctChartColorsForTeamIds(
 ): string[] {
   return pickDistinctChartBrandHexes(teamIds).map((c) =>
     adjustChartColorForSurface(c, surfaceHex, inkMin),
-  )
+  );
 }
 
 /**
@@ -354,36 +324,36 @@ export function resolveGameScoreBarFills(
   fallbackAway: string,
   fallbackHome: string,
 ): { awayFill: string; homeFill: string } {
-  const registryPair = resolveObsidianMatchupFills(awayId, homeId)
+  const registryPair = resolveObsidianMatchupFills(awayId, homeId);
   if (registryPair) {
-    return registryPair
+    return registryPair;
   }
 
   const awayP =
     awayId != null && Number.isFinite(awayId) && awayId > 0
       ? MLB_TEAM_PRIMARY_HEX[awayId as PrimaryKey]
-      : undefined
+      : undefined;
   const homeP =
     homeId != null && Number.isFinite(homeId) && homeId > 0
       ? MLB_TEAM_PRIMARY_HEX[homeId as PrimaryKey]
-      : undefined
+      : undefined;
   const awayS =
     awayId != null && Number.isFinite(awayId) && awayId > 0
       ? MLB_TEAM_SECONDARY_HEX[awayId as SecondaryKey]
-      : undefined
+      : undefined;
   const homeS =
     homeId != null && Number.isFinite(homeId) && homeId > 0
       ? MLB_TEAM_SECONDARY_HEX[homeId as SecondaryKey]
-      : undefined
+      : undefined;
 
-  const aP = awayP ?? fallbackAway
-  const aS = awayS && awayS !== aP ? awayS : aP
-  const hP = homeP ?? fallbackHome
-  const hS = homeS && homeS !== hP ? homeS : hP
+  const aP = awayP ?? fallbackAway;
+  const aS = awayS && awayS !== aP ? awayS : aP;
+  const hP = homeP ?? fallbackHome;
+  const hS = homeS && homeS !== hP ? homeS : hP;
 
-  const dPrimary = rgbDistance(aP, hP)
+  const dPrimary = rgbDistance(aP, hP);
   if (dPrimary >= PRIMARY_OK_DISTANCE) {
-    return { awayFill: aP, homeFill: hP }
+    return { awayFill: aP, homeFill: hP };
   }
 
   const candidates = [
@@ -391,28 +361,25 @@ export function resolveGameScoreBarFills(
     { awayFill: aP, homeFill: hS, primaries: 1 },
     { awayFill: aS, homeFill: hP, primaries: 1 },
     { awayFill: aS, homeFill: hS, primaries: 0 },
-  ]
+  ];
 
-  let best = candidates[0]
-  let bestDist = rgbDistance(best.awayFill, best.homeFill)
+  let best = candidates[0];
+  let bestDist = rgbDistance(best.awayFill, best.homeFill);
   for (let i = 1; i < candidates.length; i++) {
-    const c = candidates[i]
-    const d = rgbDistance(c.awayFill, c.homeFill)
+    const c = candidates[i];
+    const d = rgbDistance(c.awayFill, c.homeFill);
     if (d > bestDist || (d === bestDist && c.primaries > best.primaries)) {
-      best = c
-      bestDist = d
+      best = c;
+      bestDist = d;
     }
   }
 
-  return { awayFill: best.awayFill, homeFill: best.homeFill }
+  return { awayFill: best.awayFill, homeFill: best.homeFill };
 }
 
-export function mlbTeamPrimaryHex(
-  teamId: number | null | undefined,
-  fallback: string,
-): string {
-  if (teamId == null || !Number.isFinite(teamId) || teamId <= 0) return fallback
-  return MLB_TEAM_PRIMARY_HEX[teamId as PrimaryKey] ?? fallback
+export function mlbTeamPrimaryHex(teamId: number | null | undefined, fallback: string): string {
+  if (teamId == null || !Number.isFinite(teamId) || teamId <= 0) return fallback;
+  return MLB_TEAM_PRIMARY_HEX[teamId as PrimaryKey] ?? fallback;
 }
 
 /**
@@ -423,9 +390,9 @@ export function teamSplitChartColors(
   teamId: number | null | undefined,
   surfaceHex: string,
 ): { offense: string; defense: string } {
-  const primary = mlbTeamPrimaryHex(teamId, CHART_NEUTRAL_FALLBACK)
+  const primary = mlbTeamPrimaryHex(teamId, CHART_NEUTRAL_FALLBACK);
   let secondary: string =
-    MLB_TEAM_SECONDARY_HEX[teamId as SecondaryKey] ?? CHART_NEUTRAL_FALLBACK_ALT
+    MLB_TEAM_SECONDARY_HEX[teamId as SecondaryKey] ?? CHART_NEUTRAL_FALLBACK_ALT;
 
   if (
     !secondary ||
@@ -434,13 +401,12 @@ export function teamSplitChartColors(
   ) {
     secondary =
       CHART_DISTINCT_RESERVE.find(
-        (c) =>
-          rgbDistance(primary, c) >= MULTI_CHART_MIN_DISTANCE && !isNearBlackStroke(c),
-      ) ?? CHART_COMPARISON_B
+        (c) => rgbDistance(primary, c) >= MULTI_CHART_MIN_DISTANCE && !isNearBlackStroke(c),
+      ) ?? CHART_COMPARISON_B;
   }
 
   return {
     offense: adjustChartColorForSurface(primary, surfaceHex),
     defense: adjustChartColorForSurface(secondary, surfaceHex),
-  }
+  };
 }

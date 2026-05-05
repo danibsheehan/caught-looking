@@ -1,18 +1,20 @@
-import type { StatcastChartTooltipRow } from '../../utils/statcastDisplay'
+import type { StatcastChartTooltipRow } from '../../utils/statcastDisplay';
 
 type StatcastMetricTooltipContentProps = {
-  rows: StatcastChartTooltipRow[]
-}
+  rows: StatcastChartTooltipRow[];
+};
 
 /**
  * Shared layout: title, then Distance → Velocity → Angle → Result as an unordered list
  * (see `buildSprayTooltipRows` / `buildScatterTooltipRows`).
  */
 export default function StatcastMetricTooltipContent({ rows }: StatcastMetricTooltipContentProps) {
-  const titleRow = rows.find((r): r is Extract<StatcastChartTooltipRow, { variant: 'title' }> => r.variant === 'title')
+  const titleRow = rows.find(
+    (r): r is Extract<StatcastChartTooltipRow, { variant: 'title' }> => r.variant === 'title',
+  );
   const metricRows = rows.filter(
     (r): r is Extract<StatcastChartTooltipRow, { variant: 'step' }> => r.variant === 'step',
-  )
+  );
 
   return (
     <>
@@ -28,5 +30,5 @@ export default function StatcastMetricTooltipContent({ rows }: StatcastMetricToo
         </ul>
       ) : null}
     </>
-  )
+  );
 }

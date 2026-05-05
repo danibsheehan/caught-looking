@@ -1,7 +1,7 @@
-import { render, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import type { TeamSeasonStatsResponse } from '../../types/api.compat'
-import TeamSeasonDeepDive from './TeamSeasonDeepDive'
+import { render, screen, within } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import type { TeamSeasonStatsResponse } from '../../types/api.compat';
+import TeamSeasonDeepDive from './TeamSeasonDeepDive';
 
 function makeStats(overrides: Partial<TeamSeasonStatsResponse> = {}): TeamSeasonStatsResponse {
   return {
@@ -57,31 +57,41 @@ function makeStats(overrides: Partial<TeamSeasonStatsResponse> = {}): TeamSeason
       },
     },
     ...overrides,
-  }
+  };
 }
 
 describe('TeamSeasonDeepDive', () => {
   it('shows no-data copy when venue splits have no completed games', () => {
     const stats = makeStats({
-      hitting: { ...makeStats().hitting, gamesPlayed: 0, runs: 0, runsPerGame: 0 },
-      pitching: { ...makeStats().pitching, gamesPlayed: 0, runsAllowed: 0, runsAllowedPerGame: 0 },
+      hitting: {
+        ...makeStats().hitting,
+        gamesPlayed: 0,
+        runs: 0,
+        runsPerGame: 0,
+      },
+      pitching: {
+        ...makeStats().pitching,
+        gamesPlayed: 0,
+        runsAllowed: 0,
+        runsAllowedPerGame: 0,
+      },
       venueSplits: {
         home: { games: 0, wins: 0, losses: 0, runsScored: 0, runsAllowed: 0 },
         away: { games: 0, wins: 0, losses: 0, runsScored: 0, runsAllowed: 0 },
       },
-    })
+    });
 
-    render(<TeamSeasonDeepDive stats={stats} teamId={121} />)
+    render(<TeamSeasonDeepDive stats={stats} teamId={121} />);
 
     expect(
       screen.getByText(/No completed home\/road games in this response yet/i),
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Offense' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Pitching' })).not.toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Offense' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Pitching' })).not.toBeInTheDocument();
+  });
 
   it('renders partial data and fallback labels for missing offense values', () => {
-    const base = makeStats()
+    const base = makeStats();
     const stats = makeStats({
       hitting: {
         ...base.hitting,
@@ -90,7 +100,12 @@ describe('TeamSeasonDeepDive', () => {
         homeRuns: undefined,
         stolenBases: 0,
       },
-      pitching: { ...base.pitching, gamesPlayed: 0, runsAllowedPerGame: 0, runsAllowed: 0 },
+      pitching: {
+        ...base.pitching,
+        gamesPlayed: 0,
+        runsAllowedPerGame: 0,
+        runsAllowed: 0,
+      },
       venueSplits: {
         home: {
           games: 0,
@@ -111,34 +126,34 @@ describe('TeamSeasonDeepDive', () => {
           runsAllowedPerGame: 3.88,
         },
       },
-    })
+    });
 
-    render(<TeamSeasonDeepDive stats={stats} teamId={121} />)
+    render(<TeamSeasonDeepDive stats={stats} teamId={121} />);
 
-    expect(screen.getByRole('heading', { name: 'Offense' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Pitching' })).not.toBeInTheDocument()
-    expect(screen.getByText(/2B:/i)).toHaveTextContent('2B: 0')
-    expect(screen.getByText(/HR:/i)).toHaveTextContent('HR: 0')
-    expect(screen.getByText(/SB:/i)).toHaveTextContent('SB: 0')
-    expect(screen.getByLabelText('OPS no data')).toBeInTheDocument()
-    const fallbackCells = screen.getAllByRole('cell', { name: '—' })
-    expect(fallbackCells.length).toBeGreaterThan(0)
-  })
+    expect(screen.getByRole('heading', { name: 'Offense' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Pitching' })).not.toBeInTheDocument();
+    expect(screen.getByText(/2B:/i)).toHaveTextContent('2B: 0');
+    expect(screen.getByText(/HR:/i)).toHaveTextContent('HR: 0');
+    expect(screen.getByText(/SB:/i)).toHaveTextContent('SB: 0');
+    expect(screen.getByLabelText('OPS no data')).toBeInTheDocument();
+    const fallbackCells = screen.getAllByRole('cell', { name: '—' });
+    expect(fallbackCells.length).toBeGreaterThan(0);
+  });
 
   it('renders full data with offense, pitching, and the combined R/G vs RA/G legend', () => {
-    const stats = makeStats()
-    render(<TeamSeasonDeepDive stats={stats} teamId={121} />)
+    const stats = makeStats();
+    render(<TeamSeasonDeepDive stats={stats} teamId={121} />);
 
-    expect(screen.getByRole('heading', { name: 'Offense' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Pitching' })).toBeInTheDocument()
-    expect(screen.getByText(/Runs per game: offense/i)).toBeInTheDocument()
-    expect(screen.getByTitle('R/G 4.50')).toBeInTheDocument()
-    expect(screen.getByTitle('RA/G 3.92')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Offense' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pitching' })).toBeInTheDocument();
+    expect(screen.getByText(/Runs per game: offense/i)).toBeInTheDocument();
+    expect(screen.getByTitle('R/G 4.50')).toBeInTheDocument();
+    expect(screen.getByTitle('RA/G 3.92')).toBeInTheDocument();
 
-    const table = screen.getByRole('table')
-    const rows = within(table).getAllByRole('row')
-    expect(rows.length).toBeGreaterThan(3)
-    expect(screen.getByRole('cell', { name: '4.83' })).toBeInTheDocument()
-    expect(screen.getByRole('cell', { name: '4.50' })).toBeInTheDocument()
-  })
-})
+    const table = screen.getByRole('table');
+    const rows = within(table).getAllByRole('row');
+    expect(rows.length).toBeGreaterThan(3);
+    expect(screen.getByRole('cell', { name: '4.83' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '4.50' })).toBeInTheDocument();
+  });
+});

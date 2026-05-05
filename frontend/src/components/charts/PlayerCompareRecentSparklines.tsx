@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -9,27 +9,23 @@ import {
   XAxis,
   YAxis,
   type TooltipValueType,
-} from 'recharts'
-import type { GameLogPlayer, PlayersGameLogResponse } from '../../types/api.compat'
-import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors'
-import { chartCartesianTick } from '../../utils/rechartsAxis'
-import { rollingTrailingMean } from '../../utils/rollingMean'
+} from 'recharts';
+import type { GameLogPlayer, PlayersGameLogResponse } from '../../types/api.compat';
+import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors';
+import { chartCartesianTick } from '../../utils/rechartsAxis';
+import { rollingTrailingMean } from '../../utils/rollingMean';
 
-const ROLLING_OPTIONS = [3, 5, 10, 15] as const
+const ROLLING_OPTIONS = [3, 5, 10, 15] as const;
 
-function gamesToRows(
-  games: GameLogPlayer['games'],
-  key: 'a' | 'b',
-  rollingWindow: number,
-) {
-  const vals = games.map((g) => g.value)
-  const roll = rollingTrailingMean(vals, rollingWindow)
+function gamesToRows(games: GameLogPlayer['games'], key: 'a' | 'b', rollingWindow: number) {
+  const vals = games.map((g) => g.value);
+  const roll = rollingTrailingMean(vals, rollingWindow);
   return games.map((g, i) => ({
     i: i + 1,
     [key]: g.value,
     [`${key}Roll`]: roll[i],
     date: g.date,
-  }))
+  }));
 }
 
 function SparkBlock({
@@ -42,21 +38,24 @@ function SparkBlock({
   metric,
   leagueBaseline,
 }: {
-  title: string
-  rows: { i: number; date: string; a?: number; b?: number; aRoll?: number; bRoll?: number }[]
-  dataKey: 'a' | 'b'
-  rollKey: 'aRoll' | 'bRoll'
-  name: string
-  color: string
-  metric: 'ops' | 'era'
-  leagueBaseline: number
+  title: string;
+  rows: {
+    i: number;
+    date: string;
+    a?: number;
+    b?: number;
+    aRoll?: number;
+    bRoll?: number;
+  }[];
+  dataKey: 'a' | 'b';
+  rollKey: 'aRoll' | 'bRoll';
+  name: string;
+  color: string;
+  metric: 'ops' | 'era';
+  leagueBaseline: number;
 }) {
   const fmt = (v: number | undefined) =>
-    v == null || !Number.isFinite(v)
-      ? '—'
-      : metric === 'ops'
-        ? v.toFixed(3)
-        : v.toFixed(2)
+    v == null || !Number.isFinite(v) ? '—' : metric === 'ops' ? v.toFixed(3) : v.toFixed(2);
 
   return (
     <div className="player-game-spark__block">
@@ -105,16 +104,13 @@ function SparkBlock({
               border: '1px solid var(--border)',
               fontSize: 11,
             }}
-            formatter={(
-              v: TooltipValueType | undefined,
-              name: string | number | undefined,
-            ) => [
+            formatter={(v: TooltipValueType | undefined, name: string | number | undefined) => [
               fmt(typeof v === 'number' ? v : undefined),
               String(name ?? ''),
             ]}
             labelFormatter={(_lab, payload) => {
-              const row = payload?.[0]?.payload as { date?: string } | undefined
-              return row?.date ? `Game · ${row.date}` : 'Game'
+              const row = payload?.[0]?.payload as { date?: string } | undefined;
+              return row?.date ? `Game · ${row.date}` : 'Game';
             }}
           />
           <Line
@@ -140,40 +136,33 @@ function SparkBlock({
         </LineChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }
 
 type Props = {
-  data: PlayersGameLogResponse
-  teamId1?: number | null
-  teamId2?: number | null
-}
+  data: PlayersGameLogResponse;
+  teamId1?: number | null;
+  teamId2?: number | null;
+};
 
-export default function PlayerCompareRecentSparklines({
-  data,
-  teamId1,
-  teamId2,
-}: Props) {
-  const { colorA, colorB } = usePlayerCompareChartColors(teamId1, teamId2)
-  const [rollingWindow, setRollingWindow] =
-    useState<(typeof ROLLING_OPTIONS)[number]>(10)
-  const [p1, p2] = data.players
-  const metric = data.metric
-  const lb = data.leagueBaseline
+export default function PlayerCompareRecentSparklines({ data, teamId1, teamId2 }: Props) {
+  const { colorA, colorB } = usePlayerCompareChartColors(teamId1, teamId2);
+  const [rollingWindow, setRollingWindow] = useState<(typeof ROLLING_OPTIONS)[number]>(10);
+  const [p1, p2] = data.players;
+  const metric = data.metric;
+  const lb = data.leagueBaseline;
 
   const rowsA = useMemo(
     () => gamesToRows(p1?.games ?? [], 'a', rollingWindow),
     [p1?.games, rollingWindow],
-  )
+  );
   const rowsB = useMemo(
     () => gamesToRows(p2?.games ?? [], 'b', rollingWindow),
     [p2?.games, rollingWindow],
-  )
+  );
 
   if (!rowsA.length && !rowsB.length) {
-    return (
-      <p className="muted">No game log for this season yet (or player did not play).</p>
-    )
+    return <p className="muted">No game log for this season yet (or player did not play).</p>;
   }
 
   return (
@@ -225,5 +214,5 @@ export default function PlayerCompareRecentSparklines({
         />
       ) : null}
     </div>
-  )
+  );
 }

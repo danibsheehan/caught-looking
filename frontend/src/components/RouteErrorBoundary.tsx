@@ -1,21 +1,21 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
-type Props = { children?: ReactNode }
+type Props = { children?: ReactNode };
 
-type State = { hasError: boolean; error: Error | null }
+type State = { hasError: boolean; error: Error | null };
 
 /**
  * Catches render errors in lazy route trees so the shell (header/nav) stays visible.
  */
 export default class RouteErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false, error: null }
+  state: State = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error }
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[RouteErrorBoundary]', error, info?.componentStack)
+    console.error('[RouteErrorBoundary]', error, info?.componentStack);
   }
 
   render() {
@@ -32,8 +32,8 @@ export default class RouteErrorBoundary extends Component<Props, State> {
             Try again
           </button>
         </div>
-      )
+      );
     }
-    return this.props.children
+    return this.props.children;
   }
 }

@@ -1,78 +1,70 @@
-import { lazy, useMemo, useState } from 'react'
-import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
-import { gameInningBarFills } from '../../utils/gameChartColors'
-import { ChartSuspense } from '../charts/ChartSuspense'
-import GamePitcherStrikeZones from '../charts/GamePitcherStrikeZones'
+import { lazy, useMemo, useState } from 'react';
+import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
+import { gameInningBarFills } from '../../utils/gameChartColors';
+import { ChartSuspense } from '../charts/ChartSuspense';
+import GamePitcherStrikeZones from '../charts/GamePitcherStrikeZones';
 
-const GameScoreBar = lazy(() => import('../charts/GameScoreBar'))
-import GameFinalScoreStrip from './GameFinalScoreStrip'
+const GameScoreBar = lazy(() => import('../charts/GameScoreBar'));
+import GameFinalScoreStrip from './GameFinalScoreStrip';
 import type {
   BatterLine,
   GameBoxscoreResponse,
   GameStatcastPitchesResponse,
   PitcherLine,
   TeamBoxSide,
-} from '../../types/api.compat'
+} from '../../types/api.compat';
 
 /** MLB IP string to outs (e.g. 9.0 → 27, 0.1 → 1). */
 function ipToOuts(ip: string): number {
-  const s = String(ip).trim()
-  if (!s) return 0
-  const [w, frac = '0'] = s.split('.')
-  const whole = parseInt(w, 10) || 0
-  const t = parseInt(frac, 10) || 0
-  let extra = 0
-  if (t === 1) extra = 1
-  else if (t === 2) extra = 2
-  return whole * 3 + extra
+  const s = String(ip).trim();
+  if (!s) return 0;
+  const [w, frac = '0'] = s.split('.');
+  const whole = parseInt(w, 10) || 0;
+  const t = parseInt(frac, 10) || 0;
+  let extra = 0;
+  if (t === 1) extra = 1;
+  else if (t === 2) extra = 2;
+  return whole * 3 + extra;
 }
 
-function sortedCopy<T>(
-  rows: T[],
-  dir: 'asc' | 'desc',
-  valueOf: (row: T) => number | string,
-): T[] {
-  const out = [...rows]
+function sortedCopy<T>(rows: T[], dir: 'asc' | 'desc', valueOf: (row: T) => number | string): T[] {
+  const out = [...rows];
   out.sort((a, b) => {
-    const va = valueOf(a)
-    const vb = valueOf(b)
+    const va = valueOf(a);
+    const vb = valueOf(b);
     if (typeof va === 'number' && typeof vb === 'number') {
-      return dir === 'asc' ? va - vb : vb - va
+      return dir === 'asc' ? va - vb : vb - va;
     }
-    const sa = String(va ?? '')
-    const sb = String(vb ?? '')
-    const c = sa.localeCompare(sb, undefined, { sensitivity: 'base' })
-    return dir === 'asc' ? c : -c
-  })
-  return out
+    const sa = String(va ?? '');
+    const sb = String(vb ?? '');
+    const c = sa.localeCompare(sb, undefined, { sensitivity: 'base' });
+    return dir === 'asc' ? c : -c;
+  });
+  return out;
 }
 
 type SortThProps = {
-  label: string
-  sortKey: string
-  activeKey: string | null
-  activeDir: 'asc' | 'desc'
-  onSort: (k: string) => void
-}
+  label: string;
+  sortKey: string;
+  activeKey: string | null;
+  activeDir: 'asc' | 'desc';
+  onSort: (k: string) => void;
+};
 
 function SortTh({ label, sortKey, activeKey, activeDir, onSort }: SortThProps) {
-  const active = activeKey === sortKey
+  const active = activeKey === sortKey;
   return (
     <th scope="col">
-      <button
-        type="button"
-        className="game-boxscore__sort-btn"
-        onClick={() => onSort(sortKey)}
-      >
+      <button type="button" className="game-boxscore__sort-btn" onClick={() => onSort(sortKey)}>
         {label}
         {active ? (activeDir === 'asc' ? ' ▲' : ' ▼') : ''}
       </button>
     </th>
-  )
+  );
 }
 
 function TeamTotalsCard({ side }: { side: TeamBoxSide }) {
-  const t = side.totals
+  const t = side.totals;
   return (
     <div className="game-boxscore__team-totals">
       <h3 className="game-boxscore__team-name">{side.teamName}</h3>
@@ -107,106 +99,99 @@ function TeamTotalsCard({ side }: { side: TeamBoxSide }) {
         </div>
       </dl>
     </div>
-  )
+  );
 }
 
-type SortState = { key: string; dir: 'asc' | 'desc' } | null
+type SortState = { key: string; dir: 'asc' | 'desc' } | null;
 
 export type GameBoxscorePitchLocation = {
-  loading: boolean
-  error: Error | null
-  data: GameStatcastPitchesResponse | null
-}
+  loading: boolean;
+  error: Error | null;
+  data: GameStatcastPitchesResponse | null;
+};
 
 export default function GameBoxscorePanel({
   data,
   gamePk,
   pitchLocation,
 }: {
-  data: GameBoxscoreResponse
+  data: GameBoxscoreResponse;
   /** When set, renders “Runs by inning” directly below team totals. */
-  gamePk?: number
+  gamePk?: number;
   /** Pitch-location charts; shown below pitching tables when provided. */
-  pitchLocation?: GameBoxscorePitchLocation
+  pitchLocation?: GameBoxscorePitchLocation;
 }) {
-  const [batAway, setBatAway] = useState<SortState>(null)
-  const [batHome, setBatHome] = useState<SortState>(null)
-  const [pitAway, setPitAway] = useState<SortState>(null)
-  const [pitHome, setPitHome] = useState<SortState>(null)
+  const [batAway, setBatAway] = useState<SortState>(null);
+  const [batHome, setBatHome] = useState<SortState>(null);
+  const [pitAway, setPitAway] = useState<SortState>(null);
+  const [pitHome, setPitHome] = useState<SortState>(null);
 
-  const surfaceHex = useChartSurfaceHex()
+  const surfaceHex = useChartSurfaceHex();
   /** Same fills as {@link GameScoreBar} stacked bars so the score strip matches the chart. */
   const runsByInningTeamFills = useMemo(
     () => gameInningBarFills(data.away.teamId, data.home.teamId, surfaceHex),
     [data.away.teamId, data.home.teamId, surfaceHex],
-  )
+  );
 
   const batAwayRows = useMemo(() => {
-    const batting = data.away.batting ?? []
-    if (!batAway) return batting
-    const k = batAway.key
+    const batting = data.away.batting ?? [];
+    if (!batAway) return batting;
+    const k = batAway.key;
     return sortedCopy<BatterLine>(batting, batAway.dir, (row) => {
-      const v = (row as unknown as Record<string, number | string>)[k]
-      return v ?? ''
-    })
-  }, [data.away.batting, batAway])
+      const v = (row as unknown as Record<string, number | string>)[k];
+      return v ?? '';
+    });
+  }, [data.away.batting, batAway]);
 
   const batHomeRows = useMemo(() => {
-    const batting = data.home.batting ?? []
-    if (!batHome) return batting
-    const k = batHome.key
+    const batting = data.home.batting ?? [];
+    if (!batHome) return batting;
+    const k = batHome.key;
     return sortedCopy<BatterLine>(batting, batHome.dir, (row) => {
-      const v = (row as unknown as Record<string, number | string>)[k]
-      return v ?? ''
-    })
-  }, [data.home.batting, batHome])
+      const v = (row as unknown as Record<string, number | string>)[k];
+      return v ?? '';
+    });
+  }, [data.home.batting, batHome]);
 
   const pitAwayRows = useMemo(() => {
-    const pitching = data.away.pitching ?? []
-    if (!pitAway) return pitching
+    const pitching = data.away.pitching ?? [];
+    if (!pitAway) return pitching;
     if (pitAway.key === 'ip') {
-      return sortedCopy<PitcherLine>(pitching, pitAway.dir, (row) =>
-        ipToOuts(row.ip),
-      )
+      return sortedCopy<PitcherLine>(pitching, pitAway.dir, (row) => ipToOuts(row.ip));
     }
-    const k = pitAway.key
+    const k = pitAway.key;
     return sortedCopy<PitcherLine>(pitching, pitAway.dir, (row) => {
-      const v = (row as unknown as Record<string, number | string>)[k]
-      return v ?? ''
-    })
-  }, [data.away.pitching, pitAway])
+      const v = (row as unknown as Record<string, number | string>)[k];
+      return v ?? '';
+    });
+  }, [data.away.pitching, pitAway]);
 
   const pitHomeRows = useMemo(() => {
-    const pitching = data.home.pitching ?? []
-    if (!pitHome) return pitching
+    const pitching = data.home.pitching ?? [];
+    if (!pitHome) return pitching;
     if (pitHome.key === 'ip') {
-      return sortedCopy<PitcherLine>(pitching, pitHome.dir, (row) =>
-        ipToOuts(row.ip),
-      )
+      return sortedCopy<PitcherLine>(pitching, pitHome.dir, (row) => ipToOuts(row.ip));
     }
-    const k = pitHome.key
+    const k = pitHome.key;
     return sortedCopy<PitcherLine>(pitching, pitHome.dir, (row) => {
-      const v = (row as unknown as Record<string, number | string>)[k]
-      return v ?? ''
-    })
-  }, [data.home.pitching, pitHome])
+      const v = (row as unknown as Record<string, number | string>)[k];
+      return v ?? '';
+    });
+  }, [data.home.pitching, pitHome]);
 
-  function toggleSort(
-    which: 'awayBat' | 'homeBat' | 'awayPit' | 'homePit',
-    key: string,
-  ) {
+  function toggleSort(which: 'awayBat' | 'homeBat' | 'awayPit' | 'homePit', key: string) {
     const map = {
       awayBat: [batAway, setBatAway] as const,
       homeBat: [batHome, setBatHome] as const,
       awayPit: [pitAway, setPitAway] as const,
       homePit: [pitHome, setPitHome] as const,
-    }
-    const [, setSortState] = map[which]
+    };
+    const [, setSortState] = map[which];
     setSortState((prev) => {
-      if (!prev || prev.key !== key) return { key, dir: 'desc' }
-      if (prev.dir === 'desc') return { key, dir: 'asc' }
-      return null
-    })
+      if (!prev || prev.key !== key) return { key, dir: 'desc' };
+      if (prev.dir === 'desc') return { key, dir: 'asc' };
+      return null;
+    });
   }
 
   return (
@@ -412,9 +397,9 @@ export default function GameBoxscorePanel({
         <div className="panel chart-panel game-boxscore__pitch-location">
           <h2>Pitch location</h2>
           <p className="muted small">
-            Catcher&apos;s view toward the pitcher: each pitch where it crossed the plate (horizontal
-            and vertical feet), with a light depth perspective on the grid. Colors are pitch
-            type.
+            Catcher&apos;s view toward the pitcher: each pitch where it crossed the plate
+            (horizontal and vertical feet), with a light depth perspective on the grid. Colors are
+            pitch type.
           </p>
           {pitchLocation.loading ? (
             <p className="muted">Loading pitch data…</p>
@@ -642,5 +627,5 @@ export default function GameBoxscorePanel({
         </div>
       </div>
     </div>
-  )
+  );
 }

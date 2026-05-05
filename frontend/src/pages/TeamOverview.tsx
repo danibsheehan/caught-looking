@@ -1,83 +1,79 @@
-import { lazy, useMemo, useState } from 'react'
-import { ChartSuspense } from '../components/charts/ChartSuspense'
-import RecordTimelineStrip from '../components/charts/RecordTimelineStrip'
-import TeamSeasonDeepDive from '../components/charts/TeamSeasonDeepDive'
+import { lazy, useMemo, useState } from 'react';
+import { ChartSuspense } from '../components/charts/ChartSuspense';
+import RecordTimelineStrip from '../components/charts/RecordTimelineStrip';
+import TeamSeasonDeepDive from '../components/charts/TeamSeasonDeepDive';
 
-const DivisionRunsScatter = lazy(
-  () => import('../components/charts/DivisionRunsScatter'),
-)
-const MultiTeamWinPctChart = lazy(
-  () => import('../components/charts/MultiTeamWinPctChart'),
-)
-const WinLossChart = lazy(() => import('../components/charts/WinLossChart'))
-import TeamPageSkeleton from '../components/skeletons/TeamPageSkeleton'
-import { PlayerCard, StatCard, TeamSelector } from '../components/ui'
-import { useStandings, useTeamSeasonStats, useTeams } from '../hooks/useMLB'
-import { sortStandingTeams, standingTeamForId, teamLabelMap } from '../utils/standings'
-import { getObsidianTeamColor } from '../utils/mlbTeamObsidianRegistry'
+const DivisionRunsScatter = lazy(() => import('../components/charts/DivisionRunsScatter'));
+const MultiTeamWinPctChart = lazy(() => import('../components/charts/MultiTeamWinPctChart'));
+const WinLossChart = lazy(() => import('../components/charts/WinLossChart'));
+import TeamPageSkeleton from '../components/skeletons/TeamPageSkeleton';
+import { PlayerCard, StatCard, TeamSelector } from '../components/ui';
+import { useStandings, useTeamSeasonStats, useTeams } from '../hooks/useMLB';
+import { sortStandingTeams, standingTeamForId, teamLabelMap } from '../utils/standings';
+import { getObsidianTeamColor } from '../utils/mlbTeamObsidianRegistry';
 
-const DEFAULT_SEASON = 2026
+const DEFAULT_SEASON = 2026;
 
 function formatSignedInt(v: number | undefined): string {
-  if (v == null || Number.isNaN(v)) return '—'
-  if (v === 0) return '0'
-  return v > 0 ? `+${v}` : String(v)
+  if (v == null || Number.isNaN(v)) return '—';
+  if (v === 0) return '0';
+  return v > 0 ? `+${v}` : String(v);
 }
 
 function formatStandingToken(dashOrValue: string | undefined): string {
-  if (dashOrValue == null || dashOrValue === '' || dashOrValue === '-') return '—'
-  return dashOrValue
+  if (dashOrValue == null || dashOrValue === '' || dashOrValue === '-') return '—';
+  return dashOrValue;
 }
 
 export default function TeamOverview() {
-  const { data, loading, error } = useTeams({ sportId: '1' })
-  const teams = useMemo(() => data?.teams ?? [], [data])
-  const [teamId, setTeamId] = useState<number | ''>('')
-  const [season, setSeason] = useState(DEFAULT_SEASON)
-  const [panelTab, setPanelTab] = useState<'trend' | 'deep'>('trend')
+  const { data, loading, error } = useTeams({ sportId: '1' });
+  const teams = useMemo(() => data?.teams ?? [], [data]);
+  const [teamId, setTeamId] = useState<number | ''>('');
+  const [season, setSeason] = useState(DEFAULT_SEASON);
+  const [panelTab, setPanelTab] = useState<'trend' | 'deep'>('trend');
 
   const {
     data: standingsData,
     loading: standingsLoading,
     error: standingsError,
-  } = useStandings({ season })
+  } = useStandings({ season });
 
   const selected = useMemo(() => {
-    if (teamId === '') return null
-    return teams.find((t) => t.id === teamId) ?? null
-  }, [teams, teamId])
+    if (teamId === '') return null;
+    return teams.find((t) => t.id === teamId) ?? null;
+  }, [teams, teamId]);
 
   const snapshot = useMemo(() => {
-    if (!selected) return null
-    return standingTeamForId(standingsData?.divisions, selected.id)
-  }, [standingsData, selected])
+    if (!selected) return null;
+    return standingTeamForId(standingsData?.divisions, selected.id);
+  }, [standingsData, selected]);
 
-  const abbrevById = useMemo(() => teamLabelMap(data), [data])
+  const abbrevById = useMemo(() => teamLabelMap(data), [data]);
 
   const divisionTeamIds = useMemo(() => {
-    if (!snapshot) return []
-    return sortStandingTeams(snapshot.division.teams).map((t) => t.teamId)
-  }, [snapshot])
+    if (!snapshot) return [];
+    return sortStandingTeams(snapshot.division.teams).map((t) => t.teamId);
+  }, [snapshot]);
 
   const divisionRaceHeroIds = useMemo(() => {
-    if (divisionTeamIds.length === 0) return []
-    if (divisionTeamIds.length === 1) return [divisionTeamIds[0]!]
-    const leader = divisionTeamIds[0]!
-    const second = divisionTeamIds[1]!
-    const sid = selected?.id
+    if (divisionTeamIds.length === 0) return [];
+    if (divisionTeamIds.length === 1) return [divisionTeamIds[0]!];
+    const leader = divisionTeamIds[0]!;
+    const second = divisionTeamIds[1]!;
+    const sid = selected?.id;
     if (sid != null && sid !== leader && divisionTeamIds.includes(sid)) {
-      return [leader, sid]
+      return [leader, sid];
     }
-    return [leader, second]
-  }, [divisionTeamIds, selected?.id])
+    return [leader, second];
+  }, [divisionTeamIds, selected?.id]);
 
   const teamPageRegistry = useMemo(
     () => (selected ? getObsidianTeamColor(selected.id) : null),
     [selected],
-  )
+  );
 
   const scatterPoints = useMemo(() => {
-    if (!snapshot) return []
+    if (!snapshot) return [];
     return sortStandingTeams(snapshot.division.teams)
       .filter(
         (t) =>
@@ -91,17 +87,17 @@ export default function TeamOverview() {
         rs: t.runsScored as number,
         ra: t.runsAllowed as number,
         label: abbrevById.get(t.teamId) ?? t.teamName,
-      }))
-  }, [snapshot, abbrevById])
+      }));
+  }, [snapshot, abbrevById]);
 
   const {
     data: deepStats,
     loading: deepLoading,
     error: deepError,
-  } = useTeamSeasonStats(selected ? selected.id : '', season)
+  } = useTeamSeasonStats(selected ? selected.id : '', season);
 
   if (loading && !data) {
-    return <TeamPageSkeleton />
+    return <TeamPageSkeleton />;
   }
 
   if (error) {
@@ -112,7 +108,7 @@ export default function TeamOverview() {
           {error.message}
         </p>
       </section>
-    )
+    );
   }
 
   return (
@@ -121,8 +117,8 @@ export default function TeamOverview() {
         <div>
           <h1>Teams</h1>
           <p className="muted">
-            Division charts (win %, run differential, game results) plus season
-            hitting / pitching lines.
+            Division charts (win %, run differential, game results) plus season hitting / pitching
+            lines.
           </p>
         </div>
         <div className="teams-page__controls">
@@ -188,8 +184,7 @@ export default function TeamOverview() {
             ) : snapshot ? (
               <>
                 <p className="muted small">
-                  {snapshot.division.divisionName} · Division rank{' '}
-                  {snapshot.team.divisionRank}
+                  {snapshot.division.divisionName} · Division rank {snapshot.team.divisionRank}
                 </p>
                 <div className="teams-page__stat-cards teams-page__stat-cards--wide">
                   <StatCard
@@ -197,10 +192,7 @@ export default function TeamOverview() {
                     value={`${snapshot.team.wins}-${snapshot.team.losses}`}
                   />
                   <StatCard label="Win %" value={snapshot.team.pct} />
-                  <StatCard
-                    label="GB"
-                    value={formatStandingToken(snapshot.team.gamesBack)}
-                  />
+                  <StatCard label="GB" value={formatStandingToken(snapshot.team.gamesBack)} />
                   <StatCard
                     label="WC GB"
                     value={formatStandingToken(snapshot.team.wildCardGamesBack)}
@@ -237,16 +229,11 @@ export default function TeamOverview() {
                         : '—'
                     }
                   />
-                  <StatCard
-                    label="Streak"
-                    value={snapshot.team.streak || '—'}
-                  />
+                  <StatCard label="Streak" value={snapshot.team.streak || '—'} />
                 </div>
               </>
             ) : (
-              <p className="muted small">
-                No standings row for this club and season yet.
-              </p>
+              <p className="muted small">No standings row for this club and season yet.</p>
             )}
           </div>
 
@@ -254,21 +241,17 @@ export default function TeamOverview() {
             <div className="teams-page__panel teams-page__panel--chart">
               <h2>Runs scored vs. allowed</h2>
               <p className="muted small">
-                Season totals for every club in this division. The dashed line is
-                even run differential (RS = RA). Above it scores more than it allows.
+                Season totals for every club in this division. The dashed line is even run
+                differential (RS = RA). Above it scores more than it allows.
               </p>
               <ChartSuspense height={360} label="Loading run differential chart">
-                <DivisionRunsScatter
-                  points={scatterPoints}
-                  focusTeamId={selected.id}
-                />
+                <DivisionRunsScatter points={scatterPoints} focusTeamId={selected.id} />
               </ChartSuspense>
             </div>
             <div className="teams-page__panel teams-page__panel--chart">
               <h2>Game-by-game results</h2>
               <p className="muted small">
-                One tile per completed game in schedule order (scroll on long
-                seasons).
+                One tile per completed game in schedule order (scroll on long seasons).
               </p>
               <RecordTimelineStrip teamId={selected.id} season={season} />
             </div>
@@ -300,8 +283,8 @@ export default function TeamOverview() {
               <div className="teams-page__chart-area">
                 <h2>Division race — cumulative win %</h2>
                 <p className="muted small">
-                  Every team in this division on the same pace axis (games
-                  completed). Your club is emphasized.
+                  Every team in this division on the same pace axis (games completed). Your club is
+                  emphasized.
                 </p>
                 <ChartSuspense height={400} label="Loading win % chart">
                   {divisionTeamIds.length > 1 ? (
@@ -341,5 +324,5 @@ export default function TeamOverview() {
         <p className="muted">Choose a team to load snapshot and charts.</p>
       )}
     </section>
-  )
+  );
 }

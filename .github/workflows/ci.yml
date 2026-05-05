@@ -20,6 +20,7 @@ permissions:
 
 jobs:
     frontend:
+        # Must match the branch protection "required status check" name exactly.
         name: Frontend (lint, typecheck, test+coverage, build)
         runs-on: ubuntu-latest
         # cobertura-action (PR-only step below) uses Issues API and Checks API.
@@ -42,6 +43,7 @@ jobs:
             - run: npm run api:validate
             - run: npm run api:types:check
             - run: npm run lint
+            - run: npm run format:check
             - run: npm run typecheck
             - name: Test with coverage (Vitest)
               run: npm run test:coverage

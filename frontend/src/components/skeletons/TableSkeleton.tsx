@@ -1,9 +1,9 @@
-import { SkeletonLine } from './SkeletonPrimitives'
+import { SkeletonLine } from './SkeletonPrimitives';
 
 type TableSkeletonProps = {
-  rows?: number
-  cols?: number
-}
+  rows?: number;
+  cols?: number;
+};
 
 export default function TableSkeleton({ rows = 8, cols = 7 }: TableSkeletonProps) {
   return (
@@ -27,5 +27,5 @@ export default function TableSkeleton({ rows = 8, cols = 7 }: TableSkeletonProps
         </div>
       ))}
     </div>
-  )
+  );
 }

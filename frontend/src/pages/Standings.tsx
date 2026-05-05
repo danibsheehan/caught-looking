@@ -1,78 +1,69 @@
-import { lazy, useMemo, useState } from 'react'
-import { ChartSuspense } from '../components/charts/ChartSuspense'
+import { lazy, useMemo, useState } from 'react';
+import { ChartSuspense } from '../components/charts/ChartSuspense';
 
-const MultiTeamWinPctChart = lazy(
-  () => import('../components/charts/MultiTeamWinPctChart'),
-)
-const TeamWinsBarChart = lazy(() => import('../components/charts/TeamWinsBarChart'))
-import { StatCard, TeamSelector } from '../components/ui'
-import { useChartSurfaceHex } from '../hooks/useChartSurfaceHex'
-import { useStandings, useTeams } from '../hooks/useMLB'
-import StandingsPageSkeleton from '../components/skeletons/StandingsPageSkeleton'
-import { obsidianRegistryLabelMap } from '../utils/mlbTeamColors'
-import {
-  divisionIndexForTeam,
-  sortStandingTeams,
-  teamLabelMap,
-} from '../utils/standings'
+const MultiTeamWinPctChart = lazy(() => import('../components/charts/MultiTeamWinPctChart'));
+const TeamWinsBarChart = lazy(() => import('../components/charts/TeamWinsBarChart'));
+import { StatCard, TeamSelector } from '../components/ui';
+import { useChartSurfaceHex } from '../hooks/useChartSurfaceHex';
+import { useStandings, useTeams } from '../hooks/useMLB';
+import StandingsPageSkeleton from '../components/skeletons/StandingsPageSkeleton';
+import { obsidianRegistryLabelMap } from '../utils/mlbTeamColors';
+import { divisionIndexForTeam, sortStandingTeams, teamLabelMap } from '../utils/standings';
 
 export default function Standings() {
-  const { data: teamsData } = useTeams({ sportId: '1' })
-  const { data, error, loading } = useStandings({})
-  const surfaceHex = useChartSurfaceHex()
+  const { data: teamsData } = useTeams({ sportId: '1' });
+  const { data, error, loading } = useStandings({});
+  const surfaceHex = useChartSurfaceHex();
 
-  const abbrevById = useMemo(() => teamLabelMap(teamsData), [teamsData])
+  const abbrevById = useMemo(() => teamLabelMap(teamsData), [teamsData]);
 
-  const divisions = useMemo(() => data?.divisions ?? [], [data])
-  const teams = teamsData?.teams ?? []
-  const [selectedIdx, setSelectedIdx] = useState(0)
-  const [focusTeamId, setFocusTeamId] = useState<number | ''>('')
+  const divisions = useMemo(() => data?.divisions ?? [], [data]);
+  const teams = teamsData?.teams ?? [];
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [focusTeamId, setFocusTeamId] = useState<number | ''>('');
 
-  const safeIdx = Math.min(
-    Math.max(0, selectedIdx),
-    Math.max(0, divisions.length - 1),
-  )
-  const selected = divisions[safeIdx]
+  const safeIdx = Math.min(Math.max(0, selectedIdx), Math.max(0, divisions.length - 1));
+  const selected = divisions[safeIdx];
 
   const chartRows = useMemo(() => {
-    if (!selected?.teams?.length) return []
+    if (!selected?.teams?.length) return [];
     return sortStandingTeams(selected.teams).map((t) => ({
       abbrev: abbrevById.get(t.teamId) ?? t.teamName,
       wins: t.wins,
       teamId: t.teamId,
-    }))
-  }, [selected, abbrevById])
+    }));
+  }, [selected, abbrevById]);
 
   /** Division rank order — matches bar + win-% colors. */
   const divisionTeamIdsByRank = useMemo(
     () => sortStandingTeams(selected?.teams ?? []).map((t) => t.teamId),
     [selected],
-  )
+  );
 
   const divisionHeroTeamIds = useMemo(() => {
-    const rows = sortStandingTeams(selected?.teams ?? [])
-    if (rows.length < 2) return rows.map((t) => t.teamId)
-    return [rows[0]!.teamId, rows[1]!.teamId]
-  }, [selected])
+    const rows = sortStandingTeams(selected?.teams ?? []);
+    if (rows.length < 2) return rows.map((t) => t.teamId);
+    return [rows[0]!.teamId, rows[1]!.teamId];
+  }, [selected]);
 
   const standingsLabelByTeamId = useMemo(() => {
-    const ids = new Set<number>()
+    const ids = new Set<number>();
     for (const d of divisions) {
-      for (const t of d.teams) ids.add(t.teamId)
+      for (const t of d.teams) ids.add(t.teamId);
     }
-    const list = [...ids]
-    return list.length ? obsidianRegistryLabelMap(list, surfaceHex) : new Map()
-  }, [divisions, surfaceHex])
+    const list = [...ids];
+    return list.length ? obsidianRegistryLabelMap(list, surfaceHex) : new Map();
+  }, [divisions, surfaceHex]);
 
   function onTeamSelected(id: number | '') {
-    setFocusTeamId(id)
-    if (id === '') return
-    const idx = divisionIndexForTeam(divisions, id)
-    if (idx >= 0) setSelectedIdx(idx)
+    setFocusTeamId(id);
+    if (id === '') return;
+    const idx = divisionIndexForTeam(divisions, id);
+    if (idx >= 0) setSelectedIdx(idx);
   }
 
   if (loading && !data) {
-    return <StandingsPageSkeleton />
+    return <StandingsPageSkeleton />;
   }
 
   if (error) {
@@ -83,14 +74,14 @@ export default function Standings() {
           {error.message}
         </p>
         <p className="muted">
-          Is the Go API running? With the default Vite proxy, start the backend on
-          port 8080, or set <code>VITE_API_BASE</code> to your API origin.
+          Is the Go API running? With the default Vite proxy, start the backend on port 8080, or set{' '}
+          <code>VITE_API_BASE</code> to your API origin.
         </p>
       </section>
-    )
+    );
   }
 
-  const teamsInDivision = selected?.teams?.length ?? 0
+  const teamsInDivision = selected?.teams?.length ?? 0;
 
   return (
     <section className="page standings-page">
@@ -98,8 +89,7 @@ export default function Standings() {
         <div>
           <h1>Standings</h1>
           <p className="muted">
-            Season <strong>{data?.season ?? '—'}</strong> · regular season · AL /
-            NL
+            Season <strong>{data?.season ?? '—'}</strong> · regular season · AL / NL
           </p>
           <div className="standings-page__stat-cards" role="list">
             <div role="listitem">
@@ -109,11 +99,7 @@ export default function Standings() {
               <StatCard label="Divisions" value={divisions.length} />
             </div>
             <div role="listitem">
-              <StatCard
-                label="Teams (chart)"
-                value={teamsInDivision}
-                hint="Selected division"
-              />
+              <StatCard label="Teams (chart)" value={teamsInDivision} hint="Selected division" />
             </div>
           </div>
         </div>
@@ -135,8 +121,8 @@ export default function Standings() {
                 className="form-field__select"
                 value={safeIdx}
                 onChange={(e) => {
-                  setFocusTeamId('')
-                  setSelectedIdx(Number(e.target.value))
+                  setFocusTeamId('');
+                  setSelectedIdx(Number(e.target.value));
                 }}
               >
                 {divisions.map((d, i) => (
@@ -157,8 +143,7 @@ export default function Standings() {
           <div className="standings-page__panel standings-page__panel--chart">
             <h2>Wins by team</h2>
             <p className="muted small">
-              Selected division:{' '}
-              {selected?.divisionName || `ID ${selected?.divisionId}`}
+              Selected division: {selected?.divisionName || `ID ${selected?.divisionId}`}
             </p>
             <ChartSuspense height={320} label="Loading wins chart">
               <TeamWinsBarChart data={chartRows} />
@@ -168,8 +153,8 @@ export default function Standings() {
           <div className="standings-page__panel standings-page__panel--chart">
             <h2>Cumulative win % vs games played</h2>
             <p className="muted small">
-              All clubs in this division load together. The horizontal axis is games
-              completed (pace), not the calendar.
+              All clubs in this division load together. The horizontal axis is games completed
+              (pace), not the calendar.
             </p>
             <ChartSuspense height={360} label="Loading win % chart">
               <MultiTeamWinPctChart
@@ -206,9 +191,7 @@ export default function Standings() {
                             <span
                               className="standings-page__team-abbr"
                               style={{
-                                color:
-                                  standingsLabelByTeamId.get(t.teamId) ??
-                                  'var(--text-h)',
+                                color: standingsLabelByTeamId.get(t.teamId) ?? 'var(--text-h)',
                               }}
                             >
                               {abbrevById.get(t.teamId) ?? '—'}
@@ -231,5 +214,5 @@ export default function Standings() {
         </>
       )}
     </section>
-  )
+  );
 }

@@ -1,17 +1,15 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { PlayersGameLogResponse } from '../../types/api.compat'
-import PlayerCompareRecentSparklines from './PlayerCompareRecentSparklines'
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { PlayersGameLogResponse } from '../../types/api.compat';
+import PlayerCompareRecentSparklines from './PlayerCompareRecentSparklines';
 
-const rollingTrailingMeanMock = vi.fn(
-  (values: number[], _window: number) => values,
-)
+const rollingTrailingMeanMock = vi.fn((values: number[], _window: number) => values);
 
 vi.mock('../../utils/rollingMean', () => ({
   rollingTrailingMean: (values: number[], window: number) =>
     rollingTrailingMeanMock(values, window),
-}))
+}));
 
 const sample: PlayersGameLogResponse = {
   season: 2026,
@@ -37,30 +35,23 @@ const sample: PlayersGameLogResponse = {
     },
   ],
   leagueBaseline: 0.72,
-}
+};
 
 describe('PlayerCompareRecentSparklines', () => {
   beforeEach(() => {
-    rollingTrailingMeanMock.mockClear()
-  })
+    rollingTrailingMeanMock.mockClear();
+  });
 
   it('recomputes rolling series when window changes', async () => {
-    const user = userEvent.setup()
-    render(<PlayerCompareRecentSparklines data={sample} />)
+    const user = userEvent.setup();
+    render(<PlayerCompareRecentSparklines data={sample} />);
 
-    expect(
-      rollingTrailingMeanMock.mock.calls.some(([, window]) => window === 10),
-    ).toBe(true)
+    expect(rollingTrailingMeanMock.mock.calls.some(([, window]) => window === 10)).toBe(true);
 
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: 'Rolling average window' }),
-      '3',
-    )
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Rolling average window' }), '3');
 
     await waitFor(() => {
-      expect(
-        rollingTrailingMeanMock.mock.calls.some(([, window]) => window === 3),
-      ).toBe(true)
-    })
-  })
-})
+      expect(rollingTrailingMeanMock.mock.calls.some(([, window]) => window === 3)).toBe(true);
+    });
+  });
+});

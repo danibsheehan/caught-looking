@@ -1,8 +1,8 @@
-import react from '@vitejs/plugin-react'
-import { visualizer } from 'rollup-plugin-visualizer'
-import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
+import { defineConfig } from 'vitest/config';
 
-const analyze = process.env.ANALYZE === 'true'
+const analyze = process.env.ANALYZE === 'true';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -46,4 +46,4 @@ export default defineConfig({
       ],
     },
   },
-})
+});

@@ -1,29 +1,23 @@
-import { lazy, Suspense } from 'react'
-import {
-  NavLink,
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-} from 'react-router-dom'
-import RouteErrorBoundary from './components/RouteErrorBoundary'
-import PageRouteSkeleton from './components/skeletons/PageRouteSkeleton'
+import { lazy, Suspense } from 'react';
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import RouteErrorBoundary from './components/RouteErrorBoundary';
+import PageRouteSkeleton from './components/skeletons/PageRouteSkeleton';
 
-const Standings = lazy(() => import('./pages/Standings'))
-const TeamOverview = lazy(() => import('./pages/TeamOverview'))
-const PlayerComparison = lazy(() => import('./pages/PlayerComparison'))
-const GamesSlate = lazy(() => import('./pages/GamesSlate'))
-const GameDetail = lazy(() => import('./pages/GameDetail'))
+const Standings = lazy(() => import('./pages/Standings'));
+const TeamOverview = lazy(() => import('./pages/TeamOverview'));
+const PlayerComparison = lazy(() => import('./pages/PlayerComparison'));
+const GamesSlate = lazy(() => import('./pages/GamesSlate'));
+const GameDetail = lazy(() => import('./pages/GameDetail'));
 
 const nav = [
   { to: '/standings', label: 'Standings' },
   { to: '/teams', label: 'Teams' },
   { to: '/players', label: 'Players' },
   { to: '/games', label: 'Games' },
-]
+];
 
 export default function App() {
-  const location = useLocation()
+  const location = useLocation();
 
   return (
     <div className="app-shell">
@@ -45,10 +39,10 @@ export default function App() {
                   const active =
                     to === '/games'
                       ? isActive || location.pathname.startsWith('/games/')
-                      : isActive
+                      : isActive;
                   return active
                     ? 'app-shell__nav-link app-shell__nav-link--active'
-                    : 'app-shell__nav-link'
+                    : 'app-shell__nav-link';
                 }}
               >
                 {label}
@@ -77,5 +71,5 @@ export default function App() {
         </RouteErrorBoundary>
       </main>
     </div>
-  )
+  );
 }
