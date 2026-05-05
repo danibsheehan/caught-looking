@@ -6,11 +6,11 @@ export const chartCartesianTick = {
   fill: 'var(--chart-tick)',
   fontSize: 11,
   fontFamily: 'var(--mono)',
-} as const
+} as const;
 
 /** Polar / categorical labels stay sans. */
 export const polarAxisTickSans = {
   fill: 'var(--text)',
   fontSize: 11,
   fontFamily: 'var(--sans)',
-} as const
+} as const;

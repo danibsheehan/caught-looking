@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -8,38 +8,36 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts'
-import ChartSkeleton from '../skeletons/ChartSkeleton'
-import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
-import { useRecordTimeline } from '../../hooks/useRecordTimeline'
-import { chartCartesianTick } from '../../utils/rechartsAxis'
-import { obsidianTeamChartPairs } from '../../utils/mlbTeamColors'
+} from 'recharts';
+import ChartSkeleton from '../skeletons/ChartSkeleton';
+import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
+import { useRecordTimeline } from '../../hooks/useRecordTimeline';
+import { chartCartesianTick } from '../../utils/rechartsAxis';
+import { obsidianTeamChartPairs } from '../../utils/mlbTeamColors';
 
 type WinLossChartProps = {
-  teamId: number | null | undefined
-  season: number | null | undefined
-}
+  teamId: number | null | undefined;
+  season: number | null | undefined;
+};
 
 export default function WinLossChart({ teamId, season }: WinLossChartProps) {
-  const surfaceHex = useChartSurfaceHex()
-  const { data, error, loading } = useRecordTimeline(teamId, season)
+  const surfaceHex = useChartSurfaceHex();
+  const { data, error, loading } = useRecordTimeline(teamId, season);
 
   const { strokeColor, peakLabelColor } = useMemo(() => {
     if (teamId == null || !Number.isFinite(teamId) || teamId <= 0) {
-      return { strokeColor: '#64748b', peakLabelColor: '#94a3b8' }
+      return { strokeColor: '#64748b', peakLabelColor: '#94a3b8' };
     }
-    const [pair] = obsidianTeamChartPairs([teamId], surfaceHex)
-    return { strokeColor: pair!.ink, peakLabelColor: pair!.label }
-  }, [teamId, surfaceHex])
+    const [pair] = obsidianTeamChartPairs([teamId], surfaceHex);
+    return { strokeColor: pair!.ink, peakLabelColor: pair!.label };
+  }, [teamId, surfaceHex]);
 
   if (teamId == null || season == null) {
-    return (
-      <p className="muted">Select a team and season to plot rolling win percentage.</p>
-    )
+    return <p className="muted">Select a team and season to plot rolling win percentage.</p>;
   }
 
   if (loading && !data) {
-    return <ChartSkeleton height={360} label="Loading win percentage timeline" />
+    return <ChartSkeleton height={360} label="Loading win percentage timeline" />;
   }
 
   if (error) {
@@ -47,11 +45,11 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
       <p className="error" role="alert">
         {error.message}
       </p>
-    )
+    );
   }
 
   if (!data?.points?.length) {
-    return <p className="muted">No completed games in this sample yet.</p>
+    return <p className="muted">No completed games in this sample yet.</p>;
   }
 
   const rows = data.points.map((p) => ({
@@ -59,11 +57,9 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
     pctLabel: `${(p.pct * 100).toFixed(1)}%`,
     pctPct: p.pct * 100,
     x: p.gameIndex,
-  }))
+  }));
 
-  const peakRow = rows.reduce((best, row) =>
-    row.pctPct >= best.pctPct ? row : best,
-  )
+  const peakRow = rows.reduce((best, row) => (row.pctPct >= best.pctPct ? row : best));
 
   return (
     <ResponsiveContainer width="100%" height={360}>
@@ -91,10 +87,16 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
           formatter={(value) => [`${Number(value).toFixed(1)}%`, 'Win %']}
           labelFormatter={(_, p) => {
             const row = p?.[0]?.payload as
-              | { gameIndex: number; officialDate: string; result: string; wins: number; losses: number }
-              | undefined
-            if (!row) return ''
-            return `Game ${row.gameIndex} · ${row.officialDate} (${row.result}) · ${row.wins}-${row.losses}`
+              | {
+                  gameIndex: number;
+                  officialDate: string;
+                  result: string;
+                  wins: number;
+                  losses: number;
+                }
+              | undefined;
+            if (!row) return '';
+            return `Game ${row.gameIndex} · ${row.officialDate} (${row.result}) · ${row.wins}-${row.losses}`;
           }}
           contentStyle={{
             background: 'var(--bg)',
@@ -129,5 +131,5 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
         />
       </LineChart>
     </ResponsiveContainer>
-  )
+  );
 }

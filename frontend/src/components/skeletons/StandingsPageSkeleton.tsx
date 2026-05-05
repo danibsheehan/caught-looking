@@ -1,6 +1,6 @@
-import ChartSkeleton from './ChartSkeleton'
-import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives'
-import TableSkeleton from './TableSkeleton'
+import ChartSkeleton from './ChartSkeleton';
+import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives';
+import TableSkeleton from './TableSkeleton';
 
 /** Shape-matched loading state for the standings view. */
 export default function StandingsPageSkeleton() {
@@ -31,5 +31,5 @@ export default function StandingsPageSkeleton() {
         <TableSkeleton rows={6} cols={7} />
       </div>
     </section>
-  )
+  );
 }

@@ -1,75 +1,70 @@
-import { useEffect, useId, useState } from 'react'
-import { fetchPlayersSearch } from '../../api/client'
-import { isAbortError } from '../../hooks/useAsyncResource'
-import type { PlayerSearchHit } from '../../types/api.compat'
+import { useEffect, useId, useState } from 'react';
+import { fetchPlayersSearch } from '../../api/client';
+import { isAbortError } from '../../hooks/useAsyncResource';
+import type { PlayerSearchHit } from '../../types/api.compat';
 
-export type PlayerPick = { id: number; fullName: string }
+export type PlayerPick = { id: number; fullName: string };
 
 type PlayerPickerProps = {
-  label: string
-  selected: PlayerPick | null
-  onChange: (p: PlayerPick | null) => void
-  disabled?: boolean
-}
+  label: string;
+  selected: PlayerPick | null;
+  onChange: (p: PlayerPick | null) => void;
+  disabled?: boolean;
+};
 
 /** Search MLB players by name (via Go `/players/search`) and pick one row. */
-export default function PlayerPicker({
-  label,
-  selected,
-  onChange,
-  disabled,
-}: PlayerPickerProps) {
-  const baseId = useId()
-  const inputId = `${baseId}-q`
-  const listId = `${baseId}-list`
+export default function PlayerPicker({ label, selected, onChange, disabled }: PlayerPickerProps) {
+  const baseId = useId();
+  const inputId = `${baseId}-q`;
+  const listId = `${baseId}-list`;
 
-  const [q, setQ] = useState('')
-  const [hits, setHits] = useState<PlayerSearchHit[]>([])
-  const [searchError, setSearchError] = useState<string | null>(null)
-  const [searching, setSearching] = useState(false)
+  const [q, setQ] = useState('');
+  const [hits, setHits] = useState<PlayerSearchHit[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    const t = q.trim()
+    const t = q.trim();
     if (t.length < 2) {
-      let c = false
+      let c = false;
       const z = setTimeout(() => {
         if (!c) {
-          setHits([])
-          setSearchError(null)
+          setHits([]);
+          setSearchError(null);
         }
-      }, 0)
+      }, 0);
       return () => {
-        c = true
-        clearTimeout(z)
-      }
+        c = true;
+        clearTimeout(z);
+      };
     }
 
-    let cancelled = false
-    let searchAbort: AbortController | null = null
+    let cancelled = false;
+    let searchAbort: AbortController | null = null;
     const timer = setTimeout(() => {
-      if (cancelled) return
-      searchAbort = new AbortController()
-      setSearching(true)
-      setSearchError(null)
+      if (cancelled) return;
+      searchAbort = new AbortController();
+      setSearching(true);
+      setSearchError(null);
       fetchPlayersSearch({ names: t }, searchAbort.signal)
         .then((res) => {
-          if (!cancelled) setHits(res.people ?? [])
+          if (!cancelled) setHits(res.people ?? []);
         })
         .catch((e) => {
-          if (cancelled || isAbortError(e)) return
-          setSearchError(e instanceof Error ? e.message : String(e))
+          if (cancelled || isAbortError(e)) return;
+          setSearchError(e instanceof Error ? e.message : String(e));
         })
         .finally(() => {
-          if (!cancelled) setSearching(false)
-        })
-    }, 320)
+          if (!cancelled) setSearching(false);
+        });
+    }, 320);
 
     return () => {
-      cancelled = true
-      clearTimeout(timer)
-      searchAbort?.abort()
-    }
-  }, [q])
+      cancelled = true;
+      clearTimeout(timer);
+      searchAbort?.abort();
+    };
+  }, [q]);
 
   return (
     <div className="player-picker">
@@ -119,9 +114,9 @@ export default function PlayerPicker({
                     className="player-picker__hit"
                     disabled={disabled}
                     onClick={() => {
-                      onChange({ id: p.id, fullName: p.fullName })
-                      setQ('')
-                      setHits([])
+                      onChange({ id: p.id, fullName: p.fullName });
+                      setQ('');
+                      setHits([]);
                     }}
                   >
                     <span className="player-picker__hit-name">{p.fullName}</span>
@@ -138,5 +133,5 @@ export default function PlayerPicker({
         </>
       )}
     </div>
-  )
+  );
 }

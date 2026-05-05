@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import type { PlayersPlatoonResponse } from '../../types/api.compat'
-import PlayerComparePlatoonBars from './PlayerComparePlatoonBars'
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import type { PlayersPlatoonResponse } from '../../types/api.compat';
+import PlayerComparePlatoonBars from './PlayerComparePlatoonBars';
 
 const sample: PlayersPlatoonResponse = {
   season: 2024,
@@ -25,15 +25,15 @@ const sample: PlayersPlatoonResponse = {
       ],
     },
   ],
-}
+};
 
 describe('PlayerComparePlatoonBars', () => {
   it('renders chart legend with player names', () => {
-    render(<PlayerComparePlatoonBars data={sample} />)
-    expect(screen.getByText('Player A')).toBeInTheDocument()
-    expect(screen.getByText('Player B')).toBeInTheDocument()
-    expect(screen.getByRole('application')).toBeInTheDocument()
-  })
+    render(<PlayerComparePlatoonBars data={sample} />);
+    expect(screen.getByText('Player A')).toBeInTheDocument();
+    expect(screen.getByText('Player B')).toBeInTheDocument();
+    expect(screen.getByRole('application')).toBeInTheDocument();
+  });
 
   it('shows empty state when no splits', () => {
     const empty: PlayersPlatoonResponse = {
@@ -44,8 +44,8 @@ describe('PlayerComparePlatoonBars', () => {
         { id: 1, fullName: 'A', splits: [] },
         { id: 2, fullName: 'B', splits: [] },
       ],
-    }
-    render(<PlayerComparePlatoonBars data={empty} />)
-    expect(screen.getByText(/No platoon splits/i)).toBeInTheDocument()
-  })
-})
+    };
+    render(<PlayerComparePlatoonBars data={empty} />);
+    expect(screen.getByText(/No platoon splits/i)).toBeInTheDocument();
+  });
+});

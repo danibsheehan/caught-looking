@@ -1,4 +1,4 @@
-import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives'
+import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives';
 
 /** Shown while lazy route chunks load (Suspense). */
 export default function PageRouteSkeleton() {
@@ -22,5 +22,5 @@ export default function PageRouteSkeleton() {
         <div className="chart-skeleton chart-skeleton--route" />
       </div>
     </div>
-  )
+  );
 }

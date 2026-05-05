@@ -1,13 +1,13 @@
 type GameFinalScoreStripProps = {
-  awayTeamName: string
-  homeTeamName: string
-  awayRuns: number
-  homeRuns: number
-  awayScoreColor: string
-  homeScoreColor: string
+  awayTeamName: string;
+  homeTeamName: string;
+  awayRuns: number;
+  homeRuns: number;
+  awayScoreColor: string;
+  homeScoreColor: string;
   /** e.g. Final, In progress */
-  statusLabel?: string
-}
+  statusLabel?: string;
+};
 
 export default function GameFinalScoreStrip({
   awayTeamName,
@@ -22,10 +22,7 @@ export default function GameFinalScoreStrip({
     <div className="game-final-score-strip" aria-label="Final score">
       <div className="game-final-score-strip__team">
         <div className="game-final-score-strip__name">{awayTeamName}</div>
-        <div
-          className="game-final-score-strip__num"
-          style={{ color: awayScoreColor }}
-        >
+        <div className="game-final-score-strip__num" style={{ color: awayScoreColor }}>
           {awayRuns}
         </div>
       </div>
@@ -34,13 +31,10 @@ export default function GameFinalScoreStrip({
       </div>
       <div className="game-final-score-strip__team">
         <div className="game-final-score-strip__name">{homeTeamName}</div>
-        <div
-          className="game-final-score-strip__num"
-          style={{ color: homeScoreColor }}
-        >
+        <div className="game-final-score-strip__num" style={{ color: homeScoreColor }}>
           {homeRuns}
         </div>
       </div>
     </div>
-  )
+  );
 }

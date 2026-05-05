@@ -1,12 +1,12 @@
-import { renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchPlayersCompare } from '../api/client'
-import type { PlayersRadarResponse } from '../types/api.compat'
-import { usePlayersCompare } from './usePlayersCompare'
+import { renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fetchPlayersCompare } from '../api/client';
+import type { PlayersRadarResponse } from '../types/api.compat';
+import { usePlayersCompare } from './usePlayersCompare';
 
 vi.mock('../api/client', () => ({
   fetchPlayersCompare: vi.fn(),
-}))
+}));
 
 const baseArgs = {
   playerId1: 660271,
@@ -15,43 +15,46 @@ const baseArgs = {
   scope: 'season' as const,
   group: 'hitting' as const,
   enabled: true,
-}
+};
 
 const mockRadar: PlayersRadarResponse = {
   scope: 'season',
   season: 2024,
   group: 'hitting',
   players: [],
-}
+};
 
 describe('usePlayersCompare', () => {
   beforeEach(() => {
-    vi.mocked(fetchPlayersCompare).mockReset()
-  })
+    vi.mocked(fetchPlayersCompare).mockReset();
+  });
 
   it('does not fetch when disabled', () => {
-    const { result } = renderHook(() =>
-      usePlayersCompare({ ...baseArgs, enabled: false }),
-    )
+    const { result } = renderHook(() => usePlayersCompare({ ...baseArgs, enabled: false }));
 
-    expect(fetchPlayersCompare).not.toHaveBeenCalled()
-    expect(result.current.data).toBeNull()
-    expect(result.current.loading).toBe(false)
-  })
+    expect(fetchPlayersCompare).not.toHaveBeenCalled();
+    expect(result.current.data).toBeNull();
+    expect(result.current.loading).toBe(false);
+  });
 
   it('does not fetch when player ids are missing or equal', () => {
     const { result: missing } = renderHook(() =>
       usePlayersCompare({ ...baseArgs, playerId1: null, enabled: true }),
-    )
-    expect(missing.current.data).toBeNull()
-    expect(fetchPlayersCompare).not.toHaveBeenCalled()
+    );
+    expect(missing.current.data).toBeNull();
+    expect(fetchPlayersCompare).not.toHaveBeenCalled();
 
     const { result: same } = renderHook(() =>
-      usePlayersCompare({ ...baseArgs, playerId1: 1, playerId2: 1, enabled: true }),
-    )
-    expect(same.current.data).toBeNull()
-    expect(fetchPlayersCompare).not.toHaveBeenCalled()
-  })
+      usePlayersCompare({
+        ...baseArgs,
+        playerId1: 1,
+        playerId2: 1,
+        enabled: true,
+      }),
+    );
+    expect(same.current.data).toBeNull();
+    expect(fetchPlayersCompare).not.toHaveBeenCalled();
+  });
 
   it('requires season when scope is season', () => {
     const { result } = renderHook(() =>
@@ -61,14 +64,14 @@ describe('usePlayersCompare', () => {
         scope: 'season',
         enabled: true,
       }),
-    )
+    );
 
-    expect(fetchPlayersCompare).not.toHaveBeenCalled()
-    expect(result.current.data).toBeNull()
-  })
+    expect(fetchPlayersCompare).not.toHaveBeenCalled();
+    expect(result.current.data).toBeNull();
+  });
 
   it('calls fetchPlayersCompare with ids and scope career without season', async () => {
-    vi.mocked(fetchPlayersCompare).mockResolvedValue(mockRadar)
+    vi.mocked(fetchPlayersCompare).mockResolvedValue(mockRadar);
 
     const { result } = renderHook(() =>
       usePlayersCompare({
@@ -77,9 +80,9 @@ describe('usePlayersCompare', () => {
         scope: 'career',
         enabled: true,
       }),
-    )
+    );
 
-    await waitFor(() => expect(result.current.data).toEqual(mockRadar))
+    await waitFor(() => expect(result.current.data).toEqual(mockRadar));
 
     expect(fetchPlayersCompare).toHaveBeenCalledWith(
       {
@@ -88,11 +91,11 @@ describe('usePlayersCompare', () => {
         group: 'hitting',
       },
       expect.any(AbortSignal),
-    )
-  })
+    );
+  });
 
   it('includes season for season scope', async () => {
-    vi.mocked(fetchPlayersCompare).mockResolvedValue(mockRadar)
+    vi.mocked(fetchPlayersCompare).mockResolvedValue(mockRadar);
 
     const { result } = renderHook(() =>
       usePlayersCompare({
@@ -101,9 +104,9 @@ describe('usePlayersCompare', () => {
         scope: 'season',
         enabled: true,
       }),
-    )
+    );
 
-    await waitFor(() => expect(result.current.data).toEqual(mockRadar))
+    await waitFor(() => expect(result.current.data).toEqual(mockRadar));
 
     expect(fetchPlayersCompare).toHaveBeenCalledWith(
       {
@@ -113,19 +116,17 @@ describe('usePlayersCompare', () => {
         group: 'hitting',
       },
       expect.any(AbortSignal),
-    )
-    expect(result.current.error).toBeNull()
-  })
+    );
+    expect(result.current.error).toBeNull();
+  });
 
   it('surfaces errors', async () => {
-    vi.mocked(fetchPlayersCompare).mockRejectedValue(new Error('compare failed'))
+    vi.mocked(fetchPlayersCompare).mockRejectedValue(new Error('compare failed'));
 
-    const { result } = renderHook(() => usePlayersCompare(baseArgs))
+    const { result } = renderHook(() => usePlayersCompare(baseArgs));
 
-    await waitFor(() =>
-      expect(result.current.error?.message).toBe('compare failed'),
-    )
+    await waitFor(() => expect(result.current.error?.message).toBe('compare failed'));
 
-    expect(result.current.data).toBeNull()
-  })
-})
+    expect(result.current.data).toBeNull();
+  });
+});

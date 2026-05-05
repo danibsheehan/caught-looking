@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo } from 'react';
 import {
   Bar,
   BarChart,
@@ -8,61 +8,54 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts'
-import ChartSkeleton from '../skeletons/ChartSkeleton'
-import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
-import { useGameTimeline } from '../../hooks/useGameTimeline'
-import { gameInningBarFills } from '../../utils/gameChartColors'
-import { chartCartesianTick } from '../../utils/rechartsAxis'
+} from 'recharts';
+import ChartSkeleton from '../skeletons/ChartSkeleton';
+import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
+import { useGameTimeline } from '../../hooks/useGameTimeline';
+import { gameInningBarFills } from '../../utils/gameChartColors';
+import { chartCartesianTick } from '../../utils/rechartsAxis';
 
 type GameScoreBarProps = {
-  gamePk: number | string | null | undefined
+  gamePk: number | string | null | undefined;
   /** When false, omits the one-line away @ home · final caption (e.g. when a score strip is above). */
-  showCaption?: boolean
-}
+  showCaption?: boolean;
+};
 
-export default function GameScoreBar({
-  gamePk,
-  showCaption = true,
-}: GameScoreBarProps) {
-  const surfaceHex = useChartSurfaceHex()
+export default function GameScoreBar({ gamePk, showCaption = true }: GameScoreBarProps) {
+  const surfaceHex = useChartSurfaceHex();
 
   const pk =
-    gamePk === '' || gamePk == null
-      ? null
-      : typeof gamePk === 'string'
-        ? Number(gamePk)
-        : gamePk
+    gamePk === '' || gamePk == null ? null : typeof gamePk === 'string' ? Number(gamePk) : gamePk;
 
-  const { data, error, loading } = useGameTimeline(pk)
+  const { data, error, loading } = useGameTimeline(pk);
 
   const rows = useMemo(() => {
-    if (!data?.innings?.length) return []
+    if (!data?.innings?.length) return [];
     return data.innings.map((inn) => ({
       inning: `${inn.inning}`,
       [data.awayTeam || 'Away']: inn.awayRuns,
       [data.homeTeam || 'Home']: inn.homeRuns,
-    }))
-  }, [data])
+    }));
+  }, [data]);
 
-  const awayKey = data?.awayTeam || 'Away'
-  const homeKey = data?.homeTeam || 'Home'
+  const awayKey = data?.awayTeam || 'Away';
+  const homeKey = data?.homeTeam || 'Home';
 
   const { awayFill, homeFill } = useMemo(
     () => gameInningBarFills(data?.awayId, data?.homeId, surfaceHex),
     [data?.awayId, data?.homeId, surfaceHex],
-  )
+  );
 
   if (pk == null || !Number.isFinite(pk) || pk <= 0) {
     return (
       <p className="muted">
         Enter a valid MLB <code>gamePk</code> to chart runs by inning.
       </p>
-    )
+    );
   }
 
   if (loading && !data) {
-    return <ChartSkeleton height={360} label="Loading inning scores" />
+    return <ChartSkeleton height={360} label="Loading inning scores" />;
   }
 
   if (error) {
@@ -70,11 +63,11 @@ export default function GameScoreBar({
       <p className="error" role="alert">
         {error.message}
       </p>
-    )
+    );
   }
 
   if (!data?.innings?.length) {
-    return <p className="muted">No inning rows returned.</p>
+    return <p className="muted">No inning rows returned.</p>;
   }
 
   return (
@@ -107,10 +100,22 @@ export default function GameScoreBar({
             }}
           />
           <Legend />
-          <Bar dataKey={awayKey} stackId="runs" fill={awayFill} name={awayKey} isAnimationActive={false} />
-          <Bar dataKey={homeKey} stackId="runs" fill={homeFill} name={homeKey} isAnimationActive={false} />
+          <Bar
+            dataKey={awayKey}
+            stackId="runs"
+            fill={awayFill}
+            name={awayKey}
+            isAnimationActive={false}
+          />
+          <Bar
+            dataKey={homeKey}
+            stackId="runs"
+            fill={homeFill}
+            name={homeKey}
+            isAnimationActive={false}
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }

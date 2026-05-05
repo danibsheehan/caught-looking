@@ -20,7 +20,7 @@ permissions:
 
 jobs:
     frontend:
-        name: Frontend (lint, typecheck, test+coverage, build)
+        name: Frontend (lint, Prettier, typecheck, test+coverage, build)
         runs-on: ubuntu-latest
         # cobertura-action (PR-only step below) uses Issues API and Checks API.
         permissions:
@@ -42,6 +42,7 @@ jobs:
             - run: npm run api:validate
             - run: npm run api:types:check
             - run: npm run lint
+            - run: npm run format:check
             - run: npm run typecheck
             - name: Test with coverage (Vitest)
               run: npm run test:coverage

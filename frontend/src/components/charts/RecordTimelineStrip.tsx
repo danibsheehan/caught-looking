@@ -1,26 +1,21 @@
-import type { RecordPoint } from '../../types/api.compat'
-import ChartSkeleton from '../skeletons/ChartSkeleton'
-import { useRecordTimeline } from '../../hooks/useRecordTimeline'
+import type { RecordPoint } from '../../types/api.compat';
+import ChartSkeleton from '../skeletons/ChartSkeleton';
+import { useRecordTimeline } from '../../hooks/useRecordTimeline';
 
 type RecordTimelineStripProps = {
-  teamId: number | null | undefined
-  season: number | null | undefined
-}
+  teamId: number | null | undefined;
+  season: number | null | undefined;
+};
 
-export default function RecordTimelineStrip({
-  teamId,
-  season,
-}: RecordTimelineStripProps) {
-  const { data, error, loading } = useRecordTimeline(teamId, season)
+export default function RecordTimelineStrip({ teamId, season }: RecordTimelineStripProps) {
+  const { data, error, loading } = useRecordTimeline(teamId, season);
 
   if (teamId == null || season == null) {
-    return (
-      <p className="muted">Select a team and season to see the result strip.</p>
-    )
+    return <p className="muted">Select a team and season to see the result strip.</p>;
   }
 
   if (loading && !data) {
-    return <ChartSkeleton height={120} label="Loading game results" />
+    return <ChartSkeleton height={120} label="Loading game results" />;
   }
 
   if (error) {
@@ -28,11 +23,11 @@ export default function RecordTimelineStrip({
       <p className="error" role="alert">
         {error.message}
       </p>
-    )
+    );
   }
 
   if (!data?.points?.length) {
-    return <p className="muted">No completed games in this sample yet.</p>
+    return <p className="muted">No completed games in this sample yet.</p>;
   }
 
   return (
@@ -54,7 +49,7 @@ export default function RecordTimelineStrip({
         · hover for date
       </p>
     </div>
-  )
+  );
 }
 
 function StripCell({ point }: { point: RecordPoint }) {
@@ -63,11 +58,11 @@ function StripCell({ point }: { point: RecordPoint }) {
       ? 'record-timeline__cell--win'
       : point.result === 'L'
         ? 'record-timeline__cell--loss'
-        : 'record-timeline__cell--tie'
-  const title = `Game ${point.gameIndex} · ${point.officialDate} · ${point.result} (${point.wins}-${point.losses})`
+        : 'record-timeline__cell--tie';
+  const title = `Game ${point.gameIndex} · ${point.officialDate} · ${point.result} (${point.wins}-${point.losses})`;
   return (
     <span role="listitem" className={`record-timeline__cell ${mod}`} title={title}>
       {point.result}
     </span>
-  )
+  );
 }

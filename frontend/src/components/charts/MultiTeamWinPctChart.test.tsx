@@ -1,9 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { RecordTimelinesBatchResponse } from '../../types/api.compat'
-import MultiTeamWinPctChart from './MultiTeamWinPctChart'
+import { render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { RecordTimelinesBatchResponse } from '../../types/api.compat';
+import MultiTeamWinPctChart from './MultiTeamWinPctChart';
 
-const asyncWait = { timeout: 10_000 }
+const asyncWait = { timeout: 10_000 };
 
 const batchPayload: RecordTimelinesBatchResponse = {
   season: 2026,
@@ -39,46 +39,46 @@ const batchPayload: RecordTimelinesBatchResponse = {
       ],
     },
   ],
-}
+};
 
 const api = vi.hoisted(() => ({
   fetchRecordTimelinesBatch: vi.fn(() => Promise.resolve(batchPayload)),
-}))
+}));
 
 vi.mock('../../api/client', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../api/client')>()
+  const actual = await importOriginal<typeof import('../../api/client')>();
   return {
     ...actual,
     fetchRecordTimelinesBatch: api.fetchRecordTimelinesBatch,
-  }
-})
+  };
+});
 
 function getLabel(id: number) {
-  if (id === 121) return 'NYM'
-  if (id === 144) return 'ATL'
-  return String(id)
+  if (id === 121) return 'NYM';
+  if (id === 144) return 'ATL';
+  return String(id);
 }
 
 describe('MultiTeamWinPctChart', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    api.fetchRecordTimelinesBatch.mockReset()
-    api.fetchRecordTimelinesBatch.mockResolvedValue(batchPayload)
-  })
+    vi.clearAllMocks();
+    api.fetchRecordTimelinesBatch.mockReset();
+    api.fetchRecordTimelinesBatch.mockResolvedValue(batchPayload);
+  });
 
   it('prompts when there is no season or no teams', () => {
     const { rerender } = render(
       <MultiTeamWinPctChart teamIds={[121]} season={null} getLabel={getLabel} />,
-    )
+    );
     expect(
       screen.getByText(/Select a division with teams to compare win percentage curves/i),
-    ).toBeInTheDocument()
+    ).toBeInTheDocument();
 
-    rerender(<MultiTeamWinPctChart teamIds={[]} season={2026} getLabel={getLabel} />)
+    rerender(<MultiTeamWinPctChart teamIds={[]} season={2026} getLabel={getLabel} />);
     expect(
       screen.getByText(/Select a division with teams to compare win percentage curves/i),
-    ).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+  });
 
   it('shows empty sample copy when timelines have no points', async () => {
     api.fetchRecordTimelinesBatch.mockResolvedValue({
@@ -87,27 +87,19 @@ describe('MultiTeamWinPctChart', () => {
         { teamId: 121, season: 2026, points: [], finishedGames: 0 },
         { teamId: 144, season: 2026, points: [], finishedGames: 0 },
       ],
-    })
+    });
 
-    render(
-      <MultiTeamWinPctChart teamIds={[121, 144]} season={2026} getLabel={getLabel} />,
-    )
+    render(<MultiTeamWinPctChart teamIds={[121, 144]} season={2026} getLabel={getLabel} />);
 
     expect(
-      await screen.findByText(
-        /No completed games in this sample yet/i,
-        undefined,
-        asyncWait,
-      ),
-    ).toBeInTheDocument()
-  })
+      await screen.findByText(/No completed games in this sample yet/i, undefined, asyncWait),
+    ).toBeInTheDocument();
+  });
 
   it('fetches batch timelines and renders axis label plus legend entries', async () => {
-    api.fetchRecordTimelinesBatch.mockResolvedValue(batchPayload)
+    api.fetchRecordTimelinesBatch.mockResolvedValue(batchPayload);
 
-    render(
-      <MultiTeamWinPctChart teamIds={[121, 144]} season={2026} getLabel={getLabel} />,
-    )
+    render(<MultiTeamWinPctChart teamIds={[121, 144]} season={2026} getLabel={getLabel} />);
 
     await waitFor(
       () =>
@@ -119,29 +111,21 @@ describe('MultiTeamWinPctChart', () => {
           expect.any(AbortSignal),
         ),
       asyncWait,
-    )
+    );
 
-    expect(await screen.findByText('Game #', undefined, asyncWait)).toBeInTheDocument()
+    expect(await screen.findByText('Game #', undefined, asyncWait)).toBeInTheDocument();
 
-    const legendItems = document.querySelectorAll('.recharts-legend-item-text')
-    const legendText = [...legendItems].map((el) => el.textContent?.trim()).filter(Boolean)
-    expect(legendText).toEqual(expect.arrayContaining(['NYM', 'ATL']))
-  })
+    const legendItems = document.querySelectorAll('.recharts-legend-item-text');
+    const legendText = [...legendItems].map((el) => el.textContent?.trim()).filter(Boolean);
+    expect(legendText).toEqual(expect.arrayContaining(['NYM', 'ATL']));
+  });
 
-  it(
-    'surfaces fetch errors',
-    { timeout: 15_000 },
-    async () => {
-      api.fetchRecordTimelinesBatch.mockReset()
-      api.fetchRecordTimelinesBatch.mockRejectedValue(new Error('network down'))
+  it('surfaces fetch errors', { timeout: 15_000 }, async () => {
+    api.fetchRecordTimelinesBatch.mockReset();
+    api.fetchRecordTimelinesBatch.mockRejectedValue(new Error('network down'));
 
-      render(
-        <MultiTeamWinPctChart teamIds={[121]} season={2026} getLabel={getLabel} />,
-      )
+    render(<MultiTeamWinPctChart teamIds={[121]} season={2026} getLabel={getLabel} />);
 
-      expect(
-        await screen.findByText(/network down/i, undefined, asyncWait),
-      ).toBeInTheDocument()
-    },
-  )
-})
+    expect(await screen.findByText(/network down/i, undefined, asyncWait)).toBeInTheDocument();
+  });
+});

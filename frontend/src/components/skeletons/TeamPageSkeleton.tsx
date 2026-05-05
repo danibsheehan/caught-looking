@@ -1,5 +1,5 @@
-import ChartSkeleton from './ChartSkeleton'
-import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives'
+import ChartSkeleton from './ChartSkeleton';
+import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives';
 
 export default function TeamPageSkeleton() {
   return (
@@ -21,5 +21,5 @@ export default function TeamPageSkeleton() {
         <ChartSkeleton label="Loading win chart" />
       </div>
     </section>
-  )
+  );
 }

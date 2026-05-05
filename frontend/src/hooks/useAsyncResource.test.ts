@@ -1,79 +1,72 @@
-import { renderHook, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
-import { isAbortError, useAsyncResource } from './useAsyncResource'
+import { renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { isAbortError, useAsyncResource } from './useAsyncResource';
 
 describe('isAbortError', () => {
   it('detects DOMException AbortError', () => {
-    expect(isAbortError(new DOMException('Aborted', 'AbortError'))).toBe(true)
-  })
+    expect(isAbortError(new DOMException('Aborted', 'AbortError'))).toBe(true);
+  });
 
   it('returns false for other errors', () => {
-    expect(isAbortError(new Error('fail'))).toBe(false)
-    expect(isAbortError(null)).toBe(false)
-  })
-})
+    expect(isAbortError(new Error('fail'))).toBe(false);
+    expect(isAbortError(null)).toBe(false);
+  });
+});
 
 describe('useAsyncResource', () => {
   it('resolves data and clears loading', async () => {
-    const fetch = vi.fn().mockResolvedValue({ ok: true })
+    const fetch = vi.fn().mockResolvedValue({ ok: true });
 
-    const { result } = renderHook(() =>
-      useAsyncResource({ fetch, initialPending: true }, []),
-    )
+    const { result } = renderHook(() => useAsyncResource({ fetch, initialPending: true }, []));
 
-    expect(result.current.loading).toBe(true)
+    expect(result.current.loading).toBe(true);
 
-    await waitFor(() => expect(result.current.loading).toBe(false))
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(fetch).toHaveBeenCalledTimes(1)
-    expect(fetch.mock.calls[0]![0]).toBeInstanceOf(AbortSignal)
-    expect(result.current.data).toEqual({ ok: true })
-    expect(result.current.error).toBeNull()
-  })
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0]![0]).toBeInstanceOf(AbortSignal);
+    expect(result.current.data).toEqual({ ok: true });
+    expect(result.current.error).toBeNull();
+  });
 
   it('normalizes non-Error rejections', async () => {
-    const fetch = vi.fn().mockRejectedValue('boom')
+    const fetch = vi.fn().mockRejectedValue('boom');
 
-    const { result } = renderHook(() =>
-      useAsyncResource({ fetch, initialPending: false }, []),
-    )
+    const { result } = renderHook(() => useAsyncResource({ fetch, initialPending: false }, []));
 
-    await waitFor(() => expect(result.current.error?.message).toBe('boom'))
-    expect(result.current.data).toBeNull()
-  })
+    await waitFor(() => expect(result.current.error?.message).toBe('boom'));
+    expect(result.current.data).toBeNull();
+  });
 
   it('does not fetch when disabled', () => {
-    const fetch = vi.fn().mockResolvedValue(1)
+    const fetch = vi.fn().mockResolvedValue(1);
 
-    const { result } = renderHook(() =>
-      useAsyncResource({ enabled: false, fetch }, []),
-    )
+    const { result } = renderHook(() => useAsyncResource({ enabled: false, fetch }, []));
 
-    expect(fetch).not.toHaveBeenCalled()
-    expect(result.current.loading).toBe(false)
-    expect(result.current.data).toBeNull()
-  })
+    expect(fetch).not.toHaveBeenCalled();
+    expect(result.current.loading).toBe(false);
+    expect(result.current.data).toBeNull();
+  });
 
   it('keeps data when disabled if resetOnDisable is false', async () => {
-    const fetch = vi.fn().mockResolvedValueOnce(42).mockResolvedValueOnce(99)
+    const fetch = vi.fn().mockResolvedValueOnce(42).mockResolvedValueOnce(99);
 
     const { result, rerender } = renderHook(
       ({ enabled }: { enabled: boolean }) =>
-        useAsyncResource(
-          { enabled, fetch, initialPending: false, resetOnDisable: false },
-          [enabled],
-        ),
+        useAsyncResource({ enabled, fetch, initialPending: false, resetOnDisable: false }, [
+          enabled,
+        ]),
       { initialProps: { enabled: true } },
-    )
+    );
 
-    await waitFor(() => expect(result.current.data).toBe(42))
+    await waitFor(() => expect(result.current.data).toBe(42));
 
-    rerender({ enabled: false })
+    rerender({ enabled: false });
 
-    await waitFor(() => expect(result.current.loading).toBe(false))
-    expect(result.current.data).toBe(42)
-    expect(fetch).toHaveBeenCalledTimes(1)
-  })
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.data).toBe(42);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
 
   it('clears data when deps change and clearDataBeforeFetch is true', async () => {
     const { result, rerender } = renderHook(
@@ -87,15 +80,15 @@ describe('useAsyncResource', () => {
           [key],
         ),
       { initialProps: { key: 1 } },
-    )
+    );
 
-    await waitFor(() => expect(result.current.data?.v).toBe(1))
+    await waitFor(() => expect(result.current.data?.v).toBe(1));
 
-    rerender({ key: 2 })
+    rerender({ key: 2 });
 
-    await waitFor(() => expect(result.current.data?.v).toBe(2))
-    expect(result.current.error).toBeNull()
-  })
+    await waitFor(() => expect(result.current.data?.v).toBe(2));
+    expect(result.current.error).toBeNull();
+  });
 
   it('refetches when deps change', async () => {
     const { result, rerender } = renderHook(
@@ -108,39 +101,36 @@ describe('useAsyncResource', () => {
           [n],
         ),
       { initialProps: { n: 1 } },
-    )
+    );
 
-    await waitFor(() => expect(result.current.data).toBe(1))
+    await waitFor(() => expect(result.current.data).toBe(1));
 
-    rerender({ n: 2 })
+    rerender({ n: 2 });
 
-    await waitFor(() => expect(result.current.data).toBe(2))
-  })
+    await waitFor(() => expect(result.current.data).toBe(2));
+  });
 
   it('ignores AbortError when deps change aborts the prior request', async () => {
-    let invocations = 0
+    let invocations = 0;
     const fetch = vi.fn((signal: AbortSignal) => {
-      invocations++
+      invocations++;
       if (invocations === 1) {
         return new Promise<number>((_, reject) => {
-          signal.addEventListener('abort', () =>
-            reject(new DOMException('Aborted', 'AbortError')),
-          )
-        })
+          signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+        });
       }
-      return Promise.resolve(2)
-    })
+      return Promise.resolve(2);
+    });
 
     const { result, rerender } = renderHook(
-      ({ n }: { n: number }) =>
-        useAsyncResource({ fetch, initialPending: false }, [n]),
+      ({ n }: { n: number }) => useAsyncResource({ fetch, initialPending: false }, [n]),
       { initialProps: { n: 1 } },
-    )
+    );
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
-    rerender({ n: 2 })
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    rerender({ n: 2 });
 
-    await waitFor(() => expect(result.current.data).toBe(2))
-    expect(result.current.error).toBeNull()
-  })
-})
+    await waitFor(() => expect(result.current.data).toBe(2));
+    expect(result.current.error).toBeNull();
+  });
+});

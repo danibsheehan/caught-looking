@@ -1,17 +1,14 @@
-import { describe, expect, it } from 'vitest'
-import { buildPitcherStrikeZoneRows } from './gameStatcastPitchers'
-import type { GameBoxscoreResponse, StatcastPitch } from '../types/api.compat'
+import { describe, expect, it } from 'vitest';
+import { buildPitcherStrikeZoneRows } from './gameStatcastPitchers';
+import type { GameBoxscoreResponse, StatcastPitch } from '../types/api.compat';
 
-const pitch = (
-  pitcher: number,
-  overrides: Partial<StatcastPitch> = {},
-): StatcastPitch => ({
+const pitch = (pitcher: number, overrides: Partial<StatcastPitch> = {}): StatcastPitch => ({
   plateX: 0,
   plateZ: 2,
   pitcher,
   pitchName: '4-Seam Fastball',
   ...overrides,
-})
+});
 
 describe('buildPitcherStrikeZoneRows', () => {
   it('orders pitchers by away then home box lines when box is present', () => {
@@ -55,15 +52,15 @@ describe('buildPitcherStrikeZoneRows', () => {
           },
         ],
       },
-    }
-    const pitches = [pitch(20), pitch(10)]
-    const rows = buildPitcherStrikeZoneRows(pitches, box)
-    expect(rows.map((r) => r.id)).toEqual([10, 20])
-    expect(rows[0]?.name).toBe('A Reliever')
-    expect(rows[0]?.side).toBe('away')
-    expect(rows[1]?.name).toBe('H Starter')
-    expect(rows[1]?.side).toBe('home')
-  })
+    };
+    const pitches = [pitch(20), pitch(10)];
+    const rows = buildPitcherStrikeZoneRows(pitches, box);
+    expect(rows.map((r) => r.id)).toEqual([10, 20]);
+    expect(rows[0]?.name).toBe('A Reliever');
+    expect(rows[0]?.side).toBe('away');
+    expect(rows[1]?.name).toBe('H Starter');
+    expect(rows[1]?.side).toBe('home');
+  });
 
   it('appends tracking-only pitcher ids after box order', () => {
     const box: GameBoxscoreResponse = {
@@ -94,11 +91,11 @@ describe('buildPitcherStrikeZoneRows', () => {
           },
         ],
       },
-    }
-    const pitches = [pitch(99), pitch(20)]
-    const rows = buildPitcherStrikeZoneRows(pitches, box)
-    expect(rows.map((r) => r.id)).toEqual([20, 99])
-    expect(rows[1]?.name).toBe('Player 99')
-    expect(rows[1]?.side).toBe('unknown')
-  })
-})
+    };
+    const pitches = [pitch(99), pitch(20)];
+    const rows = buildPitcherStrikeZoneRows(pitches, box);
+    expect(rows.map((r) => r.id)).toEqual([20, 99]);
+    expect(rows[1]?.name).toBe('Player 99');
+    expect(rows[1]?.side).toBe('unknown');
+  });
+});

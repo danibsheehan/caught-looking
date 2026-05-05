@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo } from 'react';
 import {
   CartesianGrid,
   ReferenceLine,
@@ -9,76 +9,73 @@ import {
   XAxis,
   YAxis,
   type TooltipContentProps,
-} from 'recharts'
-import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex'
+} from 'recharts';
+import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
 import {
   CHART_NEUTRAL_FALLBACK,
   obsidianTeamChartPairsRegistryPrimary,
-} from '../../utils/mlbTeamColors'
-import { chartCartesianTick } from '../../utils/rechartsAxis'
+} from '../../utils/mlbTeamColors';
+import { chartCartesianTick } from '../../utils/rechartsAxis';
 
 export type DivisionScatterPoint = {
-  teamId: number
-  rs: number
-  ra: number
-  label: string
-}
+  teamId: number;
+  rs: number;
+  ra: number;
+  label: string;
+};
 
 type DivisionRunsScatterProps = {
-  points: DivisionScatterPoint[]
-  focusTeamId?: number
-}
+  points: DivisionScatterPoint[];
+  focusTeamId?: number;
+};
 
-export default function DivisionRunsScatter({
-  points,
-  focusTeamId,
-}: DivisionRunsScatterProps) {
-  const surfaceHex = useChartSurfaceHex()
+export default function DivisionRunsScatter({ points, focusTeamId }: DivisionRunsScatterProps) {
+  const surfaceHex = useChartSurfaceHex();
 
   const teamIdsOrdered = useMemo(() => {
-    const seen = new Set<number>()
-    const out: number[] = []
+    const seen = new Set<number>();
+    const out: number[] = [];
     for (const p of points) {
       if (!seen.has(p.teamId)) {
-        seen.add(p.teamId)
-        out.push(p.teamId)
+        seen.add(p.teamId);
+        out.push(p.teamId);
       }
     }
-    return out
-  }, [points])
+    return out;
+  }, [points]);
 
   const inkByTeamId = useMemo(() => {
-    const m = new Map<number, string>()
-    if (teamIdsOrdered.length === 0) return m
-    const pairs = obsidianTeamChartPairsRegistryPrimary(teamIdsOrdered, surfaceHex)
+    const m = new Map<number, string>();
+    if (teamIdsOrdered.length === 0) return m;
+    const pairs = obsidianTeamChartPairsRegistryPrimary(teamIdsOrdered, surfaceHex);
     teamIdsOrdered.forEach((id, i) => {
-      const ink = pairs[i]?.ink
-      if (ink) m.set(id, ink)
-    })
-    return m
-  }, [teamIdsOrdered, surfaceHex])
+      const ink = pairs[i]?.ink;
+      if (ink) m.set(id, ink);
+    });
+    return m;
+  }, [teamIdsOrdered, surfaceHex]);
 
   const { domain, plot } = useMemo(() => {
     if (!points.length) {
-      return { domain: [0, 1] as [number, number], plot: [] as typeof points }
+      return { domain: [0, 1] as [number, number], plot: [] as typeof points };
     }
-    const vals = points.flatMap((p) => [p.rs, p.ra])
-    const lo = Math.min(...vals)
-    const hi = Math.max(...vals)
-    const span = hi - lo || 1
-    const pad = Math.max(12, span * 0.06)
-    const d0 = Math.floor(lo - pad)
-    const d1 = Math.ceil(hi + pad)
-    return { domain: [d0, d1] as [number, number], plot: points }
-  }, [points])
+    const vals = points.flatMap((p) => [p.rs, p.ra]);
+    const lo = Math.min(...vals);
+    const hi = Math.max(...vals);
+    const span = hi - lo || 1;
+    const pad = Math.max(12, span * 0.06);
+    const d0 = Math.floor(lo - pad);
+    const d1 = Math.ceil(hi + pad);
+    return { domain: [d0, d1] as [number, number], plot: points };
+  }, [points]);
 
   if (!plot.length) {
     return (
       <p className="muted">
-        Run totals for this division are not available yet (need runs scored and
-        allowed in standings).
+        Run totals for this division are not available yet (need runs scored and allowed in
+        standings).
       </p>
-    )
+    );
   }
 
   return (
@@ -116,10 +113,7 @@ export default function DivisionRunsScatter({
             fontFamily: 'var(--sans)',
           }}
         />
-        <Tooltip
-          cursor={{ strokeDasharray: '3 3' }}
-          content={DivisionRunsTooltip}
-        />
+        <Tooltip cursor={{ strokeDasharray: '3 3' }} content={DivisionRunsTooltip} />
         <ReferenceLine
           segment={[
             { x: domain[0], y: domain[0] },
@@ -128,19 +122,16 @@ export default function DivisionRunsScatter({
           stroke="var(--border)"
           strokeDasharray="4 4"
         />
-        <Scatter
-          data={plot}
-          shape={(props) => scatterDot(props, focusTeamId, inkByTeamId)}
-        />
+        <Scatter data={plot} shape={(props) => scatterDot(props, focusTeamId, inkByTeamId)} />
       </ScatterChart>
     </ResponsiveContainer>
-  )
+  );
 }
 
 function DivisionRunsTooltip({ active, payload }: TooltipContentProps) {
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload as DivisionScatterPoint | undefined
-  if (!row) return null
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload as DivisionScatterPoint | undefined;
+  if (!row) return null;
   return (
     <div
       style={{
@@ -158,24 +149,23 @@ function DivisionRunsTooltip({ active, payload }: TooltipContentProps) {
         {row.rs} scored · {row.ra} allowed
       </div>
     </div>
-  )
+  );
 }
 
 function scatterDot(
   props: {
-    cx?: number
-    cy?: number
-    payload?: DivisionScatterPoint
+    cx?: number;
+    cy?: number;
+    payload?: DivisionScatterPoint;
   },
   focusTeamId: number | undefined,
   inkByTeamId: Map<number, string>,
 ) {
-  const { cx, cy, payload } = props
-  if (cx == null || cy == null || !payload) return null
-  const fill =
-    inkByTeamId.get(payload.teamId) ?? CHART_NEUTRAL_FALLBACK
-  const focused = focusTeamId != null && payload.teamId === focusTeamId
-  const r = focused ? 9 : 5.5
+  const { cx, cy, payload } = props;
+  if (cx == null || cy == null || !payload) return null;
+  const fill = inkByTeamId.get(payload.teamId) ?? CHART_NEUTRAL_FALLBACK;
+  const focused = focusTeamId != null && payload.teamId === focusTeamId;
+  const r = focused ? 9 : 5.5;
   return (
     <circle
       cx={cx}
@@ -185,5 +175,5 @@ function scatterDot(
       stroke={focused ? 'var(--text-h)' : 'color-mix(in srgb, var(--bg) 35%, var(--border))'}
       strokeWidth={focused ? 2.25 : 1}
     />
-  )
+  );
 }

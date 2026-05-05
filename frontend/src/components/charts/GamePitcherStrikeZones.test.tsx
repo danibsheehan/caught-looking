@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
-import GamePitcherStrikeZones from './GamePitcherStrikeZones'
-import type { GameBoxscoreResponse, StatcastPitch } from '../../types/api.compat'
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it } from 'vitest';
+import GamePitcherStrikeZones from './GamePitcherStrikeZones';
+import type { GameBoxscoreResponse, StatcastPitch } from '../../types/api.compat';
 
 const samplePitches: StatcastPitch[] = [
   {
@@ -20,7 +20,7 @@ const samplePitches: StatcastPitch[] = [
     pitchType: 'SL',
     pitcher: 42,
   },
-]
+];
 
 const box: GameBoxscoreResponse = {
   gamePk: 1,
@@ -50,47 +50,41 @@ const box: GameBoxscoreResponse = {
     batting: [],
     pitching: [],
   },
-}
+};
 
 describe('GamePitcherStrikeZones', () => {
   it('defaults to single-pitcher view with a pitcher select and featured chart', () => {
-    render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />)
-    expect(screen.getByRole('combobox', { name: /Pitcher/i })).toBeInTheDocument()
-    expect(
-      screen.getByRole('option', { name: /Away Club — Casey Pitcher/ }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /4-Seam Fastball \(FF\)/i }),
-    ).toBeInTheDocument()
+    render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />);
+    expect(screen.getByRole('combobox', { name: /Pitcher/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Away Club — Casey Pitcher/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /4-Seam Fastball \(FF\)/i })).toBeInTheDocument();
     expect(
       screen.getByRole('img', { name: /Pitch locations for Casey Pitcher/i }),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Show all pitchers/i })).toBeInTheDocument()
-  })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Show all pitchers/i })).toBeInTheDocument();
+  });
 
   it('shows the full grid after toggling to all pitchers', async () => {
-    const user = userEvent.setup()
-    render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />)
-    await user.click(screen.getByRole('button', { name: /Show all pitchers/i }))
-    expect(screen.getByRole('heading', { name: /Away — Away Club/ })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Casey Pitcher', level: 3 })).toBeInTheDocument()
-  })
+    const user = userEvent.setup();
+    render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />);
+    await user.click(screen.getByRole('button', { name: /Show all pitchers/i }));
+    expect(screen.getByRole('heading', { name: /Away — Away Club/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Casey Pitcher', level: 3 })).toBeInTheDocument();
+  });
 
   it('shows empty copy when there are no pitches', () => {
-    render(<GamePitcherStrikeZones pitches={[]} box={box} />)
-    expect(
-      screen.getByText(/No pitch tracking data for this game/i),
-    ).toBeInTheDocument()
-  })
+    render(<GamePitcherStrikeZones pitches={[]} box={box} />);
+    expect(screen.getByText(/No pitch tracking data for this game/i)).toBeInTheDocument();
+  });
 
   it('toggles legend isolation for a pitch type', async () => {
-    const user = userEvent.setup()
-    render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />)
-    const sliderBtn = screen.getByRole('button', { name: /Slider/i })
-    expect(sliderBtn).toHaveAttribute('aria-pressed', 'false')
-    await user.click(sliderBtn)
-    expect(sliderBtn).toHaveAttribute('aria-pressed', 'true')
-    await user.click(sliderBtn)
-    expect(sliderBtn).toHaveAttribute('aria-pressed', 'false')
-  })
-})
+    const user = userEvent.setup();
+    render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />);
+    const sliderBtn = screen.getByRole('button', { name: /Slider/i });
+    expect(sliderBtn).toHaveAttribute('aria-pressed', 'false');
+    await user.click(sliderBtn);
+    expect(sliderBtn).toHaveAttribute('aria-pressed', 'true');
+    await user.click(sliderBtn);
+    expect(sliderBtn).toHaveAttribute('aria-pressed', 'false');
+  });
+});

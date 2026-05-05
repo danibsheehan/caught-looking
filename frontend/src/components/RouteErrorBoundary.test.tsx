@@ -1,73 +1,73 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import RouteErrorBoundary from './RouteErrorBoundary'
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import RouteErrorBoundary from './RouteErrorBoundary';
 
-let shouldThrow = false
+let shouldThrow = false;
 
 function ThrowingChild() {
   if (shouldThrow) {
-    throw new Error('bad route')
+    throw new Error('bad route');
   }
-  return <p>Recovered content</p>
+  return <p>Recovered content</p>;
 }
 
 describe('RouteErrorBoundary', () => {
-  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
   beforeEach(() => {
-    shouldThrow = false
-  })
+    shouldThrow = false;
+  });
 
   afterEach(() => {
-    consoleError.mockClear()
-  })
+    consoleError.mockClear();
+  });
 
   afterAll(() => {
-    consoleError.mockRestore()
-  })
+    consoleError.mockRestore();
+  });
 
   it('renders children when there is no error', () => {
     render(
       <RouteErrorBoundary>
         <p>Safe</p>
       </RouteErrorBoundary>,
-    )
+    );
 
-    expect(screen.getByText('Safe')).toBeInTheDocument()
-  })
+    expect(screen.getByText('Safe')).toBeInTheDocument();
+  });
 
   it('shows alert with message and Try again when a child throws', () => {
-    shouldThrow = true
+    shouldThrow = true;
 
     render(
       <RouteErrorBoundary>
         <ThrowingChild />
       </RouteErrorBoundary>,
-    )
+    );
 
-    const alert = screen.getByRole('alert')
-    expect(alert).toHaveTextContent('Something went wrong')
-    expect(alert).toHaveTextContent('bad route')
-    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
-  })
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Something went wrong');
+    expect(alert).toHaveTextContent('bad route');
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+  });
 
   it('recovers after Try again when child no longer throws', async () => {
-    const user = userEvent.setup()
-    shouldThrow = true
+    const user = userEvent.setup();
+    shouldThrow = true;
 
     render(
       <RouteErrorBoundary>
         <ThrowingChild />
       </RouteErrorBoundary>,
-    )
+    );
 
-    expect(screen.getByRole('alert')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toBeInTheDocument();
 
-    shouldThrow = false
-    await user.click(screen.getByRole('button', { name: /try again/i }))
+    shouldThrow = false;
+    await user.click(screen.getByRole('button', { name: /try again/i }));
 
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    expect(screen.getByText('Recovered content')).toBeInTheDocument()
-  })
-})
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByText('Recovered content')).toBeInTheDocument();
+  });
+});
