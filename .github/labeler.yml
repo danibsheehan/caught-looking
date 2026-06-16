@@ -1,0 +1,25 @@
+'area: frontend':
+    - changed-files:
+          - any-glob-to-any-file: 'frontend/**'
+
+'area: backend':
+    - changed-files:
+          - any-glob-to-any-file: 'backend/**'
+
+'area: api':
+    - changed-files:
+          - any-glob-to-any-file:
+                - 'backend/apidocs/**'
+                - 'frontend/src/types/api.generated.ts'
+                - 'frontend/src/types/api.compat.ts'
+                - 'frontend/src/api/client.ts'
+
+'area: ci':
+    - changed-files:
+          - any-glob-to-any-file: '.github/**'
+
+'area: docs':
+    - changed-files:
+          - any-glob-to-any-file:
+                - 'README.md'
+                - 'docs/**'
