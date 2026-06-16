@@ -4,11 +4,6 @@
 
 ## How to verify
 
-<!-- e.g. `make dev`, specific page/route, or “N/A” for tooling-only. -->
+<!-- e.g. routes to exercise, or "N/A" for tooling-only. -->
 
-## Checklist
-
-- [ ] `frontend`: `npm run lint`, `npm run format:check`, `npm run typecheck`, and `npm run build` succeed locally
-- [ ] `backend`: `go vet ./...`, `go test ./...`, and `go build .` succeed locally (from `backend/`)
-- [ ] API changes: `backend/apidocs/openapi.yaml` updated; `npm run api:types` run from `frontend/` and `api.generated.ts` committed if changed; `frontend/src/types/api.compat.ts` and `frontend/src/api/client.ts` updated as needed; `make check-openapi` passes
-- [ ] No unintended secrets or local-only config committed
+_Checklist and reviewer focus: see the **PR guide** comment (posted automatically; updated on each push)._

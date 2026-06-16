@@ -1,0 +1,86 @@
+name: PR guide
+
+# Sticky PR guide comment + path labels. Non-blocking; separate from CI.
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+    contents: read
+    pull-requests: write
+
+concurrency:
+    group: pr-guide-${{ github.event.pull_request.number }}
+    cancel-in-progress: true
+
+jobs:
+    guide:
+        # Fork PRs get read-only GITHUB_TOKEN; skip write steps (same limitation as Cobertura comments).
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        runs-on: ubuntu-latest
+        env:
+            GITHUB_REPO_URL: ${{ github.serverUrl }}/${{ github.repository }}
+            PYTHONPATH: ${{ github.workspace }}/.github/scripts
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Collect diff metadata
+              id: meta
+              run: |
+                  base="origin/${{ github.event.pull_request.base.ref }}"
+                  git fetch origin "${{ github.event.pull_request.base.ref }}"
+                  git diff --name-only "${base}...HEAD" > changed-files.txt
+                  echo "DIFF_SHORTSTAT=$(git diff --shortstat "${base}...HEAD" | tr -d '\n')" >> "$GITHUB_ENV"
+                  {
+                    echo 'COMMIT_LINES<<EOF'
+                    git log --oneline "${base}...HEAD"
+                    echo 'EOF'
+                  } >> "$GITHUB_ENV"
+
+            - name: Write current PR description
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const fs = require('fs');
+                      fs.writeFileSync(
+                        'current-body.md',
+                        context.payload.pull_request.body ?? '',
+                        'utf8',
+                      );
+
+            - name: Generate PR description scaffold
+              id: body
+              run: |
+                  if python3 .github/scripts/generate_pr_body.py changed-files.txt \
+                    --current-body current-body.md > new-body.md; then
+                    echo "update=true" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Update PR description
+              if: steps.body.outputs.update == 'true'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const fs = require('fs');
+                      const body = fs.readFileSync('new-body.md', 'utf8');
+                      await github.rest.pulls.update({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        pull_number: context.issue.number,
+                        body,
+                      });
+
+            - name: Generate PR guide
+              run: python3 .github/scripts/generate_pr_guide.py changed-files.txt > pr-guide.md
+
+            - name: Post sticky PR guide comment
+              uses: marocchino/sticky-pull-request-comment@v2
+              with:
+                  header: pr-guide
+                  path: pr-guide.md
+
+            - uses: actions/labeler@v5
+              with:
+                  sync-labels: true
