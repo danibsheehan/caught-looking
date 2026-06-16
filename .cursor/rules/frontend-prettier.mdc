@@ -1,0 +1,23 @@
+---
+description: Prettier formatting for frontend — editor and agent workflow
+globs: frontend/**/*.{ts,tsx,js,scss,json,html}
+alwaysApply: false
+---
+
+# Frontend formatting (Prettier)
+
+- **Config**: `frontend/prettier.config.js` (2-space indent, 100 print width, single quotes, semicolons, trailing commas).
+- **Ignored**: see `frontend/.prettierignore` (e.g. `src/types/api.generated.ts` — format via `npm run api:types`, not Prettier).
+- **CI gate**: `cd frontend && npm run format:check`.
+
+## After editing frontend files
+
+Before finishing a task, run Prettier on every file you created or changed:
+
+```bash
+cd frontend && npx prettier --write path/to/changed-file.tsx path/to/other.scss
+```
+
+Use explicit paths (not `npm run format` on the whole tree) unless you touched many files.
+
+Do not rely on manual layout — match Prettier output exactly so `format:check` passes.

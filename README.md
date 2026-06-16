@@ -29,7 +29,7 @@ Web app for exploring **MLB statistics** with charts and comparisons. The UI tal
 > [!NOTE]
 > **Live app:** [caught-looking.com/standings](https://caught-looking.com/standings) · [www.caught-looking.com/standings](https://www.caught-looking.com/standings) · **API reference (Redoc):** [docs.caught-looking.com](https://docs.caught-looking.com/)
 
-**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Design tokens](#design-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing)
+**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Design tokens](#design-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Prerequisites](#prerequisites) · [Editor setup](#editor-setup) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing)
 
 ---
 
@@ -196,6 +196,20 @@ Continuous integration runs in **GitHub Actions** on **every branch push** and o
 
 ---
 
+## Editor setup
+
+The repo ships [`.vscode/settings.json`](.vscode/settings.json) so **VS Code** and **Cursor** format `frontend/` files on save with **Prettier** (`frontend/prettier.config.js`). Install the recommended [**Prettier**](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) extension when prompted (see [`.vscode/extensions.json`](.vscode/extensions.json)). Accept workspace settings if the editor asks.
+
+| What | Where |
+| :--- | :--- |
+| Format on save | `.vscode/settings.json` — Prettier for TS/TSX/JS/JSON/SCSS/HTML under `frontend/` |
+| Prettier config | `frontend/prettier.config.js` |
+| Cursor agents | [`.cursor/rules/frontend-prettier.mdc`](.cursor/rules/frontend-prettier.mdc) — run `npx prettier --write` on changed files before finishing |
+
+CI still runs `npm run format:check`; format on save and agent rules reduce drift before push.
+
+---
+
 ## Run locally
 
 From the **repository root**:
@@ -333,6 +347,7 @@ After the first successful deploy, **`CORS_ALLOWED_ORIGINS`** must include the r
 ```
 backend/    # Go HTTP API, MLB + Savant clients, handlers, models
 frontend/   # React SPA (src/, Vite, Vitest)
+.vscode/    # Editor: format on save (Prettier), recommended extensions
 Makefile    # install, dev, backend, frontend, test-*, cover-*
 ```
 
