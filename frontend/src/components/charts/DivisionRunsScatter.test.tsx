@@ -11,7 +11,7 @@ describe('DivisionRunsScatter', () => {
   });
 
   it('renders axis labels when points are present', () => {
-    render(
+    const { container } = render(
       <DivisionRunsScatter
         points={[
           { teamId: 121, rs: 400, ra: 350, label: 'NYM' },
@@ -20,6 +20,7 @@ describe('DivisionRunsScatter', () => {
         focusTeamId={121}
       />,
     );
+    expect(container.querySelector('.chart-frame')).toBeInTheDocument();
     expect(screen.getByText('Runs allowed (season)')).toBeInTheDocument();
     expect(screen.getByText('Runs scored (season)')).toBeInTheDocument();
   });

@@ -79,8 +79,9 @@ export default function DivisionRunsScatter({ points, focusTeamId }: DivisionRun
   }
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
-      <ScatterChart margin={{ top: 10, right: 12, left: 4, bottom: 28 }}>
+    <div className="chart-frame" style={{ width: '100%', minHeight: 320 }}>
+      <ResponsiveContainer width="100%" height={320}>
+        <ScatterChart margin={{ top: 10, right: 12, left: 4, bottom: 28 }}>
         <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
         <XAxis
           type="number"
@@ -122,9 +123,10 @@ export default function DivisionRunsScatter({ points, focusTeamId }: DivisionRun
           stroke="var(--border)"
           strokeDasharray="4 4"
         />
-        <Scatter data={plot} shape={(props) => scatterDot(props, focusTeamId, inkByTeamId)} />
-      </ScatterChart>
-    </ResponsiveContainer>
+          <Scatter data={plot} shape={(props) => scatterDot(props, focusTeamId, inkByTeamId)} />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
