@@ -244,7 +244,7 @@ export default function TeamOverview() {
                 Season totals for every club in this division. The dashed line is even run
                 differential (RS = RA). Above it scores more than it allows.
               </p>
-              <ChartSuspense height={360} label="Loading run differential chart">
+              <ChartSuspense height={320} label="Loading run differential chart">
                 <DivisionRunsScatter points={scatterPoints} focusTeamId={selected.id} />
               </ChartSuspense>
             </div>

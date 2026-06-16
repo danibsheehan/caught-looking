@@ -60,6 +60,28 @@
     display: grid;
     gap: 1rem;
     margin-bottom: 1.25rem;
+
+    > .teams-page__panel {
+      min-width: 0;
+      margin-bottom: 0;
+    }
+  }
+
+  &__panel--chart {
+    display: flex;
+    flex-direction: column;
+
+    .chart-frame,
+    .record-timeline {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .record-timeline {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
   }
 
   &__tabs {
@@ -88,7 +110,11 @@
 
 @media (min-width: 900px) {
   .teams-page__viz-grid {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .teams-page__panel--chart .record-timeline {
+    min-height: 20rem;
   }
 }
