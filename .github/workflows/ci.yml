@@ -43,7 +43,7 @@ jobs:
             - run: npm run typecheck
             - name: Test with coverage (Vitest)
               run: npm run test:coverage
-            # Copy out of gitignored coverage/ for cobertura-action (PR comment).
+            # Copy out of gitignored coverage/ for the PR coverage comment.
             - run: cp coverage/cobertura-coverage.xml gha-cobertura-frontend.xml
             - name: Enforce frontend coverage threshold
               run: |
@@ -70,32 +70,135 @@ jobs:
         name: Frontend coverage comment
         runs-on: ubuntu-latest
         needs: frontend
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         permissions:
             contents: read
-            pull-requests: write
             issues: write
-            checks: write
         steps:
             - name: Download frontend coverage artifact
               uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
               with:
                   name: frontend-cobertura
                   path: cobertura
-            - name: PR Cobertura comment (frontend)
-              uses: 5monkeys/cobertura-action@ee5787cc56634acddedc51f21c7947985531e6eb # v14
-              with:
-                  pull_request_number: ${{ github.event.pull_request.number }}
-                  path: cobertura/gha-cobertura-frontend.xml
-                  report_name: caught-looking-frontend-coverage
-                  show_line: true
-                  show_branch: true
-                  show_class_names: false
-                  show_missing: false
-                  only_changed_files: false
-                  skip_covered: false
-                  minimum_coverage: 50
-                  fail_below_threshold: true
+            - name: Post frontend coverage comment
+              env:
+                  COMPONENT: frontend
+                  COVERAGE_PATH: cobertura/gha-cobertura-frontend.xml
+                  GITHUB_API_URL: ${{ github.api_url }}
+                  GITHUB_REPOSITORY: ${{ github.repository }}
+                  GITHUB_RUN_ID: ${{ github.run_id }}
+                  GITHUB_SERVER_URL: ${{ github.server_url }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  MINIMUM_COVERAGE: '50'
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: |
+                  python3 - <<'PY'
+                  import json
+                  import math
+                  import os
+                  import re
+                  import sys
+                  import urllib.request
+
+                  MAX_COVERAGE_BYTES = 2_000_000
+
+                  def fail(message):
+                      print(message, file=sys.stderr)
+                      sys.exit(1)
+
+                  def read_coverage_attrs(path):
+                      with open(path, "rb") as handle:
+                          data = handle.read(MAX_COVERAGE_BYTES + 1)
+                      if len(data) > MAX_COVERAGE_BYTES:
+                          fail(f"Coverage XML is larger than {MAX_COVERAGE_BYTES} bytes")
+                      text = data.decode("utf-8", errors="replace")
+                      match = re.search(r"<coverage\b([^>]*)>", text)
+                      if not match:
+                          fail("Could not find Cobertura <coverage> root element")
+                      return {
+                          key: double if double != "" else single
+                          for key, double, single in re.findall(
+                              r'([A-Za-z_:][-A-Za-z0-9_:.]*)\s*=\s*(?:"([^"]*)"|\'([^\']*)\')',
+                              match.group(1),
+                          )
+                      }
+
+                  def parse_float(attrs, key):
+                      try:
+                          return float(attrs[key])
+                      except (KeyError, ValueError):
+                          fail(f"Coverage XML is missing numeric {key!r}")
+
+                  def parse_int(attrs, key):
+                      try:
+                          return int(attrs[key])
+                      except (KeyError, ValueError):
+                          return None
+
+                  def github(method, path, payload=None):
+                      body = None if payload is None else json.dumps(payload).encode("utf-8")
+                      request = urllib.request.Request(
+                          os.environ.get("GITHUB_API_URL", "https://api.github.com") + path,
+                          data=body,
+                          method=method,
+                          headers={
+                              "Accept": "application/vnd.github+json",
+                              "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                              "Content-Type": "application/json",
+                              "X-GitHub-Api-Version": "2022-11-28",
+                          },
+                      )
+                      with urllib.request.urlopen(request) as response:
+                          payload = response.read()
+                      return json.loads(payload.decode("utf-8")) if payload else None
+
+                  component = os.environ["COMPONENT"]
+                  attrs = read_coverage_attrs(os.environ["COVERAGE_PATH"])
+                  line_rate = parse_float(attrs, "line-rate")
+                  if not math.isfinite(line_rate) or line_rate < 0 or line_rate > 1:
+                      fail("Coverage XML has an invalid line-rate")
+                  minimum = float(os.environ["MINIMUM_COVERAGE"])
+                  covered = parse_int(attrs, "lines-covered")
+                  valid = parse_int(attrs, "lines-valid")
+                  covered_text = f" ({covered}/{valid} lines)" if covered is not None and valid else ""
+                  percent = line_rate * 100
+                  status = "PASS" if percent >= minimum else "FAIL"
+                  run_url = (
+                      f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}"
+                      f"/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+                  )
+                  marker = f"<!-- caught-looking:coverage:{component} -->"
+                  body = "\n".join(
+                      [
+                          marker,
+                          f"## {component.capitalize()} coverage",
+                          "",
+                          f"Line coverage: **{percent:.2f}%**{covered_text}",
+                          f"Minimum: **{minimum:.0f}%** ({status})",
+                          "",
+                          f"Run: {run_url}",
+                      ]
+                  )
+
+                  repo = os.environ["GITHUB_REPOSITORY"]
+                  pr_number = os.environ["PR_NUMBER"]
+                  existing_id = None
+                  page = 1
+                  while existing_id is None:
+                      comments = github("GET", f"/repos/{repo}/issues/{pr_number}/comments?per_page=100&page={page}")
+                      if not comments:
+                          break
+                      for comment in comments:
+                          if marker in comment.get("body", ""):
+                              existing_id = comment["id"]
+                              break
+                      page += 1
+
+                  if existing_id is None:
+                      github("POST", f"/repos/{repo}/issues/{pr_number}/comments", {"body": body})
+                  else:
+                      github("PATCH", f"/repos/{repo}/issues/comments/{existing_id}", {"body": body})
+                  PY
 
     backend:
         name: Backend (vet, test+coverage, build)
@@ -147,29 +250,132 @@ jobs:
         name: Backend coverage comment
         runs-on: ubuntu-latest
         needs: backend
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         permissions:
             contents: read
-            pull-requests: write
             issues: write
-            checks: write
         steps:
             - name: Download backend coverage artifact
               uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
               with:
                   name: backend-cobertura
                   path: cobertura
-            - name: PR Cobertura comment (backend)
-              uses: 5monkeys/cobertura-action@ee5787cc56634acddedc51f21c7947985531e6eb # v14
-              with:
-                  pull_request_number: ${{ github.event.pull_request.number }}
-                  path: cobertura/gha-cobertura.xml
-                  report_name: caught-looking-backend-coverage
-                  show_line: true
-                  show_branch: true
-                  show_class_names: false
-                  show_missing: false
-                  only_changed_files: false
-                  skip_covered: false
-                  minimum_coverage: 50
-                  fail_below_threshold: true
+            - name: Post backend coverage comment
+              env:
+                  COMPONENT: backend
+                  COVERAGE_PATH: cobertura/gha-cobertura.xml
+                  GITHUB_API_URL: ${{ github.api_url }}
+                  GITHUB_REPOSITORY: ${{ github.repository }}
+                  GITHUB_RUN_ID: ${{ github.run_id }}
+                  GITHUB_SERVER_URL: ${{ github.server_url }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  MINIMUM_COVERAGE: '50'
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: |
+                  python3 - <<'PY'
+                  import json
+                  import math
+                  import os
+                  import re
+                  import sys
+                  import urllib.request
+
+                  MAX_COVERAGE_BYTES = 2_000_000
+
+                  def fail(message):
+                      print(message, file=sys.stderr)
+                      sys.exit(1)
+
+                  def read_coverage_attrs(path):
+                      with open(path, "rb") as handle:
+                          data = handle.read(MAX_COVERAGE_BYTES + 1)
+                      if len(data) > MAX_COVERAGE_BYTES:
+                          fail(f"Coverage XML is larger than {MAX_COVERAGE_BYTES} bytes")
+                      text = data.decode("utf-8", errors="replace")
+                      match = re.search(r"<coverage\b([^>]*)>", text)
+                      if not match:
+                          fail("Could not find Cobertura <coverage> root element")
+                      return {
+                          key: double if double != "" else single
+                          for key, double, single in re.findall(
+                              r'([A-Za-z_:][-A-Za-z0-9_:.]*)\s*=\s*(?:"([^"]*)"|\'([^\']*)\')',
+                              match.group(1),
+                          )
+                      }
+
+                  def parse_float(attrs, key):
+                      try:
+                          return float(attrs[key])
+                      except (KeyError, ValueError):
+                          fail(f"Coverage XML is missing numeric {key!r}")
+
+                  def parse_int(attrs, key):
+                      try:
+                          return int(attrs[key])
+                      except (KeyError, ValueError):
+                          return None
+
+                  def github(method, path, payload=None):
+                      body = None if payload is None else json.dumps(payload).encode("utf-8")
+                      request = urllib.request.Request(
+                          os.environ.get("GITHUB_API_URL", "https://api.github.com") + path,
+                          data=body,
+                          method=method,
+                          headers={
+                              "Accept": "application/vnd.github+json",
+                              "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                              "Content-Type": "application/json",
+                              "X-GitHub-Api-Version": "2022-11-28",
+                          },
+                      )
+                      with urllib.request.urlopen(request) as response:
+                          payload = response.read()
+                      return json.loads(payload.decode("utf-8")) if payload else None
+
+                  component = os.environ["COMPONENT"]
+                  attrs = read_coverage_attrs(os.environ["COVERAGE_PATH"])
+                  line_rate = parse_float(attrs, "line-rate")
+                  if not math.isfinite(line_rate) or line_rate < 0 or line_rate > 1:
+                      fail("Coverage XML has an invalid line-rate")
+                  minimum = float(os.environ["MINIMUM_COVERAGE"])
+                  covered = parse_int(attrs, "lines-covered")
+                  valid = parse_int(attrs, "lines-valid")
+                  covered_text = f" ({covered}/{valid} lines)" if covered is not None and valid else ""
+                  percent = line_rate * 100
+                  status = "PASS" if percent >= minimum else "FAIL"
+                  run_url = (
+                      f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}"
+                      f"/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+                  )
+                  marker = f"<!-- caught-looking:coverage:{component} -->"
+                  body = "\n".join(
+                      [
+                          marker,
+                          f"## {component.capitalize()} coverage",
+                          "",
+                          f"Line coverage: **{percent:.2f}%**{covered_text}",
+                          f"Minimum: **{minimum:.0f}%** ({status})",
+                          "",
+                          f"Run: {run_url}",
+                      ]
+                  )
+
+                  repo = os.environ["GITHUB_REPOSITORY"]
+                  pr_number = os.environ["PR_NUMBER"]
+                  existing_id = None
+                  page = 1
+                  while existing_id is None:
+                      comments = github("GET", f"/repos/{repo}/issues/{pr_number}/comments?per_page=100&page={page}")
+                      if not comments:
+                          break
+                      for comment in comments:
+                          if marker in comment.get("body", ""):
+                              existing_id = comment["id"]
+                              break
+                      page += 1
+
+                  if existing_id is None:
+                      github("POST", f"/repos/{repo}/issues/{pr_number}/comments", {"body": body})
+                  else:
+                      github("PATCH", f"/repos/{repo}/issues/comments/{existing_id}", {"body": body})
+                  PY
