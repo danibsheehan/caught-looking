@@ -40,8 +40,8 @@ description: >-
    - If the change under test alters **routes, query params, or JSON** the API exposes, update **`backend/apidocs/openapi.yaml`** in the same PR and run **`make check-openapi`** — see **`.cursor/skills/openapi-maintain/SKILL.md`**.
 
 7. **Commands**
-   - From repo: `make test-backend` or `cd backend && go test ./... -count=1`.
-   - Before finishing: **`go test ./... -race`** and **`go vet ./...`** in `backend/` (matches CI).
+   - From repo: `make test-backend` (vet, govulncheck, tests, build) or `cd backend && go test ./... -count=1` for a focused test pass.
+   - Before finishing: **`go test ./... -race`**, **`go vet ./...`**, and **`go run golang.org/x/vuln/cmd/govulncheck@latest ./...`** in `backend/` (matches CI).
 
 ## Anti-patterns
 
