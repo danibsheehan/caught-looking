@@ -288,6 +288,9 @@ Backend tests live as `*_test.go` next to packages under `backend/`. Frontend te
 | `CACHE_TTL_STANDINGS` | Standings cache TTL (Go duration, e.g. `1h`; default `1h`)                                                                   |
 | `CACHE_TTL_SCORES`    | Scores-related cache TTL (default `5m`)                                                                                      |
 | `CACHE_TTL_STATCAST`  | Statcast / Savant CSV cache TTL per game (default `6h`)                                                                      |
+| `CACHE_TTL_PLAYER_SEARCH` | Player-search cache TTL for name query keys (default `3m`)                                                              |
+| `CACHE_SWEEP_INTERVAL` | Interval for removing expired entries and applying `CACHE_MAX_ENTRIES` (default `2m`; `0` disables background sweeps)        |
+| `CACHE_MAX_ENTRIES`   | Max in-memory cache entries before sweeps evict back to ~90% of the cap (default `2000`; `0` = unlimited)                    |
 | `RATE_LIMIT_REQUESTS` | Max requests per client IP per sliding window (default `120`; set `0` to disable)                                            |
 | `RATE_LIMIT_WINDOW`   | Sliding window for that limit (default `1m`)                                                                                 |
 | `MLB_MAX_QPS`         | Max outbound GETs per second to the MLB API **per process** (token bucket, default `20`; `0` = unlimited)                    |
