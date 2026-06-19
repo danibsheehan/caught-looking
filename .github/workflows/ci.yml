@@ -1,13 +1,13 @@
 name: CI
 
 # Push only on main so feature-branch work does not double-trigger with pull_request.
-# Otherwise every PR update runs twice (push + pull_request). Cobertura PR comment steps
-# use `if: github.event_name == 'pull_request'` so they never run on push (including main).
+# Otherwise every PR update runs twice (push + pull_request). Cobertura PR comments
+# run in separate PR-only jobs so tests execute with a read-only token.
 on:
     push:
         branches:
             - main
-    # PR Cobertura steps only run for this event, never for push (merge to main).
+    # PR Cobertura comment jobs only run for this event, never for push (merge to main).
     pull_request:
         types: [opened, synchronize, reopened, ready_for_review]
 
@@ -23,18 +23,14 @@ jobs:
         # Must match the branch protection "required status check" name exactly.
         name: Frontend (lint, typecheck, test+coverage, build)
         runs-on: ubuntu-latest
-        # cobertura-action (PR-only step below) uses Issues API and Checks API.
         permissions:
             contents: read
-            pull-requests: write
-            issues: write
-            checks: write
         defaults:
             run:
                 working-directory: frontend
         steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
+            - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+            - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
               with:
                   node-version: '22'
                   cache: npm
@@ -49,12 +45,48 @@ jobs:
               run: npm run test:coverage
             # Copy out of gitignored coverage/ for cobertura-action (PR comment).
             - run: cp coverage/cobertura-coverage.xml gha-cobertura-frontend.xml
+            - name: Enforce frontend coverage threshold
+              run: |
+                  python3 - <<'PY'
+                  import sys
+                  import xml.etree.ElementTree as ET
+
+                  minimum = 0.50
+                  line_rate = float(ET.parse("gha-cobertura-frontend.xml").getroot().get("line-rate", "0"))
+                  if line_rate < minimum:
+                      print(f"Frontend coverage {line_rate:.2%} is below {minimum:.0%}", file=sys.stderr)
+                      sys.exit(1)
+                  print(f"Frontend coverage {line_rate:.2%}")
+                  PY
+            - name: Upload frontend coverage artifact
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+              with:
+                  name: frontend-cobertura
+                  path: frontend/gha-cobertura-frontend.xml
+                  if-no-files-found: error
+            - run: npm run build
+
+    frontend-coverage-comment:
+        name: Frontend coverage comment
+        runs-on: ubuntu-latest
+        needs: frontend
+        if: ${{ github.event_name == 'pull_request' }}
+        permissions:
+            contents: read
+            pull-requests: write
+            issues: write
+            checks: write
+        steps:
+            - name: Download frontend coverage artifact
+              uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+              with:
+                  name: frontend-cobertura
+                  path: cobertura
             - name: PR Cobertura comment (frontend)
-              if: github.event_name == 'pull_request'
-              uses: 5monkeys/cobertura-action@v14
+              uses: 5monkeys/cobertura-action@ee5787cc56634acddedc51f21c7947985531e6eb # v14
               with:
                   pull_request_number: ${{ github.event.pull_request.number }}
-                  path: frontend/gha-cobertura-frontend.xml
+                  path: cobertura/gha-cobertura-frontend.xml
                   report_name: caught-looking-frontend-coverage
                   show_line: true
                   show_branch: true
@@ -64,22 +96,18 @@ jobs:
                   skip_covered: false
                   minimum_coverage: 50
                   fail_below_threshold: true
-            - run: npm run build
 
     backend:
         name: Backend (vet, test+coverage, build)
         runs-on: ubuntu-latest
         permissions:
             contents: read
-            pull-requests: write
-            issues: write
-            checks: write
         defaults:
             run:
                 working-directory: backend
         steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-go@v5
+            - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+            - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
               with:
                   go-version: '1.26.4'
                   cache-dependency-path: backend/go.sum
@@ -94,12 +122,48 @@ jobs:
                   # Write as gha-cobertura.xml (gitignored paths stay out of the workspace snapshot).
                   "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura-raw.xml
                   python3 "$GITHUB_WORKSPACE/.github/scripts/merge_cobertura_by_file.py" gha-cobertura-raw.xml > gha-cobertura.xml
+            - name: Enforce backend coverage threshold
+              run: |
+                  python3 - <<'PY'
+                  import sys
+                  import xml.etree.ElementTree as ET
+
+                  minimum = 0.50
+                  line_rate = float(ET.parse("gha-cobertura.xml").getroot().get("line-rate", "0"))
+                  if line_rate < minimum:
+                      print(f"Backend coverage {line_rate:.2%} is below {minimum:.0%}", file=sys.stderr)
+                      sys.exit(1)
+                  print(f"Backend coverage {line_rate:.2%}")
+                  PY
+            - name: Upload backend coverage artifact
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+              with:
+                  name: backend-cobertura
+                  path: backend/gha-cobertura.xml
+                  if-no-files-found: error
+            - run: go build -o /dev/null .
+
+    backend-coverage-comment:
+        name: Backend coverage comment
+        runs-on: ubuntu-latest
+        needs: backend
+        if: ${{ github.event_name == 'pull_request' }}
+        permissions:
+            contents: read
+            pull-requests: write
+            issues: write
+            checks: write
+        steps:
+            - name: Download backend coverage artifact
+              uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+              with:
+                  name: backend-cobertura
+                  path: cobertura
             - name: PR Cobertura comment (backend)
-              if: github.event_name == 'pull_request'
-              uses: 5monkeys/cobertura-action@v14
+              uses: 5monkeys/cobertura-action@ee5787cc56634acddedc51f21c7947985531e6eb # v14
               with:
                   pull_request_number: ${{ github.event.pull_request.number }}
-                  path: backend/gha-cobertura.xml
+                  path: cobertura/gha-cobertura.xml
                   report_name: caught-looking-backend-coverage
                   show_line: true
                   show_branch: true
@@ -109,4 +173,3 @@ jobs:
                   skip_covered: false
                   minimum_coverage: 50
                   fail_below_threshold: true
-            - run: go build -o /dev/null .
