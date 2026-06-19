@@ -170,7 +170,7 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 <details>
 <summary><strong>CI & quality gates</strong> (expand)</summary>
 
-Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, Prettier (`format:check`), TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`govulncheck`**, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests from the same repository, [**PR guide**](.github/workflows/pr-guide.yml) scaffolds an empty or default PR description (suggested verify commands, **Touches** metadata), posts or updates a sticky comment (checklist hints, reviewer focus), and applies **`area:*`** labels from changed paths; [**cobertura-action**](https://github.com/5monkeys/cobertura-action) adds or updates **two** coverage comments (frontend and backend). Fork PRs may not receive guide or coverage comments due to `GITHUB_TOKEN` limits (those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
+Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, Prettier (`format:check`), TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`govulncheck`**, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests from the same repository, [**PR guide**](.github/workflows/pr-guide.yml) scaffolds an empty or default PR description (suggested verify commands, **Touches** metadata), posts or updates a sticky comment (checklist hints, reviewer focus), and applies **`area:*`** labels from changed paths; separate read/write-scoped jobs add or update **two** coverage comments (frontend and backend). Fork PRs may not receive guide or coverage comments due to `GITHUB_TOKEN` limits (those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
 
 </details>
 
@@ -313,12 +313,13 @@ Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [
 
 - Enable billing, **Cloud Run**, **Artifact Registry**, and **Cloud Build** (optional; not required for this workflow’s Docker build in Actions).
 - Create a **Docker** Artifact Registry repository (e.g. name matching `GCP_ARTIFACT_REPOSITORY`).
-- Create a **service account** for GitHub with at least: **Artifact Registry Writer**, **Cloud Run Admin**, and **Service Account User** (on the project’s Cloud Run runtime service account if prompted). Create a JSON key and store it as **`GCP_SA_KEY`** (repository secret).
+- Create a **deploy service account** for GitHub with at least: **Artifact Registry Writer**, **Cloud Run Admin**, and **Service Account User** (on the project’s Cloud Run runtime service account if prompted). Do **not** create a JSON key for CI.
+- Configure **Workload Identity Federation** for this GitHub repository and allow the deploy service account to be impersonated by the repository’s GitHub Actions principal. Store the provider resource name in **`GCP_WORKLOAD_IDENTITY_PROVIDER`** and the service account email in **`GCP_DEPLOY_SERVICE_ACCOUNT`**.
 
 **One-time Cloudflare setup**
 
 - Create a **Pages** project (name must match **`CLOUDFLARE_PAGES_PROJECT_NAME`**). The project can be empty; Actions uploads the build output.
-- Create an **API token** with **Account → Cloudflare Pages → Edit** (and **Account → Read** if required by your account). Store **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** as repository secrets.
+- Create a least-privilege **API token** with **Account → Cloudflare Pages → Edit** (and **Account → Read** if required by your account), rotate it periodically, and store **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** as repository secrets.
 
 **GitHub repository variables**
 
@@ -328,6 +329,8 @@ Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [
 | `GCP_REGION`                    | `us-central1`                    | Cloud Run and Artifact Registry region                                                         |
 | `GCP_ARTIFACT_REPOSITORY`       | `caught-looking`                 | Artifact Registry repo name (image: `…/api:<git-sha>`)                                         |
 | `CLOUDRUN_SERVICE_NAME`         | `caught-looking-api`             | Cloud Run service name                                                                         |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/123/locations/global/workloadIdentityPools/github/providers/caught-looking` | Workload Identity Federation provider resource name for GitHub Actions |
+| `GCP_DEPLOY_SERVICE_ACCOUNT`    | `gha-deploy@my-gcp-project.iam.gserviceaccount.com` | Deploy service account email impersonated by GitHub Actions                                    |
 | `CORS_ALLOWED_ORIGINS`          | `https://caught-looking.com,https://www.caught-looking.com` | Comma-separated **`ALLOWED_ORIGINS`** for the API (must include every browser origin that calls the API, e.g. apex + `www`, and/or `*.pages.dev`). |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | `your-project`                   | If **unset**, only the API deploy runs (useful while wiring Cloudflare).                       |
 
@@ -335,7 +338,6 @@ Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [
 
 | Secret                  | Purpose                      |
 | ----------------------- | ---------------------------- |
-| `GCP_SA_KEY`            | Service account JSON for GCP |
 | `CLOUDFLARE_API_TOKEN`  | Cloudflare API token         |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account id        |
 

@@ -18,6 +18,9 @@ jobs:
         if: ${{ github.event.repository.fork == false }}
         name: Deploy API (Cloud Run)
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            id-token: write
         outputs:
             api_url: ${{ steps.cloudrun-url.outputs.url }}
         env:
@@ -25,21 +28,24 @@ jobs:
             GCP_REGION: ${{ vars.GCP_REGION }}
             GCP_ARTIFACT_REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY }}
             CLOUDRUN_SERVICE_NAME: ${{ vars.CLOUDRUN_SERVICE_NAME }}
+            GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+            GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
         steps:
             - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-            - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
-              with:
-                  credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-            - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2
-
             - name: Validate GCP configuration
               run: |
-                  if [ -z "$GCP_PROJECT_ID" ] || [ -z "$GCP_REGION" ] || [ -z "$GCP_ARTIFACT_REPOSITORY" ] || [ -z "$CLOUDRUN_SERVICE_NAME" ]; then
-                    echo "::error::Set GitHub repository variables: GCP_PROJECT_ID, GCP_REGION, GCP_ARTIFACT_REPOSITORY, CLOUDRUN_SERVICE_NAME"
+                  if [ -z "$GCP_PROJECT_ID" ] || [ -z "$GCP_REGION" ] || [ -z "$GCP_ARTIFACT_REPOSITORY" ] || [ -z "$CLOUDRUN_SERVICE_NAME" ] || [ -z "$GCP_WORKLOAD_IDENTITY_PROVIDER" ] || [ -z "$GCP_DEPLOY_SERVICE_ACCOUNT" ]; then
+                    echo "::error::Set GitHub repository variables: GCP_PROJECT_ID, GCP_REGION, GCP_ARTIFACT_REPOSITORY, CLOUDRUN_SERVICE_NAME, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_DEPLOY_SERVICE_ACCOUNT"
                     exit 1
                   fi
+
+            - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+              with:
+                  workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+                  service_account: ${{ env.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+            - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2
 
             - name: Validate CORS (ALLOWED_ORIGINS)
               env:
