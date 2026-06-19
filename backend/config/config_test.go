@@ -58,7 +58,7 @@ func TestLoad_defaults(t *testing.T) {
 		MLBHTTPTimeout:         15 * time.Second,
 		SavantMaxQPS:           5,
 		CacheSweepInterval:     2 * time.Minute,
-		CacheMaxEntries:        0,
+		CacheMaxEntries:        defaultCacheMaxEntries,
 		HTTPDisableCompression: false,
 	}
 	if !reflect.DeepEqual(got, want) {
@@ -228,5 +228,15 @@ func TestLoad_cache_sweep_max_player_search_ttl(t *testing.T) {
 	}
 	if got.TTLPlayerSearch != 2*time.Minute {
 		t.Fatalf("TTLPlayerSearch: got %v", got.TTLPlayerSearch)
+	}
+}
+
+func TestLoad_CACHE_MAX_ENTRIES_zeroExplicitlyDisablesCap(t *testing.T) {
+	resetLoadEnv(t)
+	t.Setenv("CACHE_MAX_ENTRIES", "0")
+
+	got := Load()
+	if got.CacheMaxEntries != 0 {
+		t.Fatalf("CacheMaxEntries: got %d want 0", got.CacheMaxEntries)
 	}
 }

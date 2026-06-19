@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const defaultCacheMaxEntries = 2000
+
 // Config holds runtime settings for the API server and upstream MLB client.
 type Config struct {
 	HTTPAddr       string
@@ -27,7 +29,7 @@ type Config struct {
 	SavantMaxQPS      float64       // token-bucket limit for outbound Savant GETs per process; 0 = unlimited
 	// CacheSweepInterval runs a background sweep of expired TTL entries; 0 disables.
 	CacheSweepInterval time.Duration
-	// CacheMaxEntries, if >0, evicts arbitrary live entries after each sweep until count <= ~90% of max.
+	// CacheMaxEntries evicts arbitrary live entries after each sweep until count <= ~90% of max; 0 disables.
 	CacheMaxEntries int
 	// HTTPDisableCompression skips chi gzip middleware (for debugging or odd proxies).
 	HTTPDisableCompression bool
@@ -52,7 +54,7 @@ func Load() Config {
 		MLBHTTPTimeout:     15 * time.Second,
 		SavantMaxQPS:       5,
 		CacheSweepInterval: 2 * time.Minute,
-		CacheMaxEntries:    0,
+		CacheMaxEntries:    defaultCacheMaxEntries,
 	}
 
 	if v := strings.TrimSpace(os.Getenv("PORT")); v != "" {

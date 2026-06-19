@@ -7,8 +7,9 @@ import (
 	"github.com/go-chi/httprate"
 )
 
-// HTTPRateLimit enforces a sliding-window limit per client IP (uses Request.RemoteAddr; place after
-// chi/middleware.RealIP so proxied clients are keyed correctly). If maxRequests <= 0, the handler is a no-op.
+// HTTPRateLimit enforces a sliding-window limit per direct client IP from Request.RemoteAddr.
+// Forwarded IP headers are intentionally ignored unless a trusted-proxy layer rewrites RemoteAddr.
+// If maxRequests <= 0, the handler is a no-op.
 func HTTPRateLimit(maxRequests int, window time.Duration) func(http.Handler) http.Handler {
 	if maxRequests <= 0 || window <= 0 {
 		return func(next http.Handler) http.Handler { return next }

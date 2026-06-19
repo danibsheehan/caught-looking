@@ -16,7 +16,6 @@ import (
 func newRouter(cfg config.Config, h *handlers.Handlers) http.Handler {
 	r := chi.NewRouter()
 	r.Use(chimiddleware.RequestID)
-	r.Use(chimiddleware.RealIP)
 	r.Use(chimiddleware.Recoverer)
 	r.Use(middleware.Logger)
 	r.Use(middleware.CORS(cfg.AllowedOrigins))

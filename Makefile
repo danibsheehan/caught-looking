@@ -25,9 +25,12 @@ check-openapi:
 	cd "$(PROJECT_ROOT)/frontend" && npm run api:validate
 	cd "$(PROJECT_ROOT)/frontend" && npm run api:types:check
 
-## test-backend: run all Go unit tests (backend/)
+## test-backend: run backend CI checks (vet, govulncheck, tests, build)
 test-backend:
+	cd "$(PROJECT_ROOT)/backend" && go vet ./...
+	cd "$(PROJECT_ROOT)/backend" && go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 	cd "$(PROJECT_ROOT)/backend" && go test ./... -count=1
+	cd "$(PROJECT_ROOT)/backend" && go build -o /dev/null .
 
 ## test-frontend: run Vitest once (frontend/)
 test-frontend:

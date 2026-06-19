@@ -3,7 +3,7 @@
 [![CI](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml/badge.svg)](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml)
 [![OpenAPI docs](https://img.shields.io/badge/docs-Redoc-f472b6?style=flat-square&labelColor=070b10)](https://docs.caught-looking.com/)
 [![Live app — caught-looking.com](./docs/badge-live.svg)](https://caught-looking.com/standings)
-[![Go](https://img.shields.io/badge/Go-1.22-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
+[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=0a1018)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
@@ -164,13 +164,13 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 | Layer    | Technology                                                                                                                                         |
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Frontend | React 19, TypeScript, Vite, React Router, Recharts, ESLint, Prettier                                                                               |
-| Backend  | Go 1.22, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, token-bucket QPS caps for MLB and Savant outbound traffic |
+| Backend  | Go 1.26, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, token-bucket QPS caps for MLB and Savant outbound traffic |
 | Data     | MLB Stats API v1 (JSON); Baseball Savant (CSV) for Statcast-oriented game data                                                                     |
 
 <details>
 <summary><strong>CI & quality gates</strong> (expand)</summary>
 
-Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, Prettier (`format:check`), TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests from the same repository, [**PR guide**](.github/workflows/pr-guide.yml) scaffolds an empty or default PR description (suggested verify commands, **Touches** metadata), posts or updates a sticky comment (checklist hints, reviewer focus), and applies **`area:*`** labels from changed paths; [**cobertura-action**](https://github.com/5monkeys/cobertura-action) adds or updates **two** coverage comments (frontend and backend). Fork PRs may not receive guide or coverage comments due to `GITHUB_TOKEN` limits (those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
+Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, Prettier (`format:check`), TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`govulncheck`**, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests from the same repository, [**PR guide**](.github/workflows/pr-guide.yml) scaffolds an empty or default PR description (suggested verify commands, **Touches** metadata), posts or updates a sticky comment (checklist hints, reviewer focus), and applies **`area:*`** labels from changed paths; [**cobertura-action**](https://github.com/5monkeys/cobertura-action) adds or updates **two** coverage comments (frontend and backend). Fork PRs may not receive guide or coverage comments due to `GITHUB_TOKEN` limits (those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
 
 </details>
 
@@ -191,7 +191,7 @@ Continuous integration runs in **GitHub Actions** on **every branch push** and o
 
 ## Prerequisites
 
-- **Go** 1.22+
+- **Go** 1.26+
 - **Node.js** 22+ and **npm** (CI uses Node 22; newer LTS generally works)
 
 ---
@@ -263,7 +263,7 @@ Tests use **Vitest** (jsdom), **Testing Library**, and **`@testing-library/jest-
 | Target                    | Purpose                                                        |
 | ------------------------- | -------------------------------------------------------------- |
 | `make check-openapi`      | Lint OpenAPI + verify generated frontend API types are current |
-| `make test-backend`       | `go test ./...` in `backend/`                                  |
+| `make test-backend`       | Backend CI checks: `go vet`, `govulncheck`, tests, build       |
 | `make test-frontend`      | `npm run test:run` in `frontend/`                              |
 | `make cover-backend`      | Go coverage summary (`backend/coverage.out`)                   |
 | `make cover-backend-html` | Same + `backend/coverage.html`                                 |
@@ -288,6 +288,9 @@ Backend tests live as `*_test.go` next to packages under `backend/`. Frontend te
 | `CACHE_TTL_STANDINGS` | Standings cache TTL (Go duration, e.g. `1h`; default `1h`)                                                                   |
 | `CACHE_TTL_SCORES`    | Scores-related cache TTL (default `5m`)                                                                                      |
 | `CACHE_TTL_STATCAST`  | Statcast / Savant CSV cache TTL per game (default `6h`)                                                                      |
+| `CACHE_TTL_PLAYER_SEARCH` | Player-search cache TTL for name query keys (default `3m`)                                                              |
+| `CACHE_SWEEP_INTERVAL` | Interval for removing expired entries and applying `CACHE_MAX_ENTRIES` (default `2m`; `0` disables background sweeps)        |
+| `CACHE_MAX_ENTRIES`   | Max in-memory cache entries before sweeps evict back to ~90% of the cap (default `2000`; `0` = unlimited)                    |
 | `RATE_LIMIT_REQUESTS` | Max requests per client IP per sliding window (default `120`; set `0` to disable)                                            |
 | `RATE_LIMIT_WINDOW`   | Sliding window for that limit (default `1m`)                                                                                 |
 | `MLB_MAX_QPS`         | Max outbound GETs per second to the MLB API **per process** (token bucket, default `20`; `0` = unlimited)                    |
@@ -355,4 +358,4 @@ Makefile    # install, dev, backend, frontend, test-*, cover-*
 
 ## Contributing
 
-Use the [pull request template](.github/pull_request_template.md) for **Summary** and **How to verify**. The [**PR guide**](.github/workflows/pr-guide.yml) workflow scaffolds the description when it is empty or still the default template (suggested verify commands plus a **Touches** line) and posts a sticky comment with checklist hints and reviewer focus. Before opening a PR, run the same checks as CI (e.g. `make test-backend`, `make test-frontend`, plus `npm run api:validate` / `npm run api:types:check` / `npm run lint` / `npm run format:check` / `npm run typecheck` / `npm run build` in `frontend/`, and `go vet ./...`, `go test ./...`, `go build` in `backend/`). Keep API changes in sync: **Go JSON / OpenAPI** ↔ generated frontend types (`frontend/src/types/api.generated.ts`) and `frontend/src/api/client.ts`.
+Use the [pull request template](.github/pull_request_template.md) for **Summary** and **How to verify**. The [**PR guide**](.github/workflows/pr-guide.yml) workflow scaffolds the description when it is empty or still the default template (suggested verify commands plus a **Touches** line) and posts a sticky comment with checklist hints and reviewer focus. Before opening a PR, run the same checks as CI (e.g. `make test-backend`, `make test-frontend`, plus `npm run api:validate` / `npm run api:types:check` / `npm run lint` / `npm run format:check` / `npm run typecheck` / `npm run build` in `frontend/`, and `go vet ./...`, `go run golang.org/x/vuln/cmd/govulncheck@latest ./...`, `go test ./...`, `go build` in `backend/`). Keep API changes in sync: **Go JSON / OpenAPI** ↔ generated frontend types (`frontend/src/types/api.generated.ts`) and `frontend/src/api/client.ts`.
