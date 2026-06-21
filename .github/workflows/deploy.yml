@@ -57,7 +57,11 @@ jobs:
                   fi
 
             - name: Configure Docker for Artifact Registry
-              run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+              run: |
+                  gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+                  gcloud auth print-access-token | docker login \
+                    -u oauth2accesstoken \
+                    --password-stdin "https://${GCP_REGION}-docker.pkg.dev"
 
             - name: Build and push container image
               run: |
