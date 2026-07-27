@@ -2,3 +2,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# CI Cobertura snapshots written at repo root for Actions artifacts
+gha-cobertura*.xml

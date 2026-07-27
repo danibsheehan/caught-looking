@@ -43,15 +43,18 @@ jobs:
             - name: Test with coverage (Vitest)
               run: npm run test:coverage
             # Copy out of gitignored coverage/ for the PR coverage comment.
-            - run: cp coverage/cobertura-coverage.xml gha-cobertura-frontend.xml
+            # Keep the upload at workspace root so download-artifact extracts a flat file.
+            - run: cp coverage/cobertura-coverage.xml "${GITHUB_WORKSPACE}/gha-cobertura-frontend.xml"
             - name: Enforce frontend coverage threshold
               run: |
                   python3 - <<'PY'
+                  import os
                   import sys
                   import xml.etree.ElementTree as ET
 
                   minimum = 0.50
-                  line_rate = float(ET.parse("gha-cobertura-frontend.xml").getroot().get("line-rate", "0"))
+                  path = os.path.join(os.environ["GITHUB_WORKSPACE"], "gha-cobertura-frontend.xml")
+                  line_rate = float(ET.parse(path).getroot().get("line-rate", "0"))
                   if line_rate < minimum:
                       print(f"Frontend coverage {line_rate:.2%} is below {minimum:.0%}", file=sys.stderr)
                       sys.exit(1)
@@ -61,7 +64,7 @@ jobs:
               uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
               with:
                   name: frontend-cobertura
-                  path: frontend/gha-cobertura-frontend.xml
+                  path: gha-cobertura-frontend.xml
                   if-no-files-found: error
             - run: npm run build
 
@@ -89,15 +92,17 @@ jobs:
                   go install github.com/boumenot/gocover-cobertura@v1.4.0
                   # Write as gha-cobertura.xml (gitignored paths stay out of the workspace snapshot).
                   "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura-raw.xml
-                  python3 "$GITHUB_WORKSPACE/.github/scripts/merge_cobertura_by_file.py" gha-cobertura-raw.xml > gha-cobertura.xml
+                  python3 "$GITHUB_WORKSPACE/.github/scripts/merge_cobertura_by_file.py" gha-cobertura-raw.xml > "$GITHUB_WORKSPACE/gha-cobertura.xml"
             - name: Enforce backend coverage threshold
               run: |
                   python3 - <<'PY'
+                  import os
                   import sys
                   import xml.etree.ElementTree as ET
 
                   minimum = 0.50
-                  line_rate = float(ET.parse("gha-cobertura.xml").getroot().get("line-rate", "0"))
+                  path = os.path.join(os.environ["GITHUB_WORKSPACE"], "gha-cobertura.xml")
+                  line_rate = float(ET.parse(path).getroot().get("line-rate", "0"))
                   if line_rate < minimum:
                       print(f"Backend coverage {line_rate:.2%} is below {minimum:.0%}", file=sys.stderr)
                       sys.exit(1)
@@ -107,6 +112,6 @@ jobs:
               uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
               with:
                   name: backend-cobertura
-                  path: backend/gha-cobertura.xml
+                  path: gha-cobertura.xml
                   if-no-files-found: error
             - run: go build -o /dev/null .
