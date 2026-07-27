@@ -246,4 +246,43 @@ describe('RecordTimelineStrip', () => {
     expect(await screen.findByRole('heading', { name: 'June 2026' })).toBeInTheDocument();
     expect(screen.getByText('1 of 1')).toBeInTheDocument();
   });
+
+  it('surfaces a failed refetch even when prior matching data is still cached', async () => {
+    let rejectRefetch!: (reason?: unknown) => void;
+    api.fetchRecordTimeline
+      .mockResolvedValueOnce(
+        record([
+          {
+            gameIndex: 1,
+            officialDate: '2026-04-01',
+            result: 'W',
+            wins: 1,
+            losses: 0,
+            pct: 1,
+          },
+        ]),
+      )
+      .mockImplementationOnce(() => new Promise(() => {}))
+      .mockImplementationOnce(
+        () =>
+          new Promise<RecordTimelineResponse>((_resolve, reject) => {
+            rejectRefetch = reject;
+          }),
+      );
+
+    const { rerender } = render(<RecordTimelineStrip teamId={121} season={2026} />);
+    expect(await screen.findByRole('heading', { name: 'April 2026' })).toBeInTheDocument();
+
+    // Leave and return so a same team/season refetch runs while the prior payload remains.
+    rerender(<RecordTimelineStrip teamId={121} season={2025} />);
+    expect(
+      await screen.findByRole('status', { name: /Loading game results/i }),
+    ).toBeInTheDocument();
+
+    rerender(<RecordTimelineStrip teamId={121} season={2026} />);
+    rejectRefetch(new Error('timeline refresh failed'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('timeline refresh failed');
+    expect(screen.queryByRole('heading', { name: 'April 2026' })).not.toBeInTheDocument();
+  });
 });

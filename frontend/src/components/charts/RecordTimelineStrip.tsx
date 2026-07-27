@@ -28,7 +28,7 @@ export default function RecordTimelineStrip({ teamId, season }: RecordTimelineSt
     return <ChartSkeleton height={240} label="Loading game results" />;
   }
 
-  if (error && !dataMatches) {
+  if (error) {
     return (
       <p className="error" role="alert">
         {error.message}
