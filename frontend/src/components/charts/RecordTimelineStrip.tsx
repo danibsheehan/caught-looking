@@ -42,20 +42,32 @@ export default function RecordTimelineStrip({ teamId, season }: RecordTimelineSt
 
 function RecordCalendar({ points, resetKey }: { points: RecordPoint[]; resetKey: string }) {
   const months = buildRecordCalendarMonths(points);
-  const hasTies = points.some((p) => p.result === 'T');
+  if (!months.length) {
+    return (
+      <p className="muted">
+        Games are available, but their dates could not be placed on the calendar.
+      </p>
+    );
+  }
 
+  const hasTies = points.some((p) => p.result === 'T');
   return <RecordCalendarPager key={resetKey} months={months} hasTies={hasTies} />;
 }
 
 function RecordCalendarPager({ months, hasTies }: { months: CalendarMonth[]; hasTies: boolean }) {
   const lastIndex = Math.max(0, months.length - 1);
   const [monthIndex, setMonthIndex] = useState(lastIndex);
-  const month = months[Math.min(monthIndex, lastIndex)] ?? months[0];
-  const atStart = monthIndex <= 0;
-  const atEnd = monthIndex >= lastIndex;
+  const safeIndex = Math.min(Math.max(monthIndex, 0), lastIndex);
+  const month = months[safeIndex];
+  const atStart = safeIndex <= 0;
+  const atEnd = safeIndex >= lastIndex;
 
   if (!month) {
-    return <p className="muted">No completed games in this sample yet.</p>;
+    return (
+      <p className="muted">
+        Games are available, but their dates could not be placed on the calendar.
+      </p>
+    );
   }
 
   return (
@@ -66,7 +78,7 @@ function RecordCalendarPager({ months, hasTies }: { months: CalendarMonth[]; has
           className="record-calendar__nav-btn"
           aria-label="Previous month"
           disabled={atStart}
-          onClick={() => setMonthIndex((i) => Math.max(0, i - 1))}
+          onClick={() => setMonthIndex((i) => Math.max(0, Math.min(i, lastIndex) - 1))}
         >
           ‹
         </button>
@@ -78,13 +90,13 @@ function RecordCalendarPager({ months, hasTies }: { months: CalendarMonth[]; has
           className="record-calendar__nav-btn"
           aria-label="Next month"
           disabled={atEnd}
-          onClick={() => setMonthIndex((i) => Math.min(lastIndex, i + 1))}
+          onClick={() => setMonthIndex((i) => Math.min(lastIndex, Math.max(i, 0) + 1))}
         >
           ›
         </button>
       </div>
       <p className="muted small record-calendar__position">
-        {monthIndex + 1} of {months.length}
+        {safeIndex + 1} of {months.length}
       </p>
       <section className="record-calendar__month" aria-label={month.label}>
         <div className="record-calendar__weekdays" aria-hidden="true">

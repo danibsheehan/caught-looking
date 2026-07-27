@@ -119,6 +119,26 @@ describe('RecordTimelineStrip', () => {
     expect(screen.queryByText(/tie/i)).not.toBeInTheDocument();
   });
 
+  it('explains when points exist but dates cannot be placed', async () => {
+    api.fetchRecordTimeline.mockResolvedValueOnce(
+      record([
+        {
+          gameIndex: 1,
+          officialDate: 'not-a-date',
+          result: 'W',
+          wins: 1,
+          losses: 0,
+          pct: 1,
+        },
+      ]),
+    );
+    render(<RecordTimelineStrip teamId={121} season={2026} />);
+    expect(
+      await screen.findByText(/dates could not be placed on the calendar/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Previous month' })).not.toBeInTheDocument();
+  });
+
   it('pages between months and defaults to the latest month', async () => {
     const user = userEvent.setup();
     api.fetchRecordTimeline.mockResolvedValueOnce(
