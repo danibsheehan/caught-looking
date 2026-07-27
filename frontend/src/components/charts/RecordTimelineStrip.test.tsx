@@ -37,6 +37,7 @@ describe('RecordTimelineStrip', () => {
   });
 
   it('renders a month calendar with W/L/T cells and tie legend', async () => {
+    const user = userEvent.setup();
     api.fetchRecordTimeline.mockResolvedValueOnce(
       record([
         {
@@ -87,10 +88,14 @@ describe('RecordTimelineStrip', () => {
     expect(items[0]).toHaveClass('record-calendar__day--win');
     expect(items[2]).toHaveClass('record-calendar__day--loss');
     expect(items[3]).toHaveClass('record-calendar__day--tie');
-    expect(items[3]).toHaveAttribute('title', 'Game 4 · 2026-04-04 · T (2-1)');
+    expect(items[3]).toHaveAttribute('aria-label', 'Game 4 · 2026-04-04 · T (2-1)');
     expect(within(items[0]).getByText('1')).toBeInTheDocument();
     expect(within(items[0]).getByText('W')).toBeInTheDocument();
     expect(screen.getByText(/tie/i)).toBeInTheDocument();
+    expect(screen.getByText(/Hover a game day for date and record/i)).toBeInTheDocument();
+
+    await user.hover(items[3]);
+    expect(await screen.findByText('Game 4 · 2026-04-04 · T (2-1)')).toBeInTheDocument();
   });
 
   it('does not show tie legend when no ties are present', async () => {

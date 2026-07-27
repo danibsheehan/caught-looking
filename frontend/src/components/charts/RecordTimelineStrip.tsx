@@ -57,6 +57,7 @@ function RecordCalendar({ points, resetKey }: { points: RecordPoint[]; resetKey:
 function RecordCalendarPager({ months, hasTies }: { months: CalendarMonth[]; hasTies: boolean }) {
   const lastIndex = Math.max(0, months.length - 1);
   const [monthIndex, setMonthIndex] = useState(lastIndex);
+  const [hoverDetail, setHoverDetail] = useState<string | null>(null);
   const safeIndex = Math.min(Math.max(monthIndex, 0), lastIndex);
   const month = months[safeIndex];
   const atStart = safeIndex <= 0;
@@ -112,10 +113,17 @@ function RecordCalendarPager({ months, hasTies }: { months: CalendarMonth[]; has
           aria-label={`Game results for ${month.label}`}
         >
           {month.days.map((day, index) => (
-            <DayCell key={day.date ?? `pad-${month.key}-${index}`} day={day} />
+            <DayCell
+              key={day.date ?? `pad-${month.key}-${index}`}
+              day={day}
+              onShowDetail={setHoverDetail}
+            />
           ))}
         </div>
       </section>
+      <p className="record-calendar__detail" aria-live="polite">
+        {hoverDetail ?? 'Hover a game day for date and record'}
+      </p>
       <p className="muted small record-calendar__legend">
         <span className="record-calendar__abbr record-calendar__abbr--win">W</span> win ·{' '}
         <span className="record-calendar__abbr record-calendar__abbr--loss">L</span> loss
@@ -125,13 +133,18 @@ function RecordCalendarPager({ months, hasTies }: { months: CalendarMonth[]; has
             · <span className="record-calendar__abbr record-calendar__abbr--tie">T</span> tie
           </>
         ) : null}
-        · empty days are off · hover for record
       </p>
     </div>
   );
 }
 
-function DayCell({ day }: { day: CalendarDay }) {
+function DayCell({
+  day,
+  onShowDetail,
+}: {
+  day: CalendarDay;
+  onShowDetail: (detail: string | null) => void;
+}) {
   if (day.dayOfMonth == null) {
     return <span className="record-calendar__day record-calendar__day--pad" aria-hidden="true" />;
   }
@@ -144,18 +157,23 @@ function DayCell({ day }: { day: CalendarDay }) {
     );
   }
 
-  const title = day.games
+  const detail = day.games
     .map((g) => `Game ${g.gameIndex} · ${g.officialDate} · ${g.result} (${g.wins}-${g.losses})`)
     .join(' · ');
 
   return (
-    <span
+    <button
+      type="button"
       role="listitem"
       className={`record-calendar__day record-calendar__day--played ${resultModifier(day.games)}`}
-      title={title}
+      aria-label={detail}
+      onMouseEnter={() => onShowDetail(detail)}
+      onMouseLeave={() => onShowDetail(null)}
+      onFocus={() => onShowDetail(detail)}
+      onBlur={() => onShowDetail(null)}
     >
       <span className="record-calendar__day-num">{day.dayOfMonth}</span>
-      <span className="record-calendar__results" aria-label={title}>
+      <span className="record-calendar__results" aria-hidden="true">
         {day.games.map((g) => (
           <span
             key={`${g.gameIndex}-${g.officialDate}`}
@@ -165,7 +183,7 @@ function DayCell({ day }: { day: CalendarDay }) {
           </span>
         ))}
       </span>
-    </span>
+    </button>
   );
 }
 
