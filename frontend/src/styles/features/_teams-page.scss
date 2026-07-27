@@ -72,15 +72,14 @@
     flex-direction: column;
 
     .chart-frame,
-    .record-timeline {
+    .record-calendar {
       flex: 1 1 auto;
       min-width: 0;
     }
 
-    .record-timeline {
+    .record-calendar {
       display: flex;
       flex-direction: column;
-      justify-content: center;
     }
   }
 
@@ -114,7 +113,7 @@
     align-items: stretch;
   }
 
-  .teams-page__panel--chart .record-timeline {
+  .teams-page__panel--chart .record-calendar {
     min-height: 20rem;
   }
 }
