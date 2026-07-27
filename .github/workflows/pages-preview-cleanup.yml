@@ -1,0 +1,97 @@
+name: Cloudflare Pages (PR preview cleanup)
+
+# Preview deployments persist until deleted. On PR close/merge, remove every
+# preview deployment for the PR head branch (aliased + hash URLs).
+on:
+    pull_request:
+        types: [closed]
+
+# Same group as pages-preview.yml so an in-flight preview publish is cancelled
+# when the PR closes, rather than racing cleanup.
+concurrency:
+    group: pages-preview-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    cleanup:
+        if: ${{ github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
+        name: Delete PR preview (Cloudflare Pages)
+        runs-on: ubuntu-latest
+        steps:
+            - name: Validate Cloudflare configuration
+              env:
+                  CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
+              run: |
+                  if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ] || [ -z "$CF_PROJECT" ]; then
+                    echo "::error::Set secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID, and variable CLOUDFLARE_PAGES_PROJECT_NAME."
+                    exit 1
+                  fi
+
+            - name: Delete preview deployments for PR branch
+              env:
+                  CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
+                  BRANCH: ${{ github.head_ref }}
+              run: |
+                  set -euo pipefail
+
+                  if [ -z "$BRANCH" ] || [ "$BRANCH" = "main" ]; then
+                    echo "Skipping cleanup for empty or protected branch '$BRANCH'."
+                    exit 0
+                  fi
+
+                  echo "Looking for preview deployments on branch '$BRANCH'…"
+
+                  page=1
+                  ids=()
+                  while true; do
+                    resp=$(curl -sS -f \
+                      -H "Authorization: Bearer $CF_TOKEN" \
+                      "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/${CF_PROJECT}/deployments?env=preview&page=${page}&per_page=25")
+
+                    page_ids=()
+                    mapfile -t page_ids < <(echo "$resp" | jq -r --arg branch "$BRANCH" '
+                      .result[]
+                      | select(.environment == "preview")
+                      | select(.deployment_trigger.metadata.branch == $branch)
+                      | .id
+                    ')
+                    if [ "${#page_ids[@]}" -gt 0 ]; then
+                      ids+=("${page_ids[@]}")
+                    fi
+
+                    total_pages=$(echo "$resp" | jq -r '.result_info.total_pages // 1')
+                    if [ "$page" -ge "$total_pages" ]; then
+                      break
+                    fi
+                    page=$((page + 1))
+                  done
+
+                  if [ "${#ids[@]}" -eq 0 ]; then
+                    echo "No preview deployments found for branch '$BRANCH'."
+                    exit 0
+                  fi
+
+                  echo "Deleting ${#ids[@]} preview deployment(s)…"
+                  failed=0
+                  for id in "${ids[@]}"; do
+                    echo "Deleting $id"
+                    if ! curl -sS -f -X DELETE \
+                      -H "Authorization: Bearer $CF_TOKEN" \
+                      "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/${CF_PROJECT}/deployments/${id}?force=true" \
+                      >/dev/null; then
+                      echo "::error::Failed to delete deployment $id"
+                      failed=1
+                    fi
+                  done
+
+                  if [ "$failed" -ne 0 ]; then
+                    exit 1
+                  fi
+                  echo "Deleted ${#ids[@]} preview deployment(s) for branch '$BRANCH'."
