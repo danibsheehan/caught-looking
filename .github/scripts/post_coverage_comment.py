@@ -22,16 +22,19 @@ def fail(message: str) -> None:
 
 def github_request(method: str, path: str, payload: object | None = None) -> bytes:
     body = None if payload is None else json.dumps(payload).encode("utf-8")
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "caught-looking-coverage-comments",
+    }
+    if body is not None:
+        headers["Content-Type"] = "application/json"
     request = urllib.request.Request(
         os.environ.get("GITHUB_API_URL", "https://api.github.com") + path,
         data=body,
         method=method,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
-            "Content-Type": "application/json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
+        headers=headers,
     )
     try:
         with urllib.request.urlopen(request) as response:
