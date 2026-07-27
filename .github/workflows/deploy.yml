@@ -71,12 +71,31 @@ jobs:
 
             # ALLOWED_ORIGINS values look like https://….pages.dev — they contain ":" and ",".
             # Inline --set-env-vars / ^:^ breaks on "https://"; use --env-vars-file (JSON) instead.
+            # Always allow the Pages project origin and branch-preview wildcard so PR previews
+            # (https://<branch>.<project>.pages.dev) can call the API without manual CORS edits.
             - name: Deploy to Cloud Run
               env:
                   CORS: ${{ vars.CORS_ALLOWED_ORIGINS }}
+                  CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
               run: |
                   IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/api:${GITHUB_SHA}"
-                  python3 -c 'import json, os; json.dump({"ALLOWED_ORIGINS": os.environ["CORS"]}, open("/tmp/cr-env.json", "w"))'
+                  python3 - <<'PY'
+                  import json, os
+
+                  origins = [o.strip() for o in os.environ.get("CORS", "").split(",") if o.strip()]
+                  project = os.environ.get("CF_PROJECT", "").strip()
+                  if project:
+                      for extra in (
+                          f"https://{project}.pages.dev",
+                          f"https://*.{project}.pages.dev",
+                      ):
+                          if extra not in origins:
+                              origins.append(extra)
+                  if not origins:
+                      raise SystemExit("ALLOWED_ORIGINS resolved empty")
+                  json.dump({"ALLOWED_ORIGINS": ",".join(origins)}, open("/tmp/cr-env.json", "w"))
+                  print("ALLOWED_ORIGINS=" + ",".join(origins))
+                  PY
                   gcloud run deploy "$CLOUDRUN_SERVICE_NAME" \
                     --image "$IMAGE" \
                     --region "$GCP_REGION" \
@@ -134,5 +153,6 @@ jobs:
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
                   directory: dist
+                  branch: main
                   gitHubToken: ${{ secrets.GITHUB_TOKEN }}
                   workingDirectory: frontend
