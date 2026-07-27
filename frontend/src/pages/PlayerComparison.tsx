@@ -1,4 +1,4 @@
-import { lazy, useEffect, useMemo, useState } from 'react';
+import { lazy, useMemo, useState } from 'react';
 import { ChartSuspense } from '../components/charts/ChartSuspense';
 import PlayerCompareAheadChart from '../components/charts/PlayerCompareAheadChart';
 import PlayerCompareStatsTable from '../components/charts/PlayerCompareStatsTable';
@@ -53,11 +53,14 @@ export default function PlayerComparison() {
   const [season, setSeason] = useState(DEFAULT_SEASON);
   const [compareScope, setCompareScope] = useState<'season' | 'career'>('season');
   const [group, setGroup] = useState<'hitting' | 'pitching'>('hitting');
-  const [careerMetric, setCareerMetric] = useState<YearByYearMetric>('ops');
-
-  useEffect(() => {
+  const [careerMetric, setCareerMetric] = useState<YearByYearMetric>(() =>
+    defaultCareerMetric('hitting'),
+  );
+  const [prevGroup, setPrevGroup] = useState(group);
+  if (prevGroup !== group) {
+    setPrevGroup(group);
     setCareerMetric(defaultCareerMetric(group));
-  }, [group]);
+  }
 
   const p1 = pick1?.id;
   const p2 = pick2?.id;

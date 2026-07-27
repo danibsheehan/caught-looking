@@ -35,7 +35,7 @@ export function liftBrandForInningStackedBar(brandHex: string, surfaceHex: strin
     return adjustChartColorForSurface(brandHex, surfaceHex, BAR_SURFACE_MIN_CONTRAST);
   }
   const warm = isWarmPrimaryHex(brandHex);
-  let lifted = brandHex;
+  let lifted: string;
 
   if (L < 0.13) {
     const pole = warm ? '#d8b038' : '#5a7aa8';

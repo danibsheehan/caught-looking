@@ -55,13 +55,14 @@ export function useAsyncResource<T>(
   } = input;
 
   const fetchRef = useRef(fetchFn);
-  fetchRef.current = fetchFn;
-
   const resetOnDisableRef = useRef(resetOnDisable);
-  resetOnDisableRef.current = resetOnDisable;
-
   const clearDataBeforeFetchRef = useRef(clearDataBeforeFetch);
-  clearDataBeforeFetchRef.current = clearDataBeforeFetch;
+
+  useEffect(() => {
+    fetchRef.current = fetchFn;
+    resetOnDisableRef.current = resetOnDisable;
+    clearDataBeforeFetchRef.current = clearDataBeforeFetch;
+  });
 
   const active = enabled;
 

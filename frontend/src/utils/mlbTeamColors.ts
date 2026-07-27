@@ -186,7 +186,6 @@ export function pickDistinctChartBrandHexes(teamIds: readonly number[]): string[
       const m = minDistanceToAssigned(c, assigned);
       if (m >= MULTI_CHART_MIN_DISTANCE) {
         best = c;
-        bestMinDist = m;
         break;
       }
       if (m > bestMinDist) {
