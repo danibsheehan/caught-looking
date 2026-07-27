@@ -19,6 +19,7 @@ type scheduleGame struct {
 	GameDate     string `json:"gameDate"`
 	Status       struct {
 		AbstractGameState string `json:"abstractGameState"`
+		DetailedState     string `json:"detailedState"`
 	} `json:"status"`
 	IsTie bool `json:"isTie"`
 	Teams struct {
@@ -76,7 +77,7 @@ func parseRecordTimeline(raw []byte, teamID, season int) (models.RecordTimelineR
 	wins, losses := 0, 0
 	points := make([]models.RecordPoint, 0, len(games))
 	for _, g := range games {
-		if g.Status.AbstractGameState != "Final" {
+		if !timelineGameCountable(g) {
 			continue
 		}
 		awayID := g.Teams.Away.Team.ID
@@ -191,4 +192,20 @@ func (h *Handlers) RecordTimeline(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSONBytes(w, body)
+}
+
+// timelineGameCountable excludes live/preview games and MLB "Final" placeholders
+// that are postponed/cancelled (no winner) — those were previously counted as losses.
+func timelineGameCountable(g scheduleGame) bool {
+	if g.Status.AbstractGameState != "Final" {
+		return false
+	}
+	ds := strings.ToLower(strings.TrimSpace(g.Status.DetailedState))
+	if strings.Contains(ds, "postponed") || strings.Contains(ds, "cancelled") || strings.Contains(ds, "canceled") {
+		return false
+	}
+	if g.IsTie {
+		return true
+	}
+	return g.Teams.Away.IsWinner || g.Teams.Home.IsWinner
 }

@@ -266,6 +266,60 @@ func Test_parseRecordTimeline_mixedFinalAndLive(t *testing.T) {
 	}
 }
 
+func Test_parseRecordTimeline_skipsPostponedFinal(t *testing.T) {
+	// MLB often marks postponed games abstractGameState=Final with no winners — must not count as L.
+	raw := []byte(`{"dates":[{"games":[
+		{
+			"officialDate": "2026-04-05",
+			"gameDate": "2026-04-05T18:00:00Z",
+			"status": {"abstractGameState": "Final", "detailedState": "Final"},
+			"isTie": false,
+			"teams": {"away": {"team": {"id": 121}, "isWinner": true}, "home": {"team": {"id": 144}, "isWinner": false}}
+		},
+		{
+			"officialDate": "2026-08-20",
+			"gameDate": "2026-08-20T18:00:00Z",
+			"status": {"abstractGameState": "Final", "detailedState": "Postponed"},
+			"isTie": false,
+			"teams": {"away": {"team": {"id": 121}, "isWinner": false}, "home": {"team": {"id": 144}, "isWinner": false}}
+		},
+		{
+			"officialDate": "2026-08-31",
+			"gameDate": "2026-08-31T18:00:00Z",
+			"status": {"abstractGameState": "Final", "detailedState": "Postponed"},
+			"isTie": false,
+			"teams": {"away": {"team": {"id": 144}, "isWinner": false}, "home": {"team": {"id": 121}, "isWinner": false}}
+		}
+	]}]}`)
+	out, err := parseRecordTimeline(raw, 121, 2026)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Points) != 1 || out.Points[0].OfficialDate != "2026-04-05" || out.Points[0].Result != "W" {
+		t.Fatalf("want only the real final, got %+v", out.Points)
+	}
+}
+
+func Test_parseRecordTimeline_skipsFinalWithoutWinner(t *testing.T) {
+	raw := []byte(`{"dates":[{"games":[{
+		"officialDate": "2026-08-20",
+		"gameDate": "2026-08-20T18:00:00Z",
+		"status": {"abstractGameState": "Final", "detailedState": "Final"},
+		"isTie": false,
+		"teams": {
+			"away": {"team": {"id": 121}, "isWinner": false},
+			"home": {"team": {"id": 144}, "isWinner": false}
+		}
+	}]}]}`)
+	out, err := parseRecordTimeline(raw, 121, 2026)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Points) != 0 {
+		t.Fatalf("undecided Final should be skipped, got %+v", out.Points)
+	}
+}
+
 func Test_parseRecordTimeline_flattensMultipleDateBuckets(t *testing.T) {
 	raw := []byte(`{"dates":[
 		{"games":[{

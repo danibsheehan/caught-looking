@@ -251,7 +251,7 @@ export default function TeamOverview() {
             <div className="teams-page__panel teams-page__panel--chart">
               <h2>Game-by-game results</h2>
               <p className="muted small">
-                One tile per completed game in schedule order (scroll on long seasons).
+                Season calendar — wins and losses by month. Starts on the latest month with games.
               </p>
               <RecordTimelineStrip teamId={selected.id} season={season} />
             </div>
