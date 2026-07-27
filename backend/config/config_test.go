@@ -21,6 +21,7 @@ var loadEnvKeys = []string{
 	"RATE_LIMIT_WINDOW",
 	"MLB_MAX_QPS",
 	"MLB_HTTP_TIMEOUT",
+	"SAVANT_HTTP_TIMEOUT",
 	"SAVANT_BASE_URL",
 	"CACHE_TTL_STATCAST",
 	"CACHE_TTL_PLAYER_SEARCH",
@@ -57,6 +58,7 @@ func TestLoad_defaults(t *testing.T) {
 		MLBMaxQPS:              20,
 		MLBHTTPTimeout:         15 * time.Second,
 		SavantMaxQPS:           5,
+		SavantHTTPTimeout:      30 * time.Second,
 		CacheSweepInterval:     2 * time.Minute,
 		CacheMaxEntries:        defaultCacheMaxEntries,
 		HTTPDisableCompression: false,
@@ -238,5 +240,42 @@ func TestLoad_CACHE_MAX_ENTRIES_zeroExplicitlyDisablesCap(t *testing.T) {
 	got := Load()
 	if got.CacheMaxEntries != 0 {
 		t.Fatalf("CacheMaxEntries: got %d want 0", got.CacheMaxEntries)
+	}
+}
+
+func TestLoad_SAVANT_HTTP_TIMEOUT(t *testing.T) {
+	resetLoadEnv(t)
+	t.Setenv("SAVANT_HTTP_TIMEOUT", "45s")
+
+	got := Load()
+	if got.SavantHTTPTimeout != 45*time.Second {
+		t.Fatalf("SavantHTTPTimeout: got %v", got.SavantHTTPTimeout)
+	}
+}
+
+func TestConfig_Validate(t *testing.T) {
+	resetLoadEnv(t)
+	cfg := Load()
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("defaults should validate: %v", err)
+	}
+
+	bad := cfg
+	bad.DefaultSeason = 1800
+	if err := bad.Validate(); err == nil {
+		t.Fatal("expected error for season out of range")
+	}
+
+	bad = cfg
+	bad.RateLimitRequests = 10
+	bad.RateLimitWindow = 0
+	if err := bad.Validate(); err == nil {
+		t.Fatal("expected error for rate limit window")
+	}
+
+	bad = cfg
+	bad.MLBBaseURL = ""
+	if err := bad.Validate(); err == nil {
+		t.Fatal("expected error for empty MLB base")
 	}
 }

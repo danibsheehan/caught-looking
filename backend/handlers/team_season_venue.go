@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"net/url"
-	"strconv"
 	"strings"
 
 	"caught-looking/backend/models"
@@ -121,14 +119,7 @@ func fillVenueRates(line *models.TeamVenueSplitLine) {
 }
 
 func (h *Handlers) fetchTeamVenueSplitsFromSchedule(ctx context.Context, teamID, season int) (models.TeamVenueSplits, error) {
-	q := url.Values{}
-	q.Set("sportId", "1")
-	q.Set("season", strconv.Itoa(season))
-	q.Set("teamId", strconv.Itoa(teamID))
-	q.Set("gameType", "R")
-	path := "/schedule?" + q.Encode()
-
-	raw, err := h.mlb.Get(ctx, path)
+	raw, err := h.fetchTeamSeasonSchedule(ctx, teamID, season)
 	if err != nil {
 		return models.TeamVenueSplits{}, err
 	}

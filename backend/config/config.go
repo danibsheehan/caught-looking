@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -27,6 +29,7 @@ type Config struct {
 	MLBMaxQPS         float64       // token-bucket limit for outbound MLB GETs per process; 0 = unlimited
 	MLBHTTPTimeout    time.Duration // per-attempt timeout for outbound MLB GETs; 0 = default (15s)
 	SavantMaxQPS      float64       // token-bucket limit for outbound Savant GETs per process; 0 = unlimited
+	SavantHTTPTimeout time.Duration // per-attempt timeout for outbound Savant GETs; 0 = default (30s)
 	// CacheSweepInterval runs a background sweep of expired TTL entries; 0 disables.
 	CacheSweepInterval time.Duration
 	// CacheMaxEntries evicts arbitrary live entries after each sweep until count <= ~90% of max; 0 disables.
@@ -36,6 +39,7 @@ type Config struct {
 }
 
 // Load reads configuration from environment variables with sensible defaults.
+// Invalid env values are ignored (defaults kept) and logged so misconfig is visible.
 func Load() Config {
 	cfg := Config{
 		HTTPAddr:           ":8080",
@@ -53,6 +57,7 @@ func Load() Config {
 		MLBMaxQPS:          20,
 		MLBHTTPTimeout:     15 * time.Second,
 		SavantMaxQPS:       5,
+		SavantHTTPTimeout:  30 * time.Second,
 		CacheSweepInterval: 2 * time.Minute,
 		CacheMaxEntries:    defaultCacheMaxEntries,
 	}
@@ -84,33 +89,20 @@ func Load() Config {
 		}
 	}
 
-	if v := strings.TrimSpace(os.Getenv("CACHE_TTL_STANDINGS")); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			cfg.TTLStandings = d
-		}
-	}
-
-	if v := strings.TrimSpace(os.Getenv("CACHE_TTL_SCORES")); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			cfg.TTLScores = d
-		}
-	}
-
-	if v := strings.TrimSpace(os.Getenv("CACHE_TTL_STATCAST")); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			cfg.TTLStatcast = d
-		}
-	}
-
-	if v := strings.TrimSpace(os.Getenv("CACHE_TTL_PLAYER_SEARCH")); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			cfg.TTLPlayerSearch = d
-		}
-	}
+	parseDurationEnv("CACHE_TTL_STANDINGS", &cfg.TTLStandings)
+	parseDurationEnv("CACHE_TTL_SCORES", &cfg.TTLScores)
+	parseDurationEnv("CACHE_TTL_STATCAST", &cfg.TTLStatcast)
+	parseDurationEnv("CACHE_TTL_PLAYER_SEARCH", &cfg.TTLPlayerSearch)
+	parseDurationEnv("RATE_LIMIT_WINDOW", &cfg.RateLimitWindow)
+	parseDurationEnv("MLB_HTTP_TIMEOUT", &cfg.MLBHTTPTimeout)
+	parseDurationEnv("SAVANT_HTTP_TIMEOUT", &cfg.SavantHTTPTimeout)
+	parseDurationEnv("CACHE_SWEEP_INTERVAL", &cfg.CacheSweepInterval)
 
 	if v := strings.TrimSpace(os.Getenv("MLB_SEASON")); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			cfg.DefaultSeason = n
+		} else {
+			log.Printf("config: ignoring invalid MLB_SEASON=%q: %v", v, err)
 		}
 	}
 
@@ -121,42 +113,32 @@ func Load() Config {
 	if v := strings.TrimSpace(os.Getenv("RATE_LIMIT_REQUESTS")); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			cfg.RateLimitRequests = n
-		}
-	}
-
-	if v := strings.TrimSpace(os.Getenv("RATE_LIMIT_WINDOW")); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			cfg.RateLimitWindow = d
+		} else {
+			log.Printf("config: ignoring invalid RATE_LIMIT_REQUESTS=%q: %v", v, err)
 		}
 	}
 
 	if v := strings.TrimSpace(os.Getenv("MLB_MAX_QPS")); v != "" {
 		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			cfg.MLBMaxQPS = f
-		}
-	}
-
-	if v := strings.TrimSpace(os.Getenv("MLB_HTTP_TIMEOUT")); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			cfg.MLBHTTPTimeout = d
+		} else {
+			log.Printf("config: ignoring invalid MLB_MAX_QPS=%q: %v", v, err)
 		}
 	}
 
 	if v := strings.TrimSpace(os.Getenv("SAVANT_MAX_QPS")); v != "" {
 		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			cfg.SavantMaxQPS = f
-		}
-	}
-
-	if v := strings.TrimSpace(os.Getenv("CACHE_SWEEP_INTERVAL")); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			cfg.CacheSweepInterval = d
+		} else {
+			log.Printf("config: ignoring invalid SAVANT_MAX_QPS=%q: %v", v, err)
 		}
 	}
 
 	if v := strings.TrimSpace(os.Getenv("CACHE_MAX_ENTRIES")); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
 			cfg.CacheMaxEntries = n
+		} else {
+			log.Printf("config: ignoring invalid CACHE_MAX_ENTRIES=%q", v)
 		}
 	}
 
@@ -165,4 +147,53 @@ func Load() Config {
 	}
 
 	return cfg
+}
+
+func parseDurationEnv(key string, dst *time.Duration) {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		log.Printf("config: ignoring invalid %s=%q: %v", key, v, err)
+		return
+	}
+	*dst = d
+}
+
+// Validate checks loaded config for values that would break the server or upstream clients.
+func (c Config) Validate() error {
+	var errs []string
+	if strings.TrimSpace(c.HTTPAddr) == "" {
+		errs = append(errs, "HTTP_ADDR is empty")
+	}
+	if strings.TrimSpace(c.MLBBaseURL) == "" {
+		errs = append(errs, "MLB_BASE_URL is empty")
+	}
+	if strings.TrimSpace(c.SavantBaseURL) == "" {
+		errs = append(errs, "SAVANT_BASE_URL is empty")
+	}
+	if c.DefaultSeason < 1900 || c.DefaultSeason > 2100 {
+		errs = append(errs, fmt.Sprintf("MLB_SEASON out of range: %d", c.DefaultSeason))
+	}
+	if c.RateLimitRequests < 0 {
+		errs = append(errs, "RATE_LIMIT_REQUESTS must be >= 0")
+	}
+	if c.RateLimitRequests > 0 && c.RateLimitWindow <= 0 {
+		errs = append(errs, "RATE_LIMIT_WINDOW must be > 0 when RATE_LIMIT_REQUESTS > 0")
+	}
+	if c.MLBMaxQPS < 0 {
+		errs = append(errs, "MLB_MAX_QPS must be >= 0")
+	}
+	if c.SavantMaxQPS < 0 {
+		errs = append(errs, "SAVANT_MAX_QPS must be >= 0")
+	}
+	if c.CacheMaxEntries < 0 {
+		errs = append(errs, "CACHE_MAX_ENTRIES must be >= 0")
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return fmt.Errorf("invalid config: %s", strings.Join(errs, "; "))
 }

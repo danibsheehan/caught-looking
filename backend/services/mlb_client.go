@@ -69,9 +69,6 @@ func (c *MLBClient) Get(ctx context.Context, path string) ([]byte, error) {
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		if attempt > 0 {
 			c.transport.CloseIdleConnections()
-			if err := sleepContext(ctx, time.Duration(100*attempt)*time.Millisecond); err != nil {
-				return nil, err
-			}
 		}
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
@@ -84,7 +81,10 @@ func (c *MLBClient) Get(ctx context.Context, path string) ([]byte, error) {
 		res, err := c.httpClient.Do(req)
 		if err != nil {
 			lastErr = err
-			if attempt+1 < maxAttempts && mlbRetryable(err) {
+			if attempt+1 < maxAttempts && upstreamRetryable(err) {
+				if err := sleepContext(ctx, time.Duration(100*(attempt+1))*time.Millisecond); err != nil {
+					return nil, err
+				}
 				continue
 			}
 			return nil, err
@@ -94,13 +94,23 @@ func (c *MLBClient) Get(ctx context.Context, path string) ([]byte, error) {
 		_ = res.Body.Close()
 		if readErr != nil {
 			lastErr = readErr
-			if attempt+1 < maxAttempts && mlbRetryable(readErr) {
+			if attempt+1 < maxAttempts && upstreamRetryable(readErr) {
+				if err := sleepContext(ctx, time.Duration(100*(attempt+1))*time.Millisecond); err != nil {
+					return nil, err
+				}
 				continue
 			}
 			return nil, readErr
 		}
 		if res.StatusCode < 200 || res.StatusCode >= 300 {
-			return nil, fmt.Errorf("mlb GET %s: status %d: %s", path, res.StatusCode, truncate(body, 200))
+			lastErr = fmt.Errorf("mlb GET %s: status %d: %s", path, res.StatusCode, truncate(body, 200))
+			if attempt+1 < maxAttempts && upstreamStatusRetryable(res.StatusCode) {
+				if err := sleepContext(ctx, retryAfterDelay(res, attempt+1)); err != nil {
+					return nil, err
+				}
+				continue
+			}
+			return nil, lastErr
 		}
 		return body, nil
 	}
@@ -108,6 +118,9 @@ func (c *MLBClient) Get(ctx context.Context, path string) ([]byte, error) {
 }
 
 func sleepContext(ctx context.Context, d time.Duration) error {
+	if d <= 0 {
+		return nil
+	}
 	t := time.NewTimer(d)
 	defer t.Stop()
 	select {
@@ -118,7 +131,7 @@ func sleepContext(ctx context.Context, d time.Duration) error {
 	}
 }
 
-func mlbRetryable(err error) bool {
+func upstreamRetryable(err error) bool {
 	if err == nil {
 		return false
 	}
@@ -151,10 +164,13 @@ func mlbRetryable(err error) bool {
 	}
 	var ue *url.Error
 	if errors.As(err, &ue) {
-		return mlbRetryable(ue.Err)
+		return upstreamRetryable(ue.Err)
 	}
 	return false
 }
+
+// mlbRetryable is kept for existing tests; prefer upstreamRetryable.
+func mlbRetryable(err error) bool { return upstreamRetryable(err) }
 
 func truncate(b []byte, n int) string {
 	s := string(b)

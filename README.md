@@ -299,6 +299,7 @@ Backend tests live as `*_test.go` next to packages under `backend/`. Frontend te
 | `MLB_MAX_QPS`         | Max outbound GETs per second to the MLB API **per process** (token bucket, default `20`; `0` = unlimited)                    |
 | `MLB_HTTP_TIMEOUT`    | Per-attempt timeout for outbound MLB GETs (Go duration; default `15s`; `0s` or negative values use the client default `15s`) |
 | `SAVANT_MAX_QPS`      | Max outbound GETs per second to Savant **per process** (token bucket, default `5`; `0` = unlimited)                          |
+| `SAVANT_HTTP_TIMEOUT` | Per-attempt timeout for outbound Savant GETs (Go duration; default `30s`; `0s` or negative values use the client default `30s`) |
 
 ### Frontend (Vite)
 

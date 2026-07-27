@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -137,33 +136,17 @@ func parseRecordTimeline(raw []byte, teamID, season int) (models.RecordTimelineR
 // getOrBuildRecordTimelineBytes returns cached JSON or fetches MLB schedule, builds timeline, caches, returns bytes.
 func (h *Handlers) getOrBuildRecordTimelineBytes(ctx context.Context, teamID, season int) ([]byte, error) {
 	key := timelineCacheKey(teamID, season)
-	if body, ok := h.cache.Get(key); ok {
-		return body, nil
-	}
-
-	q := url.Values{}
-	q.Set("sportId", "1")
-	q.Set("season", strconv.Itoa(season))
-	q.Set("teamId", strconv.Itoa(teamID))
-	q.Set("gameType", "R")
-	path := "/schedule?" + q.Encode()
-
-	raw, err := h.mlb.Get(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-
-	out, err := parseRecordTimeline(raw, teamID, season)
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := json.Marshal(out)
-	if err != nil {
-		return nil, err
-	}
-	h.cache.Set(key, body, h.cfg.TTLScores)
-	return body, nil
+	return h.cache.GetOrLoad(ctx, key, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+		raw, err := h.fetchTeamSeasonSchedule(ctx, teamID, season)
+		if err != nil {
+			return nil, err
+		}
+		out, err := parseRecordTimeline(raw, teamID, season)
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(out)
+	})
 }
 
 // RecordTimeline returns cumulative win% after each completed regular-season game for a team.

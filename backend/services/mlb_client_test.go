@@ -363,6 +363,32 @@ func TestMLBClient_Get_bodyTooLarge(t *testing.T) {
 	}
 }
 
+func TestMLBClient_Get_retries429(t *testing.T) {
+	var n atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if n.Add(1) == 1 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, _ = w.Write([]byte("slow down"))
+			return
+		}
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	c := NewMLBClient(srv.URL, 0, 0)
+	body, err := c.Get(context.Background(), "/x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n.Load() != 2 {
+		t.Fatalf("hits: got %d want 2", n.Load())
+	}
+	if string(body) != `{"ok":true}` {
+		t.Fatalf("body: %s", body)
+	}
+}
+
 type infiniteReader struct{ b byte }
 
 func (r *infiniteReader) Read(p []byte) (int, error) {

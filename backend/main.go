@@ -16,6 +16,9 @@ import (
 
 func main() {
 	cfg := config.Load()
+	if err := cfg.Validate(); err != nil {
+		log.Fatal(err)
+	}
 	cache := services.NewTTLCache()
 	sweeperCtx, stopSweeper := context.WithCancel(context.Background())
 	defer stopSweeper()
@@ -23,13 +26,16 @@ func main() {
 		go cache.RunSweeper(sweeperCtx, cfg.CacheSweepInterval, cfg.CacheMaxEntries, log.Printf)
 	}
 	mlb := services.NewMLBClient(cfg.MLBBaseURL, cfg.MLBMaxQPS, cfg.MLBHTTPTimeout)
-	savant := services.NewSavantClient(cfg.SavantBaseURL, cfg.SavantMaxQPS)
+	savant := services.NewSavantClient(cfg.SavantBaseURL, cfg.SavantMaxQPS, cfg.SavantHTTPTimeout)
 	h := handlers.New(cfg, cache, mlb, savant)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
 		Handler:           newRouter(cfg, h),
 		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      90 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	go func() {
