@@ -1,0 +1,4 @@
+# Python bytecode (e.g. local runs of .github/scripts)
+__pycache__/
+*.py[cod]
+*$py.class
