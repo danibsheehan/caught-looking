@@ -31,13 +31,13 @@ func (h *Handlers) PlayersCompare(w http.ResponseWriter, r *http.Request) {
 	ids := strings.TrimSpace(r.URL.Query().Get("ids"))
 	parts := strings.Split(ids, ",")
 	if len(parts) != 2 {
-		http.Error(w, "query ids must be two comma-separated MLB person ids", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "query ids must be two comma-separated MLB person ids")
 		return
 	}
 	id1, err1 := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 64)
 	id2, err2 := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64)
 	if err1 != nil || err2 != nil || id1 <= 0 || id2 <= 0 {
-		http.Error(w, "invalid ids", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "invalid ids")
 		return
 	}
 
@@ -46,7 +46,7 @@ func (h *Handlers) PlayersCompare(w http.ResponseWriter, r *http.Request) {
 		group = "hitting"
 	}
 	if group != "hitting" && group != "pitching" {
-		http.Error(w, "group must be hitting or pitching", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "group must be hitting or pitching")
 		return
 	}
 
@@ -55,7 +55,7 @@ func (h *Handlers) PlayersCompare(w http.ResponseWriter, r *http.Request) {
 		scope = "season"
 	}
 	if scope != "season" && scope != "career" {
-		http.Error(w, "scope must be season or career", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "scope must be season or career")
 		return
 	}
 
@@ -64,7 +64,7 @@ func (h *Handlers) PlayersCompare(w http.ResponseWriter, r *http.Request) {
 		if v := strings.TrimSpace(r.URL.Query().Get("season")); v != "" {
 			n, err := strconv.Atoi(v)
 			if err != nil || n < 1900 || n > 2100 {
-				http.Error(w, "invalid season", http.StatusBadRequest)
+				respondAPIError(w, http.StatusBadRequest, "invalid season")
 				return
 			}
 			season = n

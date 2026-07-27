@@ -93,6 +93,18 @@ describe('api client', () => {
       await expect(apiGet('/x')).rejects.toThrow('502 Bad Gateway');
     });
 
+    it('throws JSON error.message from {"error":"..."} bodies', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: 'invalid season' }), {
+          status: 400,
+          statusText: 'Bad Request',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+      const { apiGet } = await loadClient({ viteApiBase: '' });
+      await expect(apiGet('/x')).rejects.toThrow('invalid season');
+    });
+
     it('throws HTML error bodies as message text (non-JSON)', async () => {
       fetchMock.mockResolvedValueOnce(
         new Response('<html><body>Gateway timeout</body></html>', {

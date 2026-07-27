@@ -21,7 +21,7 @@ func (h *Handlers) GamesForDate(w http.ResponseWriter, r *http.Request) {
 		date = time.Now().UTC().Format("2006-01-02")
 	}
 	if !isoDate.MatchString(date) {
-		http.Error(w, "date must be YYYY-MM-DD", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "date must be YYYY-MM-DD")
 		return
 	}
 
@@ -29,7 +29,7 @@ func (h *Handlers) GamesForDate(w http.ResponseWriter, r *http.Request) {
 	if v := strings.TrimSpace(r.URL.Query().Get("teamId")); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n <= 0 {
-			http.Error(w, "invalid teamId", http.StatusBadRequest)
+			respondAPIError(w, http.StatusBadRequest, "invalid teamId")
 			return
 		}
 		teamID = n
@@ -115,6 +115,7 @@ func (h *Handlers) GamesForDate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
+	ttl := cacheTTLForDateGames(date, out.Games, h.cfg, time.Now())
+	h.cache.Set(cacheKey, body, ttl)
 	writeJSONBytes(w, body)
 }

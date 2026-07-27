@@ -29,11 +29,11 @@ func (h *Handlers) PlayerSearch(w http.ResponseWriter, r *http.Request) {
 		q = strings.TrimSpace(r.URL.Query().Get("q"))
 	}
 	if len(q) < 2 {
-		http.Error(w, "query must be at least 2 characters (names or q)", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "query must be at least 2 characters (names or q)")
 		return
 	}
 	if len(q) > 64 {
-		http.Error(w, "query too long", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "query too long")
 		return
 	}
 

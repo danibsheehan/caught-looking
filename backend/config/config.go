@@ -20,6 +20,8 @@ type Config struct {
 	TTLStandings   time.Duration
 	TTLScores      time.Duration
 	TTLStatcast    time.Duration // Statcast CSV per game (Savant)
+	// TTLLiveScores is a short TTL for live/today scoreboard and in-game boxscore/timeline.
+	TTLLiveScores time.Duration
 	// TTLPlayerSearch caps memory for unbounded name-query keys (separate from TTLScores).
 	TTLPlayerSearch   time.Duration
 	DefaultSeason     int
@@ -49,6 +51,7 @@ func Load() Config {
 		TTLStandings:       time.Hour,
 		TTLScores:          5 * time.Minute,
 		TTLStatcast:        6 * time.Hour,
+		TTLLiveScores:      45 * time.Second,
 		TTLPlayerSearch:    3 * time.Minute,
 		DefaultSeason:      2026,
 		DefaultLeagueIDs:   "103,104",
@@ -92,6 +95,7 @@ func Load() Config {
 	parseDurationEnv("CACHE_TTL_STANDINGS", &cfg.TTLStandings)
 	parseDurationEnv("CACHE_TTL_SCORES", &cfg.TTLScores)
 	parseDurationEnv("CACHE_TTL_STATCAST", &cfg.TTLStatcast)
+	parseDurationEnv("CACHE_TTL_LIVE_SCORES", &cfg.TTLLiveScores)
 	parseDurationEnv("CACHE_TTL_PLAYER_SEARCH", &cfg.TTLPlayerSearch)
 	parseDurationEnv("RATE_LIMIT_WINDOW", &cfg.RateLimitWindow)
 	parseDurationEnv("MLB_HTTP_TIMEOUT", &cfg.MLBHTTPTimeout)

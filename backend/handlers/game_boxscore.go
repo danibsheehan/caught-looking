@@ -52,7 +52,7 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 	pkStr := strings.TrimSpace(chi.URLParam(r, "gamePk"))
 	gamePk, err := strconv.ParseInt(pkStr, 10, 64)
 	if err != nil || gamePk <= 0 {
-		http.Error(w, "invalid gamePk", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "invalid gamePk")
 		return
 	}
 
@@ -86,7 +86,7 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
+	h.cache.Set(cacheKey, body, h.cfg.TTLLiveScores)
 	writeJSONBytes(w, body)
 }
 

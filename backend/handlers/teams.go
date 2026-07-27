@@ -33,7 +33,7 @@ func (h *Handlers) Teams(w http.ResponseWriter, r *http.Request) {
 		sportID = "1"
 	}
 	if _, err := strconv.Atoi(sportID); err != nil {
-		http.Error(w, "invalid sportId", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "invalid sportId")
 		return
 	}
 

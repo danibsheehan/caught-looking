@@ -68,7 +68,7 @@ func (h *Handlers) PlayerCurrentTeam(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "playerID")
 	id, err := strconv.ParseInt(strings.TrimSpace(idStr), 10, 64)
 	if err != nil || id <= 0 {
-		http.Error(w, "invalid player id", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "invalid player id")
 		return
 	}
 
@@ -89,13 +89,13 @@ func (h *Handlers) PlayersCurrentTeams(w http.ResponseWriter, r *http.Request) {
 	raw := strings.TrimSpace(r.URL.Query().Get("ids"))
 	parts := strings.Split(raw, ",")
 	if len(parts) != 2 {
-		http.Error(w, "query ids must be two comma-separated MLB person ids", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "query ids must be two comma-separated MLB person ids")
 		return
 	}
 	id1, err1 := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 64)
 	id2, err2 := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64)
 	if err1 != nil || err2 != nil || id1 <= 0 || id2 <= 0 || id1 == id2 {
-		http.Error(w, "invalid ids (need two distinct positive player ids)", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "invalid ids (need two distinct positive player ids)")
 		return
 	}
 
@@ -123,11 +123,11 @@ func (h *Handlers) PlayersCurrentTeams(w http.ResponseWriter, r *http.Request) {
 
 	var p1, p2 models.PlayerCurrentTeamResponse
 	if err := json.Unmarshal(b1, &p1); err != nil {
-		http.Error(w, "internal cache decode error", http.StatusInternalServerError)
+		respondAPIError(w, http.StatusInternalServerError, "internal cache decode error")
 		return
 	}
 	if err := json.Unmarshal(b2, &p2); err != nil {
-		http.Error(w, "internal cache decode error", http.StatusInternalServerError)
+		respondAPIError(w, http.StatusInternalServerError, "internal cache decode error")
 		return
 	}
 
