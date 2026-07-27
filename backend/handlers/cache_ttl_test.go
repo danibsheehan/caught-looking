@@ -47,3 +47,35 @@ func TestGameStatusSettled(t *testing.T) {
 		t.Fatal("expected unsettled")
 	}
 }
+
+func TestGameDisplayStatus(t *testing.T) {
+	if got := gameDisplayStatus("Final", "Final"); got != "Final" {
+		t.Fatalf("prefer detailed: %q", got)
+	}
+	if got := gameDisplayStatus("", "Final"); got != "Final" {
+		t.Fatalf("fallback abstract: %q", got)
+	}
+	if got := gameDisplayStatus("In Progress", "Live"); got != "In Progress" {
+		t.Fatalf("detailed wins: %q", got)
+	}
+	if got := gameDisplayStatus("", ""); got != "" {
+		t.Fatalf("empty: %q", got)
+	}
+}
+
+func TestCacheTTLForDateGames_abstractFinalWithoutDetailed(t *testing.T) {
+	cfg := config.Config{
+		TTLLiveScores: 45 * time.Second,
+		TTLScores:     5 * time.Minute,
+		TTLStandings:  time.Hour,
+	}
+	now := time.Date(2026, 7, 27, 18, 0, 0, 0, time.UTC)
+	// Status as filled by gameDisplayStatus when MLB omits detailedState.
+	games := []models.GameSummary{{Status: gameDisplayStatus("", "Final")}}
+	if got := cacheTTLForDateGames("2026-07-20", games, cfg, now); got != cfg.TTLStandings {
+		t.Fatalf("past abstract Final: got %v want standings TTL", got)
+	}
+	if got := cacheTTLForDateGames("2026-07-27", games, cfg, now); got != cfg.TTLScores {
+		t.Fatalf("today abstract Final: got %v want scores TTL", got)
+	}
+}

@@ -8,6 +8,15 @@ import (
 	"caught-looking/backend/models"
 )
 
+// gameDisplayStatus prefers MLB detailedState for the API status string, falling back to
+// abstractGameState when detailedState is missing (so Final games are not left blank).
+func gameDisplayStatus(detailedState, abstractGameState string) string {
+	if s := strings.TrimSpace(detailedState); s != "" {
+		return s
+	}
+	return strings.TrimSpace(abstractGameState)
+}
+
 func gameStatusSettled(status string) bool {
 	s := strings.ToLower(strings.TrimSpace(status))
 	if s == "" {

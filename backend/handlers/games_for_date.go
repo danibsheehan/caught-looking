@@ -62,7 +62,8 @@ func (h *Handlers) GamesForDate(w http.ResponseWriter, r *http.Request) {
 				GamePk       int64  `json:"gamePk"`
 				OfficialDate string `json:"officialDate"`
 				Status       struct {
-					DetailedState string `json:"detailedState"`
+					AbstractGameState string `json:"abstractGameState"`
+					DetailedState     string `json:"detailedState"`
 				} `json:"status"`
 				Teams struct {
 					Away struct {
@@ -101,7 +102,7 @@ func (h *Handlers) GamesForDate(w http.ResponseWriter, r *http.Request) {
 				HomeTeam:     g.Teams.Home.Team.Name,
 				AwayID:       g.Teams.Away.Team.ID,
 				HomeID:       g.Teams.Home.Team.ID,
-				Status:       g.Status.DetailedState,
+				Status:       gameDisplayStatus(g.Status.DetailedState, g.Status.AbstractGameState),
 				AwayScore:    g.Teams.Away.Score,
 				HomeScore:    g.Teams.Home.Score,
 				OfficialDate: od,
