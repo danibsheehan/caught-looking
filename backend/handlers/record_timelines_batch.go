@@ -102,7 +102,7 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := g.Wait(); err != nil {
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
 

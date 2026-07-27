@@ -138,10 +138,10 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 				{ID: id2, FullName: n2, Points: p2},
 			},
 		}
-		return json.Marshal(out)
+		return marshalCachedJSON(out)
 	})
 	if err != nil {
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
 	writeJSONBytes(w, body)

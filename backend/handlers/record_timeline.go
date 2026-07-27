@@ -145,7 +145,7 @@ func (h *Handlers) getOrBuildRecordTimelineBytes(ctx context.Context, teamID, se
 		if err != nil {
 			return nil, err
 		}
-		return json.Marshal(out)
+		return marshalCachedJSON(out)
 	})
 }
 
@@ -170,7 +170,7 @@ func (h *Handlers) RecordTimeline(w http.ResponseWriter, r *http.Request) {
 
 	body, err := h.getOrBuildRecordTimelineBytes(r.Context(), teamID, season)
 	if err != nil {
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
 

@@ -76,10 +76,10 @@ func (h *Handlers) GameStatcast(w http.ResponseWriter, r *http.Request) {
 				out.VenueName = strings.TrimSpace(v.Name)
 			}
 		}
-		return json.Marshal(out)
+		return marshalCachedJSON(out)
 	})
 	if err != nil {
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
 	writeJSONBytes(w, body)
