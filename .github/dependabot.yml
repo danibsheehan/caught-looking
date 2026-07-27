@@ -1,0 +1,22 @@
+# Weekly version updates for Go, npm, and GitHub Actions.
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+version: 2
+updates:
+    - package-ecosystem: gomod
+      directory: /backend
+      schedule:
+          interval: weekly
+      open-pull-requests-limit: 10
+
+    - package-ecosystem: npm
+      directory: /frontend
+      schedule:
+          interval: weekly
+      open-pull-requests-limit: 10
+
+    - package-ecosystem: github-actions
+      # Scans .github/workflows (and root action manifests).
+      directory: /
+      schedule:
+          interval: weekly
+      open-pull-requests-limit: 10
