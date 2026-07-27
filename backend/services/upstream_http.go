@@ -1,9 +1,28 @@
 package services
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
+
+// maxUpstreamBodyBytes caps MLB/Savant response bodies to bound memory use.
+const maxUpstreamBodyBytes = 32 << 20 // 32 MiB
+
+func readBodyLimited(r io.Reader, max int64) ([]byte, error) {
+	if max <= 0 {
+		max = maxUpstreamBodyBytes
+	}
+	body, err := io.ReadAll(io.LimitReader(r, max+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(body)) > max {
+		return nil, fmt.Errorf("upstream response exceeds %d bytes", max)
+	}
+	return body, nil
+}
 
 // cloneUpstreamTransport returns a DefaultTransport clone tuned for keep-alive to one upstream host
 // (MLB Stats API, Savant CSV, etc.): idle pool limits, header deadline, TLS handshake cap.

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"net"
 	"net/http"
@@ -91,7 +90,7 @@ func (c *MLBClient) Get(ctx context.Context, path string) ([]byte, error) {
 			return nil, err
 		}
 
-		body, readErr := io.ReadAll(res.Body)
+		body, readErr := readBodyLimited(res.Body, maxUpstreamBodyBytes)
 		_ = res.Body.Close()
 		if readErr != nil {
 			lastErr = readErr

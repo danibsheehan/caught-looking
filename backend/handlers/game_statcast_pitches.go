@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"net/http"
@@ -23,31 +24,21 @@ func (h *Handlers) GameStatcastPitches(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "game-statcast-pitches-v4:" + pkStr
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
-
-	ctx := r.Context()
-	raw, err := h.savant.Get(ctx, statcastSingleGamePath+pkStr)
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStatcast, func(ctx context.Context) ([]byte, error) {
+		raw, err := h.fetchSavantGameCSV(ctx, pkStr)
+		if err != nil {
+			return nil, err
+		}
+		out := models.GameStatcastPitchesResponse{
+			GamePk:  gamePk,
+			Pitches: parseStatcastPitchesCSV(raw),
+		}
+		return json.Marshal(out)
+	})
 	if err != nil {
 		respondUpstreamError(w, r, err)
 		return
 	}
-
-	pitches := parseStatcastPitchesCSV(raw)
-	out := models.GameStatcastPitchesResponse{
-		GamePk:  gamePk,
-		Pitches: pitches,
-	}
-
-	body, err := json.Marshal(out)
-	if err != nil {
-		respondJSONEncodeError(w)
-		return
-	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLStatcast)
 	writeJSONBytes(w, body)
 }
 

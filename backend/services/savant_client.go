@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"io"
 	"math"
 	"net/http"
 	"strings"
@@ -68,7 +67,7 @@ func (c *SavantClient) Get(ctx context.Context, path string) ([]byte, error) {
 	}
 	defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
+	body, err := readBodyLimited(res.Body, maxUpstreamBodyBytes)
 	if err != nil {
 		return nil, err
 	}

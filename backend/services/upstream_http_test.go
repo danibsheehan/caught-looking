@@ -1,6 +1,7 @@
 package services
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -26,5 +27,20 @@ func TestCloneUpstreamTransport_nonNil(t *testing.T) {
 	}
 	if tr.MaxIdleConnsPerHost < 1 {
 		t.Fatalf("MaxIdleConnsPerHost: %d", tr.MaxIdleConnsPerHost)
+	}
+}
+
+func TestReadBodyLimited(t *testing.T) {
+	t.Parallel()
+	ok, err := readBodyLimited(strings.NewReader("hello"), 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(ok) != "hello" {
+		t.Fatalf("got %q", ok)
+	}
+	_, err = readBodyLimited(strings.NewReader(strings.Repeat("x", 5)), 4)
+	if err == nil || !strings.Contains(err.Error(), "exceeds") {
+		t.Fatalf("got err=%v", err)
 	}
 }

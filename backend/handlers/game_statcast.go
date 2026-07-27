@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"log"
@@ -29,67 +30,68 @@ func (h *Handlers) GameStatcast(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "game-statcast:" + pkStr
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
-
-	ctx := r.Context()
-	g, gctx := errgroup.WithContext(ctx)
-	var raw []byte
-	var rawSchedule []byte
-	g.Go(func() error {
-		var err error
-		raw, err = h.savant.Get(gctx, statcastSingleGamePath+pkStr)
-		return err
-	})
-	g.Go(func() error {
-		b, err := h.mlb.Get(gctx, "/schedule?sportId=1&gamePks="+pkStr)
-		if err != nil {
-			log.Printf("%s %s: schedule (venue) optional fetch: %v", r.Method, r.URL.Path, err)
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStatcast, func(ctx context.Context) ([]byte, error) {
+		g, gctx := errgroup.WithContext(ctx)
+		var raw []byte
+		var rawSchedule []byte
+		g.Go(func() error {
+			var err error
+			raw, err = h.fetchSavantGameCSV(gctx, pkStr)
+			return err
+		})
+		g.Go(func() error {
+			b, err := h.mlb.Get(gctx, "/schedule?sportId=1&gamePks="+pkStr)
+			if err != nil {
+				log.Printf("%s %s: schedule (venue) optional fetch: %v", r.Method, r.URL.Path, err)
+				return nil
+			}
+			rawSchedule = b
 			return nil
+		})
+		if err := g.Wait(); err != nil {
+			return nil, err
 		}
-		rawSchedule = b
-		return nil
+
+		balls := parseStatcastBattedBallsCSV(raw)
+		out := models.GameStatcastResponse{
+			GamePk:      gamePk,
+			BattedBalls: balls,
+		}
+		if len(rawSchedule) > 0 {
+			var sched struct {
+				Dates []struct {
+					Games []struct {
+						Venue *struct {
+							ID   int    `json:"id"`
+							Name string `json:"name"`
+						} `json:"venue"`
+					} `json:"games"`
+				} `json:"dates"`
+			}
+			if err := json.Unmarshal(rawSchedule, &sched); err != nil {
+				log.Printf("GET %s: schedule parse for venue: %v", r.URL.Path, err)
+			} else if len(sched.Dates) > 0 && len(sched.Dates[0].Games) > 0 && sched.Dates[0].Games[0].Venue != nil {
+				v := sched.Dates[0].Games[0].Venue
+				out.VenueID = v.ID
+				out.VenueName = strings.TrimSpace(v.Name)
+			}
+		}
+		return json.Marshal(out)
 	})
-	if err := g.Wait(); err != nil {
+	if err != nil {
 		respondUpstreamError(w, r, err)
 		return
 	}
-
-	balls := parseStatcastBattedBallsCSV(raw)
-	out := models.GameStatcastResponse{
-		GamePk:      gamePk,
-		BattedBalls: balls,
-	}
-	if len(rawSchedule) > 0 {
-		var sched struct {
-			Dates []struct {
-				Games []struct {
-					Venue *struct {
-						ID   int    `json:"id"`
-						Name string `json:"name"`
-					} `json:"venue"`
-				} `json:"games"`
-			} `json:"dates"`
-		}
-		if err := json.Unmarshal(rawSchedule, &sched); err != nil {
-			log.Printf("GET %s: schedule parse for venue: %v", r.URL.Path, err)
-		} else if len(sched.Dates) > 0 && len(sched.Dates[0].Games) > 0 && sched.Dates[0].Games[0].Venue != nil {
-			v := sched.Dates[0].Games[0].Venue
-			out.VenueID = v.ID
-			out.VenueName = strings.TrimSpace(v.Name)
-		}
-	}
-
-	body, err := json.Marshal(out)
-	if err != nil {
-		respondJSONEncodeError(w)
-		return
-	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLStatcast)
 	writeJSONBytes(w, body)
+}
+
+// fetchSavantGameCSV returns the raw Statcast Search CSV for one game, cached so batted-ball
+// and pitch endpoints share a single Savant download per gamePk.
+func (h *Handlers) fetchSavantGameCSV(ctx context.Context, gamePkStr string) ([]byte, error) {
+	key := "savant-csv:" + gamePkStr
+	return h.cache.GetOrLoad(ctx, key, h.cfg.TTLStatcast, func(ctx context.Context) ([]byte, error) {
+		return h.savant.Get(ctx, statcastSingleGamePath+gamePkStr)
+	})
 }
 
 func parseStatcastBattedBallsCSV(raw []byte) []models.StatcastBattedBall {

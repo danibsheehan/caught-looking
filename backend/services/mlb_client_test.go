@@ -343,3 +343,31 @@ func TestMLBClient_Get_retriesOnRetryableReadBodyError(t *testing.T) {
 		t.Fatalf("body: got %s", body)
 	}
 }
+
+func TestMLBClient_Get_bodyTooLarge(t *testing.T) {
+	c := NewMLBClient("http://example.invalid", 0, 0)
+	c.httpClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body: io.NopCloser(io.LimitReader(
+				&infiniteReader{b: 'z'},
+				maxUpstreamBodyBytes+2,
+			)),
+			Header:  make(http.Header),
+			Request: req,
+		}, nil
+	})
+	_, err := c.Get(context.Background(), "/huge")
+	if err == nil || !strings.Contains(err.Error(), "exceeds") {
+		t.Fatalf("got %v", err)
+	}
+}
+
+type infiniteReader struct{ b byte }
+
+func (r *infiniteReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = r.b
+	}
+	return len(p), nil
+}
