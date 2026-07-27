@@ -170,7 +170,7 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 <details>
 <summary><strong>CI & quality gates</strong> (expand)</summary>
 
-Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, Prettier (`format:check`), TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`govulncheck`**, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests from the same repository, [**PR guide**](.github/workflows/pr-guide.yml) scaffolds an empty or default PR description (suggested verify commands, **Touches** metadata), posts or updates a sticky comment (checklist hints, reviewer focus), and applies **`area:*`** labels from changed paths; separate read/write-scoped jobs add or update **two** coverage comments (frontend and backend). Fork PRs may not receive guide or coverage comments due to `GITHUB_TOKEN` limits (those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
+Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, Prettier (`format:check`), TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`govulncheck`**, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests from the same repository, [**PR guide**](.github/workflows/pr-guide.yml) scaffolds an empty or default PR description (suggested verify commands, **Touches** metadata), posts or updates a sticky comment (checklist hints, reviewer focus), and applies **`area:*`** labels from changed paths; separate read/write-scoped jobs add or update **two** coverage comments (frontend and backend); [**Pages preview**](.github/workflows/pages-preview.yml) builds the SPA with **`VITE_API_BASE`** and publishes a Cloudflare branch preview. Fork PRs may not receive guide, coverage comments, or previews due to `GITHUB_TOKEN` / secrets limits (those steps are non-blocking or skipped). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
 
 **Dependabot** ([`.github/dependabot.yml`](.github/dependabot.yml)) opens weekly version-update PRs for **Go modules** (`backend/`), **npm** (`frontend/`), and **GitHub Actions**. Review those PRs like any other change — CI (including `govulncheck`) still gates merges. Separately, enable **Dependabot alerts** and **Dependabot security updates** in the repo’s GitHub **Settings → Code security** so known advisories can open fix PRs outside the weekly cadence.
 
@@ -309,7 +309,9 @@ Backend tests live as `*_test.go` next to packages under `backend/`. Frontend te
 
 ## Deployment (CI)
 
-Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): build and push the API container to **Artifact Registry**, deploy to **Cloud Run**, then build the SPA with **`VITE_API_BASE`** set to the deployed service URL and publish **`frontend/dist`** to **Cloudflare Pages** (via [`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)). Forks skip deploy jobs.
+Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): build and push the API container to **Artifact Registry**, deploy to **Cloud Run**, then build the SPA with **`VITE_API_BASE`** set to the deployed service URL and publish **`frontend/dist`** to **Cloudflare Pages** (via [`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)). Pull requests from this repository run [`.github/workflows/pages-preview.yml`](.github/workflows/pages-preview.yml): the same SPA build with **`VITE_API_BASE`** pointed at the live Cloud Run API (from **`API_PUBLIC_URL`**, or looked up via `gcloud`), published as a **branch preview** (`https://<branch>.<project>.pages.dev`). Without **`VITE_API_BASE`**, the client falls back to same-origin **`/api`**, Pages serves `index.html`, and the UI shows a JSON parse error. Forks skip deploy jobs.
+
+Prefer **Direct Upload** from Actions for this project (empty Pages project is fine). If the Pages project is also connected to Git with its own build, either disable that build or set **`VITE_API_BASE`** in the Cloudflare Pages **Preview** environment to the Cloud Run origin so native builds do not overwrite Actions previews with a broken bundle.
 
 **One-time Google Cloud setup (example)**
 
@@ -333,8 +335,9 @@ Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [
 | `CLOUDRUN_SERVICE_NAME`         | `caught-looking-api`             | Cloud Run service name                                                                         |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/123/locations/global/workloadIdentityPools/github/providers/caught-looking` | Workload Identity Federation provider resource name for GitHub Actions |
 | `GCP_DEPLOY_SERVICE_ACCOUNT`    | `gha-deploy@my-gcp-project.iam.gserviceaccount.com` | Deploy service account email impersonated by GitHub Actions                                    |
-| `CORS_ALLOWED_ORIGINS`          | `https://caught-looking.com,https://www.caught-looking.com` | Comma-separated **`ALLOWED_ORIGINS`** for the API (must include every browser origin that calls the API, e.g. apex + `www`, and/or `*.pages.dev`). |
+| `CORS_ALLOWED_ORIGINS`          | `https://caught-looking.com,https://www.caught-looking.com` | Comma-separated **`ALLOWED_ORIGINS`** for the API (apex + `www`). Deploy also appends `https://<project>.pages.dev` and `https://*.<project>.pages.dev` when **`CLOUDFLARE_PAGES_PROJECT_NAME`** is set. |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | `your-project`                   | If **unset**, only the API deploy runs (useful while wiring Cloudflare).                       |
+| `API_PUBLIC_URL`                | `https://….run.app`              | Optional. Cloud Run API origin (no trailing slash) for **PR preview** builds. If unset, the preview workflow looks the URL up with `gcloud`. |
 
 **GitHub repository secrets**
 
@@ -343,7 +346,7 @@ Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [
 | `CLOUDFLARE_API_TOKEN`  | Cloudflare API token         |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account id        |
 
-After the first successful deploy, **`CORS_ALLOWED_ORIGINS`** must include the real SPA origins (this project: **`https://caught-looking.com`** and **`https://www.caught-looking.com`**, plus any **`*.pages.dev`** host you still use). If you add or change origins, update the variable and push to **`main`** (or update the Cloud Run service env) so CORS matches the browser.
+After the first successful deploy, **`CORS_ALLOWED_ORIGINS`** must include the real SPA origins (this project: **`https://caught-looking.com`** and **`https://www.caught-looking.com`**). Pages project and branch-preview origins are added automatically from **`CLOUDFLARE_PAGES_PROJECT_NAME`**. If you add or change custom-domain origins, update the variable and push to **`main`** (or update the Cloud Run service env) so CORS matches the browser.
 
 **Cost / abuse (optional, no extra GCP products)** — The API defaults to per-IP HTTP rate limiting and outbound QPS caps for MLB and Savant (see env vars above). On Cloud Run you can also set **maximum instances** (and concurrency) on the service to cap worst-case spend; defaults are in Google Cloud Console or `gcloud run services update … --max-instances=…`.
 
