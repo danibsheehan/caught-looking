@@ -48,6 +48,27 @@ def github_json(method: str, path: str, payload: object | None = None) -> object
     return json.loads(response.decode("utf-8")) if response else None
 
 
+class _StripAuthOnRedirect(urllib.request.HTTPRedirectHandler):
+    """Follow redirects but drop GitHub auth on the next hop.
+
+    upload-artifact@v4 serves archive_download_url via a redirect to Azure Blob
+    Storage with a SAS query string. Forwarding Authorization: Bearer <GITHUB_TOKEN>
+    makes Azure return HTTP 401 InvalidAuthenticationInfo.
+    """
+
+    _DROP_ON_REDIRECT = frozenset({"authorization", "x-github-api-version"})
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is None:
+            return None
+        for header_map in (redirected.headers, redirected.unredirected_hdrs):
+            for key in list(header_map):
+                if key.lower() in self._DROP_ON_REDIRECT:
+                    del header_map[key]
+        return redirected
+
+
 def download_url(url: str) -> bytes:
     request = urllib.request.Request(
         url,
@@ -57,8 +78,9 @@ def download_url(url: str) -> bytes:
             "X-GitHub-Api-Version": "2022-11-28",
         },
     )
+    opener = urllib.request.build_opener(_StripAuthOnRedirect)
     try:
-        with urllib.request.urlopen(request) as response:
+        with opener.open(request) as response:
             return response.read()
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")
