@@ -21,11 +21,14 @@ export default function RecordTimelineStrip({ teamId, season }: RecordTimelineSt
     return <p className="muted">Select a team and season to see the results calendar.</p>;
   }
 
-  if (loading && !data) {
+  // Keep showing a skeleton while the hook still holds the previous club/season payload.
+  const dataMatches = data != null && data.teamId === teamId && data.season === season;
+
+  if (loading && !dataMatches) {
     return <ChartSkeleton height={240} label="Loading game results" />;
   }
 
-  if (error) {
+  if (error && !dataMatches) {
     return (
       <p className="error" role="alert">
         {error.message}
@@ -33,7 +36,11 @@ export default function RecordTimelineStrip({ teamId, season }: RecordTimelineSt
     );
   }
 
-  if (!data?.points?.length) {
+  if (!dataMatches) {
+    return <ChartSkeleton height={240} label="Loading game results" />;
+  }
+
+  if (!data.points?.length) {
     return <p className="muted">No completed games in this sample yet.</p>;
   }
 

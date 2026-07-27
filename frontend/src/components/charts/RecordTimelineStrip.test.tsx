@@ -12,8 +12,12 @@ vi.mock('../../api/client', () => ({
   fetchRecordTimeline: api.fetchRecordTimeline,
 }));
 
-function record(points: RecordTimelineResponse['points']): RecordTimelineResponse {
-  return { teamId: 121, season: 2026, points, finishedGames: points.length };
+function record(
+  points: RecordTimelineResponse['points'],
+  teamId = 121,
+  season = 2026,
+): RecordTimelineResponse {
+  return { teamId, season, points, finishedGames: points.length };
 }
 
 describe('RecordTimelineStrip', () => {
@@ -179,5 +183,67 @@ describe('RecordTimelineStrip', () => {
     expect(screen.getByRole('button', { name: 'Previous month' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Next month' })).toBeEnabled();
     expect(screen.queryByRole('heading', { name: 'May 2026' })).not.toBeInTheDocument();
+  });
+
+  it('does not keep the previous club calendar while the next timeline loads', async () => {
+    let resolveSecond!: (value: RecordTimelineResponse) => void;
+    api.fetchRecordTimeline
+      .mockResolvedValueOnce(
+        record(
+          [
+            {
+              gameIndex: 1,
+              officialDate: '2026-04-01',
+              result: 'W',
+              wins: 1,
+              losses: 0,
+              pct: 1,
+            },
+            {
+              gameIndex: 2,
+              officialDate: '2026-05-02',
+              result: 'L',
+              wins: 1,
+              losses: 1,
+              pct: 0.5,
+            },
+          ],
+          121,
+        ),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<RecordTimelineResponse>((resolve) => {
+            resolveSecond = resolve;
+          }),
+      );
+
+    const { rerender } = render(<RecordTimelineStrip teamId={121} season={2026} />);
+    expect(await screen.findByRole('heading', { name: 'May 2026' })).toBeInTheDocument();
+
+    rerender(<RecordTimelineStrip teamId={144} season={2026} />);
+    expect(
+      await screen.findByRole('status', { name: /Loading game results/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'May 2026' })).not.toBeInTheDocument();
+
+    resolveSecond(
+      record(
+        [
+          {
+            gameIndex: 1,
+            officialDate: '2026-06-03',
+            result: 'W',
+            wins: 1,
+            losses: 0,
+            pct: 1,
+          },
+        ],
+        144,
+      ),
+    );
+
+    expect(await screen.findByRole('heading', { name: 'June 2026' })).toBeInTheDocument();
+    expect(screen.getByText('1 of 1')).toBeInTheDocument();
   });
 });
