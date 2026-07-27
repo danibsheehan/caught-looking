@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -33,10 +32,10 @@ func (h *Handlers) GameStatcastPitches(w http.ResponseWriter, r *http.Request) {
 			GamePk:  gamePk,
 			Pitches: parseStatcastPitchesCSV(raw),
 		}
-		return json.Marshal(out)
+		return marshalCachedJSON(out)
 	})
 	if err != nil {
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
 	writeJSONBytes(w, body)

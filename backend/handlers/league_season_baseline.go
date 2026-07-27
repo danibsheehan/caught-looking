@@ -58,10 +58,10 @@ func (h *Handlers) LeagueSeasonBaseline(w http.ResponseWriter, r *http.Request) 
 		} else {
 			out.Era = val
 		}
-		return json.Marshal(out)
+		return marshalCachedJSON(out)
 	})
 	if err != nil {
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
 	writeJSONBytes(w, body)
@@ -98,9 +98,18 @@ func (h *Handlers) loadLeagueTeamStatMaps(ctx context.Context, season int, group
 	path := "/stats?" + q.Encode()
 
 	// Cache raw /stats so year-by-year (and other metrics) reuse one upstream payload per season+group.
+	// Validate JSON before caching so a corrupt payload is not sticky for the TTL.
 	rawKey := "league-team-stats:" + group + ":" + strconv.Itoa(season)
 	raw, err := h.cache.GetOrLoad(ctx, rawKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
-		return h.mlb.Get(ctx, path)
+		body, err := h.mlb.Get(ctx, path)
+		if err != nil {
+			return nil, err
+		}
+		var payload mlbTeamSeasonSplitsPayload
+		if err := json.Unmarshal(body, &payload); err != nil {
+			return nil, err
+		}
+		return body, nil
 	})
 	if err != nil {
 		return nil, err
