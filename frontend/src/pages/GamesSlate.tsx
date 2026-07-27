@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 import GameListSkeleton from '../components/skeletons/GameListSkeleton';
 import { TeamSelector } from '../components/ui';
 import { fetchGamesForDate } from '../api/client';

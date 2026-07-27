@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router';
 import RouteErrorBoundary from './components/RouteErrorBoundary';
 import PageRouteSkeleton from './components/skeletons/PageRouteSkeleton';
 

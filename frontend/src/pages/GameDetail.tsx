@@ -1,5 +1,5 @@
 import { lazy, useMemo } from 'react';
-import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router';
 import { ChartSuspense } from '../components/charts/ChartSuspense';
 import GameStatcastSpray from '../components/charts/GameStatcastSpray';
 
