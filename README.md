@@ -172,6 +172,8 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 
 Continuous integration runs in **GitHub Actions** on **every branch push** and on **pull requests**: **frontend** — OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, Prettier (`format:check`), TypeScript, **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`govulncheck`**, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`. On pull requests from the same repository, [**PR guide**](.github/workflows/pr-guide.yml) scaffolds an empty or default PR description (suggested verify commands, **Touches** metadata), posts or updates a sticky comment (checklist hints, reviewer focus), and applies **`area:*`** labels from changed paths; separate read/write-scoped jobs add or update **two** coverage comments (frontend and backend). Fork PRs may not receive guide or coverage comments due to `GITHUB_TOKEN` limits (those steps are non-blocking). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
 
+**Dependabot** ([`.github/dependabot.yml`](.github/dependabot.yml)) opens weekly version-update PRs for **Go modules** (`backend/`), **npm** (`frontend/`), and **GitHub Actions**. Review those PRs like any other change — CI (including `govulncheck`) still gates merges. Separately, enable **Dependabot alerts** and **Dependabot security updates** in the repo’s GitHub **Settings → Code security** so known advisories can open fix PRs outside the weekly cadence.
+
 </details>
 
 ---
