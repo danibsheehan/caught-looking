@@ -343,3 +343,57 @@ func TestMLBClient_Get_retriesOnRetryableReadBodyError(t *testing.T) {
 		t.Fatalf("body: got %s", body)
 	}
 }
+
+func TestMLBClient_Get_bodyTooLarge(t *testing.T) {
+	c := NewMLBClient("http://example.invalid", 0, 0)
+	c.httpClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body: io.NopCloser(io.LimitReader(
+				&infiniteReader{b: 'z'},
+				maxUpstreamBodyBytes+2,
+			)),
+			Header:  make(http.Header),
+			Request: req,
+		}, nil
+	})
+	_, err := c.Get(context.Background(), "/huge")
+	if err == nil || !strings.Contains(err.Error(), "exceeds") {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestMLBClient_Get_retries429(t *testing.T) {
+	var n atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if n.Add(1) == 1 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, _ = w.Write([]byte("slow down"))
+			return
+		}
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	c := NewMLBClient(srv.URL, 0, 0)
+	body, err := c.Get(context.Background(), "/x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n.Load() != 2 {
+		t.Fatalf("hits: got %d want 2", n.Load())
+	}
+	if string(body) != `{"ok":true}` {
+		t.Fatalf("body: %s", body)
+	}
+}
+
+type infiniteReader struct{ b byte }
+
+func (r *infiniteReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = r.b
+	}
+	return len(p), nil
+}

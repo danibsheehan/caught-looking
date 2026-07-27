@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -17,7 +18,7 @@ func TestNewSavantClient_trimsTrailingSlash(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewSavantClient(srv.URL+"/", 0)
+	c := NewSavantClient(srv.URL+"/", 0, 0)
 	body, err := c.Get(context.Background(), "/x")
 	if err != nil {
 		t.Fatal(err)
@@ -47,7 +48,7 @@ func TestSavantClient_Get_success(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewSavantClient(srv.URL, 0)
+	c := NewSavantClient(srv.URL, 0, 0)
 	got, err := c.Get(context.Background(), "/statcast/csv?game_pk=1")
 	if err != nil {
 		t.Fatal(err)
@@ -64,7 +65,7 @@ func TestSavantClient_Get_errorStatus(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewSavantClient(srv.URL, 0)
+	c := NewSavantClient(srv.URL, 0, 0)
 	_, err := c.Get(context.Background(), "/csv")
 	if err == nil {
 		t.Fatal("expected error for non-2xx")
@@ -85,7 +86,7 @@ func TestSavantClient_Get_errorBodyTruncated(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewSavantClient(srv.URL, 0)
+	c := NewSavantClient(srv.URL, 0, 0)
 	_, err := c.Get(context.Background(), "/bad")
 	if err == nil {
 		t.Fatal("expected error")
@@ -100,7 +101,7 @@ func TestSavantClient_Get_errorBodyTruncated(t *testing.T) {
 }
 
 func TestSavantClient_Get_invalidPath(t *testing.T) {
-	c := NewSavantClient("http://127.0.0.1:9", 0)
+	c := NewSavantClient("http://127.0.0.1:9", 0, 0)
 
 	tests := []struct {
 		name string
@@ -131,7 +132,7 @@ func TestSavantClient_Get_contextCancelDuringRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	c := NewSavantClient(srv.URL, 0)
+	c := NewSavantClient(srv.URL, 0, 0)
 	_, err := c.Get(ctx, "/slow")
 	if err == nil {
 		t.Fatal("expected error from cancelled context")
@@ -170,7 +171,7 @@ func TestSavantClient_Get_withRateLimiter(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	c := NewSavantClient(srv.URL, 500)
+	c := NewSavantClient(srv.URL, 500, 0)
 	body, err := c.Get(context.Background(), "/x")
 	if err != nil {
 		t.Fatal(err)
@@ -187,7 +188,7 @@ func TestSavantClient_Get_rateLimiterWaitCanceled(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	// Burst is 2; exhaust tokens with two successful GETs, then the third blocks on Wait until ctx is canceled.
-	c := NewSavantClient(srv.URL, 1e-9)
+	c := NewSavantClient(srv.URL, 1e-9, 0)
 	for i := 0; i < 2; i++ {
 		if _, err := c.Get(context.Background(), "/warm"); err != nil {
 			t.Fatalf("warm %d: %v", i, err)
@@ -202,5 +203,31 @@ func TestSavantClient_Get_rateLimiterWaitCanceled(t *testing.T) {
 	_, err := c.Get(ctx, "/blocked")
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("got %v want context.Canceled", err)
+	}
+}
+
+func TestSavantClient_Get_retries503(t *testing.T) {
+	var n atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if n.Add(1) == 1 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte("busy"))
+			return
+		}
+		_, _ = w.Write([]byte("csv"))
+	}))
+	t.Cleanup(srv.Close)
+
+	c := NewSavantClient(srv.URL, 0, 0)
+	body, err := c.Get(context.Background(), "/csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n.Load() != 2 {
+		t.Fatalf("hits: got %d want 2", n.Load())
+	}
+	if string(body) != "csv" {
+		t.Fatalf("body: %q", body)
 	}
 }

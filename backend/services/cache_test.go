@@ -1,6 +1,11 @@
 package services
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -56,5 +61,66 @@ func TestTTLCache_overwrite(t *testing.T) {
 	}
 	if string(got) != "b" {
 		t.Fatalf("got %q want %q", got, "b")
+	}
+}
+
+func TestTTLCache_GetOrLoad_coalesces(t *testing.T) {
+	c := NewTTLCache()
+	var calls atomic.Int32
+	const n = 20
+	var wg sync.WaitGroup
+	wg.Add(n)
+	errCh := make(chan error, n)
+	for i := 0; i < n; i++ {
+		go func() {
+			defer wg.Done()
+			body, err := c.GetOrLoad(context.Background(), "k", time.Hour, func(context.Context) ([]byte, error) {
+				calls.Add(1)
+				time.Sleep(30 * time.Millisecond)
+				return []byte("ok"), nil
+			})
+			if err != nil {
+				errCh <- err
+				return
+			}
+			if string(body) != "ok" {
+				errCh <- fmt.Errorf("body %q", body)
+			}
+		}()
+	}
+	wg.Wait()
+	close(errCh)
+	for err := range errCh {
+		t.Fatal(err)
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("load calls: got %d want 1", got)
+	}
+	// Second wave should hit cache without calling load.
+	body, err := c.GetOrLoad(context.Background(), "k", time.Hour, func(context.Context) ([]byte, error) {
+		calls.Add(1)
+		return []byte("nope"), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(body) != "ok" {
+		t.Fatalf("got %q", body)
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("after cache hit load calls: got %d want 1", got)
+	}
+}
+
+func TestTTLCache_GetOrLoad_error(t *testing.T) {
+	c := NewTTLCache()
+	_, err := c.GetOrLoad(context.Background(), "k", time.Hour, func(context.Context) ([]byte, error) {
+		return nil, errors.New("boom")
+	})
+	if err == nil || err.Error() != "boom" {
+		t.Fatalf("err: %v", err)
+	}
+	if _, ok := c.Get("k"); ok {
+		t.Fatal("failed load must not populate cache")
 	}
 }

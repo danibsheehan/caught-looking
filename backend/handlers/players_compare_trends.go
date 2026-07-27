@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"caught-looking/backend/models"
 
@@ -82,65 +83,67 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 	}
 
 	cacheKey := "players-yearly:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + metric
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
-
-	ctx := r.Context()
-	g, gctx := errgroup.WithContext(ctx)
-	var p1, p2 []models.SeasonPoint
-	var n1, n2 string
-	g.Go(func() error {
-		var err error
-		p1, n1, err = h.fetchPlayerYearByYear(gctx, id1, group, metric)
-		return err
-	})
-	g.Go(func() error {
-		var err error
-		p2, n2, err = h.fetchPlayerYearByYear(gctx, id2, group, metric)
-		return err
-	})
-	if err := g.Wait(); err != nil {
-		respondUpstreamError(w, r, err)
-		return
-	}
-
-	seasonSeen := map[int]struct{}{}
-	for _, p := range p1 {
-		seasonSeen[p.Season] = struct{}{}
-	}
-	for _, p := range p2 {
-		seasonSeen[p.Season] = struct{}{}
-	}
-
-	leagueBySeason := make(map[string]float64, len(seasonSeen))
-	for sy := range seasonSeen {
-		v, err := h.fetchLeagueBaselineMetric(ctx, sy, group, metric)
-		if err != nil {
-			respondUpstreamError(w, r, err)
-			return
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
+		g, gctx := errgroup.WithContext(ctx)
+		var p1, p2 []models.SeasonPoint
+		var n1, n2 string
+		g.Go(func() error {
+			var err error
+			p1, n1, err = h.fetchPlayerYearByYear(gctx, id1, group, metric)
+			return err
+		})
+		g.Go(func() error {
+			var err error
+			p2, n2, err = h.fetchPlayerYearByYear(gctx, id2, group, metric)
+			return err
+		})
+		if err := g.Wait(); err != nil {
+			return nil, err
 		}
-		leagueBySeason[strconv.Itoa(sy)] = v
-	}
 
-	out := models.PlayersYearByYearResponse{
-		Group:          group,
-		Metric:         metric,
-		LeagueBySeason: leagueBySeason,
-		Players: []models.YearSeriesPlayer{
-			{ID: id1, FullName: n1, Points: p1},
-			{ID: id2, FullName: n2, Points: p2},
-		},
-	}
+		seasonSeen := map[int]struct{}{}
+		for _, p := range p1 {
+			seasonSeen[p.Season] = struct{}{}
+		}
+		for _, p := range p2 {
+			seasonSeen[p.Season] = struct{}{}
+		}
 
-	body, err := json.Marshal(out)
+		leagueBySeason := make(map[string]float64, len(seasonSeen))
+		lg, lgctx := errgroup.WithContext(ctx)
+		var mu sync.Mutex
+		for sy := range seasonSeen {
+			sy := sy
+			lg.Go(func() error {
+				v, err := h.fetchLeagueBaselineMetric(lgctx, sy, group, metric)
+				if err != nil {
+					return err
+				}
+				mu.Lock()
+				leagueBySeason[strconv.Itoa(sy)] = v
+				mu.Unlock()
+				return nil
+			})
+		}
+		if err := lg.Wait(); err != nil {
+			return nil, err
+		}
+
+		out := models.PlayersYearByYearResponse{
+			Group:          group,
+			Metric:         metric,
+			LeagueBySeason: leagueBySeason,
+			Players: []models.YearSeriesPlayer{
+				{ID: id1, FullName: n1, Points: p1},
+				{ID: id2, FullName: n2, Points: p2},
+			},
+		}
+		return marshalCachedJSON(out)
+	})
 	if err != nil {
-		respondJSONEncodeError(w)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLStandings)
 	writeJSONBytes(w, body)
 }
 

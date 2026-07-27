@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"caught-looking/backend/models"
@@ -104,5 +105,45 @@ func TestParseStatcastBattedBallsCSV_emptyBody(t *testing.T) {
 	got := parseStatcastBattedBallsCSV(nil)
 	if got == nil || len(got) != 0 {
 		t.Fatalf("got %v", got)
+	}
+}
+
+func TestGameStatcast_andPitches_shareSavantCSV(t *testing.T) {
+	var savantHits atomic.Int32
+	const sharedCSV = `launch_speed,launch_angle,batter,pitcher,player_name,events,inning_topbot,hc_x,hc_y,plate_x,plate_z,pitch_name,pitch_type,release_speed,sz_top,sz_bot,stand
+95.1,12.2,12345,67890,Test Batter,single,Top,130.0,45.0,-0.42,2.15,4-Seam Fastball,FF,94.2,3.41,1.74,R
+`
+	up := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/statcast_search/csv" && strings.Contains(r.URL.RawQuery, "game_pk=555"):
+			savantHits.Add(1)
+			w.Header().Set("Content-Type", "text/csv")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(sharedCSV))
+		case r.URL.Path == "/schedule":
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"dates":[{"games":[{"venue":{"id":1,"name":"Park"}}]}]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	h := newTestHandlers(t, up)
+	r := chi.NewRouter()
+	r.Get("/games/{gamePk}/statcast", h.GameStatcast)
+	r.Get("/games/{gamePk}/statcast/pitches", h.GameStatcastPitches)
+
+	rec1 := httptest.NewRecorder()
+	r.ServeHTTP(rec1, httptest.NewRequest(http.MethodGet, "/games/555/statcast", nil))
+	if rec1.Code != http.StatusOK {
+		t.Fatalf("statcast: %d %s", rec1.Code, rec1.Body.String())
+	}
+	rec2 := httptest.NewRecorder()
+	r.ServeHTTP(rec2, httptest.NewRequest(http.MethodGet, "/games/555/statcast/pitches", nil))
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("pitches: %d %s", rec2.Code, rec2.Body.String())
+	}
+	if got := savantHits.Load(); got != 1 {
+		t.Fatalf("Savant downloads: got %d want 1", got)
 	}
 }

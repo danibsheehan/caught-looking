@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 )
 
 type cacheEntry struct {
@@ -13,7 +15,8 @@ type cacheEntry struct {
 
 // TTLCache is a concurrent string-keyed cache with per-entry TTL.
 type TTLCache struct {
-	m sync.Map // string -> cacheEntry
+	m  sync.Map // string -> cacheEntry
+	sf singleflight.Group
 }
 
 func NewTTLCache() *TTLCache {
@@ -37,6 +40,35 @@ func (c *TTLCache) Get(key string) ([]byte, bool) {
 // Set stores JSON bytes with the given TTL.
 func (c *TTLCache) Set(key string, body []byte, ttl time.Duration) {
 	c.m.Store(key, cacheEntry{body: body, expiresAt: time.Now().Add(ttl)})
+}
+
+// GetOrLoad returns cached bytes, or runs load once for concurrent misses (singleflight).
+// While waiting, the caller's ctx is respected. The shared load uses a context detached from
+// request cancellation so one aborted client does not fail coalesced peers.
+func (c *TTLCache) GetOrLoad(ctx context.Context, key string, ttl time.Duration, load func(context.Context) ([]byte, error)) ([]byte, error) {
+	if body, ok := c.Get(key); ok {
+		return body, nil
+	}
+	ch := c.sf.DoChan(key, func() (interface{}, error) {
+		if body, ok := c.Get(key); ok {
+			return body, nil
+		}
+		body, err := load(context.WithoutCancel(ctx))
+		if err != nil {
+			return nil, err
+		}
+		c.Set(key, body, ttl)
+		return body, nil
+	})
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-ch:
+		if res.Err != nil {
+			return nil, res.Err
+		}
+		return res.Val.([]byte), nil
+	}
 }
 
 // Len returns the number of keys in the map (including expired entries not yet swept).

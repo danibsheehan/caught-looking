@@ -21,7 +21,7 @@ func TestHealth(t *testing.T) {
 		cfg,
 		services.NewTTLCache(),
 		services.NewMLBClient("http://127.0.0.1:9", 0, 0),
-		services.NewSavantClient("http://127.0.0.1:9", 0),
+		services.NewSavantClient("http://127.0.0.1:9", 0, 0),
 	)
 	srv := httptest.NewServer(newRouter(cfg, h))
 	t.Cleanup(srv.Close)
@@ -52,7 +52,7 @@ func TestOpenAPISpec(t *testing.T) {
 		cfg,
 		services.NewTTLCache(),
 		services.NewMLBClient("http://127.0.0.1:9", 0, 0),
-		services.NewSavantClient("http://127.0.0.1:9", 0),
+		services.NewSavantClient("http://127.0.0.1:9", 0, 0),
 	)
 	srv := httptest.NewServer(newRouter(cfg, h))
 	t.Cleanup(srv.Close)
@@ -83,7 +83,7 @@ func TestSwaggerUI(t *testing.T) {
 		cfg,
 		services.NewTTLCache(),
 		services.NewMLBClient("http://127.0.0.1:9", 0, 0),
-		services.NewSavantClient("http://127.0.0.1:9", 0),
+		services.NewSavantClient("http://127.0.0.1:9", 0, 0),
 	)
 	srv := httptest.NewServer(newRouter(cfg, h))
 	t.Cleanup(srv.Close)
@@ -126,7 +126,7 @@ func TestRateLimitIgnoresForwardedForSpoofing(t *testing.T) {
 		cfg,
 		services.NewTTLCache(),
 		services.NewMLBClient(upstream.URL, 0, 0),
-		services.NewSavantClient("http://127.0.0.1:9", 0),
+		services.NewSavantClient("http://127.0.0.1:9", 0, 0),
 	)
 	srv := httptest.NewServer(newRouter(cfg, h))
 	t.Cleanup(srv.Close)
