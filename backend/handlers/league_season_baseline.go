@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"caught-looking/backend/models"
 )
@@ -27,21 +26,14 @@ type mlbTeamSeasonSplitsPayload struct {
 
 // LeagueSeasonBaseline returns league OPS (hitting) or ERA (pitching) for MLB (AL+NL) from team season totals.
 func (h *Handlers) LeagueSeasonBaseline(w http.ResponseWriter, r *http.Request) {
-	season := h.cfg.DefaultSeason
-	if v := strings.TrimSpace(r.URL.Query().Get("season")); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1900 || n > 2100 {
-			respondAPIError(w, http.StatusBadRequest, "invalid season")
-			return
-		}
-		season = n
+	season, err := parseSeasonOrDefault(r.URL.Query().Get("season"), h.cfg.DefaultSeason)
+	if err != nil {
+		respondAPIError(w, http.StatusBadRequest, "invalid season")
+		return
 	}
 
-	group := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("group")))
-	if group == "" {
-		group = "hitting"
-	}
-	if group != "hitting" && group != "pitching" {
+	group, err := parseHittingPitchingGroup(r.URL.Query().Get("group"))
+	if err != nil {
 		respondAPIError(w, http.StatusBadRequest, "group must be hitting or pitching")
 		return
 	}

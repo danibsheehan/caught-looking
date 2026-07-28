@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -33,36 +34,26 @@ type mlbPeopleStatSplitsPayload struct {
 // PlayersComparePlatoon returns vs-L / vs-R regular-season splits (MLB statSplits sitCodes vl,vr).
 // Hitting: batter OPS vs LHP and vs RHP. Pitching: opponent OPS vs LHB and vs RHB (ERA is often absent on these splits).
 func (h *Handlers) PlayersComparePlatoon(w http.ResponseWriter, r *http.Request) {
-	ids := strings.TrimSpace(r.URL.Query().Get("ids"))
-	parts := strings.Split(ids, ",")
-	if len(parts) != 2 {
-		respondAPIError(w, http.StatusBadRequest, "query ids must be two comma-separated MLB person ids")
-		return
-	}
-	id1, err1 := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 64)
-	id2, err2 := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64)
-	if err1 != nil || err2 != nil || id1 <= 0 || id2 <= 0 {
+	id1, id2, err := parseTwoPlayerIDs(r.URL.Query().Get("ids"))
+	if err != nil {
+		if errors.Is(err, errTwoPlayerIDsFormat) {
+			respondAPIError(w, http.StatusBadRequest, "query ids must be two comma-separated MLB person ids")
+			return
+		}
 		respondAPIError(w, http.StatusBadRequest, "invalid ids")
 		return
 	}
 
-	group := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("group")))
-	if group == "" {
-		group = "hitting"
-	}
-	if group != "hitting" && group != "pitching" {
+	group, err := parseHittingPitchingGroup(r.URL.Query().Get("group"))
+	if err != nil {
 		respondAPIError(w, http.StatusBadRequest, "query group must be hitting or pitching")
 		return
 	}
 
-	season := h.cfg.DefaultSeason
-	if v := strings.TrimSpace(r.URL.Query().Get("season")); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1900 || n > 2100 {
-			respondAPIError(w, http.StatusBadRequest, "invalid season")
-			return
-		}
-		season = n
+	season, err := parseSeasonOrDefault(r.URL.Query().Get("season"), h.cfg.DefaultSeason)
+	if err != nil {
+		respondAPIError(w, http.StatusBadRequest, "invalid season")
+		return
 	}
 
 	cacheKey := "players-platoon:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + strconv.Itoa(season)

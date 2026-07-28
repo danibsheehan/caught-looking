@@ -14,36 +14,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type scheduleGame struct {
-	OfficialDate string `json:"officialDate"`
-	GameDate     string `json:"gameDate"`
-	Status       struct {
-		AbstractGameState string `json:"abstractGameState"`
-		DetailedState     string `json:"detailedState"`
-	} `json:"status"`
-	IsTie bool `json:"isTie"`
-	Teams struct {
-		Away struct {
-			Team struct {
-				ID int `json:"id"`
-			} `json:"team"`
-			IsWinner bool `json:"isWinner"`
-		} `json:"away"`
-		Home struct {
-			Team struct {
-				ID int `json:"id"`
-			} `json:"team"`
-			IsWinner bool `json:"isWinner"`
-		} `json:"home"`
-	} `json:"teams"`
-}
-
-type mlbSchedulePayload struct {
-	Dates []struct {
-		Games []scheduleGame `json:"games"`
-	} `json:"dates"`
-}
-
 func timelineCacheKey(teamID, season int) string {
 	return "record-timeline:" + strconv.Itoa(teamID) + ":" + strconv.Itoa(season)
 }
@@ -54,7 +24,7 @@ func parseRecordTimeline(raw []byte, teamID, season int) (models.RecordTimelineR
 		return models.RecordTimelineResponse{}, wrapUpstreamJSONParse(err)
 	}
 
-	var games []scheduleGame
+	var games []mlbScheduleGame
 	for _, d := range payload.Dates {
 		games = append(games, d.Games...)
 	}
@@ -160,14 +130,10 @@ func (h *Handlers) RecordTimeline(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	season := h.cfg.DefaultSeason
-	if v := strings.TrimSpace(r.URL.Query().Get("season")); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1900 || n > 2100 {
-			respondAPIError(w, http.StatusBadRequest, "invalid season")
-			return
-		}
-		season = n
+	season, err := parseSeasonOrDefault(r.URL.Query().Get("season"), h.cfg.DefaultSeason)
+	if err != nil {
+		respondAPIError(w, http.StatusBadRequest, "invalid season")
+		return
 	}
 
 	body, err := h.getOrBuildRecordTimelineBytes(r.Context(), teamID, season)
@@ -177,20 +143,4 @@ func (h *Handlers) RecordTimeline(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSONBytes(w, body)
-}
-
-// timelineGameCountable excludes live/preview games and MLB "Final" placeholders
-// that are postponed/cancelled (no winner) — those were previously counted as losses.
-func timelineGameCountable(g scheduleGame) bool {
-	if g.Status.AbstractGameState != "Final" {
-		return false
-	}
-	ds := strings.ToLower(strings.TrimSpace(g.Status.DetailedState))
-	if strings.Contains(ds, "postponed") || strings.Contains(ds, "cancelled") || strings.Contains(ds, "canceled") {
-		return false
-	}
-	if g.IsTie {
-		return true
-	}
-	return g.Teams.Away.IsWinner || g.Teams.Home.IsWinner
 }

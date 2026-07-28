@@ -56,14 +56,10 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 
 	sort.Ints(teamIDs)
 
-	season := h.cfg.DefaultSeason
-	if v := strings.TrimSpace(r.URL.Query().Get("season")); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1900 || n > 2100 {
-			respondAPIError(w, http.StatusBadRequest, "invalid season")
-			return
-		}
-		season = n
+	season, err := parseSeasonOrDefault(r.URL.Query().Get("season"), h.cfg.DefaultSeason)
+	if err != nil {
+		respondAPIError(w, http.StatusBadRequest, "invalid season")
+		return
 	}
 
 	var keyParts []string

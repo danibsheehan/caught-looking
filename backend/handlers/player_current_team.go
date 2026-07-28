@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -70,15 +71,16 @@ func (h *Handlers) PlayerCurrentTeam(w http.ResponseWriter, r *http.Request) {
 
 // PlayersCurrentTeams returns current team ids for two players in one round trip (same cache keys as single-player GET).
 func (h *Handlers) PlayersCurrentTeams(w http.ResponseWriter, r *http.Request) {
-	raw := strings.TrimSpace(r.URL.Query().Get("ids"))
-	parts := strings.Split(raw, ",")
-	if len(parts) != 2 {
-		respondAPIError(w, http.StatusBadRequest, "query ids must be two comma-separated MLB person ids")
+	id1, id2, err := parseTwoPlayerIDs(r.URL.Query().Get("ids"))
+	if err != nil {
+		if errors.Is(err, errTwoPlayerIDsFormat) {
+			respondAPIError(w, http.StatusBadRequest, "query ids must be two comma-separated MLB person ids")
+			return
+		}
+		respondAPIError(w, http.StatusBadRequest, "invalid ids (need two distinct positive player ids)")
 		return
 	}
-	id1, err1 := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 64)
-	id2, err2 := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64)
-	if err1 != nil || err2 != nil || id1 <= 0 || id2 <= 0 || id1 == id2 {
+	if id1 == id2 {
 		respondAPIError(w, http.StatusBadRequest, "invalid ids (need two distinct positive player ids)")
 		return
 	}

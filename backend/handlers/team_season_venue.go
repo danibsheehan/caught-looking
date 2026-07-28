@@ -4,43 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"strings"
 
 	"caught-looking/backend/models"
 )
 
-type venueScheduleGame struct {
-	Status struct {
-		AbstractGameState string `json:"abstractGameState"`
-		DetailedState     string `json:"detailedState"`
-	} `json:"status"`
-	IsTie bool `json:"isTie"`
-	Teams struct {
-		Away struct {
-			Team struct {
-				ID int `json:"id"`
-			} `json:"team"`
-			IsWinner bool `json:"isWinner"`
-			Score    *int `json:"score"`
-		} `json:"away"`
-		Home struct {
-			Team struct {
-				ID int `json:"id"`
-			} `json:"team"`
-			IsWinner bool `json:"isWinner"`
-			Score    *int `json:"score"`
-		} `json:"home"`
-	} `json:"teams"`
-}
-
-type venueSchedulePayload struct {
-	Dates []struct {
-		Games []venueScheduleGame `json:"games"`
-	} `json:"dates"`
-}
-
 func parseVenueSplitsFromSchedule(raw []byte, teamID int) (models.TeamVenueSplits, error) {
-	var payload venueSchedulePayload
+	var payload mlbSchedulePayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return models.TeamVenueSplits{}, err
 	}
@@ -97,17 +66,6 @@ func parseVenueSplitsFromSchedule(raw []byte, teamID int) (models.TeamVenueSplit
 	fillVenueRates(&home)
 	fillVenueRates(&away)
 	return models.TeamVenueSplits{Home: home, Away: away}, nil
-}
-
-func venueGameCountable(g venueScheduleGame) bool {
-	if g.Status.AbstractGameState != "Final" {
-		return false
-	}
-	ds := strings.ToLower(strings.TrimSpace(g.Status.DetailedState))
-	if strings.Contains(ds, "postponed") || strings.Contains(ds, "cancelled") || strings.Contains(ds, "canceled") {
-		return false
-	}
-	return true
 }
 
 func fillVenueRates(line *models.TeamVenueSplitLine) {
