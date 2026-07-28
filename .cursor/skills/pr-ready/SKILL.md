@@ -52,8 +52,20 @@ Fill **`.github/pull_request_template.md`**:
 
 Do not push or create the PR unless the user asked.
 
+### 3. After merge (local cleanup)
+
+When the PR is merged and the user is done with the branch (or asks to clean up):
+
+```bash
+git checkout main && git pull origin main
+git branch -d <feature-branch>
+```
+
+Keep only **`main`** locally unless another branch is still in active use. Optionally `git fetch --prune` to drop stale remote-tracking refs.
+
 ## Anti-patterns
 
 - Opening a PR without a green **`make ci-local`**.
 - Skipping coverage gates by using only `make test-frontend` / `make test-backend` before PR.
 - Amending or force-pushing unless the user explicitly requests it.
+- Leaving merged feature branches checked out or lingering locally after the user asks to clean up.

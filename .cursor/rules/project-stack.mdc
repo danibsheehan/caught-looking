@@ -14,6 +14,6 @@ alwaysApply: true
   - **`backend-http-security`** / **`caching-and-upstream-perf`** — hardening and upstream/cache performance
   - **`pr-ready`** — local CI-parity checks before a PR
 - **Agent definition of done**:
-  - **Task done**: follow scoped rules/skills for files you touched; run Prettier on changed frontend files; run the **smallest** relevant check (focused package tests, `make check-openapi` if the API contract changed). Do **not** require full CI for every small edit.
-  - **PR done**: run **`make ci-local`** and follow **`.cursor/skills/pr-ready/SKILL.md`** (PR template; no secrets). Commit, push, or open a PR **only when the user asks**.
+  - **Task done**: follow scoped rules/skills for files you touched; ensure frontend edits are Prettier-clean (`.cursor/hooks/prettier-frontend.sh` on `afterFileEdit`, plus **`frontend-prettier`**); run the **smallest** relevant check (focused package tests, `make check-openapi` if the API contract changed). Do **not** require full CI for every small edit.
+  - **PR done**: run **`make ci-local`** and follow **`.cursor/skills/pr-ready/SKILL.md`** (PR template; no secrets). Commit, push, or open a PR **only when the user asks**. After merge, delete local feature branches when cleaning up (see **`pr-ready`**).
 - **Before opening a PR**: **`make ci-local`** (see **`pr-ready`**). Fill out `.github/pull_request_template.md`.
