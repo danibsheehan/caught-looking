@@ -320,7 +320,7 @@ Prefer **Direct Upload** from Actions for this project (empty Pages project is f
 
 - Enable billing, **Cloud Run**, **Artifact Registry**, and **Cloud Build** (optional; not required for this workflow’s Docker build in Actions).
 - Create a **Docker** Artifact Registry repository (e.g. name matching `GCP_ARTIFACT_REPOSITORY`).
-- Create a **deploy service account** for GitHub with at least: **Artifact Registry Writer**, **Cloud Run Admin**, and **Service Account User** (on the project’s Cloud Run runtime service account if prompted). Do **not** create a JSON key for CI.
+- Create a **deploy service account** for GitHub with at least: **Artifact Registry Repository Administrator** (push images + set cleanup policies), **Cloud Run Admin**, and **Service Account User** (on the project’s Cloud Run runtime service account if prompted). Do **not** create a JSON key for CI. If the SA already has only **Artifact Registry Writer**, upgrade it to **Repository Administrator** (or grant `artifactregistry.repositories.update`) so the cleanup-policy step can run.
 - Configure **Workload Identity Federation** for this GitHub repository and allow the deploy service account to be impersonated by the repository’s GitHub Actions principal. Store the provider resource name in **`GCP_WORKLOAD_IDENTITY_PROVIDER`** and the service account email in **`GCP_DEPLOY_SERVICE_ACCOUNT`**.
 
 **One-time Cloudflare setup**
@@ -338,6 +338,9 @@ Prefer **Direct Upload** from Actions for this project (empty Pages project is f
 | `CLOUDRUN_SERVICE_NAME`         | `caught-looking-api`             | Cloud Run service name                                                                         |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/123/locations/global/workloadIdentityPools/github/providers/caught-looking` | Workload Identity Federation provider resource name for GitHub Actions |
 | `GCP_DEPLOY_SERVICE_ACCOUNT`    | `gha-deploy@my-gcp-project.iam.gserviceaccount.com` | Deploy service account email impersonated by GitHub Actions                                    |
+| `CLOUDRUN_MAX_INSTANCES`        | `2`                              | Optional. Cloud Run max instances (default **`2`**). Caps worst-case request spend.            |
+| `CLOUDRUN_MIN_INSTANCES`        | `0`                              | Optional. Cloud Run min instances (default **`0`**, scale-to-zero when idle).                  |
+| `GCP_ARTIFACT_KEEP_COUNT`       | `5`                              | Optional. Artifact Registry versions to keep per package (default **`5`**); older images are deleted by the cleanup policy. |
 | `CORS_ALLOWED_ORIGINS`          | `https://caught-looking.com,https://www.caught-looking.com` | Comma-separated **`ALLOWED_ORIGINS`** for the API (apex + `www`). Deploy also appends `https://<project>.pages.dev` and `https://*.<project>.pages.dev` when **`CLOUDFLARE_PAGES_PROJECT_NAME`** is set. |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | `your-project`                   | If **unset**, only the API deploy runs (useful while wiring Cloudflare).                       |
 | `API_PUBLIC_URL`                | `https://….run.app`              | Optional. Cloud Run API origin (no trailing slash) for **PR preview** builds. If unset, the preview workflow looks the URL up with `gcloud`. |
@@ -351,7 +354,7 @@ Prefer **Direct Upload** from Actions for this project (empty Pages project is f
 
 After the first successful deploy, **`CORS_ALLOWED_ORIGINS`** must include the real SPA origins (this project: **`https://caught-looking.com`** and **`https://www.caught-looking.com`**). Pages project and branch-preview origins are added automatically from **`CLOUDFLARE_PAGES_PROJECT_NAME`**. If you add or change custom-domain origins, update the variable and push to **`main`** (or update the Cloud Run service env) so CORS matches the browser.
 
-**Cost / abuse (optional, no extra GCP products)** — The API defaults to per-IP HTTP rate limiting and outbound QPS caps for MLB and Savant (see env vars above). On Cloud Run you can also set **maximum instances** (and concurrency) on the service to cap worst-case spend; defaults are in Google Cloud Console or `gcloud run services update … --max-instances=…`.
+**Cost / abuse** — Deploy sets Cloud Run **`--min-instances=0`** and **`--max-instances=2`** (override via the variables above). Each deploy also applies an Artifact Registry cleanup policy: keep the **`GCP_ARTIFACT_KEEP_COUNT`** most recent versions and delete older ones (runs about once per day on Google’s side). The API still defaults to per-IP HTTP rate limiting and outbound QPS caps for MLB and Savant (see env vars above). Pair these with a **Billing budget + alert** in GCP; budgets notify by default and do not stop spend unless you add an automatic action.
 
 ---
 

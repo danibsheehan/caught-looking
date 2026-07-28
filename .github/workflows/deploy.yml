@@ -33,12 +33,41 @@ jobs:
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
+            # Optional cost caps stay step-scoped (not job env): unset vars expand to "" and
+            # would otherwise override the defaults written to GITHUB_ENV below.
             - name: Validate GCP configuration
+              env:
+                  CLOUDRUN_MAX_INSTANCES: ${{ vars.CLOUDRUN_MAX_INSTANCES }}
+                  CLOUDRUN_MIN_INSTANCES: ${{ vars.CLOUDRUN_MIN_INSTANCES }}
+                  GCP_ARTIFACT_KEEP_COUNT: ${{ vars.GCP_ARTIFACT_KEEP_COUNT }}
               run: |
                   if [ -z "$GCP_PROJECT_ID" ] || [ -z "$GCP_REGION" ] || [ -z "$GCP_ARTIFACT_REPOSITORY" ] || [ -z "$CLOUDRUN_SERVICE_NAME" ] || [ -z "$GCP_WORKLOAD_IDENTITY_PROVIDER" ] || [ -z "$GCP_DEPLOY_SERVICE_ACCOUNT" ]; then
                     echo "::error::Set GitHub repository variables: GCP_PROJECT_ID, GCP_REGION, GCP_ARTIFACT_REPOSITORY, CLOUDRUN_SERVICE_NAME, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_DEPLOY_SERVICE_ACCOUNT"
                     exit 1
                   fi
+                  MAX_INSTANCES="${CLOUDRUN_MAX_INSTANCES:-2}"
+                  MIN_INSTANCES="${CLOUDRUN_MIN_INSTANCES:-0}"
+                  KEEP_COUNT="${GCP_ARTIFACT_KEEP_COUNT:-5}"
+                  # Decimal only: reject leading zeros (e.g. 00) so bash -gt is not octal and keepCount stays > 0.
+                  if [[ ! "$MAX_INSTANCES" =~ ^[1-9][0-9]*$ ]]; then
+                    echo "::error::CLOUDRUN_MAX_INSTANCES must be a positive integer without leading zeros (got ${MAX_INSTANCES})"
+                    exit 1
+                  fi
+                  if [[ ! "$MIN_INSTANCES" =~ ^(0|[1-9][0-9]*)$ ]]; then
+                    echo "::error::CLOUDRUN_MIN_INSTANCES must be a non-negative integer without leading zeros (got ${MIN_INSTANCES})"
+                    exit 1
+                  fi
+                  if [[ ! "$KEEP_COUNT" =~ ^[1-9][0-9]*$ ]]; then
+                    echo "::error::GCP_ARTIFACT_KEEP_COUNT must be a positive integer without leading zeros (got ${KEEP_COUNT})"
+                    exit 1
+                  fi
+                  if [ "$MIN_INSTANCES" -gt "$MAX_INSTANCES" ]; then
+                    echo "::error::CLOUDRUN_MIN_INSTANCES ($MIN_INSTANCES) cannot exceed CLOUDRUN_MAX_INSTANCES ($MAX_INSTANCES)"
+                    exit 1
+                  fi
+                  echo "CLOUDRUN_MAX_INSTANCES=$MAX_INSTANCES" >> "$GITHUB_ENV"
+                  echo "CLOUDRUN_MIN_INSTANCES=$MIN_INSTANCES" >> "$GITHUB_ENV"
+                  echo "GCP_ARTIFACT_KEEP_COUNT=$KEEP_COUNT" >> "$GITHUB_ENV"
 
             - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
               with:
@@ -62,6 +91,36 @@ jobs:
                   gcloud auth print-access-token | docker login \
                     -u oauth2accesstoken \
                     --password-stdin "https://${GCP_REGION}-docker.pkg.dev"
+
+            - name: Ensure Artifact Registry cleanup policy
+              run: |
+                  # Keep policies win over delete. Delete anything older than 1 day that is
+                  # outside the most-recent keep window so :sha images do not accumulate forever.
+                  python3 - <<'PY'
+                  import json, os
+
+                  keep = int(os.environ["GCP_ARTIFACT_KEEP_COUNT"])
+                  policy = [
+                      {
+                          "name": "delete-old-versions",
+                          "action": {"type": "Delete"},
+                          "condition": {"tagState": "ANY", "olderThan": "86400s"},
+                      },
+                      {
+                          "name": "keep-minimum-versions",
+                          "action": {"type": "Keep"},
+                          "mostRecentVersions": {"keepCount": keep},
+                      },
+                  ]
+                  with open("/tmp/ar-cleanup-policy.json", "w") as f:
+                      json.dump(policy, f)
+                  print(f"Artifact Registry keepCount={keep}")
+                  PY
+                  gcloud artifacts repositories set-cleanup-policies "$GCP_ARTIFACT_REPOSITORY" \
+                    --project "$GCP_PROJECT_ID" \
+                    --location "$GCP_REGION" \
+                    --policy=/tmp/ar-cleanup-policy.json \
+                    --no-dry-run
 
             - name: Build and push container image
               run: |
@@ -102,6 +161,8 @@ jobs:
                     --project "$GCP_PROJECT_ID" \
                     --platform managed \
                     --allow-unauthenticated \
+                    --min-instances="$CLOUDRUN_MIN_INSTANCES" \
+                    --max-instances="$CLOUDRUN_MAX_INSTANCES" \
                     --env-vars-file=/tmp/cr-env.json
 
             - id: cloudrun-url
