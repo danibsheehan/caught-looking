@@ -37,18 +37,18 @@ Most latency and reliability risk is **outbound MLB/Savant**, not React render. 
 |----------------|---------|-----|-------|
 | `PlayersCompare` | `GetOrLoad` | `TTLScores` | Phase 1 |
 | `GamesForDate` | `GetOrLoadWithTTL` | adaptive via `cacheTTLForDateGames` | Phase 1 |
-| `GameBoxscore` | `GetOrLoadWithTTL` | settle-aware (`cacheTTLForGameStatus`) | Phase 2 |
-| `GameTimeline` | `GetOrLoadWithTTL` | settle-aware via linescore status | Phase 2 |
+| `GameBoxscore` / `GameTimeline` | `GetOrLoadWithTTL` + nested `mlb-boxscore-raw` | settle-aware | Phase 2–3 |
 | `PlayerSearch` | `GetOrLoad` | `TTLPlayerSearch` | Phase 1 |
 | `Standings` / `Teams` / platoon / compare / year-by-year / season-stats / current-team / divisions | `GetOrLoad` | season aggregates → `TTLStandings` | Phase 1–2 |
 | Schedule / record timeline / batch | `GetOrLoad` | `cacheTTLForSeason` (past → standings, current → scores) | Phase 2 |
-| Statcast / league baseline | `GetOrLoad` | varies | already coalesced |
+| Statcast / league baseline | `GetOrLoad` | varies; year-by-year league fan-out capped | Phase 3 |
 
 ## Upstream clients
 
 - **Always** go through **`h.mlb`** / Savant client helpers — never `http.Get` to statsapi from handlers.
 - **QPS**: `MLBMaxQPS` (default 20), `SavantMaxQPS` (default 5); per-attempt timeouts `MLBHTTPTimeout` / `SavantHTTPTimeout`. Tests use `NewMLBClient(url, 0, …)` (unlimited).
-- **Avoid N+1**: batch when a batch route exists (e.g. record-timelines batch, current-teams). Inside `GetOrLoad`, fan-out carefully; reuse nested cache keys for shared pieces (see league baseline helpers).
+- **Avoid N+1**: batch when a batch route exists (e.g. record-timelines batch, current-teams). Inside `GetOrLoad`, fan-out carefully; reuse nested cache keys for shared pieces (see league baseline helpers, `fetchGameBoxscoreRaw`, `fetchSavantGameCSV`).
+- **Cap parallel upstream work**: year-by-year league baselines use a semaphore (`yearByYearLeagueConcurrency`); record-timeline batch uses `batchTimelineConcurrency`.
 
 ## Frontend
 

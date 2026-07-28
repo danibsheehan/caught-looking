@@ -65,12 +65,15 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 		var raw []byte
 		var status string
 		g.Go(func() error {
-			var err error
-			raw, err = h.mlb.Get(gctx, "/game/"+pkStr+"/boxscore")
-			return err
+			b, err := h.fetchGameBoxscoreRaw(gctx, pkStr)
+			if err != nil {
+				return err
+			}
+			raw = b
+			return nil
 		})
 		g.Go(func() error {
-			// Best-effort status for adaptive TTL; boxscore itself does not include game state.
+			// Best-effort status for the API response TTL (raw boxscore cache has its own TTL).
 			b, err := h.mlb.Get(gctx, "/schedule?sportId=1&gamePks="+pkStr)
 			if err != nil {
 				return nil
@@ -103,6 +106,34 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSONBytes(w, body)
+}
+
+// fetchGameBoxscoreRaw returns MLB /game/{pk}/boxscore JSON, coalesced so timeline and boxscore
+// share one upstream download per gamePk.
+func (h *Handlers) fetchGameBoxscoreRaw(ctx context.Context, pkStr string) ([]byte, error) {
+	key := "mlb-boxscore-raw:" + pkStr
+	return h.cache.GetOrLoadWithTTL(ctx, key, func(ctx context.Context) ([]byte, time.Duration, error) {
+		g, gctx := errgroup.WithContext(ctx)
+		var raw []byte
+		var status string
+		g.Go(func() error {
+			var err error
+			raw, err = h.mlb.Get(gctx, "/game/"+pkStr+"/boxscore")
+			return err
+		})
+		g.Go(func() error {
+			b, err := h.mlb.Get(gctx, "/schedule?sportId=1&gamePks="+pkStr)
+			if err != nil {
+				return nil
+			}
+			status = scheduleGameDisplayStatus(b)
+			return nil
+		})
+		if err := g.Wait(); err != nil {
+			return nil, 0, err
+		}
+		return raw, cacheTTLForGameStatus(status, h.cfg), nil
+	})
 }
 
 // scheduleGameDisplayStatus extracts a display status from an MLB schedule JSON body for one game.
