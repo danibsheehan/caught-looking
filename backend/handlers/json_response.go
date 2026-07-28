@@ -31,6 +31,9 @@ var errJSONEncode = errors.New("json encode")
 // errJSONDecode marks failures decoding our own cached/built JSON (not upstream MLB/Savant).
 var errJSONDecode = errors.New("json decode")
 
+// errUpstreamJSONParse marks json.Unmarshal failures on MLB/Savant response bodies.
+var errUpstreamJSONParse = errors.New("upstream json parse")
+
 func marshalCachedJSON(v any) ([]byte, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
@@ -39,7 +42,15 @@ func marshalCachedJSON(v any) ([]byte, error) {
 	return b, nil
 }
 
-// respondGetOrLoadError maps GetOrLoad failures: encode/decode → 500, otherwise upstream handling.
+func wrapUpstreamJSONParse(err error) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%w: %w", errUpstreamJSONParse, err)
+}
+
+// respondGetOrLoadError maps GetOrLoad failures: encode/decode → 500, upstream JSON parse → 502
+// with "upstream parse error", otherwise generic upstream handling.
 func respondGetOrLoadError(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.Is(err, errJSONEncode) {
 		respondJSONEncodeError(w)
@@ -47,6 +58,10 @@ func respondGetOrLoadError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 	if errors.Is(err, errJSONDecode) {
 		respondAPIError(w, http.StatusInternalServerError, "internal parse error")
+		return
+	}
+	if errors.Is(err, errUpstreamJSONParse) {
+		respondUpstreamJSONParseError(w)
 		return
 	}
 	respondUpstreamError(w, r, err)

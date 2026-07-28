@@ -211,7 +211,7 @@ func (h *Handlers) fetchPlayerYearByYear(ctx context.Context, id int64, group, m
 
 	var payload mlbPeopleYearByYearPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return nil, "", err
+		return nil, "", wrapUpstreamJSONParse(err)
 	}
 
 	name := ""
@@ -351,7 +351,7 @@ func (h *Handlers) fetchPlayerGameLog(ctx context.Context, id int64, group strin
 
 	var payload mlbPeopleGameLogPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return nil, "", err
+		return nil, "", wrapUpstreamJSONParse(err)
 	}
 
 	name := ""

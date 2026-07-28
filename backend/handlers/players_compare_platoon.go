@@ -114,7 +114,7 @@ func (h *Handlers) fetchPlayerPlatoonSplits(ctx context.Context, id int64, group
 
 	var payload mlbPeopleStatSplitsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return models.PlatoonPlayer{}, err
+		return models.PlatoonPlayer{}, wrapUpstreamJSONParse(err)
 	}
 
 	out := models.PlatoonPlayer{ID: id}

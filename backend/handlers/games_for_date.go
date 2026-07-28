@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -82,7 +81,7 @@ func (h *Handlers) GamesForDate(w http.ResponseWriter, r *http.Request) {
 			} `json:"dates"`
 		}
 		if err := json.Unmarshal(raw, &payload); err != nil {
-			return nil, 0, fmt.Errorf("schedule parse: %w", err)
+			return nil, 0, wrapUpstreamJSONParse(err)
 		}
 
 		out := models.GamesForDateResponse{Date: date, Games: nil}

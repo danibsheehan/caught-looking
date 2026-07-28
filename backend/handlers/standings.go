@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -126,7 +125,7 @@ func (h *Handlers) Standings(w http.ResponseWriter, r *http.Request) {
 
 		var payload mlbStandingsPayload
 		if err := json.Unmarshal(raw, &payload); err != nil {
-			return nil, fmt.Errorf("standings parse: %w", err)
+			return nil, wrapUpstreamJSONParse(err)
 		}
 
 		divisions := make([]models.StandingDivision, 0, len(payload.Records))

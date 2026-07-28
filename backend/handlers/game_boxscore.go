@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -67,7 +66,7 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 
 		var root mlbBoxscoreRoot
 		if err := json.Unmarshal(raw, &root); err != nil {
-			return nil, fmt.Errorf("boxscore parse: %w", err)
+			return nil, wrapUpstreamJSONParse(err)
 		}
 
 		out := models.GameBoxscoreResponse{

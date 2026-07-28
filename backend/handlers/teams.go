@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -49,7 +48,7 @@ func (h *Handlers) Teams(w http.ResponseWriter, r *http.Request) {
 
 		var payload mlbTeamsPayload
 		if err := json.Unmarshal(raw, &payload); err != nil {
-			return nil, fmt.Errorf("teams parse: %w", err)
+			return nil, wrapUpstreamJSONParse(err)
 		}
 
 		teams := make([]models.Team, 0, len(payload.Teams))

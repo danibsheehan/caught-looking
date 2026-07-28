@@ -96,7 +96,7 @@ func (h *Handlers) fetchTeamHittingSeason(ctx context.Context, teamID int, seaso
 
 	var payload mlbTeamStatsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return models.TeamHittingLine{}, err
+		return models.TeamHittingLine{}, wrapUpstreamJSONParse(err)
 	}
 
 	var line models.TeamHittingLine
@@ -157,7 +157,7 @@ func (h *Handlers) fetchTeamPitchingSeason(ctx context.Context, teamID int, seas
 
 	var payload mlbTeamStatsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return models.TeamPitchingLine{}, err
+		return models.TeamPitchingLine{}, wrapUpstreamJSONParse(err)
 	}
 
 	var line models.TeamPitchingLine

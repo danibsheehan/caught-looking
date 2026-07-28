@@ -29,10 +29,22 @@ func TestRespondGetOrLoadError_encodeVsUpstream(t *testing.T) {
 		t.Fatalf("decode body: %s", recDecode.Body.String())
 	}
 
+	recParse := httptest.NewRecorder()
+	respondGetOrLoadError(recParse, req, wrapUpstreamJSONParse(errors.New("bad json")))
+	if recParse.Code != http.StatusBadGateway {
+		t.Fatalf("upstream parse: got %d want 502", recParse.Code)
+	}
+	if !strings.Contains(recParse.Body.String(), "upstream parse error") {
+		t.Fatalf("upstream parse body: %s", recParse.Body.String())
+	}
+
 	rec2 := httptest.NewRecorder()
 	respondGetOrLoadError(rec2, req, errors.New("mlb down"))
 	if rec2.Code != http.StatusBadGateway {
 		t.Fatalf("upstream: got %d want 502", rec2.Code)
+	}
+	if !strings.Contains(rec2.Body.String(), `"error":"bad gateway"`) {
+		t.Fatalf("upstream body: %s", rec2.Body.String())
 	}
 }
 

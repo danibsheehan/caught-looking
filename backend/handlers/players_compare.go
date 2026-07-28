@@ -130,7 +130,7 @@ func (h *Handlers) fetchPlayerStats(ctx context.Context, id int64, group, scope 
 
 	var payload mlbPeopleStatsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return models.PlayerStatSnapshot{}, err
+		return models.PlayerStatSnapshot{}, wrapUpstreamJSONParse(err)
 	}
 
 	var snap models.PlayerStatSnapshot

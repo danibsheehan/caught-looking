@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -53,7 +52,7 @@ func (h *Handlers) PlayerSearch(w http.ResponseWriter, r *http.Request) {
 
 		var payload mlbPeopleSearchPayload
 		if err := json.Unmarshal(raw, &payload); err != nil {
-			return nil, fmt.Errorf("people search parse: %w", err)
+			return nil, wrapUpstreamJSONParse(err)
 		}
 
 		truncated := len(payload.People) > maxHits

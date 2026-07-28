@@ -107,7 +107,7 @@ func (h *Handlers) loadLeagueTeamStatMaps(ctx context.Context, season int, group
 		}
 		var payload mlbTeamSeasonSplitsPayload
 		if err := json.Unmarshal(body, &payload); err != nil {
-			return nil, err
+			return nil, wrapUpstreamJSONParse(err)
 		}
 		return body, nil
 	})
@@ -117,7 +117,7 @@ func (h *Handlers) loadLeagueTeamStatMaps(ctx context.Context, season int, group
 
 	var payload mlbTeamSeasonSplitsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return nil, err
+		return nil, wrapUpstreamJSONParse(err)
 	}
 	if len(payload.Stats) == 0 || len(payload.Stats[0].Splits) == 0 {
 		return map[int]map[string]interface{}{}, nil

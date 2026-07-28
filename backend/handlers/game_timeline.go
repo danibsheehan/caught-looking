@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -81,12 +80,12 @@ func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
 
 		var payload mlbLinescorePayload
 		if err := json.Unmarshal(raw, &payload); err != nil {
-			return nil, fmt.Errorf("linescore parse: %w", err)
+			return nil, wrapUpstreamJSONParse(err)
 		}
 
 		var box mlbBoxscoreTeams
 		if err := json.Unmarshal(rawBox, &box); err != nil {
-			return nil, fmt.Errorf("boxscore parse: %w", err)
+			return nil, wrapUpstreamJSONParse(err)
 		}
 
 		innings := make([]models.InningScore, 0, len(payload.Innings))

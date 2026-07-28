@@ -24,7 +24,7 @@ func (h *Handlers) fetchTeamSeasonSchedule(ctx context.Context, teamID, season i
 		}
 		var payload mlbSchedulePayload
 		if err := json.Unmarshal(body, &payload); err != nil {
-			return nil, err
+			return nil, wrapUpstreamJSONParse(err)
 		}
 		return body, nil
 	})

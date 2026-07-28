@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,9 +12,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/sync/errgroup"
 )
-
-// errMLBPeopleUnmarshal marks failure to decode MLB /people hydrate JSON inside playerCurrentTeamJSON.
-var errMLBPeopleUnmarshal = errors.New("mlb people json unmarshal")
 
 type mlbPersonHydratePayload struct {
 	People []struct {
@@ -39,7 +35,7 @@ func (h *Handlers) playerCurrentTeamJSON(ctx context.Context, id int64) ([]byte,
 
 		var payload mlbPersonHydratePayload
 		if err := json.Unmarshal(raw, &payload); err != nil {
-			return nil, errors.Join(errMLBPeopleUnmarshal, err)
+			return nil, wrapUpstreamJSONParse(err)
 		}
 
 		teamID := 0
@@ -66,10 +62,6 @@ func (h *Handlers) PlayerCurrentTeam(w http.ResponseWriter, r *http.Request) {
 
 	body, err := h.playerCurrentTeamJSON(r.Context(), id)
 	if err != nil {
-		if errors.Is(err, errMLBPeopleUnmarshal) {
-			respondUpstreamJSONParseError(w)
-			return
-		}
 		respondGetOrLoadError(w, r, err)
 		return
 	}
@@ -105,10 +97,6 @@ func (h *Handlers) PlayersCurrentTeams(w http.ResponseWriter, r *http.Request) {
 		return err
 	})
 	if err := g.Wait(); err != nil {
-		if errors.Is(err, errMLBPeopleUnmarshal) {
-			respondUpstreamJSONParseError(w)
-			return
-		}
 		respondGetOrLoadError(w, r, err)
 		return
 	}
