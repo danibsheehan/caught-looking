@@ -53,7 +53,7 @@ func Load() Config {
 		TTLStatcast:        6 * time.Hour,
 		TTLLiveScores:      45 * time.Second,
 		TTLPlayerSearch:    3 * time.Minute,
-		DefaultSeason:      2026,
+		DefaultSeason:      time.Now().Year(),
 		DefaultLeagueIDs:   "103,104",
 		RateLimitRequests:  120,
 		RateLimitWindow:    time.Minute,

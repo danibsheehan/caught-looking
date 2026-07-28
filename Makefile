@@ -3,7 +3,7 @@ PROJECT_ROOT := $(CURDIR)
 COVERAGE_MIN ?= 0.50
 CHECK_COVERAGE := python3 "$(PROJECT_ROOT)/.github/scripts/check_cobertura_line_rate.py"
 
-.PHONY: dev backend frontend install check-openapi test-backend test-frontend cover-backend cover-backend-html cover-frontend ci-local ci-local-frontend ci-local-backend
+.PHONY: dev backend frontend install check-openapi test-backend test-backend-race test-frontend cover-backend cover-backend-html cover-frontend ci-local ci-local-frontend ci-local-backend
 
 ## dev: run API (:8080) and Vite dev server together (one terminal)
 dev:
@@ -34,6 +34,10 @@ test-backend:
 	cd "$(PROJECT_ROOT)/backend" && go test ./... -count=1
 	cd "$(PROJECT_ROOT)/backend" && go build -o /dev/null .
 
+## test-backend-race: run backend tests with the race detector
+test-backend-race:
+	cd "$(PROJECT_ROOT)/backend" && go test ./... -race -count=1
+
 ## test-frontend: run Vitest once (frontend/)
 test-frontend:
 	cd "$(PROJECT_ROOT)/frontend" && npm run test:run
@@ -62,10 +66,11 @@ ci-local-frontend:
 	$(CHECK_COVERAGE) "$(PROJECT_ROOT)/frontend/coverage/cobertura-coverage.xml" $(COVERAGE_MIN) --label "Frontend coverage"
 	cd "$(PROJECT_ROOT)/frontend" && npm run build
 
-## ci-local-backend: backend job parity (vet, govulncheck, coverage gate, build)
+## ci-local-backend: backend job parity (vet, govulncheck, race, coverage gate, build)
 ci-local-backend:
 	cd "$(PROJECT_ROOT)/backend" && go vet ./...
 	cd "$(PROJECT_ROOT)/backend" && go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+	cd "$(PROJECT_ROOT)/backend" && go test ./... -race -count=1
 	cd "$(PROJECT_ROOT)/backend" && go test ./... -count=1 -coverprofile=coverage.out -covermode=atomic
 	cd "$(PROJECT_ROOT)/backend" && go install github.com/boumenot/gocover-cobertura@v1.4.0
 	cd "$(PROJECT_ROOT)/backend" && "$$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura-raw.xml
