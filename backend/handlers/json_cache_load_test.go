@@ -21,7 +21,7 @@ func TestRespondGetOrLoadError_encodeVsUpstream(t *testing.T) {
 	}
 
 	recDecode := httptest.NewRecorder()
-	respondGetOrLoadError(recDecode, req, fmt.Errorf("%w: boom", errJSONDecode))
+	respondGetOrLoadError(recDecode, req, wrapJSONDecode(errors.New("corrupt")))
 	if recDecode.Code != http.StatusInternalServerError {
 		t.Fatalf("decode: got %d want 500", recDecode.Code)
 	}

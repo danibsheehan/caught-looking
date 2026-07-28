@@ -49,6 +49,13 @@ func wrapUpstreamJSONParse(err error) error {
 	return fmt.Errorf("%w: %w", errUpstreamJSONParse, err)
 }
 
+func wrapJSONDecode(err error) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%w: %w", errJSONDecode, err)
+}
+
 // respondGetOrLoadError maps GetOrLoad failures: encode/decode → 500, upstream JSON parse → 502
 // with "upstream parse error", otherwise generic upstream handling.
 func respondGetOrLoadError(w http.ResponseWriter, r *http.Request, err error) {

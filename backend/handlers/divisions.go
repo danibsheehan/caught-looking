@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 )
 
@@ -47,7 +46,7 @@ func (h *Handlers) loadDivisionNames(ctx context.Context) (map[int]string, error
 
 	var rows []divisionNameRow
 	if err := json.Unmarshal(body, &rows); err != nil {
-		return nil, fmt.Errorf("%w: %w", errJSONDecode, err)
+		return nil, wrapJSONDecode(err)
 	}
 	out := make(map[int]string, len(rows))
 	for _, r := range rows {
