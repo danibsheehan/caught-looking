@@ -28,6 +28,9 @@ func respondAPIError(w http.ResponseWriter, status int, message string) {
 // errJSONEncode marks failures from marshalling a locally built response (not upstream).
 var errJSONEncode = errors.New("json encode")
 
+// errJSONDecode marks failures decoding our own cached/built JSON (not upstream MLB/Savant).
+var errJSONDecode = errors.New("json decode")
+
 func marshalCachedJSON(v any) ([]byte, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
@@ -36,10 +39,14 @@ func marshalCachedJSON(v any) ([]byte, error) {
 	return b, nil
 }
 
-// respondGetOrLoadError maps GetOrLoad failures: encode → 500, otherwise upstream handling.
+// respondGetOrLoadError maps GetOrLoad failures: encode/decode → 500, otherwise upstream handling.
 func respondGetOrLoadError(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.Is(err, errJSONEncode) {
 		respondJSONEncodeError(w)
+		return
+	}
+	if errors.Is(err, errJSONDecode) {
+		respondAPIError(w, http.StatusInternalServerError, "internal parse error")
 		return
 	}
 	respondUpstreamError(w, r, err)

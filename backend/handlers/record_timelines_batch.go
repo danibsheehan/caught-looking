@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -105,7 +106,7 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 		for _, b := range results {
 			var tr models.RecordTimelineResponse
 			if err := json.Unmarshal(b, &tr); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%w: %w", errJSONDecode, err)
 			}
 			timelines = append(timelines, tr)
 		}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -17,6 +18,15 @@ func TestRespondGetOrLoadError_encodeVsUpstream(t *testing.T) {
 	respondGetOrLoadError(rec, req, fmt.Errorf("%w: boom", errJSONEncode))
 	if rec.Code != http.StatusInternalServerError {
 		t.Fatalf("encode: got %d want 500", rec.Code)
+	}
+
+	recDecode := httptest.NewRecorder()
+	respondGetOrLoadError(recDecode, req, fmt.Errorf("%w: boom", errJSONDecode))
+	if recDecode.Code != http.StatusInternalServerError {
+		t.Fatalf("decode: got %d want 500", recDecode.Code)
+	}
+	if !strings.Contains(recDecode.Body.String(), "internal parse error") {
+		t.Fatalf("decode body: %s", recDecode.Body.String())
 	}
 
 	rec2 := httptest.NewRecorder()
