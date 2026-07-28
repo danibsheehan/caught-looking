@@ -37,11 +37,12 @@ Most latency and reliability risk is **outbound MLB/Savant**, not React render. 
 |----------------|---------|-----|-------|
 | `PlayersCompare` | `GetOrLoad` | `TTLScores` | Phase 1 |
 | `GamesForDate` | `GetOrLoadWithTTL` | adaptive via `cacheTTLForDateGames` | Phase 1 |
-| `GameBoxscore` | `GetOrLoad` | `TTLLiveScores` | Phase 1; Phase 2: settle-aware TTL |
-| `GameTimeline` | `GetOrLoad` | `TTLLiveScores` | Phase 1; Phase 2: settle-aware TTL |
+| `GameBoxscore` | `GetOrLoadWithTTL` | settle-aware (`cacheTTLForGameStatus`) | Phase 2 |
+| `GameTimeline` | `GetOrLoadWithTTL` | settle-aware via linescore status | Phase 2 |
 | `PlayerSearch` | `GetOrLoad` | `TTLPlayerSearch` | Phase 1 |
-| `Standings` / `Teams` / platoon / game-log / season-stats / batch outer / current-team / divisions | `GetOrLoad` | varies | Phase 1 |
-| `RecordTimeline` / schedule / Statcast / league baseline / year-by-year | `GetOrLoad` | varies | already coalesced before Phase 1 |
+| `Standings` / `Teams` / platoon / compare / year-by-year / season-stats / current-team / divisions | `GetOrLoad` | season aggregates → `TTLStandings` | Phase 1–2 |
+| Schedule / record timeline / batch | `GetOrLoad` | `cacheTTLForSeason` (past → standings, current → scores) | Phase 2 |
+| Statcast / league baseline | `GetOrLoad` | varies | already coalesced |
 
 ## Upstream clients
 

@@ -114,6 +114,10 @@ func TestGameBoxscore_concurrentMissCoalesces(t *testing.T) {
 		time.Sleep(40 * time.Millisecond)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		if r.URL.Path == "/schedule" {
+			_, _ = w.Write([]byte(`{"dates":[{"games":[{"status":{"detailedState":"Final"}}]}]}`))
+			return
+		}
 		_, _ = w.Write([]byte(`{"teams":{"away":{"team":{"id":1,"name":"A"},"teamStats":{"batting":{},"pitching":{},"fielding":{}},"batters":[],"pitchers":[],"players":{}},"home":{"team":{"id":2,"name":"H"},"teamStats":{"batting":{},"pitching":{},"fielding":{}},"batters":[],"pitchers":[],"players":{}}}}`))
 	})
 	h := newTestHandlers(t, mlb)
@@ -139,8 +143,9 @@ func TestGameBoxscore_concurrentMissCoalesces(t *testing.T) {
 	for err := range errCh {
 		t.Fatal(err)
 	}
-	if got := hits.Load(); got != 1 {
-		t.Fatalf("upstream hits: got %d want 1", got)
+	// boxscore + schedule status once for the coalesced load.
+	if got := hits.Load(); got != 2 {
+		t.Fatalf("upstream hits: got %d want 2", got)
 	}
 }
 

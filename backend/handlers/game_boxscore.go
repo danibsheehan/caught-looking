@@ -6,10 +6,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"caught-looking/backend/models"
 
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/sync/errgroup"
 )
 
 type mlbBoxscoreSide struct {
@@ -58,15 +60,31 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "game-boxscore:" + pkStr
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLLiveScores, func(ctx context.Context) ([]byte, error) {
-		raw, err := h.mlb.Get(ctx, "/game/"+pkStr+"/boxscore")
-		if err != nil {
-			return nil, err
+	body, err := h.cache.GetOrLoadWithTTL(r.Context(), cacheKey, func(ctx context.Context) ([]byte, time.Duration, error) {
+		g, gctx := errgroup.WithContext(ctx)
+		var raw []byte
+		var status string
+		g.Go(func() error {
+			var err error
+			raw, err = h.mlb.Get(gctx, "/game/"+pkStr+"/boxscore")
+			return err
+		})
+		g.Go(func() error {
+			// Best-effort status for adaptive TTL; boxscore itself does not include game state.
+			b, err := h.mlb.Get(gctx, "/schedule?sportId=1&gamePks="+pkStr)
+			if err != nil {
+				return nil
+			}
+			status = scheduleGameDisplayStatus(b)
+			return nil
+		})
+		if err := g.Wait(); err != nil {
+			return nil, 0, err
 		}
 
 		var root mlbBoxscoreRoot
 		if err := json.Unmarshal(raw, &root); err != nil {
-			return nil, wrapUpstreamJSONParse(err)
+			return nil, 0, wrapUpstreamJSONParse(err)
 		}
 
 		out := models.GameBoxscoreResponse{
@@ -74,13 +92,40 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 			Away:   buildTeamSide(root.Teams.Away),
 			Home:   buildTeamSide(root.Teams.Home),
 		}
-		return marshalCachedJSON(out)
+		body, err := marshalCachedJSON(out)
+		if err != nil {
+			return nil, 0, err
+		}
+		return body, cacheTTLForGameStatus(status, h.cfg), nil
 	})
 	if err != nil {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
 	writeJSONBytes(w, body)
+}
+
+// scheduleGameDisplayStatus extracts a display status from an MLB schedule JSON body for one game.
+func scheduleGameDisplayStatus(raw []byte) string {
+	var payload struct {
+		Dates []struct {
+			Games []struct {
+				Status struct {
+					AbstractGameState string `json:"abstractGameState"`
+					DetailedState     string `json:"detailedState"`
+				} `json:"status"`
+			} `json:"games"`
+		} `json:"dates"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return ""
+	}
+	for _, d := range payload.Dates {
+		for _, g := range d.Games {
+			return gameDisplayStatus(g.Status.DetailedState, g.Status.AbstractGameState)
+		}
+	}
+	return ""
 }
 
 func buildTeamSide(side mlbBoxscoreSide) models.TeamBoxSide {

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"caught-looking/backend/models"
 
@@ -70,7 +71,8 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 		keyParts = append(keyParts, strconv.Itoa(id))
 	}
 	cacheKey := "record-timelines-batch:" + strconv.Itoa(season) + ":" + strings.Join(keyParts, ",")
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+	ttl := cacheTTLForSeason(season, h.cfg, time.Now())
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, ttl, func(ctx context.Context) ([]byte, error) {
 		g, ctx := errgroup.WithContext(ctx)
 		sem := make(chan struct{}, batchTimelineConcurrency)
 

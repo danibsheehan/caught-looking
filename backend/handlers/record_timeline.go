@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"caught-looking/backend/models"
 
@@ -136,7 +137,8 @@ func parseRecordTimeline(raw []byte, teamID, season int) (models.RecordTimelineR
 // getOrBuildRecordTimelineBytes returns cached JSON or fetches MLB schedule, builds timeline, caches, returns bytes.
 func (h *Handlers) getOrBuildRecordTimelineBytes(ctx context.Context, teamID, season int) ([]byte, error) {
 	key := timelineCacheKey(teamID, season)
-	return h.cache.GetOrLoad(ctx, key, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+	ttl := cacheTTLForSeason(season, h.cfg, time.Now())
+	return h.cache.GetOrLoad(ctx, key, ttl, func(ctx context.Context) ([]byte, error) {
 		raw, err := h.fetchTeamSeasonSchedule(ctx, teamID, season)
 		if err != nil {
 			return nil, err

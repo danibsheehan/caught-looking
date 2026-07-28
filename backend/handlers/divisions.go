@@ -3,11 +3,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"time"
 )
 
 const divisionNamesCacheKey = "divisions:sportId:1"
-const divisionNamesTTL = 24 * time.Hour
 
 type mlbDivisionsPayload struct {
 	Divisions []struct {
@@ -23,7 +21,7 @@ type divisionNameRow struct {
 
 // loadDivisionNames returns division id → display name, backed by a long-lived cache entry.
 func (h *Handlers) loadDivisionNames(ctx context.Context) (map[int]string, error) {
-	body, err := h.cache.GetOrLoad(ctx, divisionNamesCacheKey, divisionNamesTTL, func(ctx context.Context) ([]byte, error) {
+	body, err := h.cache.GetOrLoad(ctx, divisionNamesCacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
 		raw, err := h.mlb.Get(ctx, "/divisions?sportId=1")
 		if err != nil {
 			return nil, err

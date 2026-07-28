@@ -61,3 +61,20 @@ func cacheTTLForDateGames(date string, games []models.GameSummary, cfg config.Co
 		return cfg.TTLStandings
 	}
 }
+
+// cacheTTLForGameStatus picks a short TTL while a game is live/unknown and a long TTL once settled.
+func cacheTTLForGameStatus(status string, cfg config.Config) time.Duration {
+	if gameStatusSettled(status) {
+		return cfg.TTLStandings
+	}
+	return cfg.TTLLiveScores
+}
+
+// cacheTTLForSeason uses a long TTL for completed seasons and a shorter one for the current
+// (or future) season, whose schedules and records still change.
+func cacheTTLForSeason(season int, cfg config.Config, now time.Time) time.Duration {
+	if season > 0 && season < now.UTC().Year() {
+		return cfg.TTLStandings
+	}
+	return cfg.TTLScores
+}
