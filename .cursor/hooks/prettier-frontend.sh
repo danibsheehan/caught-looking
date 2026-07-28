@@ -3,27 +3,39 @@
 set -u
 
 input="$(cat)"
-file_path="$(
+raw_path="$(
   printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("file_path") or "")'
 )"
 
-[[ -n "$file_path" && -f "$file_path" ]] || exit 0
+[[ -n "$raw_path" ]] || exit 0
 
-case "$file_path" in
-  */frontend/*) ;;
+root="$(cd "$(dirname "$0")/../.." && pwd)"
+
+# Cursor may send absolute paths or workspace-relative paths (e.g. frontend/src/...).
+if [[ "$raw_path" = /* ]]; then
+  file_path="$raw_path"
+else
+  file_path="$root/$raw_path"
+fi
+
+[[ -f "$file_path" ]] || exit 0
+
+# Normalize to a path relative to the repo root when possible.
+rel="${file_path#"$root"/}"
+case "$rel" in
+  frontend/*) ;;
   *) exit 0 ;;
 esac
 
-case "$file_path" in
+case "$rel" in
   *.ts|*.tsx|*.js|*.jsx|*.scss|*.css|*.json|*.html) ;;
   *) exit 0 ;;
 esac
 
-case "$file_path" in
-  */frontend/src/types/api.generated.ts) exit 0 ;;
+case "$rel" in
+  frontend/src/types/api.generated.ts) exit 0 ;;
 esac
 
-root="$(cd "$(dirname "$0")/../.." && pwd)"
 frontend="$root/frontend"
 prettier_bin="$frontend/node_modules/.bin/prettier"
 config="$frontend/prettier.config.js"
