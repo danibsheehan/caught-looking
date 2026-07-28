@@ -30,14 +30,16 @@ jobs:
             CLOUDRUN_SERVICE_NAME: ${{ vars.CLOUDRUN_SERVICE_NAME }}
             GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
             GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
-            # Optional cost caps (defaults applied in steps when unset).
-            CLOUDRUN_MAX_INSTANCES: ${{ vars.CLOUDRUN_MAX_INSTANCES }}
-            CLOUDRUN_MIN_INSTANCES: ${{ vars.CLOUDRUN_MIN_INSTANCES }}
-            GCP_ARTIFACT_KEEP_COUNT: ${{ vars.GCP_ARTIFACT_KEEP_COUNT }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
+            # Optional cost caps stay step-scoped (not job env): unset vars expand to "" and
+            # would otherwise override the defaults written to GITHUB_ENV below.
             - name: Validate GCP configuration
+              env:
+                  CLOUDRUN_MAX_INSTANCES: ${{ vars.CLOUDRUN_MAX_INSTANCES }}
+                  CLOUDRUN_MIN_INSTANCES: ${{ vars.CLOUDRUN_MIN_INSTANCES }}
+                  GCP_ARTIFACT_KEEP_COUNT: ${{ vars.GCP_ARTIFACT_KEEP_COUNT }}
               run: |
                   if [ -z "$GCP_PROJECT_ID" ] || [ -z "$GCP_REGION" ] || [ -z "$GCP_ARTIFACT_REPOSITORY" ] || [ -z "$CLOUDRUN_SERVICE_NAME" ] || [ -z "$GCP_WORKLOAD_IDENTITY_PROVIDER" ] || [ -z "$GCP_DEPLOY_SERVICE_ACCOUNT" ]; then
                     echo "::error::Set GitHub repository variables: GCP_PROJECT_ID, GCP_REGION, GCP_ARTIFACT_REPOSITORY, CLOUDRUN_SERVICE_NAME, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_DEPLOY_SERVICE_ACCOUNT"
@@ -46,9 +48,19 @@ jobs:
                   MAX_INSTANCES="${CLOUDRUN_MAX_INSTANCES:-2}"
                   MIN_INSTANCES="${CLOUDRUN_MIN_INSTANCES:-0}"
                   KEEP_COUNT="${GCP_ARTIFACT_KEEP_COUNT:-5}"
-                  case "$MAX_INSTANCES" in ''|*[!0-9]*|0) echo "::error::CLOUDRUN_MAX_INSTANCES must be a positive integer (got ${MAX_INSTANCES})"; exit 1 ;; esac
-                  case "$MIN_INSTANCES" in ''|*[!0-9]*) echo "::error::CLOUDRUN_MIN_INSTANCES must be a non-negative integer (got ${MIN_INSTANCES})"; exit 1 ;; esac
-                  case "$KEEP_COUNT" in ''|*[!0-9]*|0) echo "::error::GCP_ARTIFACT_KEEP_COUNT must be a positive integer (got ${KEEP_COUNT})"; exit 1 ;; esac
+                  # Decimal only: reject leading zeros (e.g. 00) so bash -gt is not octal and keepCount stays > 0.
+                  if [[ ! "$MAX_INSTANCES" =~ ^[1-9][0-9]*$ ]]; then
+                    echo "::error::CLOUDRUN_MAX_INSTANCES must be a positive integer without leading zeros (got ${MAX_INSTANCES})"
+                    exit 1
+                  fi
+                  if [[ ! "$MIN_INSTANCES" =~ ^(0|[1-9][0-9]*)$ ]]; then
+                    echo "::error::CLOUDRUN_MIN_INSTANCES must be a non-negative integer without leading zeros (got ${MIN_INSTANCES})"
+                    exit 1
+                  fi
+                  if [[ ! "$KEEP_COUNT" =~ ^[1-9][0-9]*$ ]]; then
+                    echo "::error::GCP_ARTIFACT_KEEP_COUNT must be a positive integer without leading zeros (got ${KEEP_COUNT})"
+                    exit 1
+                  fi
                   if [ "$MIN_INSTANCES" -gt "$MAX_INSTANCES" ]; then
                     echo "::error::CLOUDRUN_MIN_INSTANCES ($MIN_INSTANCES) cannot exceed CLOUDRUN_MAX_INSTANCES ($MAX_INSTANCES)"
                     exit 1
