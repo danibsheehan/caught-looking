@@ -143,9 +143,9 @@ func TestGameBoxscore_concurrentMissCoalesces(t *testing.T) {
 	for err := range errCh {
 		t.Fatal(err)
 	}
-	// boxscore + schedule status once for the coalesced load.
-	if got := hits.Load(); got != 2 {
-		t.Fatalf("upstream hits: got %d want 2", got)
+	// boxscore raw (+ schedule for raw TTL) + outer schedule for API TTL.
+	if got := hits.Load(); got != 3 {
+		t.Fatalf("upstream hits: got %d want 3", got)
 	}
 }
 
@@ -196,9 +196,11 @@ func TestGameTimeline_concurrentMissCoalesces(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		switch {
 		case r.URL.Path == "/game/555/linescore":
-			_, _ = w.Write([]byte(`{"innings":[{"num":1,"home":{"runs":1},"away":{"runs":0}}],"teams":{"home":{"runs":1},"away":{"runs":0}}}`))
+			_, _ = w.Write([]byte(`{"innings":[{"num":1,"home":{"runs":1},"away":{"runs":0}}],"teams":{"home":{"runs":1},"away":{"runs":0}},"status":{"detailedState":"Final"}}`))
 		case r.URL.Path == "/game/555/boxscore":
 			_, _ = w.Write([]byte(`{"teams":{"home":{"team":{"id":2,"name":"H"}},"away":{"team":{"id":1,"name":"A"}}}}`))
+		case r.URL.Path == "/schedule":
+			_, _ = w.Write([]byte(`{"dates":[{"games":[{"status":{"detailedState":"Final"}}]}]}`))
 		default:
 			http.NotFound(w, r)
 		}
@@ -226,8 +228,49 @@ func TestGameTimeline_concurrentMissCoalesces(t *testing.T) {
 	for err := range errCh {
 		t.Fatal(err)
 	}
-	// linescore + boxscore once for the coalesced load.
-	if got := hits.Load(); got != 2 {
-		t.Fatalf("upstream hits: got %d want 2", got)
+	// linescore + nested raw boxscore (+ schedule for raw TTL) once for the coalesced load.
+	if got := hits.Load(); got != 3 {
+		t.Fatalf("upstream hits: got %d want 3", got)
+	}
+}
+
+func TestGameTimeline_reusesNestedBoxscoreRaw(t *testing.T) {
+	var boxscoreHits atomic.Int32
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		switch {
+		case r.URL.Path == "/game/555/boxscore":
+			boxscoreHits.Add(1)
+			_, _ = w.Write([]byte(`{"teams":{"away":{"team":{"id":1,"name":"A"},"teamStats":{"batting":{},"pitching":{},"fielding":{}},"batters":[],"pitchers":[],"players":{}},"home":{"team":{"id":2,"name":"H"},"teamStats":{"batting":{},"pitching":{},"fielding":{}},"batters":[],"pitchers":[],"players":{}}}}`))
+		case r.URL.Path == "/game/555/linescore":
+			_, _ = w.Write([]byte(`{"innings":[{"num":1,"home":{"runs":1},"away":{"runs":0}}],"teams":{"home":{"runs":1},"away":{"runs":0}},"status":{"detailedState":"Final"}}`))
+		case r.URL.Path == "/schedule":
+			_, _ = w.Write([]byte(`{"dates":[{"games":[{"status":{"detailedState":"Final"}}]}]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/games/{gamePk}/boxscore", h.GameBoxscore)
+	r.Get("/games/{gamePk}/timeline", h.GameTimeline)
+
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/games/555/boxscore", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("boxscore status %d", rec.Code)
+	}
+	if got := boxscoreHits.Load(); got != 1 {
+		t.Fatalf("boxscore upstream after boxscore: got %d want 1", got)
+	}
+
+	rec2 := httptest.NewRecorder()
+	r.ServeHTTP(rec2, httptest.NewRequest(http.MethodGet, "/games/555/timeline", nil))
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("timeline status %d: %s", rec2.Code, rec2.Body.String())
+	}
+	if got := boxscoreHits.Load(); got != 1 {
+		t.Fatalf("boxscore upstream after timeline: got %d want 1 (nested raw reuse)", got)
 	}
 }

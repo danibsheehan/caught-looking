@@ -75,9 +75,12 @@ func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
 			return err
 		})
 		g.Go(func() error {
-			var err error
-			rawBox, err = h.mlb.Get(gctx, "/game/"+pkStr+"/boxscore")
-			return err
+			b, err := h.fetchGameBoxscoreRaw(gctx, pkStr)
+			if err != nil {
+				return err
+			}
+			rawBox = b
+			return nil
 		})
 		if err := g.Wait(); err != nil {
 			return nil, 0, err

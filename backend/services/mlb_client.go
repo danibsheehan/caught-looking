@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
 	"net"
 	"net/http"
@@ -53,68 +52,15 @@ func NewMLBClient(baseURL string, maxQPS float64, reqTimeout time.Duration) *MLB
 
 // Get issues GET baseURL+path (path must start with /) and returns the response body.
 func (c *MLBClient) Get(ctx context.Context, path string) ([]byte, error) {
-	if path == "" || path[0] != '/' {
-		return nil, fmt.Errorf("mlb path must start with /, got %q", path)
-	}
-	u := c.baseURL + path
-
-	if c.upstream != nil {
-		if err := c.upstream.Wait(ctx); err != nil {
-			return nil, err
-		}
-	}
-
-	const maxAttempts = 2
-	var lastErr error
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		if attempt > 0 {
-			c.transport.CloseIdleConnections()
-		}
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("User-Agent", mlbUserAgent)
-
-		res, err := c.httpClient.Do(req)
-		if err != nil {
-			lastErr = err
-			if attempt+1 < maxAttempts && upstreamRetryable(err) {
-				if err := sleepContext(ctx, time.Duration(100*(attempt+1))*time.Millisecond); err != nil {
-					return nil, err
-				}
-				continue
-			}
-			return nil, err
-		}
-
-		body, readErr := readBodyLimited(res.Body, maxUpstreamBodyBytes)
-		_ = res.Body.Close()
-		if readErr != nil {
-			lastErr = readErr
-			if attempt+1 < maxAttempts && upstreamRetryable(readErr) {
-				if err := sleepContext(ctx, time.Duration(100*(attempt+1))*time.Millisecond); err != nil {
-					return nil, err
-				}
-				continue
-			}
-			return nil, readErr
-		}
-		if res.StatusCode < 200 || res.StatusCode >= 300 {
-			lastErr = fmt.Errorf("mlb GET %s: status %d: %s", path, res.StatusCode, truncate(body, 200))
-			if attempt+1 < maxAttempts && upstreamStatusRetryable(res.StatusCode) {
-				if err := sleepContext(ctx, retryAfterDelay(res, attempt+1)); err != nil {
-					return nil, err
-				}
-				continue
-			}
-			return nil, lastErr
-		}
-		return body, nil
-	}
-	return nil, lastErr
+	return upstreamGET{
+		name:      "mlb",
+		baseURL:   c.baseURL,
+		accept:    "application/json",
+		userAgent: mlbUserAgent,
+		client:    c.httpClient,
+		transport: c.transport,
+		limiter:   c.upstream,
+	}.do(ctx, path)
 }
 
 func sleepContext(ctx context.Context, d time.Duration) error {

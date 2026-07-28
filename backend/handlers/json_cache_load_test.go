@@ -92,6 +92,33 @@ func TestFetchTeamSeasonSchedule_rejectsInvalidJSONWithoutCaching(t *testing.T) 
 	}
 }
 
+func TestFetchGameBoxscoreRaw_rejectsInvalidJSONWithoutCaching(t *testing.T) {
+	var boxHits atomic.Int32
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		if r.URL.Path == "/schedule" {
+			_, _ = w.Write([]byte(`{"dates":[{"games":[{"status":{"detailedState":"Final"}}]}]}`))
+			return
+		}
+		boxHits.Add(1)
+		_, _ = w.Write([]byte("{broken"))
+	})
+	h := newTestHandlers(t, mlb)
+	ctx := httptest.NewRequest(http.MethodGet, "/", nil).Context()
+
+	_, err := h.fetchGameBoxscoreRaw(ctx, "555")
+	if err == nil {
+		t.Fatal("expected unmarshal error")
+	}
+	_, err = h.fetchGameBoxscoreRaw(ctx, "555")
+	if err == nil {
+		t.Fatal("expected unmarshal error on retry")
+	}
+	if got := boxHits.Load(); got != 2 {
+		t.Fatalf("invalid JSON must not be cached: box hits=%d want 2", got)
+	}
+}
+
 func TestLeagueSeasonBaseline_invalidUpstreamJSON(t *testing.T) {
 	h := newTestHandlers(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

@@ -15,6 +15,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// yearByYearLeagueConcurrency caps parallel league-baseline fetches on cold year-by-year compares.
+const yearByYearLeagueConcurrency = 5
+
 type mlbPeopleYearByYearPayload struct {
 	Stats []struct {
 		Splits []struct {
@@ -111,10 +114,17 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 
 		leagueBySeason := make(map[string]float64, len(seasonSeen))
 		lg, lgctx := errgroup.WithContext(ctx)
+		sem := make(chan struct{}, yearByYearLeagueConcurrency)
 		var mu sync.Mutex
 		for sy := range seasonSeen {
 			sy := sy
 			lg.Go(func() error {
+				select {
+				case sem <- struct{}{}:
+					defer func() { <-sem }()
+				case <-lgctx.Done():
+					return lgctx.Err()
+				}
 				v, err := h.fetchLeagueBaselineMetric(lgctx, sy, group, metric)
 				if err != nil {
 					return err
