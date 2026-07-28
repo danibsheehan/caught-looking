@@ -110,6 +110,7 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 
 // fetchGameBoxscoreRaw returns MLB /game/{pk}/boxscore JSON, coalesced so timeline and boxscore
 // share one upstream download per gamePk.
+// JSON is validated before caching so a corrupt payload is not sticky for the TTL.
 func (h *Handlers) fetchGameBoxscoreRaw(ctx context.Context, pkStr string) ([]byte, error) {
 	key := "mlb-boxscore-raw:" + pkStr
 	return h.cache.GetOrLoadWithTTL(ctx, key, func(ctx context.Context) ([]byte, time.Duration, error) {
@@ -131,6 +132,10 @@ func (h *Handlers) fetchGameBoxscoreRaw(ctx context.Context, pkStr string) ([]by
 		})
 		if err := g.Wait(); err != nil {
 			return nil, 0, err
+		}
+		var root mlbBoxscoreRoot
+		if err := json.Unmarshal(raw, &root); err != nil {
+			return nil, 0, wrapUpstreamJSONParse(err)
 		}
 		return raw, cacheTTLForGameStatus(status, h.cfg), nil
 	})
