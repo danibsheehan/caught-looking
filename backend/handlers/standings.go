@@ -68,14 +68,10 @@ func winsLossesFromSplits(splits []mlbSplitRecord, typ string) (wins, losses int
 
 // Standings returns regular-season standings by division for the requested season and leagues.
 func (h *Handlers) Standings(w http.ResponseWriter, r *http.Request) {
-	season := h.cfg.DefaultSeason
-	if v := strings.TrimSpace(r.URL.Query().Get("season")); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1900 || n > 2100 {
-			respondAPIError(w, http.StatusBadRequest, "invalid season")
-			return
-		}
-		season = n
+	season, err := parseSeasonOrDefault(r.URL.Query().Get("season"), h.cfg.DefaultSeason)
+	if err != nil {
+		respondAPIError(w, http.StatusBadRequest, "invalid season")
+		return
 	}
 
 	leagueIDs := strings.TrimSpace(r.URL.Query().Get("leagueId"))
