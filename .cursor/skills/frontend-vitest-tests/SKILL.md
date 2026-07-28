@@ -52,10 +52,9 @@ description: >-
    - Stub **`console.error`** when testing `componentDidCatch` if you need a quiet log; **restore** after the suite.
 
 7. **Commands**
-   - **`cd frontend && npm run test:run`** (CI parity) or **`npm run test`** (watch).
-   - Coverage: **`npm run test:coverage`** — HTML report under **`frontend/coverage/`** (gitignored).
-   - From repo root: **`make test-frontend`**.
-   - Before finishing: run **`npx prettier --write`** on changed files (see **`.cursor/rules/frontend-prettier.mdc`**), then **`npm run lint`**, **`npm run format:check`**, **`npm run typecheck`**, **`npm run test:run`** (core frontend checks; CI also runs OpenAPI validate/types drift and `build`).
+   - **Task done**: **`cd frontend && npm run test:run`** (or **`npm run test`** in watch) for the suites you touched; run **`npx prettier --write`** on changed files if the Prettier hook did not cover them (see **`.cursor/rules/frontend-prettier.mdc`**).
+   - Coverage when investigating the gate: **`npm run test:coverage`** — HTML under **`frontend/coverage/`** (gitignored). From repo root: **`make test-frontend`**.
+   - **PR done**: **`make ci-local`** / **`.cursor/skills/pr-ready/SKILL.md`** — do not run full lint/typecheck/build/CI on every test edit.
 
 ## Anti-patterns
 
