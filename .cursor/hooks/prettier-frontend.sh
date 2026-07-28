@@ -24,14 +24,17 @@ case "$file_path" in
 esac
 
 root="$(cd "$(dirname "$0")/../.." && pwd)"
-config="$root/frontend/prettier.config.js"
-ignore="$root/frontend/.prettierignore"
+frontend="$root/frontend"
+prettier_bin="$frontend/node_modules/.bin/prettier"
+config="$frontend/prettier.config.js"
+ignore="$frontend/.prettierignore"
 
-if ! command -v npx >/dev/null 2>&1; then
-  echo "prettier-frontend hook: npx not found; skipping" >&2
+# Use the frontend-pinned Prettier (same as npm run format:check), not a floating npx download.
+if [[ ! -x "$prettier_bin" ]]; then
+  echo "prettier-frontend hook: frontend/node_modules/.bin/prettier missing; run npm install in frontend/" >&2
   exit 0
 fi
 
 # Fail open: formatting errors must not block the agent.
-npx --yes prettier --write --config "$config" --ignore-path "$ignore" -- "$file_path" >/dev/null 2>&1 || true
+"$prettier_bin" --write --config "$config" --ignore-path "$ignore" -- "$file_path" >/dev/null 2>&1 || true
 exit 0
