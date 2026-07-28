@@ -1,16 +1,18 @@
 ---
 description: React pages, components, and hooks conventions
-globs: frontend/**/*.tsx
+globs:
+  - frontend/**/*.tsx
+  - frontend/src/hooks/**/*.ts
 alwaysApply: false
 ---
 
 # Frontend (React)
 
 - Use **function components** only. Derive UI from props and hooks; avoid class components.
-- **Routing**: `react-router-dom` — keep route-level views under `frontend/src/pages/`, reusable UI under `frontend/src/components/` (match existing folder layout).
-- **Data fetching**: do not call `fetch` directly in components for app API data. Import **`fetch…` helpers from `../api/client`** (or wrap them in **`hooks/`** with `useState` / `useEffect` and cancellation like existing hooks). Keeps loading/error handling consistent.
+- **Routing**: **`react-router`** — keep route-level views under `frontend/src/pages/`, reusable UI under `frontend/src/components/` (match existing folder layout).
+- **Data fetching**: do not call `fetch` directly in components for app API data. Import **`fetch…` helpers from `../api/client`**, or wrap them in **`hooks/`**. Prefer **`useAsyncResource`** (AbortController cleanup, loading/error via `startTransition`) or mirror neighboring hooks — do not invent a one-off `useState`/`useEffect`/`setTimeout(0)` pattern when an existing hook fits.
 - **Types**: import response/query types from **`frontend/src/types/api.compat`** (re-exports from OpenAPI-generated **`api.generated.ts`**). Don’t inline large response shapes in components.
 - **Styling**: follow patterns in `frontend/src/index.scss` and `frontend/src/styles/` (variables, utilities). Prefer existing classes and layout patterns over one-off inline styles unless there’s a strong reason.
 - **New class names / new components**: use **BEM** as defined in **`.cursor/rules/frontend-bem.mdc`**. Leave legacy class strings unchanged unless the task is an explicit BEM migration.
-- **Errors**: surface failures to the user (message or empty state), not silent `console.log` only.
+- **Errors / a11y**: surface failures to the user (message or empty state), not silent `console.log` only. Prefer accessible names/roles for interactive controls.
 - **Tests**: follow **`.cursor/skills/frontend-vitest-tests/SKILL.md`** for Vitest, Testing Library, and mocked `api/client` (see also **`frontend-testing`** rule for `*.test.ts(x)` files).
