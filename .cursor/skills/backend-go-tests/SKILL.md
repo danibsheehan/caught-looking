@@ -45,8 +45,7 @@ description: >-
    - If the change under test alters **routes, query params, or JSON** the API exposes, update **`backend/apidocs/openapi.yaml`** in the same PR and run **`make check-openapi`** — see **`.cursor/skills/openapi-maintain/SKILL.md`**.
 
 8. **Commands**
-   - **Task done**: focused tests for packages you changed (`cd backend && go test ./handlers -count=1`, or `go test ./... -count=1`). Prefer **`make test-backend`** when you want vet + govulncheck + full suite without the coverage gate.
-   - When debugging flakes or CI race failures: `go test ./... -race` in `backend/`.
+   - **Task done**: focused tests for packages you changed (`cd backend && go test ./handlers -count=1`, or `go test ./... -count=1`). Prefer **`make test-backend`** when you want vet + govulncheck + full suite without the coverage gate; **`make test-backend-race`** (or `go test ./... -race`) when debugging flakes or CI race failures.
    - **PR done**: **`make ci-local`** / **`.cursor/skills/pr-ready/SKILL.md`** — do not treat full CI as required for every test edit.
 
 ## Anti-patterns

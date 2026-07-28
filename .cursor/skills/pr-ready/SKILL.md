@@ -31,7 +31,7 @@ Runs frontend then backend checks aligned with **`.github/workflows/ci.yml`**:
 | Side | Includes |
 |------|----------|
 | Frontend (`ci-local-frontend`) | `npm audit --audit-level=high`, `make check-openapi`, lint, `format:check`, typecheck, `test:coverage` + ≥50% line-rate gate, build |
-| Backend (`ci-local-backend`) | `go vet`, `govulncheck`, tests with coverage + ≥50% Cobertura gate, build |
+| Backend (`ci-local-backend`) | `go vet`, `govulncheck`, `go test -race`, tests with coverage + ≥50% Cobertura gate, build |
 
 Faster subsets when iterating (not a substitute before PR):
 

@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"bytes"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -71,9 +71,9 @@ func TestCORS_disallowedOrigin(t *testing.T) {
 
 func TestLogger_logsMethodPathStatusAndDuration(t *testing.T) {
 	var buf bytes.Buffer
-	prev := log.Default().Writer()
-	log.SetOutput(&buf)
-	t.Cleanup(func() { log.SetOutput(prev) })
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})))
+	t.Cleanup(func() { slog.SetDefault(prev) })
 
 	h := Logger(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTeapot)
@@ -141,9 +141,9 @@ func TestHTTPRateLimit_disabledNoops(t *testing.T) {
 
 func TestLogger_defaultStatusOKWhenNoWriteHeader(t *testing.T) {
 	var buf bytes.Buffer
-	prev := log.Default().Writer()
-	log.SetOutput(&buf)
-	t.Cleanup(func() { log.SetOutput(prev) })
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})))
+	t.Cleanup(func() { slog.SetDefault(prev) })
 
 	h := Logger(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("hi"))
@@ -156,5 +156,17 @@ func TestLogger_defaultStatusOKWhenNoWriteHeader(t *testing.T) {
 	line := buf.String()
 	if !strings.Contains(line, "method=GET") || !strings.Contains(line, "path=/implicit") || !strings.Contains(line, "status=200") {
 		t.Fatalf("log line: %q", strings.TrimSpace(line))
+	}
+}
+
+func TestWrapResponseWriter_UnwrapAndFlush(t *testing.T) {
+	rec := httptest.NewRecorder()
+	ww := &wrapResponseWriter{ResponseWriter: rec, status: http.StatusOK}
+	if ww.Unwrap() != rec {
+		t.Fatal("Unwrap should return underlying ResponseWriter")
+	}
+	ww.Flush() // httptest.ResponseRecorder implements http.Flusher
+	if _, _, err := ww.Hijack(); err == nil {
+		t.Fatal("expected Hijack error for ResponseRecorder")
 	}
 }

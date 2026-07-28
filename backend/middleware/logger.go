@@ -1,7 +1,10 @@
 package middleware
 
 import (
-	"log"
+	"bufio"
+	"errors"
+	"log/slog"
+	"net"
 	"net/http"
 	"time"
 
@@ -15,8 +18,13 @@ func Logger(next http.Handler) http.Handler {
 		ww := &wrapResponseWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(ww, r)
 		reqID := chimiddleware.GetReqID(r.Context())
-		log.Printf("method=%s path=%s status=%d duration=%s request_id=%s",
-			r.Method, r.URL.Path, ww.status, time.Since(start).Round(time.Millisecond), reqID)
+		slog.Info("request",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", ww.status,
+			"duration", time.Since(start).Round(time.Millisecond).String(),
+			"request_id", reqID,
+		)
 	})
 }
 
@@ -28,4 +36,22 @@ type wrapResponseWriter struct {
 func (w *wrapResponseWriter) WriteHeader(code int) {
 	w.status = code
 	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *wrapResponseWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
+func (w *wrapResponseWriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+func (w *wrapResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("hijack not supported")
+	}
+	return h.Hijack()
 }

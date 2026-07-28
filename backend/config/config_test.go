@@ -53,7 +53,7 @@ func TestLoad_defaults(t *testing.T) {
 		TTLStatcast:            6 * time.Hour,
 		TTLLiveScores:          45 * time.Second,
 		TTLPlayerSearch:        3 * time.Minute,
-		DefaultSeason:          2026,
+		DefaultSeason:          time.Now().Year(),
 		DefaultLeagueIDs:       "103,104",
 		RateLimitRequests:      120,
 		RateLimitWindow:        time.Minute,
@@ -161,8 +161,8 @@ func TestLoad_invalidMLB_SEASONIgnored(t *testing.T) {
 	t.Setenv("MLB_SEASON", "twenty-twenty-five")
 
 	got := Load()
-	if got.DefaultSeason != 2026 {
-		t.Fatalf("DefaultSeason: got %d want default 2026", got.DefaultSeason)
+	if got.DefaultSeason != time.Now().Year() {
+		t.Fatalf("DefaultSeason: got %d want current year %d", got.DefaultSeason, time.Now().Year())
 	}
 }
 

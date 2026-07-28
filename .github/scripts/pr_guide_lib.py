@@ -84,7 +84,8 @@ def verify_commands(areas: set[str]) -> list[str]:
     if "backend" in areas:
         commands.append(
             "`make test-backend` — or from `backend/`: `go vet ./...`, "
-            "`go run golang.org/x/vuln/cmd/govulncheck@latest ./...`, `go test ./...`, `go build .`"
+            "`go run golang.org/x/vuln/cmd/govulncheck@latest ./...`, "
+            "`go test ./... -race`, `go build .`"
         )
     if not commands:
         commands.append("N/A — tooling/docs only; confirm locally if anything user-facing changed")
@@ -100,7 +101,7 @@ def checklist_items(areas: set[str]) -> list[str]:
     if "backend" in areas:
         items.append(
             "Backend: `go vet ./...`, `go run golang.org/x/vuln/cmd/govulncheck@latest ./...`, "
-            "`go test ./...`, `go build .`"
+            "`go test ./... -race`, `go build .`"
         )
     if "openapi" in areas:
         items.append(

@@ -78,6 +78,8 @@ jobs:
             - run: go vet ./...
             - name: Vulnerability scan
               run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+            - name: Test with race detector
+              run: go test ./... -race -count=1
             - name: Test with coverage
               run: |
                   go test ./... -count=1 -coverprofile=coverage.out -covermode=atomic
