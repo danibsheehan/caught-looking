@@ -3,8 +3,9 @@ name: frontend-vitest-tests
 description: >-
   Writes or updates Vitest + Testing Library tests for caught-looking’s frontend:
   mocked api/client, renderHook, jsdom, and coverage. Use when adding or changing
-  code under frontend/src, writing *.test.ts(x), fixing flaky UI/hook tests, or when
-  the user mentions frontend tests, Vitest, RTL, or test coverage.
+  code under frontend/src, writing *.test.ts(x), fixing flaky UI/hook tests,
+  accessibility role queries, loading/error UI tests, or when the user mentions
+  frontend tests, Vitest, RTL, or test coverage.
 ---
 
 # Frontend Vitest tests (caught-looking)
@@ -32,15 +33,17 @@ description: >-
 2. **API and `fetch`**
    - **`vi.mock('../../api/client')`** (or correct relative path from the test file) and **`vi.mocked(fetchX)`** for `fetch…` helpers.
    - Do **not** call the real backend in unit tests; assert **URLs / params** via mock call args (see existing `client.test.ts`).
+   - Typed fixtures: prefer minimal payloads shaped like **`frontend/src/types/api.compat`** (OpenAPI-derived). If the contract is new, regenerate types first — see **`.cursor/skills/openapi-maintain/SKILL.md`**.
 
 3. **Hooks (`renderHook`)**
-   - Mock client functions; resolve with minimal typed payloads from **`frontend/src/types/api.compat`** (OpenAPI-derived shapes).
-   - Effects that use **`setTimeout(0)`** or debounces: **`waitFor` on `result.current.data` / `error` / mock calls**, not only `loading === false`, because some hooks start with `loading: false` and race.
+   - Mock client functions; resolve with minimal typed payloads from **`api.compat`**.
+   - Prefer patterns from **`useAsyncResource`** (AbortController cleanup, `startTransition` for loading/error resets). Assert with **`waitFor` on `result.current.data` / `error` / mock calls**, not only `loading === false`, because some hooks start with `loading: false` and race.
 
 4. **UI components**
    - Prefer **roles and accessible names** (`getByRole('button', { name: /…/ })`, `getByRole('combobox', { name: '…' })`).
+   - Cover **loading**, **error**, and **empty** states when the component surfaces them (visible message or empty UI — not silent failure).
    - Controlled props: if the parent must update after `onChange`, use a small **stateful harness** in the test (see `PlayerPicker.test.tsx`).
-   - Debounced search (e.g. **320ms**): use **real timers** + **`setTimeout` flush** or `waitFor`; **`userEvent` + fake timers** often deadlocks—avoid unless you wire `advanceTimers` correctly.
+   - Debounced search (e.g. **320ms** in `PlayerPicker`): use **real timers** + **`setTimeout` flush** or `waitFor`; **`userEvent` + fake timers** often deadlocks—avoid unless you wire `advanceTimers` correctly.
 
 5. **DOM cleanup**
    - Global **`cleanup()`** runs in **`setup.ts`** `afterEach`. If you ever disable it, unmount between tests to avoid **multiple comboboxes / duplicate roles**.
