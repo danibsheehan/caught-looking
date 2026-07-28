@@ -19,6 +19,10 @@ const gameLinescoreJSON = `{
   "teams": {
     "home": {"runs": 4},
     "away": {"runs": 3}
+  },
+  "status": {
+    "detailedState": "Final",
+    "abstractGameState": "Final"
   }
 }`
 

@@ -76,7 +76,7 @@ func (h *Handlers) PlayersCompare(w http.ResponseWriter, r *http.Request) {
 		cacheKey += ":" + strconv.Itoa(season)
 	}
 
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var p1, p2 models.PlayerStatSnapshot
 		g.Go(func() error {

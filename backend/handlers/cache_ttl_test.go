@@ -63,6 +63,52 @@ func TestGameDisplayStatus(t *testing.T) {
 	}
 }
 
+func TestCacheTTLForGameStatus(t *testing.T) {
+	cfg := config.Config{
+		TTLLiveScores: 45 * time.Second,
+		TTLStandings:  time.Hour,
+	}
+	if got := cacheTTLForGameStatus("Final", cfg); got != cfg.TTLStandings {
+		t.Fatalf("final: got %v", got)
+	}
+	if got := cacheTTLForGameStatus("In Progress", cfg); got != cfg.TTLLiveScores {
+		t.Fatalf("live: got %v", got)
+	}
+	if got := cacheTTLForGameStatus("", cfg); got != cfg.TTLLiveScores {
+		t.Fatalf("unknown: got %v", got)
+	}
+}
+
+func TestCacheTTLForSeason(t *testing.T) {
+	cfg := config.Config{
+		TTLScores:    5 * time.Minute,
+		TTLStandings: time.Hour,
+	}
+	now := time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC)
+	if got := cacheTTLForSeason(2025, cfg, now); got != cfg.TTLStandings {
+		t.Fatalf("past season: got %v", got)
+	}
+	if got := cacheTTLForSeason(2026, cfg, now); got != cfg.TTLScores {
+		t.Fatalf("current season: got %v", got)
+	}
+	if got := cacheTTLForSeason(2027, cfg, now); got != cfg.TTLScores {
+		t.Fatalf("future season: got %v", got)
+	}
+}
+
+func TestScheduleGameDisplayStatus(t *testing.T) {
+	raw := []byte(`{"dates":[{"games":[{"status":{"detailedState":"Final","abstractGameState":"Final"}}]}]}`)
+	if got := scheduleGameDisplayStatus(raw); got != "Final" {
+		t.Fatalf("got %q", got)
+	}
+	if got := scheduleGameDisplayStatus([]byte(`{"dates":[]}`)); got != "" {
+		t.Fatalf("empty dates: %q", got)
+	}
+	if got := scheduleGameDisplayStatus([]byte(`not-json`)); got != "" {
+		t.Fatalf("bad json: %q", got)
+	}
+}
+
 func TestCacheTTLForDateGames_abstractFinalWithoutDetailed(t *testing.T) {
 	cfg := config.Config{
 		TTLLiveScores: 45 * time.Second,

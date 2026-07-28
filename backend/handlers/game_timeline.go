@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"caught-looking/backend/models"
 
@@ -31,6 +32,10 @@ type mlbLinescorePayload struct {
 			Runs int `json:"runs"`
 		} `json:"away"`
 	} `json:"teams"`
+	Status struct {
+		AbstractGameState string `json:"abstractGameState"`
+		DetailedState     string `json:"detailedState"`
+	} `json:"status"`
 }
 
 type mlbBoxscoreTeams struct {
@@ -60,7 +65,7 @@ func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "game-timeline:" + pkStr
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLLiveScores, func(ctx context.Context) ([]byte, error) {
+	body, err := h.cache.GetOrLoadWithTTL(r.Context(), cacheKey, func(ctx context.Context) ([]byte, time.Duration, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var raw []byte
 		var rawBox []byte
@@ -75,17 +80,17 @@ func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
 			return err
 		})
 		if err := g.Wait(); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		var payload mlbLinescorePayload
 		if err := json.Unmarshal(raw, &payload); err != nil {
-			return nil, wrapUpstreamJSONParse(err)
+			return nil, 0, wrapUpstreamJSONParse(err)
 		}
 
 		var box mlbBoxscoreTeams
 		if err := json.Unmarshal(rawBox, &box); err != nil {
-			return nil, wrapUpstreamJSONParse(err)
+			return nil, 0, wrapUpstreamJSONParse(err)
 		}
 
 		innings := make([]models.InningScore, 0, len(payload.Innings))
@@ -107,7 +112,12 @@ func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
 			HomeTotal: payload.Teams.Home.Runs,
 			AwayTotal: payload.Teams.Away.Runs,
 		}
-		return marshalCachedJSON(out)
+		body, err := marshalCachedJSON(out)
+		if err != nil {
+			return nil, 0, err
+		}
+		status := gameDisplayStatus(payload.Status.DetailedState, payload.Status.AbstractGameState)
+		return body, cacheTTLForGameStatus(status, h.cfg), nil
 	})
 	if err != nil {
 		respondGetOrLoadError(w, r, err)
