@@ -30,6 +30,10 @@ jobs:
             CLOUDRUN_SERVICE_NAME: ${{ vars.CLOUDRUN_SERVICE_NAME }}
             GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
             GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+            # Optional cost caps (defaults applied in steps when unset).
+            CLOUDRUN_MAX_INSTANCES: ${{ vars.CLOUDRUN_MAX_INSTANCES }}
+            CLOUDRUN_MIN_INSTANCES: ${{ vars.CLOUDRUN_MIN_INSTANCES }}
+            GCP_ARTIFACT_KEEP_COUNT: ${{ vars.GCP_ARTIFACT_KEEP_COUNT }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
@@ -39,6 +43,19 @@ jobs:
                     echo "::error::Set GitHub repository variables: GCP_PROJECT_ID, GCP_REGION, GCP_ARTIFACT_REPOSITORY, CLOUDRUN_SERVICE_NAME, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_DEPLOY_SERVICE_ACCOUNT"
                     exit 1
                   fi
+                  MAX_INSTANCES="${CLOUDRUN_MAX_INSTANCES:-2}"
+                  MIN_INSTANCES="${CLOUDRUN_MIN_INSTANCES:-0}"
+                  KEEP_COUNT="${GCP_ARTIFACT_KEEP_COUNT:-5}"
+                  case "$MAX_INSTANCES" in ''|*[!0-9]*|0) echo "::error::CLOUDRUN_MAX_INSTANCES must be a positive integer (got ${MAX_INSTANCES})"; exit 1 ;; esac
+                  case "$MIN_INSTANCES" in ''|*[!0-9]*) echo "::error::CLOUDRUN_MIN_INSTANCES must be a non-negative integer (got ${MIN_INSTANCES})"; exit 1 ;; esac
+                  case "$KEEP_COUNT" in ''|*[!0-9]*|0) echo "::error::GCP_ARTIFACT_KEEP_COUNT must be a positive integer (got ${KEEP_COUNT})"; exit 1 ;; esac
+                  if [ "$MIN_INSTANCES" -gt "$MAX_INSTANCES" ]; then
+                    echo "::error::CLOUDRUN_MIN_INSTANCES ($MIN_INSTANCES) cannot exceed CLOUDRUN_MAX_INSTANCES ($MAX_INSTANCES)"
+                    exit 1
+                  fi
+                  echo "CLOUDRUN_MAX_INSTANCES=$MAX_INSTANCES" >> "$GITHUB_ENV"
+                  echo "CLOUDRUN_MIN_INSTANCES=$MIN_INSTANCES" >> "$GITHUB_ENV"
+                  echo "GCP_ARTIFACT_KEEP_COUNT=$KEEP_COUNT" >> "$GITHUB_ENV"
 
             - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
               with:
@@ -62,6 +79,36 @@ jobs:
                   gcloud auth print-access-token | docker login \
                     -u oauth2accesstoken \
                     --password-stdin "https://${GCP_REGION}-docker.pkg.dev"
+
+            - name: Ensure Artifact Registry cleanup policy
+              run: |
+                  # Keep policies win over delete. Delete anything older than 1 day that is
+                  # outside the most-recent keep window so :sha images do not accumulate forever.
+                  python3 - <<'PY'
+                  import json, os
+
+                  keep = int(os.environ["GCP_ARTIFACT_KEEP_COUNT"])
+                  policy = [
+                      {
+                          "name": "delete-old-versions",
+                          "action": {"type": "Delete"},
+                          "condition": {"tagState": "ANY", "olderThan": "86400s"},
+                      },
+                      {
+                          "name": "keep-minimum-versions",
+                          "action": {"type": "Keep"},
+                          "mostRecentVersions": {"keepCount": keep},
+                      },
+                  ]
+                  with open("/tmp/ar-cleanup-policy.json", "w") as f:
+                      json.dump(policy, f)
+                  print(f"Artifact Registry keepCount={keep}")
+                  PY
+                  gcloud artifacts repositories set-cleanup-policies "$GCP_ARTIFACT_REPOSITORY" \
+                    --project "$GCP_PROJECT_ID" \
+                    --location "$GCP_REGION" \
+                    --policy=/tmp/ar-cleanup-policy.json \
+                    --no-dry-run
 
             - name: Build and push container image
               run: |
@@ -102,6 +149,8 @@ jobs:
                     --project "$GCP_PROJECT_ID" \
                     --platform managed \
                     --allow-unauthenticated \
+                    --min-instances="$CLOUDRUN_MIN_INSTANCES" \
+                    --max-instances="$CLOUDRUN_MAX_INSTANCES" \
                     --env-vars-file=/tmp/cr-env.json
 
             - id: cloudrun-url
