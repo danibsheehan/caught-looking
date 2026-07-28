@@ -50,7 +50,7 @@ func timelineCacheKey(teamID, season int) string {
 func parseRecordTimeline(raw []byte, teamID, season int) (models.RecordTimelineResponse, error) {
 	var payload mlbSchedulePayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return models.RecordTimelineResponse{}, err
+		return models.RecordTimelineResponse{}, wrapUpstreamJSONParse(err)
 	}
 
 	var games []scheduleGame

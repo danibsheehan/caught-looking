@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -36,87 +37,84 @@ func (h *Handlers) GamesForDate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "games-for-date:" + date + ":" + strconv.Itoa(teamID)
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
-
-	q := url.Values{}
-	q.Set("sportId", "1")
-	q.Set("date", date)
-	if teamID > 0 {
-		q.Set("teamId", strconv.Itoa(teamID))
-	}
-	path := "/schedule?" + q.Encode()
-
-	raw, err := h.mlb.Get(r.Context(), path)
-	if err != nil {
-		respondUpstreamError(w, r, err)
-		return
-	}
-
-	var payload struct {
-		Dates []struct {
-			Date  string `json:"date"`
-			Games []struct {
-				GamePk       int64  `json:"gamePk"`
-				OfficialDate string `json:"officialDate"`
-				Status       struct {
-					AbstractGameState string `json:"abstractGameState"`
-					DetailedState     string `json:"detailedState"`
-				} `json:"status"`
-				Teams struct {
-					Away struct {
-						Team struct {
-							ID   int    `json:"id"`
-							Name string `json:"name"`
-						} `json:"team"`
-						Score int `json:"score"`
-					} `json:"away"`
-					Home struct {
-						Team struct {
-							ID   int    `json:"id"`
-							Name string `json:"name"`
-						} `json:"team"`
-						Score int `json:"score"`
-					} `json:"home"`
-				} `json:"teams"`
-			} `json:"games"`
-		} `json:"dates"`
-	}
-	if err := json.Unmarshal(raw, &payload); err != nil {
-		respondUpstreamJSONParseError(w)
-		return
-	}
-
-	out := models.GamesForDateResponse{Date: date, Games: nil}
-	for _, d := range payload.Dates {
-		for _, g := range d.Games {
-			od := g.OfficialDate
-			if od == "" {
-				od = d.Date
-			}
-			out.Games = append(out.Games, models.GameSummary{
-				GamePk:       g.GamePk,
-				AwayTeam:     g.Teams.Away.Team.Name,
-				HomeTeam:     g.Teams.Home.Team.Name,
-				AwayID:       g.Teams.Away.Team.ID,
-				HomeID:       g.Teams.Home.Team.ID,
-				Status:       gameDisplayStatus(g.Status.DetailedState, g.Status.AbstractGameState),
-				AwayScore:    g.Teams.Away.Score,
-				HomeScore:    g.Teams.Home.Score,
-				OfficialDate: od,
-			})
+	body, err := h.cache.GetOrLoadWithTTL(r.Context(), cacheKey, func(ctx context.Context) ([]byte, time.Duration, error) {
+		q := url.Values{}
+		q.Set("sportId", "1")
+		q.Set("date", date)
+		if teamID > 0 {
+			q.Set("teamId", strconv.Itoa(teamID))
 		}
-	}
+		path := "/schedule?" + q.Encode()
 
-	body, err := json.Marshal(out)
+		raw, err := h.mlb.Get(ctx, path)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		var payload struct {
+			Dates []struct {
+				Date  string `json:"date"`
+				Games []struct {
+					GamePk       int64  `json:"gamePk"`
+					OfficialDate string `json:"officialDate"`
+					Status       struct {
+						AbstractGameState string `json:"abstractGameState"`
+						DetailedState     string `json:"detailedState"`
+					} `json:"status"`
+					Teams struct {
+						Away struct {
+							Team struct {
+								ID   int    `json:"id"`
+								Name string `json:"name"`
+							} `json:"team"`
+							Score int `json:"score"`
+						} `json:"away"`
+						Home struct {
+							Team struct {
+								ID   int    `json:"id"`
+								Name string `json:"name"`
+							} `json:"team"`
+							Score int `json:"score"`
+						} `json:"home"`
+					} `json:"teams"`
+				} `json:"games"`
+			} `json:"dates"`
+		}
+		if err := json.Unmarshal(raw, &payload); err != nil {
+			return nil, 0, wrapUpstreamJSONParse(err)
+		}
+
+		out := models.GamesForDateResponse{Date: date, Games: nil}
+		for _, d := range payload.Dates {
+			for _, g := range d.Games {
+				od := g.OfficialDate
+				if od == "" {
+					od = d.Date
+				}
+				out.Games = append(out.Games, models.GameSummary{
+					GamePk:       g.GamePk,
+					AwayTeam:     g.Teams.Away.Team.Name,
+					HomeTeam:     g.Teams.Home.Team.Name,
+					AwayID:       g.Teams.Away.Team.ID,
+					HomeID:       g.Teams.Home.Team.ID,
+					Status:       gameDisplayStatus(g.Status.DetailedState, g.Status.AbstractGameState),
+					AwayScore:    g.Teams.Away.Score,
+					HomeScore:    g.Teams.Home.Score,
+					OfficialDate: od,
+				})
+			}
+		}
+
+		body, err := marshalCachedJSON(out)
+		if err != nil {
+			return nil, 0, err
+		}
+		ttl := cacheTTLForDateGames(date, out.Games, h.cfg, time.Now())
+		return body, ttl, nil
+	})
 	if err != nil {
-		respondJSONEncodeError(w)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
-
-	ttl := cacheTTLForDateGames(date, out.Games, h.cfg, time.Now())
-	h.cache.Set(cacheKey, body, ttl)
 	writeJSONBytes(w, body)
 }

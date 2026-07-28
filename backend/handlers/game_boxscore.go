@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -57,36 +58,28 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "game-boxscore:" + pkStr
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLLiveScores, func(ctx context.Context) ([]byte, error) {
+		raw, err := h.mlb.Get(ctx, "/game/"+pkStr+"/boxscore")
+		if err != nil {
+			return nil, err
+		}
 
-	raw, err := h.mlb.Get(r.Context(), "/game/"+pkStr+"/boxscore")
+		var root mlbBoxscoreRoot
+		if err := json.Unmarshal(raw, &root); err != nil {
+			return nil, wrapUpstreamJSONParse(err)
+		}
+
+		out := models.GameBoxscoreResponse{
+			GamePk: gamePk,
+			Away:   buildTeamSide(root.Teams.Away),
+			Home:   buildTeamSide(root.Teams.Home),
+		}
+		return marshalCachedJSON(out)
+	})
 	if err != nil {
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
-
-	var root mlbBoxscoreRoot
-	if err := json.Unmarshal(raw, &root); err != nil {
-		respondUpstreamJSONParseError(w)
-		return
-	}
-
-	out := models.GameBoxscoreResponse{
-		GamePk: gamePk,
-		Away:   buildTeamSide(root.Teams.Away),
-		Home:   buildTeamSide(root.Teams.Home),
-	}
-
-	body, err := json.Marshal(out)
-	if err != nil {
-		respondJSONEncodeError(w)
-		return
-	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLLiveScores)
 	writeJSONBytes(w, body)
 }
 

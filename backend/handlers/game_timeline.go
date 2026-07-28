@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -59,68 +60,58 @@ func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "game-timeline:" + pkStr
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
-
-	ctx := r.Context()
-	g, gctx := errgroup.WithContext(ctx)
-	var raw []byte
-	var rawBox []byte
-	g.Go(func() error {
-		var err error
-		raw, err = h.mlb.Get(gctx, "/game/"+pkStr+"/linescore")
-		return err
-	})
-	g.Go(func() error {
-		var err error
-		rawBox, err = h.mlb.Get(gctx, "/game/"+pkStr+"/boxscore")
-		return err
-	})
-	if err := g.Wait(); err != nil {
-		respondUpstreamError(w, r, err)
-		return
-	}
-
-	var payload mlbLinescorePayload
-	if err := json.Unmarshal(raw, &payload); err != nil {
-		respondUpstreamJSONParseError(w)
-		return
-	}
-
-	var box mlbBoxscoreTeams
-	if err := json.Unmarshal(rawBox, &box); err != nil {
-		respondAPIError(w, http.StatusBadGateway, "upstream boxscore parse error")
-		return
-	}
-
-	innings := make([]models.InningScore, 0, len(payload.Innings))
-	for _, inn := range payload.Innings {
-		innings = append(innings, models.InningScore{
-			Inning:   inn.Num,
-			HomeRuns: inn.Home.Runs,
-			AwayRuns: inn.Away.Runs,
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLLiveScores, func(ctx context.Context) ([]byte, error) {
+		g, gctx := errgroup.WithContext(ctx)
+		var raw []byte
+		var rawBox []byte
+		g.Go(func() error {
+			var err error
+			raw, err = h.mlb.Get(gctx, "/game/"+pkStr+"/linescore")
+			return err
 		})
-	}
+		g.Go(func() error {
+			var err error
+			rawBox, err = h.mlb.Get(gctx, "/game/"+pkStr+"/boxscore")
+			return err
+		})
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
 
-	out := models.GameTimelineResponse{
-		GamePk:    gamePk,
-		HomeTeam:  box.Teams.Home.Team.Name,
-		AwayTeam:  box.Teams.Away.Team.Name,
-		HomeID:    box.Teams.Home.Team.ID,
-		AwayID:    box.Teams.Away.Team.ID,
-		Innings:   innings,
-		HomeTotal: payload.Teams.Home.Runs,
-		AwayTotal: payload.Teams.Away.Runs,
-	}
+		var payload mlbLinescorePayload
+		if err := json.Unmarshal(raw, &payload); err != nil {
+			return nil, wrapUpstreamJSONParse(err)
+		}
 
-	body, err := json.Marshal(out)
+		var box mlbBoxscoreTeams
+		if err := json.Unmarshal(rawBox, &box); err != nil {
+			return nil, wrapUpstreamJSONParse(err)
+		}
+
+		innings := make([]models.InningScore, 0, len(payload.Innings))
+		for _, inn := range payload.Innings {
+			innings = append(innings, models.InningScore{
+				Inning:   inn.Num,
+				HomeRuns: inn.Home.Runs,
+				AwayRuns: inn.Away.Runs,
+			})
+		}
+
+		out := models.GameTimelineResponse{
+			GamePk:    gamePk,
+			HomeTeam:  box.Teams.Home.Team.Name,
+			AwayTeam:  box.Teams.Away.Team.Name,
+			HomeID:    box.Teams.Home.Team.ID,
+			AwayID:    box.Teams.Away.Team.ID,
+			Innings:   innings,
+			HomeTotal: payload.Teams.Home.Runs,
+			AwayTotal: payload.Teams.Away.Runs,
+		}
+		return marshalCachedJSON(out)
+	})
 	if err != nil {
-		respondJSONEncodeError(w)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLLiveScores)
 	writeJSONBytes(w, body)
 }

@@ -75,47 +75,40 @@ func (h *Handlers) PlayersCompare(w http.ResponseWriter, r *http.Request) {
 	if scope == "season" {
 		cacheKey += ":" + strconv.Itoa(season)
 	}
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
 
-	ctx := r.Context()
-	g, gctx := errgroup.WithContext(ctx)
-	var p1, p2 models.PlayerStatSnapshot
-	g.Go(func() error {
-		var err error
-		p1, err = h.fetchPlayerStats(gctx, id1, group, scope, season)
-		return err
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+		g, gctx := errgroup.WithContext(ctx)
+		var p1, p2 models.PlayerStatSnapshot
+		g.Go(func() error {
+			var err error
+			p1, err = h.fetchPlayerStats(gctx, id1, group, scope, season)
+			return err
+		})
+		g.Go(func() error {
+			var err error
+			p2, err = h.fetchPlayerStats(gctx, id2, group, scope, season)
+			return err
+		})
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
+
+		outSeason := 0
+		if scope == "season" {
+			outSeason = season
+		}
+		out := models.PlayersRadarResponse{
+			Scope:   scope,
+			Season:  outSeason,
+			Group:   group,
+			Players: []models.PlayerStatSnapshot{p1, p2},
+		}
+		return marshalCachedJSON(out)
 	})
-	g.Go(func() error {
-		var err error
-		p2, err = h.fetchPlayerStats(gctx, id2, group, scope, season)
-		return err
-	})
-	if err := g.Wait(); err != nil {
-		respondUpstreamError(w, r, err)
-		return
-	}
-
-	outSeason := 0
-	if scope == "season" {
-		outSeason = season
-	}
-	out := models.PlayersRadarResponse{
-		Scope:   scope,
-		Season:  outSeason,
-		Group:   group,
-		Players: []models.PlayerStatSnapshot{p1, p2},
-	}
-
-	body, err := json.Marshal(out)
 	if err != nil {
-		respondJSONEncodeError(w)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
 	writeJSONBytes(w, body)
 }
 
@@ -137,7 +130,7 @@ func (h *Handlers) fetchPlayerStats(ctx context.Context, id int64, group, scope 
 
 	var payload mlbPeopleStatsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return models.PlayerStatSnapshot{}, err
+		return models.PlayerStatSnapshot{}, wrapUpstreamJSONParse(err)
 	}
 
 	var snap models.PlayerStatSnapshot

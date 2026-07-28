@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -39,55 +40,51 @@ func (h *Handlers) PlayerSearch(w http.ResponseWriter, r *http.Request) {
 
 	const maxHits = 15
 	cacheKey := "player-search:" + strings.ToLower(q)
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLPlayerSearch, func(ctx context.Context) ([]byte, error) {
+		qs := url.Values{}
+		qs.Set("names", q)
+		path := "/people/search?" + qs.Encode()
 
-	qs := url.Values{}
-	qs.Set("names", q)
-	path := "/people/search?" + qs.Encode()
+		raw, err := h.mlb.Get(ctx, path)
+		if err != nil {
+			return nil, err
+		}
 
-	raw, err := h.mlb.Get(r.Context(), path)
+		var payload mlbPeopleSearchPayload
+		if err := json.Unmarshal(raw, &payload); err != nil {
+			return nil, wrapUpstreamJSONParse(err)
+		}
+
+		truncated := len(payload.People) > maxHits
+		people := payload.People
+		if len(people) > maxHits {
+			people = people[:maxHits]
+		}
+
+		out := models.PlayersSearchResponse{
+			Query:     q,
+			Truncated: truncated,
+			People:    make([]models.PlayerSearchHit, 0, len(people)),
+		}
+		for _, p := range people {
+			out.People = append(out.People, models.PlayerSearchHit{
+				ID:         p.ID,
+				FullName:   p.FullName,
+				Position:   p.PrimaryPosition.Abbreviation,
+				Active:     p.Active,
+				PrimaryNum: p.PrimaryNumber,
+			})
+		}
+		return marshalCachedJSON(out)
+	})
 	if err != nil {
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
 
-	var payload mlbPeopleSearchPayload
-	if err := json.Unmarshal(raw, &payload); err != nil {
-		respondUpstreamJSONParseError(w)
-		return
+	var cached models.PlayersSearchResponse
+	if err := json.Unmarshal(body, &cached); err == nil {
+		w.Header().Set("X-Result-Count", strconv.Itoa(len(cached.People)))
 	}
-
-	truncated := len(payload.People) > maxHits
-	people := payload.People
-	if len(people) > maxHits {
-		people = people[:maxHits]
-	}
-
-	out := models.PlayersSearchResponse{
-		Query:     q,
-		Truncated: truncated,
-		People:    make([]models.PlayerSearchHit, 0, len(people)),
-	}
-	for _, p := range people {
-		out.People = append(out.People, models.PlayerSearchHit{
-			ID:         p.ID,
-			FullName:   p.FullName,
-			Position:   p.PrimaryPosition.Abbreviation,
-			Active:     p.Active,
-			PrimaryNum: p.PrimaryNumber,
-		})
-	}
-
-	body, err := json.Marshal(out)
-	if err != nil {
-		respondJSONEncodeError(w)
-		return
-	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLPlayerSearch)
-	w.Header().Set("X-Result-Count", strconv.Itoa(len(out.People)))
 	writeJSONBytes(w, body)
 }

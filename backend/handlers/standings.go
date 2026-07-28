@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -98,97 +99,89 @@ func (h *Handlers) Standings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "standings:" + strconv.Itoa(season) + ":" + leagueIDs + ":" + standingsType
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
+		q := url.Values{}
+		q.Set("season", strconv.Itoa(season))
+		q.Set("leagueId", leagueIDs)
+		q.Set("standingsTypes", standingsType)
+		path := "/standings?" + q.Encode()
 
-	q := url.Values{}
-	q.Set("season", strconv.Itoa(season))
-	q.Set("leagueId", leagueIDs)
-	q.Set("standingsTypes", standingsType)
-	path := "/standings?" + q.Encode()
-
-	ctx := r.Context()
-	var raw []byte
-	var divNames map[int]string
-	grp, ctx := errgroup.WithContext(ctx)
-	grp.Go(func() error {
-		var err error
-		raw, err = h.mlb.Get(ctx, path)
-		return err
-	})
-	grp.Go(func() error {
-		var err error
-		divNames, err = h.loadDivisionNames(ctx)
-		return err
-	})
-	if err := grp.Wait(); err != nil {
-		respondUpstreamError(w, r, err)
-		return
-	}
-
-	var payload mlbStandingsPayload
-	if err := json.Unmarshal(raw, &payload); err != nil {
-		respondUpstreamJSONParseError(w)
-		return
-	}
-
-	divisions := make([]models.StandingDivision, 0, len(payload.Records))
-	for _, rec := range payload.Records {
-		dname := rec.Division.Name
-		if dname == "" {
-			dname = divNames[rec.Division.ID]
+		var raw []byte
+		var divNames map[int]string
+		grp, ctx := errgroup.WithContext(ctx)
+		grp.Go(func() error {
+			var err error
+			raw, err = h.mlb.Get(ctx, path)
+			return err
+		})
+		grp.Go(func() error {
+			var err error
+			divNames, err = h.loadDivisionNames(ctx)
+			return err
+		})
+		if err := grp.Wait(); err != nil {
+			return nil, err
 		}
-		teams := make([]models.StandingTeam, 0, len(rec.TeamRecords))
-		for _, tr := range rec.TeamRecords {
-			var splits []mlbSplitRecord
-			if tr.Records != nil {
-				splits = tr.Records.SplitRecords
+
+		var payload mlbStandingsPayload
+		if err := json.Unmarshal(raw, &payload); err != nil {
+			return nil, wrapUpstreamJSONParse(err)
+		}
+
+		divisions := make([]models.StandingDivision, 0, len(payload.Records))
+		for _, rec := range payload.Records {
+			dname := rec.Division.Name
+			if dname == "" {
+				dname = divNames[rec.Division.ID]
 			}
-			hw, hl := winsLossesFromSplits(splits, "home")
-			aw, al := winsLossesFromSplits(splits, "away")
-			l10w, l10l := winsLossesFromSplits(splits, "lastTen")
-			streak := strings.TrimSpace(tr.Streak.StreakCode)
-			teams = append(teams, models.StandingTeam{
-				TeamID:          tr.Team.ID,
-				TeamName:        tr.Team.Name,
-				Wins:            tr.LeagueRecord.Wins,
-				Losses:          tr.LeagueRecord.Losses,
-				Pct:             tr.LeagueRecord.Pct,
-				GamesPlayed:     tr.GamesPlayed,
-				DivisionRank:    tr.DivisionRank,
-				GamesBack:       tr.GamesBack,
-				WildCardGames:   tr.WildCardGamesBack,
-				RunsScored:      tr.RunsScored,
-				RunsAllowed:     tr.RunsAllowed,
-				RunDifferential: tr.RunDifferential,
-				Streak:          streak,
-				HomeWins:        hw,
-				HomeLosses:      hl,
-				AwayWins:        aw,
-				AwayLosses:      al,
-				LastTenWins:     l10w,
-				LastTenLosses:   l10l,
+			teams := make([]models.StandingTeam, 0, len(rec.TeamRecords))
+			for _, tr := range rec.TeamRecords {
+				var splits []mlbSplitRecord
+				if tr.Records != nil {
+					splits = tr.Records.SplitRecords
+				}
+				hw, hl := winsLossesFromSplits(splits, "home")
+				aw, al := winsLossesFromSplits(splits, "away")
+				l10w, l10l := winsLossesFromSplits(splits, "lastTen")
+				streak := strings.TrimSpace(tr.Streak.StreakCode)
+				teams = append(teams, models.StandingTeam{
+					TeamID:          tr.Team.ID,
+					TeamName:        tr.Team.Name,
+					Wins:            tr.LeagueRecord.Wins,
+					Losses:          tr.LeagueRecord.Losses,
+					Pct:             tr.LeagueRecord.Pct,
+					GamesPlayed:     tr.GamesPlayed,
+					DivisionRank:    tr.DivisionRank,
+					GamesBack:       tr.GamesBack,
+					WildCardGames:   tr.WildCardGamesBack,
+					RunsScored:      tr.RunsScored,
+					RunsAllowed:     tr.RunsAllowed,
+					RunDifferential: tr.RunDifferential,
+					Streak:          streak,
+					HomeWins:        hw,
+					HomeLosses:      hl,
+					AwayWins:        aw,
+					AwayLosses:      al,
+					LastTenWins:     l10w,
+					LastTenLosses:   l10l,
+				})
+			}
+			divisions = append(divisions, models.StandingDivision{
+				DivisionID:   rec.Division.ID,
+				DivisionName: dname,
+				LeagueID:     rec.League.ID,
+				Teams:        teams,
 			})
 		}
-		divisions = append(divisions, models.StandingDivision{
-			DivisionID:   rec.Division.ID,
-			DivisionName: dname,
-			LeagueID:     rec.League.ID,
-			Teams:        teams,
-		})
-	}
 
-	body, err := json.Marshal(models.StandingsResponse{
-		Season:    season,
-		Divisions: divisions,
+		return marshalCachedJSON(models.StandingsResponse{
+			Season:    season,
+			Divisions: divisions,
+		})
 	})
 	if err != nil {
-		respondJSONEncodeError(w)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLStandings)
 	writeJSONBytes(w, body)
 }

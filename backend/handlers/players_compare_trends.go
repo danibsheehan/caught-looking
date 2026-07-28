@@ -211,7 +211,7 @@ func (h *Handlers) fetchPlayerYearByYear(ctx context.Context, id int64, group, m
 
 	var payload mlbPeopleYearByYearPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return nil, "", err
+		return nil, "", wrapUpstreamJSONParse(err)
 	}
 
 	name := ""
@@ -294,55 +294,46 @@ func (h *Handlers) PlayersCompareGameLog(w http.ResponseWriter, r *http.Request)
 	}
 
 	cacheKey := "players-gamelog:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + strconv.Itoa(season) + ":" + strconv.Itoa(limit)
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+		g, gctx := errgroup.WithContext(ctx)
+		var g1, g2 []models.GamePoint
+		var n1, n2 string
+		g.Go(func() error {
+			var err error
+			g1, n1, err = h.fetchPlayerGameLog(gctx, id1, group, season, limit)
+			return err
+		})
+		g.Go(func() error {
+			var err error
+			g2, n2, err = h.fetchPlayerGameLog(gctx, id2, group, season, limit)
+			return err
+		})
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
 
-	ctx := r.Context()
-	g, gctx := errgroup.WithContext(ctx)
-	var g1, g2 []models.GamePoint
-	var n1, n2 string
-	g.Go(func() error {
-		var err error
-		g1, n1, err = h.fetchPlayerGameLog(gctx, id1, group, season, limit)
-		return err
+		lb, err := h.fetchLeagueBaseline(ctx, season, group)
+		if err != nil {
+			return nil, err
+		}
+
+		out := models.PlayersGameLogResponse{
+			Season:         season,
+			Group:          group,
+			Metric:         metric,
+			Limit:          limit,
+			LeagueBaseline: lb,
+			Players: []models.GameLogPlayer{
+				{ID: id1, FullName: n1, Games: g1},
+				{ID: id2, FullName: n2, Games: g2},
+			},
+		}
+		return marshalCachedJSON(out)
 	})
-	g.Go(func() error {
-		var err error
-		g2, n2, err = h.fetchPlayerGameLog(gctx, id2, group, season, limit)
-		return err
-	})
-	if err := g.Wait(); err != nil {
-		respondUpstreamError(w, r, err)
-		return
-	}
-
-	lb, err := h.fetchLeagueBaseline(ctx, season, group)
 	if err != nil {
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
-
-	out := models.PlayersGameLogResponse{
-		Season:         season,
-		Group:          group,
-		Metric:         metric,
-		Limit:          limit,
-		LeagueBaseline: lb,
-		Players: []models.GameLogPlayer{
-			{ID: id1, FullName: n1, Games: g1},
-			{ID: id2, FullName: n2, Games: g2},
-		},
-	}
-
-	body, err := json.Marshal(out)
-	if err != nil {
-		respondJSONEncodeError(w)
-		return
-	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
 	writeJSONBytes(w, body)
 }
 
@@ -360,7 +351,7 @@ func (h *Handlers) fetchPlayerGameLog(ctx context.Context, id int64, group strin
 
 	var payload mlbPeopleGameLogPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return nil, "", err
+		return nil, "", wrapUpstreamJSONParse(err)
 	}
 
 	name := ""

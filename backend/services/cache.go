@@ -46,6 +46,15 @@ func (c *TTLCache) Set(key string, body []byte, ttl time.Duration) {
 // While waiting, the caller's ctx is respected. The shared load uses a context detached from
 // request cancellation so one aborted client does not fail coalesced peers.
 func (c *TTLCache) GetOrLoad(ctx context.Context, key string, ttl time.Duration, load func(context.Context) ([]byte, error)) ([]byte, error) {
+	return c.GetOrLoadWithTTL(ctx, key, func(ctx context.Context) ([]byte, time.Duration, error) {
+		body, err := load(ctx)
+		return body, ttl, err
+	})
+}
+
+// GetOrLoadWithTTL is like GetOrLoad, but the load function chooses the entry TTL (e.g. adaptive
+// TTLs based on parsed payload). Failed loads are not cached.
+func (c *TTLCache) GetOrLoadWithTTL(ctx context.Context, key string, load func(context.Context) ([]byte, time.Duration, error)) ([]byte, error) {
 	if body, ok := c.Get(key); ok {
 		return body, nil
 	}
@@ -53,7 +62,7 @@ func (c *TTLCache) GetOrLoad(ctx context.Context, key string, ttl time.Duration,
 		if body, ok := c.Get(key); ok {
 			return body, nil
 		}
-		body, err := load(context.WithoutCancel(ctx))
+		body, ttl, err := load(context.WithoutCancel(ctx))
 		if err != nil {
 			return nil, err
 		}

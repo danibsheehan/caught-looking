@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sort"
@@ -69,63 +70,54 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 		keyParts = append(keyParts, strconv.Itoa(id))
 	}
 	cacheKey := "record-timelines-batch:" + strconv.Itoa(season) + ":" + strings.Join(keyParts, ",")
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+		g, ctx := errgroup.WithContext(ctx)
+		sem := make(chan struct{}, batchTimelineConcurrency)
 
-	ctx := r.Context()
-	g, ctx := errgroup.WithContext(ctx)
-	sem := make(chan struct{}, batchTimelineConcurrency)
+		results := make([][]byte, len(teamIDs))
+		var mu sync.Mutex
 
-	results := make([][]byte, len(teamIDs))
-	var mu sync.Mutex
+		for i, tid := range teamIDs {
+			i, tid := i, tid
+			g.Go(func() error {
+				select {
+				case sem <- struct{}{}:
+					defer func() { <-sem }()
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+				b, err := h.getOrBuildRecordTimelineBytes(ctx, tid, season)
+				if err != nil {
+					return err
+				}
+				mu.Lock()
+				results[i] = b
+				mu.Unlock()
+				return nil
+			})
+		}
 
-	for i, tid := range teamIDs {
-		i, tid := i, tid
-		g.Go(func() error {
-			select {
-			case sem <- struct{}{}:
-				defer func() { <-sem }()
-			case <-ctx.Done():
-				return ctx.Err()
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
+
+		timelines := make([]models.RecordTimelineResponse, 0, len(results))
+		for _, b := range results {
+			var tr models.RecordTimelineResponse
+			if err := json.Unmarshal(b, &tr); err != nil {
+				return nil, wrapJSONDecode(err)
 			}
-			b, err := h.getOrBuildRecordTimelineBytes(ctx, tid, season)
-			if err != nil {
-				return err
-			}
-			mu.Lock()
-			results[i] = b
-			mu.Unlock()
-			return nil
+			timelines = append(timelines, tr)
+		}
+
+		return marshalCachedJSON(models.RecordTimelinesBatchResponse{
+			Season:    season,
+			Timelines: timelines,
 		})
-	}
-
-	if err := g.Wait(); err != nil {
+	})
+	if err != nil {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-
-	timelines := make([]models.RecordTimelineResponse, 0, len(results))
-	for _, b := range results {
-		var tr models.RecordTimelineResponse
-		if err := json.Unmarshal(b, &tr); err != nil {
-			respondAPIError(w, http.StatusInternalServerError, "internal parse error")
-			return
-		}
-		timelines = append(timelines, tr)
-	}
-
-	out := models.RecordTimelinesBatchResponse{
-		Season:    season,
-		Timelines: timelines,
-	}
-	body, err := json.Marshal(out)
-	if err != nil {
-		respondJSONEncodeError(w)
-		return
-	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
 	writeJSONBytes(w, body)
 }

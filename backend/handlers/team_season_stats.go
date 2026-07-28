@@ -42,51 +42,43 @@ func (h *Handlers) TeamSeasonStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "team-season-stats-v4:" + strconv.Itoa(teamID) + ":" + strconv.Itoa(season)
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+		g, gctx := errgroup.WithContext(ctx)
+		var hit models.TeamHittingLine
+		var pit models.TeamPitchingLine
+		var venue models.TeamVenueSplits
 
-	ctx := r.Context()
-	g, gctx := errgroup.WithContext(ctx)
-	var hit models.TeamHittingLine
-	var pit models.TeamPitchingLine
-	var venue models.TeamVenueSplits
+		g.Go(func() error {
+			var err error
+			hit, err = h.fetchTeamHittingSeason(gctx, teamID, season)
+			return err
+		})
+		g.Go(func() error {
+			var err error
+			pit, err = h.fetchTeamPitchingSeason(gctx, teamID, season)
+			return err
+		})
+		g.Go(func() error {
+			venue = h.fetchTeamVenueSplitsBestEffort(gctx, teamID, season)
+			return nil
+		})
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
 
-	g.Go(func() error {
-		var err error
-		hit, err = h.fetchTeamHittingSeason(gctx, teamID, season)
-		return err
+		out := models.TeamSeasonStatsResponse{
+			Season:      season,
+			TeamID:      teamID,
+			Hitting:     hit,
+			Pitching:    pit,
+			VenueSplits: venue,
+		}
+		return marshalCachedJSON(out)
 	})
-	g.Go(func() error {
-		var err error
-		pit, err = h.fetchTeamPitchingSeason(gctx, teamID, season)
-		return err
-	})
-	g.Go(func() error {
-		venue = h.fetchTeamVenueSplitsBestEffort(gctx, teamID, season)
-		return nil
-	})
-	if err := g.Wait(); err != nil {
-		respondUpstreamError(w, r, err)
-		return
-	}
-
-	out := models.TeamSeasonStatsResponse{
-		Season:      season,
-		TeamID:      teamID,
-		Hitting:     hit,
-		Pitching:    pit,
-		VenueSplits: venue,
-	}
-
-	body, err := json.Marshal(out)
 	if err != nil {
-		respondJSONEncodeError(w)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
 	writeJSONBytes(w, body)
 }
 
@@ -104,7 +96,7 @@ func (h *Handlers) fetchTeamHittingSeason(ctx context.Context, teamID int, seaso
 
 	var payload mlbTeamStatsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return models.TeamHittingLine{}, err
+		return models.TeamHittingLine{}, wrapUpstreamJSONParse(err)
 	}
 
 	var line models.TeamHittingLine
@@ -165,7 +157,7 @@ func (h *Handlers) fetchTeamPitchingSeason(ctx context.Context, teamID int, seas
 
 	var payload mlbTeamStatsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return models.TeamPitchingLine{}, err
+		return models.TeamPitchingLine{}, wrapUpstreamJSONParse(err)
 	}
 
 	var line models.TeamPitchingLine

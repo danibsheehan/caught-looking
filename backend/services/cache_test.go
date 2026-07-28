@@ -124,3 +124,23 @@ func TestTTLCache_GetOrLoad_error(t *testing.T) {
 		t.Fatal("failed load must not populate cache")
 	}
 }
+
+func TestTTLCache_GetOrLoadWithTTL_usesLoadTTL(t *testing.T) {
+	c := NewTTLCache()
+	body, err := c.GetOrLoadWithTTL(context.Background(), "k", func(context.Context) ([]byte, time.Duration, error) {
+		return []byte("ok"), 40 * time.Millisecond, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(body) != "ok" {
+		t.Fatalf("body %q", body)
+	}
+	if _, ok := c.Get("k"); !ok {
+		t.Fatal("expected hit before expiry")
+	}
+	time.Sleep(60 * time.Millisecond)
+	if _, ok := c.Get("k"); ok {
+		t.Fatal("expected miss after load-chosen TTL")
+	}
+}
