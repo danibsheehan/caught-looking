@@ -71,7 +71,7 @@ func (h *Handlers) Standings(w http.ResponseWriter, r *http.Request) {
 	if v := strings.TrimSpace(r.URL.Query().Get("season")); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 1900 || n > 2100 {
-			http.Error(w, "invalid season", http.StatusBadRequest)
+			respondAPIError(w, http.StatusBadRequest, "invalid season")
 			return
 		}
 		season = n
@@ -87,7 +87,7 @@ func (h *Handlers) Standings(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if _, err := strconv.Atoi(part); err != nil {
-			http.Error(w, "invalid leagueId", http.StatusBadRequest)
+			respondAPIError(w, http.StatusBadRequest, "invalid leagueId")
 			return
 		}
 	}

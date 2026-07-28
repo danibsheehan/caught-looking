@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -31,6 +32,9 @@ func TestRespondUpstreamError_requestDeadline(t *testing.T) {
 	if rec.Code != http.StatusGatewayTimeout {
 		t.Fatalf("status: got %d want 504", rec.Code)
 	}
+	if !strings.Contains(rec.Body.String(), `"error":"gateway timeout"`) {
+		t.Fatalf("body: %s", rec.Body.String())
+	}
 }
 
 func TestRespondUpstreamError_upstreamFailure(t *testing.T) {
@@ -40,5 +44,8 @@ func TestRespondUpstreamError_upstreamFailure(t *testing.T) {
 	respondUpstreamError(rec, req, context.DeadlineExceeded)
 	if rec.Code != http.StatusBadGateway {
 		t.Fatalf("upstream timeout without request deadline: got %d want 502", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `"error":"bad gateway"`) {
+		t.Fatalf("body: %s", rec.Body.String())
 	}
 }

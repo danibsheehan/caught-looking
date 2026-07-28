@@ -58,6 +58,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StandingsResponse"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Upstream MLB failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /teams/{teamID}/record-timeline:
     get:
       summary: Team record over season
@@ -144,6 +156,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GamesForDateResponse"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Upstream MLB failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /games/{gamePk}/timeline:
     get:
       summary: Inning-by-inning game runs
@@ -161,6 +185,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GameTimelineResponse"
+        "400":
+          description: Invalid gamePk
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Upstream MLB failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /games/{gamePk}/boxscore:
     get:
       summary: Game boxscore
@@ -178,6 +214,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GameBoxscoreResponse"
+        "400":
+          description: Invalid gamePk
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Upstream MLB failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /games/{gamePk}/statcast:
     get:
       summary: Game statcast batted balls
@@ -406,6 +454,15 @@ paths:
                 $ref: "#/components/schemas/LeagueSeasonBaselineResponse"
 components:
   schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: invalid season
     Team:
       type: object
       properties:

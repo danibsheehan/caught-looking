@@ -154,7 +154,7 @@ func (h *Handlers) RecordTimeline(w http.ResponseWriter, r *http.Request) {
 	teamIDStr := strings.TrimSpace(chi.URLParam(r, "teamID"))
 	teamID, err := strconv.Atoi(teamIDStr)
 	if err != nil || teamID <= 0 {
-		http.Error(w, "invalid team id", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "invalid team id")
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *Handlers) RecordTimeline(w http.ResponseWriter, r *http.Request) {
 	if v := strings.TrimSpace(r.URL.Query().Get("season")); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 1900 || n > 2100 {
-			http.Error(w, "invalid season", http.StatusBadRequest)
+			respondAPIError(w, http.StatusBadRequest, "invalid season")
 			return
 		}
 		season = n

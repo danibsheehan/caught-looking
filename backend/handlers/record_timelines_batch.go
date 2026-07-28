@@ -20,7 +20,7 @@ const batchTimelineConcurrency = 5
 func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) {
 	raw := strings.TrimSpace(r.URL.Query().Get("teamIds"))
 	if raw == "" {
-		http.Error(w, "query teamIds is required (comma-separated team ids)", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "query teamIds is required (comma-separated team ids)")
 		return
 	}
 
@@ -34,7 +34,7 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 		}
 		id, err := strconv.Atoi(p)
 		if err != nil || id <= 0 {
-			http.Error(w, "invalid team id in teamIds: "+p, http.StatusBadRequest)
+			respondAPIError(w, http.StatusBadRequest, "invalid team id in teamIds: "+p)
 			return
 		}
 		if _, ok := seen[id]; ok {
@@ -43,12 +43,12 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 		seen[id] = struct{}{}
 		teamIDs = append(teamIDs, id)
 		if len(teamIDs) > maxBatchTeams {
-			http.Error(w, "at most "+strconv.Itoa(maxBatchTeams)+" teams", http.StatusBadRequest)
+			respondAPIError(w, http.StatusBadRequest, "at most "+strconv.Itoa(maxBatchTeams)+" teams")
 			return
 		}
 	}
 	if len(teamIDs) == 0 {
-		http.Error(w, "no valid team ids", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "no valid team ids")
 		return
 	}
 
@@ -58,7 +58,7 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 	if v := strings.TrimSpace(r.URL.Query().Get("season")); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 1900 || n > 2100 {
-			http.Error(w, "invalid season", http.StatusBadRequest)
+			respondAPIError(w, http.StatusBadRequest, "invalid season")
 			return
 		}
 		season = n
@@ -110,7 +110,7 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 	for _, b := range results {
 		var tr models.RecordTimelineResponse
 		if err := json.Unmarshal(b, &tr); err != nil {
-			http.Error(w, "internal parse error", http.StatusInternalServerError)
+			respondAPIError(w, http.StatusInternalServerError, "internal parse error")
 			return
 		}
 		timelines = append(timelines, tr)

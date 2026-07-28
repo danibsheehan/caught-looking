@@ -334,6 +334,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ErrorResponse: {
+            /**
+             * @description Human-readable error message
+             * @example invalid season
+             */
+            error: string;
+        };
         Team: {
             id: number;
             name: string;
@@ -724,6 +731,24 @@ export interface operations {
                     "application/json": components["schemas"]["StandingsResponse"];
                 };
             };
+            /** @description Invalid query parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Upstream MLB failure */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getRecordTimeline: {
@@ -818,6 +843,24 @@ export interface operations {
                     "application/json": components["schemas"]["GamesForDateResponse"];
                 };
             };
+            /** @description Invalid query parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Upstream MLB failure */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getGameTimeline: {
@@ -840,6 +883,24 @@ export interface operations {
                     "application/json": components["schemas"]["GameTimelineResponse"];
                 };
             };
+            /** @description Invalid gamePk */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Upstream MLB failure */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getGameBoxscore: {
@@ -860,6 +921,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameBoxscoreResponse"];
+                };
+            };
+            /** @description Invalid gamePk */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Upstream MLB failure */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

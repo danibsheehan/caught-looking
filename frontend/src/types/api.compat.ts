@@ -2,6 +2,7 @@ import type { components, operations } from './api.generated';
 
 type QueryOf<T extends { parameters: { query?: unknown } }> = T['parameters']['query'];
 export type Team = components['schemas']['Team'];
+export type ErrorResponse = components['schemas']['ErrorResponse'];
 export type StandingTeam = components['schemas']['StandingTeam'];
 export type StandingDivision = components['schemas']['StandingDivision'];
 export type RecordPoint = components['schemas']['RecordPoint'];

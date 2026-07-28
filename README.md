@@ -290,6 +290,7 @@ Backend tests live as `*_test.go` next to packages under `backend/`. Frontend te
 | `MLB_LEAGUE_IDS`      | Default league ids for standings (default `103,104`)                                                                         |
 | `CACHE_TTL_STANDINGS` | Standings cache TTL (Go duration, e.g. `1h`; default `1h`)                                                                   |
 | `CACHE_TTL_SCORES`    | Scores-related cache TTL (default `5m`)                                                                                      |
+| `CACHE_TTL_LIVE_SCORES` | Short TTL for today/live scoreboards and in-game boxscore/timeline (default `45s`)                                         |
 | `CACHE_TTL_STATCAST`  | Statcast / Savant CSV cache TTL per game (default `6h`)                                                                      |
 | `CACHE_TTL_PLAYER_SEARCH` | Player-search cache TTL for name query keys (default `3m`)                                                              |
 | `CACHE_SWEEP_INTERVAL` | Interval for removing expired entries and applying `CACHE_MAX_ENTRIES` (default `2m`; `0` disables background sweeps)        |

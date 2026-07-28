@@ -88,8 +88,8 @@ func TestLogger_logsMethodPathStatusAndDuration(t *testing.T) {
 	}
 
 	line := buf.String()
-	if !strings.Contains(line, "POST") || !strings.Contains(line, "/v1/standings") || !strings.Contains(line, "418") {
-		t.Fatalf("log line missing method, path, or status: %q", strings.TrimSpace(line))
+	if !strings.Contains(line, "method=POST") || !strings.Contains(line, "path=/v1/standings") || !strings.Contains(line, "status=418") || !strings.Contains(line, "request_id=") {
+		t.Fatalf("log line missing structured fields: %q", strings.TrimSpace(line))
 	}
 }
 
@@ -154,7 +154,7 @@ func TestLogger_defaultStatusOKWhenNoWriteHeader(t *testing.T) {
 	h.ServeHTTP(rec, req)
 
 	line := buf.String()
-	if !strings.Contains(line, "GET") || !strings.Contains(line, "/implicit") || !strings.Contains(line, "200") {
+	if !strings.Contains(line, "method=GET") || !strings.Contains(line, "path=/implicit") || !strings.Contains(line, "status=200") {
 		t.Fatalf("log line: %q", strings.TrimSpace(line))
 	}
 }

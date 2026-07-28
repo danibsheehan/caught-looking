@@ -18,6 +18,7 @@ func testConfig() config.Config {
 		TTLScores:          time.Hour,
 		TTLStandings:       time.Hour,
 		TTLStatcast:        time.Hour,
+		TTLLiveScores:      time.Hour,
 		TTLPlayerSearch:    time.Hour,
 		CacheSweepInterval: 0,
 		CacheMaxEntries:    0,

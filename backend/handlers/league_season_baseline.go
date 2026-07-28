@@ -31,7 +31,7 @@ func (h *Handlers) LeagueSeasonBaseline(w http.ResponseWriter, r *http.Request) 
 	if v := strings.TrimSpace(r.URL.Query().Get("season")); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 1900 || n > 2100 {
-			http.Error(w, "invalid season", http.StatusBadRequest)
+			respondAPIError(w, http.StatusBadRequest, "invalid season")
 			return
 		}
 		season = n
@@ -42,7 +42,7 @@ func (h *Handlers) LeagueSeasonBaseline(w http.ResponseWriter, r *http.Request) 
 		group = "hitting"
 	}
 	if group != "hitting" && group != "pitching" {
-		http.Error(w, "group must be hitting or pitching", http.StatusBadRequest)
+		respondAPIError(w, http.StatusBadRequest, "group must be hitting or pitching")
 		return
 	}
 

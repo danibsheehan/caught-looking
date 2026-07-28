@@ -50,10 +50,25 @@ export async function apiGet<T>(path: string, options?: ApiGetOptions): Promise<
   const res =
     options?.signal !== undefined ? await fetch(url, { signal: options.signal }) : await fetch(url);
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `${res.status} ${res.statusText}`);
+    throw new Error(await readErrorMessage(res));
   }
   return (await res.json()) as T;
+}
+
+async function readErrorMessage(res: Response): Promise<string> {
+  const text = await res.text();
+  if (!text) {
+    return `${res.status} ${res.statusText}`;
+  }
+  try {
+    const parsed = JSON.parse(text) as { error?: unknown };
+    if (typeof parsed.error === 'string' && parsed.error.trim() !== '') {
+      return parsed.error;
+    }
+  } catch {
+    // non-JSON body (HTML gateway pages, plain text, etc.)
+  }
+  return text;
 }
 
 function apiOpts(signal?: AbortSignal): ApiGetOptions | undefined {

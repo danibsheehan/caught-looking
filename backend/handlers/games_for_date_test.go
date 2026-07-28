@@ -86,19 +86,40 @@ func TestGamesForDate_success(t *testing.T) {
 	}
 }
 
-func TestGamesForDate_upstreamParseError(t *testing.T) {
+func TestGamesForDate_abstractFinalWithoutDetailed(t *testing.T) {
+	const abstractOnly = `{
+  "dates": [{
+    "date": "2026-06-15",
+    "games": [{
+      "gamePk": 999002,
+      "officialDate": "2026-06-15",
+      "status": {"abstractGameState": "Final"},
+      "teams": {
+        "away": {"team": {"id": 121, "name": "Mets"}, "score": 5},
+        "home": {"team": {"id": 144, "name": "Phillies"}, "score": 4}
+      }
+    }]
+  }]
+}`
 	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`not-json`))
+		_, _ = w.Write([]byte(abstractOnly))
 	})
 	h := newTestHandlers(t, mlb)
 	r := chi.NewRouter()
 	r.Get("/games/for-date", h.GamesForDate)
 
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/games/for-date?date=2026-06-15", nil)
-	r.ServeHTTP(rec, req)
-	if rec.Code != http.StatusBadGateway {
-		t.Fatalf("status: got %d", rec.Code)
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/games/for-date?date=2026-06-15", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+	var out models.GamesForDateResponse
+	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Games) != 1 || out.Games[0].Status != "Final" {
+		t.Fatalf("want Status Final from abstractGameState, got %+v", out.Games)
 	}
 }
