@@ -48,20 +48,10 @@ jobs:
             # Keep the upload at workspace root so download-artifact extracts a flat file.
             - run: cp coverage/cobertura-coverage.xml "${GITHUB_WORKSPACE}/gha-cobertura-frontend.xml"
             - name: Enforce frontend coverage threshold
-              run: |
-                  python3 - <<'PY'
-                  import os
-                  import sys
-                  import xml.etree.ElementTree as ET
-
-                  minimum = 0.50
-                  path = os.path.join(os.environ["GITHUB_WORKSPACE"], "gha-cobertura-frontend.xml")
-                  line_rate = float(ET.parse(path).getroot().get("line-rate", "0"))
-                  if line_rate < minimum:
-                      print(f"Frontend coverage {line_rate:.2%} is below {minimum:.0%}", file=sys.stderr)
-                      sys.exit(1)
-                  print(f"Frontend coverage {line_rate:.2%}")
-                  PY
+              run: >
+                  python3 "${GITHUB_WORKSPACE}/.github/scripts/check_cobertura_line_rate.py"
+                  "${GITHUB_WORKSPACE}/gha-cobertura-frontend.xml" 0.50
+                  --label "Frontend coverage"
             - name: Upload frontend coverage artifact
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               with:
@@ -96,20 +86,10 @@ jobs:
                   "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura-raw.xml
                   python3 "$GITHUB_WORKSPACE/.github/scripts/merge_cobertura_by_file.py" gha-cobertura-raw.xml > "$GITHUB_WORKSPACE/gha-cobertura.xml"
             - name: Enforce backend coverage threshold
-              run: |
-                  python3 - <<'PY'
-                  import os
-                  import sys
-                  import xml.etree.ElementTree as ET
-
-                  minimum = 0.50
-                  path = os.path.join(os.environ["GITHUB_WORKSPACE"], "gha-cobertura.xml")
-                  line_rate = float(ET.parse(path).getroot().get("line-rate", "0"))
-                  if line_rate < minimum:
-                      print(f"Backend coverage {line_rate:.2%} is below {minimum:.0%}", file=sys.stderr)
-                      sys.exit(1)
-                  print(f"Backend coverage {line_rate:.2%}")
-                  PY
+              run: >
+                  python3 "${GITHUB_WORKSPACE}/.github/scripts/check_cobertura_line_rate.py"
+                  "${GITHUB_WORKSPACE}/gha-cobertura.xml" 0.50
+                  --label "Backend coverage"
             - name: Upload backend coverage artifact
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               with:
