@@ -13,4 +13,7 @@ alwaysApply: true
   - **`backend-go-tests`** / **`frontend-vitest-tests`** — tests
   - **`backend-http-security`** / **`caching-and-upstream-perf`** — hardening and upstream/cache performance
   - **`pr-ready`** — local CI-parity checks before a PR
-- **Before opening a PR**: follow **`.cursor/skills/pr-ready/SKILL.md`**. CI must pass (`frontend`: OpenAPI lint + generated-type drift check, lint, Prettier check, typecheck, test, build; `backend`: vet, govulncheck, test, build). For API edits, run **`make check-openapi`**. Fill out `.github/pull_request_template.md`.
+- **Agent definition of done**:
+  - **Task done**: follow scoped rules/skills for files you touched; run Prettier on changed frontend files; run the **smallest** relevant check (focused package tests, `make check-openapi` if the API contract changed). Do **not** require full CI for every small edit.
+  - **PR done**: run **`make ci-local`** and follow **`.cursor/skills/pr-ready/SKILL.md`** (PR template; no secrets). Commit, push, or open a PR **only when the user asks**.
+- **Before opening a PR**: **`make ci-local`** (see **`pr-ready`**). Fill out `.github/pull_request_template.md`.

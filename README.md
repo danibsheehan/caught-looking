@@ -263,14 +263,17 @@ Tests use **Vitest** (jsdom), **Testing Library**, and **`@testing-library/jest-
 
 ### Tests from the repo root (`Makefile`)
 
-| Target                    | Purpose                                                        |
-| ------------------------- | -------------------------------------------------------------- |
-| `make check-openapi`      | Lint OpenAPI + verify generated frontend API types are current |
-| `make test-backend`       | Backend CI checks: `go vet`, `govulncheck`, tests, build       |
-| `make test-frontend`      | `npm run test:run` in `frontend/`                              |
-| `make cover-backend`      | Go coverage summary (`backend/coverage.out`)                   |
-| `make cover-backend-html` | Same + `backend/coverage.html`                                 |
-| `make cover-frontend`     | Vitest coverage report under `frontend/coverage/`              |
+| Target                    | Purpose                                                                 |
+| ------------------------- | ----------------------------------------------------------------------- |
+| `make ci-local`           | Full local parity with GitHub Actions CI (frontend + backend jobs)      |
+| `make ci-local-frontend`  | Frontend CI job only (audit, OpenAPI, lint, format, typecheck, coverage ≥50%, build) |
+| `make ci-local-backend`   | Backend CI job only (vet, govulncheck, coverage ≥50%, build)            |
+| `make check-openapi`      | Lint OpenAPI + verify generated frontend API types are current          |
+| `make test-backend`       | Faster backend subset: `go vet`, `govulncheck`, tests, build            |
+| `make test-frontend`      | `npm run test:run` in `frontend/`                                       |
+| `make cover-backend`      | Go coverage summary (`backend/coverage.out`)                            |
+| `make cover-backend-html` | Same + `backend/coverage.html`                                          |
+| `make cover-frontend`     | Vitest coverage report under `frontend/coverage/`                       |
 
 Backend tests live as `*_test.go` next to packages under `backend/`. Frontend tests are colocated as `*.test.ts` / `*.test.tsx` next to sources. Conventions for agents and contributors are summarized in **`.cursor/skills/backend-go-tests/SKILL.md`** (Go) and **`.cursor/skills/frontend-vitest-tests/SKILL.md`** (frontend).
 
@@ -364,11 +367,11 @@ After the first successful deploy, **`CORS_ALLOWED_ORIGINS`** must include the r
 backend/    # Go HTTP API, MLB + Savant clients, handlers, models
 frontend/   # React SPA (src/, Vite, Vitest)
 .vscode/    # Editor: format on save (Prettier), recommended extensions
-Makefile    # install, dev, backend, frontend, test-*, cover-*
+Makefile    # install, dev, backend, frontend, ci-local, test-*, cover-*
 ```
 
 ---
 
 ## Contributing
 
-Use the [pull request template](.github/pull_request_template.md) for **Summary** and **How to verify**. The [**PR guide**](.github/workflows/pr-guide.yml) workflow scaffolds the description when it is empty or still the default template (suggested verify commands plus a **Touches** line) and posts a sticky comment with checklist hints and reviewer focus. Before opening a PR, run the same checks as CI (e.g. `make test-backend`, `make test-frontend`, plus `npm audit --audit-level=high` / `npm run api:validate` / `npm run api:types:check` / `npm run lint` / `npm run format:check` / `npm run typecheck` / `npm run build` in `frontend/`, and `go vet ./...`, `go run golang.org/x/vuln/cmd/govulncheck@latest ./...`, `go test ./...`, `go build` in `backend/`). Keep API changes in sync: **Go JSON / OpenAPI** ↔ generated frontend types (`frontend/src/types/api.generated.ts`) and `frontend/src/api/client.ts`.
+Use the [pull request template](.github/pull_request_template.md) for **Summary** and **How to verify**. The [**PR guide**](.github/workflows/pr-guide.yml) workflow scaffolds the description when it is empty or still the default template (suggested verify commands plus a **Touches** line) and posts a sticky comment with checklist hints and reviewer focus. Before opening a PR, run **`make ci-local`** from the repo root (same gates as CI, including `npm audit`, coverage ≥50%, and OpenAPI type drift). Keep API changes in sync: **Go JSON / OpenAPI** ↔ generated frontend types (`frontend/src/types/api.generated.ts`) and `frontend/src/api/client.ts`. Agent contributors: see **`.cursor/skills/pr-ready/SKILL.md`**.

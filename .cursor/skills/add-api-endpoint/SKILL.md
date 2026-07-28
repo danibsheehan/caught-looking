@@ -72,10 +72,8 @@ Endpoint progress:
 
 ## Done when
 
-- `make check-openapi`
-- `make test-backend`
-- Frontend: `npm run lint`, `format:check`, `typecheck`, `test:run` (and `build` before PR)
-- Or use **`.cursor/skills/pr-ready/SKILL.md`** when present
+- **Task done**: checklist above through tests + `make check-openapi` and focused backend/frontend tests for the change.
+- **PR done**: **`make ci-local`** and **`.cursor/skills/pr-ready/SKILL.md`**.
 
 ## Anti-patterns
 
