@@ -23,39 +23,31 @@ type divisionNameRow struct {
 
 // loadDivisionNames returns division id → display name, backed by a long-lived cache entry.
 func (h *Handlers) loadDivisionNames(ctx context.Context) (map[int]string, error) {
-	if body, ok := h.cache.Get(divisionNamesCacheKey); ok {
-		var rows []divisionNameRow
-		if err := json.Unmarshal(body, &rows); err != nil {
+	body, err := h.cache.GetOrLoad(ctx, divisionNamesCacheKey, divisionNamesTTL, func(ctx context.Context) ([]byte, error) {
+		raw, err := h.mlb.Get(ctx, "/divisions?sportId=1")
+		if err != nil {
 			return nil, err
 		}
-		out := make(map[int]string, len(rows))
-		for _, r := range rows {
-			out[r.ID] = r.Name
+
+		var payload mlbDivisionsPayload
+		if err := json.Unmarshal(raw, &payload); err != nil {
+			return nil, err
 		}
-		return out, nil
-	}
 
-	raw, err := h.mlb.Get(ctx, "/divisions?sportId=1")
+		rows := make([]divisionNameRow, 0, len(payload.Divisions))
+		for _, d := range payload.Divisions {
+			rows = append(rows, divisionNameRow{ID: d.ID, Name: d.Name})
+		}
+		return marshalCachedJSON(rows)
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	var payload mlbDivisionsPayload
-	if err := json.Unmarshal(raw, &payload); err != nil {
+	var rows []divisionNameRow
+	if err := json.Unmarshal(body, &rows); err != nil {
 		return nil, err
 	}
-
-	rows := make([]divisionNameRow, 0, len(payload.Divisions))
-	for _, d := range payload.Divisions {
-		rows = append(rows, divisionNameRow{ID: d.ID, Name: d.Name})
-	}
-
-	body, err := json.Marshal(rows)
-	if err != nil {
-		return nil, err
-	}
-	h.cache.Set(divisionNamesCacheKey, body, divisionNamesTTL)
-
 	out := make(map[int]string, len(rows))
 	for _, r := range rows {
 		out[r.ID] = r.Name

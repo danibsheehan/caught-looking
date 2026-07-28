@@ -66,43 +66,35 @@ func (h *Handlers) PlayersComparePlatoon(w http.ResponseWriter, r *http.Request)
 	}
 
 	cacheKey := "players-platoon:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + strconv.Itoa(season)
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
+		g, gctx := errgroup.WithContext(ctx)
+		var a, b models.PlatoonPlayer
+		g.Go(func() error {
+			var err error
+			a, err = h.fetchPlayerPlatoonSplits(gctx, id1, group, season)
+			return err
+		})
+		g.Go(func() error {
+			var err error
+			b, err = h.fetchPlayerPlatoonSplits(gctx, id2, group, season)
+			return err
+		})
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
 
-	ctx := r.Context()
-	g, gctx := errgroup.WithContext(ctx)
-	var a, b models.PlatoonPlayer
-	g.Go(func() error {
-		var err error
-		a, err = h.fetchPlayerPlatoonSplits(gctx, id1, group, season)
-		return err
+		out := models.PlayersPlatoonResponse{
+			Season:  season,
+			Group:   group,
+			Metric:  "ops",
+			Players: []models.PlatoonPlayer{a, b},
+		}
+		return marshalCachedJSON(out)
 	})
-	g.Go(func() error {
-		var err error
-		b, err = h.fetchPlayerPlatoonSplits(gctx, id2, group, season)
-		return err
-	})
-	if err := g.Wait(); err != nil {
-		respondUpstreamError(w, r, err)
-		return
-	}
-
-	out := models.PlayersPlatoonResponse{
-		Season:  season,
-		Group:   group,
-		Metric:  "ops",
-		Players: []models.PlatoonPlayer{a, b},
-	}
-
-	body, err := json.Marshal(out)
 	if err != nil {
-		respondJSONEncodeError(w)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLStandings)
 	writeJSONBytes(w, body)
 }
 

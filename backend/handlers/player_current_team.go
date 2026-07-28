@@ -30,37 +30,29 @@ type mlbPersonHydratePayload struct {
 // (same payload as GET /players/{id}/current-team).
 func (h *Handlers) playerCurrentTeamJSON(ctx context.Context, id int64) ([]byte, error) {
 	cacheKey := "player-current-team:" + strconv.FormatInt(id, 10)
-	if body, ok := h.cache.Get(cacheKey); ok {
-		return body, nil
-	}
+	return h.cache.GetOrLoad(ctx, cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+		path := "/people/" + strconv.FormatInt(id, 10) + "?hydrate=currentTeam"
+		raw, err := h.mlb.Get(ctx, path)
+		if err != nil {
+			return nil, err
+		}
 
-	path := "/people/" + strconv.FormatInt(id, 10) + "?hydrate=currentTeam"
-	raw, err := h.mlb.Get(ctx, path)
-	if err != nil {
-		return nil, err
-	}
+		var payload mlbPersonHydratePayload
+		if err := json.Unmarshal(raw, &payload); err != nil {
+			return nil, errors.Join(errMLBPeopleUnmarshal, err)
+		}
 
-	var payload mlbPersonHydratePayload
-	if err := json.Unmarshal(raw, &payload); err != nil {
-		return nil, errors.Join(errMLBPeopleUnmarshal, err)
-	}
+		teamID := 0
+		if len(payload.People) > 0 && payload.People[0].CurrentTeam != nil {
+			teamID = payload.People[0].CurrentTeam.ID
+		}
 
-	teamID := 0
-	if len(payload.People) > 0 && payload.People[0].CurrentTeam != nil {
-		teamID = payload.People[0].CurrentTeam.ID
-	}
-
-	out := models.PlayerCurrentTeamResponse{
-		PlayerID: id,
-		TeamID:   teamID,
-	}
-
-	body, err := json.Marshal(out)
-	if err != nil {
-		return nil, err
-	}
-	h.cache.Set(cacheKey, body, h.cfg.TTLScores)
-	return body, nil
+		out := models.PlayerCurrentTeamResponse{
+			PlayerID: id,
+			TeamID:   teamID,
+		}
+		return marshalCachedJSON(out)
+	})
 }
 
 // PlayerCurrentTeam returns the player's current MLB team id (for chart colors), if any.
@@ -78,7 +70,7 @@ func (h *Handlers) PlayerCurrentTeam(w http.ResponseWriter, r *http.Request) {
 			respondUpstreamJSONParseError(w)
 			return
 		}
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
 	writeJSONBytes(w, body)
@@ -117,7 +109,7 @@ func (h *Handlers) PlayersCurrentTeams(w http.ResponseWriter, r *http.Request) {
 			respondUpstreamJSONParseError(w)
 			return
 		}
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
 

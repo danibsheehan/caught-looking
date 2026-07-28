@@ -15,7 +15,8 @@ Most latency and reliability risk is **outbound MLB/Savant**, not React render. 
 ## Backend cache
 
 - Use **`services.TTLCache`** on **`Handlers`** (`h.cache`). Prefer **`GetOrLoad(ctx, key, ttl, load)`** so concurrent misses share one upstream call (**singleflight**). The load runs with a context **detached from request cancel** so one aborted client does not fail peers.
-- Map failures with **`respondGetOrLoadError`**.
+- Adaptive TTLs (e.g. date scoreboard settled vs live): use **`GetOrLoadWithTTL`** so the load returns `(body, ttl, err)`.
+- Map failures with **`respondGetOrLoadError`**. Do **not** use naked `Get`+`Set` for response bodies — that races under concurrent misses.
 - **Keys**: stable, explicit strings from validated params (include season/ids/resource). Avoid unbounded raw query text; player search uses **`TTLPlayerSearch`**.
 - **TTLs** (from **`config.Config`** — pick the closest existing knob; add a named TTL only if none fit):
 
@@ -29,6 +30,18 @@ Most latency and reliability risk is **outbound MLB/Savant**, not React render. 
 
 - **Memory**: sweeper (`CacheSweepInterval`) + **`CacheMaxEntries`** (default 2000). Do not cache huge unique keys without a short TTL or cap awareness.
 - Gzip is enabled in the router for JSON/yaml — keep large Statcast responses cached as bytes you already marshal once.
+
+### Handler cache adoption (Phase 0 inventory)
+
+| Route / helper | Pattern | TTL | Notes |
+|----------------|---------|-----|-------|
+| `PlayersCompare` | `GetOrLoad` | `TTLScores` | Phase 1 |
+| `GamesForDate` | `GetOrLoadWithTTL` | adaptive via `cacheTTLForDateGames` | Phase 1 |
+| `GameBoxscore` | `GetOrLoad` | `TTLLiveScores` | Phase 1; Phase 2: settle-aware TTL |
+| `GameTimeline` | `GetOrLoad` | `TTLLiveScores` | Phase 1; Phase 2: settle-aware TTL |
+| `PlayerSearch` | `GetOrLoad` | `TTLPlayerSearch` | Phase 1 |
+| `Standings` / `Teams` / platoon / game-log / season-stats / batch outer / current-team / divisions | `GetOrLoad` | varies | Phase 1 |
+| `RecordTimeline` / schedule / Statcast / league baseline / year-by-year | `GetOrLoad` | varies | already coalesced before Phase 1 |
 
 ## Upstream clients
 
@@ -50,6 +63,7 @@ Most latency and reliability risk is **outbound MLB/Savant**, not React render. 
 ## Anti-patterns
 
 - Ad-hoc `map` caches in handlers instead of `TTLCache`.
+- Response-body `cache.Get` + `cache.Set` without `GetOrLoad` / `GetOrLoadWithTTL` (thundering herd on concurrent misses).
 - Caching without TTL (or with hour-long TTL on live game data).
 - Parallel unbounded MLB calls per request without QPS awareness or coalescing.
 - Calling the real MLB API from unit tests.

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -38,45 +40,38 @@ func (h *Handlers) Teams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "teams:" + sportID
-	if body, ok := h.cache.Get(cacheKey); ok {
-		writeJSONBytes(w, body)
-		return
-	}
+	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
+		path := "/teams?sportId=" + sportID
+		raw, err := h.mlb.Get(ctx, path)
+		if err != nil {
+			return nil, err
+		}
 
-	path := "/teams?sportId=" + sportID
-	raw, err := h.mlb.Get(r.Context(), path)
+		var payload mlbTeamsPayload
+		if err := json.Unmarshal(raw, &payload); err != nil {
+			return nil, fmt.Errorf("teams parse: %w", err)
+		}
+
+		teams := make([]models.Team, 0, len(payload.Teams))
+		for _, t := range payload.Teams {
+			teams = append(teams, models.Team{
+				ID:           t.ID,
+				Name:         t.Name,
+				Abbreviation: t.Abbreviation,
+				TeamName:     t.TeamName,
+				LeagueID:     t.League.ID,
+				LeagueName:   t.League.Name,
+				DivisionID:   t.Division.ID,
+				DivisionName: t.Division.Name,
+				Active:       t.Active,
+			})
+		}
+
+		return marshalCachedJSON(models.TeamsResponse{Teams: teams})
+	})
 	if err != nil {
-		respondUpstreamError(w, r, err)
+		respondGetOrLoadError(w, r, err)
 		return
 	}
-
-	var payload mlbTeamsPayload
-	if err := json.Unmarshal(raw, &payload); err != nil {
-		respondUpstreamJSONParseError(w)
-		return
-	}
-
-	teams := make([]models.Team, 0, len(payload.Teams))
-	for _, t := range payload.Teams {
-		teams = append(teams, models.Team{
-			ID:           t.ID,
-			Name:         t.Name,
-			Abbreviation: t.Abbreviation,
-			TeamName:     t.TeamName,
-			LeagueID:     t.League.ID,
-			LeagueName:   t.League.Name,
-			DivisionID:   t.Division.ID,
-			DivisionName: t.Division.Name,
-			Active:       t.Active,
-		})
-	}
-
-	body, err := json.Marshal(models.TeamsResponse{Teams: teams})
-	if err != nil {
-		respondJSONEncodeError(w)
-		return
-	}
-
-	h.cache.Set(cacheKey, body, h.cfg.TTLStandings)
 	writeJSONBytes(w, body)
 }
