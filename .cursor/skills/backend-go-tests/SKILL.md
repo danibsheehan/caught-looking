@@ -3,15 +3,16 @@ name: backend-go-tests
 description: >-
   Writes or updates Go HTTP handler and service tests for caught-looking’s backend
   using httptest MLB fakes, chi routing, and shared test helpers. Use when adding or
-  changing code under backend/, writing *_test.go, fixing handler tests, or when the
-  user mentions backend tests, handler coverage, or MLB test fixtures.
+  changing code under backend/, writing *_test.go, fixing handler tests, handler
+  coverage, MLB test fixtures, cache/client unit tests, or when the user mentions
+  backend tests or go test.
 ---
 
 # Backend Go tests (caught-looking)
 
 ## When this applies
 
-- Editing `backend/handlers/`, `backend/services/`, `backend/middleware/`, `backend/config/`, or `backend/main.go` router behavior.
+- Editing `backend/handlers/`, `backend/services/`, `backend/middleware/`, `backend/config/`, or `backend/main.go` / `router.go` behavior.
 - Adding or refactoring `*_test.go` under `backend/`.
 
 ## Conventions (must follow)
@@ -36,12 +37,17 @@ description: >-
 5. **MLB response bodies**
    - Use **minimal valid JSON** shaped like the real API: `stats` → `splits`, `schedule` → `dates` → `games`, etc. Reuse strings from an existing test in the same area when possible (e.g. `scheduleOneFinalGame` for timelines).
 
-6. **OpenAPI**
+6. **Services (cache / clients)**
+   - Prefer table-driven unit tests next to the package (`cache_test.go`, `mlb_client_test.go`, `savant_client_test.go`).
+   - Exercise **`GetOrLoad`** coalescing and error paths without a real network; use short TTLs and controlled clocks where neighboring tests already do.
+
+7. **OpenAPI**
    - If the change under test alters **routes, query params, or JSON** the API exposes, update **`backend/apidocs/openapi.yaml`** in the same PR and run **`make check-openapi`** — see **`.cursor/skills/openapi-maintain/SKILL.md`**.
 
-7. **Commands**
-   - From repo: `make test-backend` (vet, govulncheck, tests, build) or `cd backend && go test ./... -count=1` for a focused test pass.
-   - Before finishing: **`go test ./... -race`**, **`go vet ./...`**, and **`go run golang.org/x/vuln/cmd/govulncheck@latest ./...`** in `backend/` (matches CI).
+8. **Commands**
+   - Prefer **`make test-backend`** from repo root (vet, govulncheck, tests, build — CI parity).
+   - Focused pass: `cd backend && go test ./... -count=1` or a single package/test.
+   - When debugging flakes or CI race failures: `go test ./... -race` in `backend/`.
 
 ## Anti-patterns
 
@@ -54,3 +60,4 @@ description: >-
 - Router wiring: `backend/router.go`, `backend/main.go`.
 - Example handler tests: `backend/handlers/*_test.go` (e.g. `players_compare_test.go`, `standings_test.go`, `setup_test.go`).
 - MLB client contract: `backend/services/mlb_client.go`.
+- Cache: `backend/services/cache.go`, `cache_test.go`.
