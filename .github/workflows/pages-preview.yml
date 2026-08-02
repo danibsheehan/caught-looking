@@ -15,7 +15,9 @@ permissions:
 
 jobs:
     preview:
-        if: ${{ github.actor != 'dependabot[bot]' && github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
+        # Gate on PR author (not github.actor): synchronize after a human commit
+        # would otherwise deploy a preview for a Dependabot-authored PR.
+        if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
         name: Deploy PR preview (Cloudflare Pages)
         runs-on: ubuntu-latest
         permissions:
