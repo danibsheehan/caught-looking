@@ -5,7 +5,7 @@
 [![Live app — caught-looking.com](./docs/badge-live.svg)](https://caught-looking.com/standings)
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=0a1018)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 ![UI](https://img.shields.io/badge/UI-neon_on_obsidian-00f5c4?style=flat-square&labelColor=070b10)
 
@@ -163,7 +163,7 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 
 | Layer    | Technology                                                                                                                                         |
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frontend | React 19, TypeScript, Vite, React Router, Recharts, ESLint, Prettier                                                                               |
+| Frontend | React 19, TypeScript 6.0, Vite, React Router, Recharts, ESLint, Prettier                                                                           |
 | Backend  | Go 1.26, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, token-bucket QPS caps for MLB and Savant outbound traffic |
 | Data     | MLB Stats API v1 (JSON); Baseball Savant (CSV) for Statcast-oriented game data                                                                     |
 
