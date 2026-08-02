@@ -15,7 +15,7 @@ permissions:
 
 jobs:
     preview:
-        if: ${{ github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
+        if: ${{ github.actor != 'dependabot[bot]' && github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
         name: Deploy PR preview (Cloudflare Pages)
         runs-on: ubuntu-latest
         permissions:
