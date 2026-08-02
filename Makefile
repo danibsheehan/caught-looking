@@ -3,7 +3,7 @@ PROJECT_ROOT := $(CURDIR)
 COVERAGE_MIN ?= 0.50
 CHECK_COVERAGE := python3 "$(PROJECT_ROOT)/.github/scripts/check_cobertura_line_rate.py"
 
-.PHONY: dev backend frontend install check-openapi test-backend test-backend-race test-frontend cover-backend cover-backend-html cover-frontend ci-local ci-local-frontend ci-local-backend
+.PHONY: dev backend frontend install check-openapi check-stack-docs test-backend test-backend-race test-frontend cover-backend cover-backend-html cover-frontend ci-local ci-local-frontend ci-local-backend
 
 ## dev: run API (:8080) and Vite dev server together (one terminal)
 dev:
@@ -26,6 +26,10 @@ install:
 check-openapi:
 	cd "$(PROJECT_ROOT)/frontend" && npm run api:validate
 	cd "$(PROJECT_ROOT)/frontend" && npm run api:types:check
+
+## check-stack-docs: verify README / project-stack versions match package.json, go.mod, CI
+check-stack-docs:
+	python3 "$(PROJECT_ROOT)/.github/scripts/check_stack_docs.py"
 
 ## test-backend: run backend CI checks (vet, govulncheck, tests, build)
 test-backend:
@@ -79,4 +83,4 @@ ci-local-backend:
 	cd "$(PROJECT_ROOT)/backend" && go build -o /dev/null .
 
 ## ci-local: full local parity with GitHub Actions CI (frontend + backend)
-ci-local: ci-local-frontend ci-local-backend
+ci-local: check-stack-docs ci-local-frontend ci-local-backend

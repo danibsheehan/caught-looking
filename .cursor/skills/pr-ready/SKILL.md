@@ -2,9 +2,10 @@
 name: pr-ready
 description: >-
   Runs caught-looking’s local CI-parity checks and prepares a pull request via
-  make ci-local (OpenAPI, audit, lint, format, typecheck, coverage gates, build,
-  vet, govulncheck), plus PR template fields. Use when the user asks to open a PR,
-  prepare a pull request, pre-PR checks, make CI pass, or verify before merging.
+  make ci-local (stack docs, OpenAPI, audit, lint, format, typecheck, coverage
+  gates, build, vet, govulncheck), plus PR template fields. Use when the user asks
+  to open a PR, prepare a pull request, pre-PR checks, make CI pass, or verify
+  before merging.
 ---
 
 # PR ready (caught-looking)
@@ -26,15 +27,17 @@ Pre-PR:
 make ci-local
 ```
 
-Runs frontend then backend checks aligned with **`.github/workflows/ci.yml`**:
+Runs stack-docs drift, then frontend then backend checks aligned with **`.github/workflows/ci.yml`**:
 
 | Side | Includes |
 |------|----------|
+| Stack docs (`check-stack-docs`) | README badges / Prerequisites / Tech stack + `project-stack.mdc` vs `package.json`, `go.mod`, CI Node/Go |
 | Frontend (`ci-local-frontend`) | `npm audit --audit-level=high`, `make check-openapi`, lint, `format:check`, typecheck, `test:coverage` + ≥50% line-rate gate, build |
 | Backend (`ci-local-backend`) | `go vet`, `govulncheck`, `go test -race`, tests with coverage + ≥50% Cobertura gate, build |
 
 Faster subsets when iterating (not a substitute before PR):
 
+- `make check-stack-docs` — README / project-stack version drift only
 - `make check-openapi` — contract only
 - `make test-backend` / `make test-frontend` — tests without full audit/coverage/build gate
 - `make ci-local-frontend` / `make ci-local-backend` — one CI job
