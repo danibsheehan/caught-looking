@@ -51,6 +51,7 @@ func newRouter(cfg config.Config, h *handlers.Handlers) http.Handler {
 		r.Get("/record-timelines/batch", h.RecordTimelinesBatch)
 		r.Get("/teams", h.Teams)
 		r.Get("/standings", h.Standings)
+		r.Get("/leaders", h.Leaders)
 		r.Get("/games/for-date", h.GamesForDate)
 		r.Get("/games/{gamePk}/timeline", h.GameTimeline)
 		r.Get("/games/{gamePk}/boxscore", h.GameBoxscore)

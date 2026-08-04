@@ -42,7 +42,7 @@ Most latency and reliability risk is **outbound MLB/Savant**, not React render. 
 | `GamesForDate` | `GetOrLoadWithTTL` | adaptive via `cacheTTLForDateGames` | Phase 1 |
 | `GameBoxscore` / `GameTimeline` | `GetOrLoadWithTTL` + nested `mlb-boxscore-raw` | settle-aware | Phase 2–3 |
 | `PlayerSearch` | `GetOrLoad` | `TTLPlayerSearch` | Phase 1 |
-| `Standings` / `Teams` / platoon / compare / year-by-year / season-stats / current-team / divisions | `GetOrLoad` | season aggregates → `TTLStandings` | Phase 1–2 |
+| Standings / Teams / platoon / compare / year-by-year / season-stats / current-team / divisions / leaders | `GetOrLoad` | season aggregates → `TTLStandings` | Phase 1–2 |
 | Schedule / record timeline / batch | `GetOrLoad` | `cacheTTLForSeason` (past → standings, current → scores) | Phase 2 |
 | Statcast / league baseline | `GetOrLoad` | varies; year-by-year league fan-out capped | Phase 3 |
 

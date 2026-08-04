@@ -14,6 +14,8 @@ const (
 var (
 	errInvalidSeason      = errors.New("invalid season")
 	errInvalidGroup       = errors.New("invalid hitting/pitching group")
+	errInvalidCategory    = errors.New("invalid leader category")
+	errInvalidLimit       = errors.New("invalid limit")
 	errTwoPlayerIDsFormat = errors.New("ids must be two comma-separated values")
 	errInvalidPlayerIDs   = errors.New("invalid player ids")
 )
