@@ -193,6 +193,7 @@ Continuous integration runs in **GitHub Actions** on pushes to **`main`** and on
 | API client     | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev                          |
 | Types          | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts`                                              |
 | Backend        | `backend/` — chi, MLB + Savant clients, `backend/apidocs/openapi.yaml`                                                 |
+| Threat model   | [`docs/threat-model.md`](docs/threat-model.md) — assets, controls, residual risks for the public read proxy            |
 
 ---
 
@@ -384,3 +385,5 @@ Makefile    # install, dev, backend, frontend, ci-local, test-*, cover-*
 ## Contributing
 
 Use the [pull request template](.github/pull_request_template.md) for **Summary** and **How to verify**. The [**PR guide**](.github/workflows/pr-guide.yml) workflow scaffolds the description when it is empty or still the default template (suggested verify commands plus a **Touches** line) and posts a sticky comment with checklist hints and reviewer focus. Before opening a PR, run **`make ci-local`** from the repo root (same gates as CI, including stack-docs drift, `npm audit`, coverage ≥50%, and OpenAPI type drift). Keep API changes in sync: **Go JSON / OpenAPI** ↔ generated frontend types (`frontend/src/types/api.generated.ts`) and `frontend/src/api/client.ts`. Agent contributors: see **`.cursor/skills/pr-ready/SKILL.md`**.
+
+**Security:** the API is an unauthenticated read proxy — see the [threat model](docs/threat-model.md) for assets, controls, and residual risks. Handler conventions: **`.cursor/skills/backend-http-security/SKILL.md`**.
