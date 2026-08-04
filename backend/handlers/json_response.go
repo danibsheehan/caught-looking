@@ -5,12 +5,29 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 )
 
-// writeJSONBytes sets Content-Type to application/json and writes body (typically already JSON from cache or json.Marshal).
-func writeJSONBytes(w http.ResponseWriter, body []byte) {
+// writeJSONBytes sets Content-Type to application/json, Cache-Control from maxAge, and writes body
+// (typically already JSON from cache or json.Marshal). maxAge should be the cache entry TTL or
+// remaining TTL from GetOrLoad / GetOrLoadWithTTL.
+func writeJSONBytes(w http.ResponseWriter, body []byte, maxAge time.Duration) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", cacheControlForTTL(maxAge))
 	_, _ = w.Write(body)
+}
+
+// cacheControlForTTL maps in-process TTL to an HTTP Cache-Control value for anonymous GET JSON.
+// Positive TTL → public max-age (floor seconds, minimum 1). Non-positive → private, no-store.
+func cacheControlForTTL(ttl time.Duration) string {
+	if ttl <= 0 {
+		return "private, no-store"
+	}
+	secs := int(ttl / time.Second)
+	if secs < 1 {
+		secs = 1
+	}
+	return fmt.Sprintf("public, max-age=%d", secs)
 }
 
 // apiErrorBody is the standard JSON error envelope for API failures.

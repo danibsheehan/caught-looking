@@ -14,7 +14,7 @@ import (
 func (h *Handlers) fetchTeamSeasonSchedule(ctx context.Context, teamID, season int) ([]byte, error) {
 	key := "team-season-schedule:" + strconv.Itoa(teamID) + ":" + strconv.Itoa(season)
 	ttl := cacheTTLForSeason(season, h.cfg, time.Now())
-	return h.cache.GetOrLoad(ctx, key, ttl, func(ctx context.Context) ([]byte, error) {
+	body, _, err := h.cache.GetOrLoad(ctx, key, ttl, func(ctx context.Context) ([]byte, error) {
 		q := url.Values{}
 		q.Set("sportId", "1")
 		q.Set("season", strconv.Itoa(season))
@@ -30,4 +30,5 @@ func (h *Handlers) fetchTeamSeasonSchedule(ctx context.Context, teamID, season i
 		}
 		return body, nil
 	})
+	return body, err
 }

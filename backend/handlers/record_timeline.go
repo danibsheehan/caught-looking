@@ -105,7 +105,7 @@ func parseRecordTimeline(raw []byte, teamID, season int) (models.RecordTimelineR
 }
 
 // getOrBuildRecordTimelineBytes returns cached JSON or fetches MLB schedule, builds timeline, caches, returns bytes.
-func (h *Handlers) getOrBuildRecordTimelineBytes(ctx context.Context, teamID, season int) ([]byte, error) {
+func (h *Handlers) getOrBuildRecordTimelineBytes(ctx context.Context, teamID, season int) ([]byte, time.Duration, error) {
 	key := timelineCacheKey(teamID, season)
 	ttl := cacheTTLForSeason(season, h.cfg, time.Now())
 	return h.cache.GetOrLoad(ctx, key, ttl, func(ctx context.Context) ([]byte, error) {
@@ -136,11 +136,11 @@ func (h *Handlers) RecordTimeline(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := h.getOrBuildRecordTimelineBytes(r.Context(), teamID, season)
+	body, ttl, err := h.getOrBuildRecordTimelineBytes(r.Context(), teamID, season)
 	if err != nil {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
 
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }

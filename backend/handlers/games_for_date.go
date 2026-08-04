@@ -37,7 +37,7 @@ func (h *Handlers) GamesForDate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "games-for-date:" + date + ":" + strconv.Itoa(teamID)
-	body, err := h.cache.GetOrLoadWithTTL(r.Context(), cacheKey, func(ctx context.Context) ([]byte, time.Duration, error) {
+	body, ttl, err := h.cache.GetOrLoadWithTTL(r.Context(), cacheKey, func(ctx context.Context) ([]byte, time.Duration, error) {
 		q := url.Values{}
 		q.Set("sportId", "1")
 		q.Set("date", date)
@@ -116,5 +116,5 @@ func (h *Handlers) GamesForDate(w http.ResponseWriter, r *http.Request) {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }

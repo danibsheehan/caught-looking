@@ -68,7 +68,7 @@ func (h *Handlers) PlayersCompare(w http.ResponseWriter, r *http.Request) {
 		cacheKey += ":" + strconv.Itoa(season)
 	}
 
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var p1, p2 models.PlayerStatSnapshot
 		g.Go(func() error {
@@ -101,7 +101,7 @@ func (h *Handlers) PlayersCompare(w http.ResponseWriter, r *http.Request) {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }
 
 func (h *Handlers) fetchPlayerStats(ctx context.Context, id int64, group, scope string, season int) (models.PlayerStatSnapshot, error) {

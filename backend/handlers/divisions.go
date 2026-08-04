@@ -21,7 +21,7 @@ type divisionNameRow struct {
 
 // loadDivisionNames returns division id → display name, backed by a long-lived cache entry.
 func (h *Handlers) loadDivisionNames(ctx context.Context) (map[int]string, error) {
-	body, err := h.cache.GetOrLoad(ctx, divisionNamesCacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
+	body, _, err := h.cache.GetOrLoad(ctx, divisionNamesCacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
 		raw, err := h.mlb.Get(ctx, "/divisions?sportId=1")
 		if err != nil {
 			return nil, err

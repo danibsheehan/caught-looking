@@ -38,7 +38,7 @@ func (h *Handlers) TeamSeasonStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "team-season-stats-v4:" + strconv.Itoa(teamID) + ":" + strconv.Itoa(season)
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var hit models.TeamHittingLine
 		var pit models.TeamPitchingLine
@@ -75,7 +75,7 @@ func (h *Handlers) TeamSeasonStats(w http.ResponseWriter, r *http.Request) {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }
 
 func (h *Handlers) fetchTeamHittingSeason(ctx context.Context, teamID int, season int) (models.TeamHittingLine, error) {

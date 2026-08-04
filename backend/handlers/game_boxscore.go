@@ -60,7 +60,7 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "game-boxscore:" + pkStr
-	body, err := h.cache.GetOrLoadWithTTL(r.Context(), cacheKey, func(ctx context.Context) ([]byte, time.Duration, error) {
+	body, ttl, err := h.cache.GetOrLoadWithTTL(r.Context(), cacheKey, func(ctx context.Context) ([]byte, time.Duration, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var raw []byte
 		var status string
@@ -105,7 +105,7 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }
 
 // fetchGameBoxscoreRaw returns MLB /game/{pk}/boxscore JSON, coalesced so timeline and boxscore
@@ -113,7 +113,7 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 // JSON is validated before caching so a corrupt payload is not sticky for the TTL.
 func (h *Handlers) fetchGameBoxscoreRaw(ctx context.Context, pkStr string) ([]byte, error) {
 	key := "mlb-boxscore-raw:" + pkStr
-	return h.cache.GetOrLoadWithTTL(ctx, key, func(ctx context.Context) ([]byte, time.Duration, error) {
+	body, _, err := h.cache.GetOrLoadWithTTL(ctx, key, func(ctx context.Context) ([]byte, time.Duration, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var raw []byte
 		var status string
@@ -139,6 +139,7 @@ func (h *Handlers) fetchGameBoxscoreRaw(ctx context.Context, pkStr string) ([]by
 		}
 		return raw, cacheTTLForGameStatus(status, h.cfg), nil
 	})
+	return body, err
 }
 
 // scheduleGameDisplayStatus extracts a display status from an MLB schedule JSON body for one game.

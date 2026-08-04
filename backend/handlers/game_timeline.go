@@ -65,7 +65,7 @@ func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "game-timeline:" + pkStr
-	body, err := h.cache.GetOrLoadWithTTL(r.Context(), cacheKey, func(ctx context.Context) ([]byte, time.Duration, error) {
+	body, ttl, err := h.cache.GetOrLoadWithTTL(r.Context(), cacheKey, func(ctx context.Context) ([]byte, time.Duration, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var raw []byte
 		var rawBox []byte
@@ -126,5 +126,5 @@ func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }

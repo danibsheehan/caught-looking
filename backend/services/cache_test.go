@@ -74,7 +74,7 @@ func TestTTLCache_GetOrLoad_coalesces(t *testing.T) {
 	for i := 0; i < n; i++ {
 		go func() {
 			defer wg.Done()
-			body, err := c.GetOrLoad(context.Background(), "k", time.Hour, func(context.Context) ([]byte, error) {
+			body, _, err := c.GetOrLoad(context.Background(), "k", time.Hour, func(context.Context) ([]byte, error) {
 				calls.Add(1)
 				time.Sleep(30 * time.Millisecond)
 				return []byte("ok"), nil
@@ -97,7 +97,7 @@ func TestTTLCache_GetOrLoad_coalesces(t *testing.T) {
 		t.Fatalf("load calls: got %d want 1", got)
 	}
 	// Second wave should hit cache without calling load.
-	body, err := c.GetOrLoad(context.Background(), "k", time.Hour, func(context.Context) ([]byte, error) {
+	body, rem, err := c.GetOrLoad(context.Background(), "k", time.Hour, func(context.Context) ([]byte, error) {
 		calls.Add(1)
 		return []byte("nope"), nil
 	})
@@ -107,6 +107,9 @@ func TestTTLCache_GetOrLoad_coalesces(t *testing.T) {
 	if string(body) != "ok" {
 		t.Fatalf("got %q", body)
 	}
+	if rem <= 0 || rem > time.Hour {
+		t.Fatalf("remaining ttl out of range: %v", rem)
+	}
 	if got := calls.Load(); got != 1 {
 		t.Fatalf("after cache hit load calls: got %d want 1", got)
 	}
@@ -114,7 +117,7 @@ func TestTTLCache_GetOrLoad_coalesces(t *testing.T) {
 
 func TestTTLCache_GetOrLoad_error(t *testing.T) {
 	c := NewTTLCache()
-	_, err := c.GetOrLoad(context.Background(), "k", time.Hour, func(context.Context) ([]byte, error) {
+	_, _, err := c.GetOrLoad(context.Background(), "k", time.Hour, func(context.Context) ([]byte, error) {
 		return nil, errors.New("boom")
 	})
 	if err == nil || err.Error() != "boom" {
@@ -127,7 +130,7 @@ func TestTTLCache_GetOrLoad_error(t *testing.T) {
 
 func TestTTLCache_GetOrLoadWithTTL_usesLoadTTL(t *testing.T) {
 	c := NewTTLCache()
-	body, err := c.GetOrLoadWithTTL(context.Background(), "k", func(context.Context) ([]byte, time.Duration, error) {
+	body, _, err := c.GetOrLoadWithTTL(context.Background(), "k", func(context.Context) ([]byte, time.Duration, error) {
 		return []byte("ok"), 40 * time.Millisecond, nil
 	})
 	if err != nil {

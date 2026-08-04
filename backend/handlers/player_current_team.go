@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"caught-looking/backend/models"
 
@@ -25,7 +26,7 @@ type mlbPersonHydratePayload struct {
 
 // playerCurrentTeamJSON returns cached or freshly fetched JSON for one player
 // (same payload as GET /players/{id}/current-team).
-func (h *Handlers) playerCurrentTeamJSON(ctx context.Context, id int64) ([]byte, error) {
+func (h *Handlers) playerCurrentTeamJSON(ctx context.Context, id int64) ([]byte, time.Duration, error) {
 	cacheKey := "player-current-team:" + strconv.FormatInt(id, 10)
 	return h.cache.GetOrLoad(ctx, cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
 		path := "/people/" + strconv.FormatInt(id, 10) + "?hydrate=currentTeam"
@@ -61,12 +62,12 @@ func (h *Handlers) PlayerCurrentTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := h.playerCurrentTeamJSON(r.Context(), id)
+	body, ttl, err := h.playerCurrentTeamJSON(r.Context(), id)
 	if err != nil {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }
 
 // PlayersCurrentTeams returns current team ids for two players in one round trip (same cache keys as single-player GET).
@@ -88,14 +89,15 @@ func (h *Handlers) PlayersCurrentTeams(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	g, gctx := errgroup.WithContext(ctx)
 	var b1, b2 []byte
+	var ttl1, ttl2 time.Duration
 	g.Go(func() error {
 		var err error
-		b1, err = h.playerCurrentTeamJSON(gctx, id1)
+		b1, ttl1, err = h.playerCurrentTeamJSON(gctx, id1)
 		return err
 	})
 	g.Go(func() error {
 		var err error
-		b2, err = h.playerCurrentTeamJSON(gctx, id2)
+		b2, ttl2, err = h.playerCurrentTeamJSON(gctx, id2)
 		return err
 	})
 	if err := g.Wait(); err != nil {
@@ -121,5 +123,9 @@ func (h *Handlers) PlayersCurrentTeams(w http.ResponseWriter, r *http.Request) {
 		respondJSONEncodeError(w)
 		return
 	}
-	writeJSONBytes(w, body)
+	ttl := ttl1
+	if ttl2 < ttl {
+		ttl = ttl2
+	}
+	writeJSONBytes(w, body, ttl)
 }
