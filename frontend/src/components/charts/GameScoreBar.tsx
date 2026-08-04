@@ -14,6 +14,7 @@ import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
 import { useGameTimeline } from '../../hooks/useGameTimeline';
 import { gameInningBarFills } from '../../utils/gameChartColors';
 import { chartCartesianTick } from '../../utils/rechartsAxis';
+import ChartDataTable from './ChartDataTable';
 
 type GameScoreBarProps = {
   gamePk: number | string | null | undefined;
@@ -36,6 +37,15 @@ export default function GameScoreBar({ gamePk, showCaption = true }: GameScoreBa
       [data.awayTeam || 'Away']: inn.awayRuns,
       [data.homeTeam || 'Home']: inn.homeRuns,
     }));
+  }, [data]);
+
+  const a11yRows = useMemo(() => {
+    if (!data?.innings?.length) return [];
+    return data.innings.map((inn) => [
+      String(inn.inning),
+      String(inn.awayRuns),
+      String(inn.homeRuns),
+    ]);
   }, [data]);
 
   const awayKey = data?.awayTeam || 'Away';
@@ -77,45 +87,52 @@ export default function GameScoreBar({ gamePk, showCaption = true }: GameScoreBa
           {awayKey} @ {homeKey} · final {data.awayTotal}–{data.homeTotal}
         </p>
       ) : null}
-      <ResponsiveContainer width="100%" height={360}>
-        <BarChart data={rows} margin={{ top: 10, right: 10, left: 4, bottom: 28 }}>
-          <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
-          <XAxis
-            dataKey="inning"
-            tick={chartCartesianTick}
-            label={{
-              value: 'Inning',
-              position: 'insideBottom',
-              offset: -2,
-              fill: 'var(--muted)',
-              fontFamily: 'var(--sans)',
-            }}
-          />
-          <YAxis allowDecimals={false} tick={chartCartesianTick} width={36} />
-          <Tooltip
-            contentStyle={{
-              background: 'var(--bg)',
-              border: '1px solid var(--border)',
-              color: 'var(--text-h)',
-            }}
-          />
-          <Legend />
-          <Bar
-            dataKey={awayKey}
-            stackId="runs"
-            fill={awayFill}
-            name={awayKey}
-            isAnimationActive={false}
-          />
-          <Bar
-            dataKey={homeKey}
-            stackId="runs"
-            fill={homeFill}
-            name={homeKey}
-            isAnimationActive={false}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+      <div aria-hidden="true">
+        <ResponsiveContainer width="100%" height={360}>
+          <BarChart data={rows} margin={{ top: 10, right: 10, left: 4, bottom: 28 }}>
+            <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
+            <XAxis
+              dataKey="inning"
+              tick={chartCartesianTick}
+              label={{
+                value: 'Inning',
+                position: 'insideBottom',
+                offset: -2,
+                fill: 'var(--muted)',
+                fontFamily: 'var(--sans)',
+              }}
+            />
+            <YAxis allowDecimals={false} tick={chartCartesianTick} width={36} />
+            <Tooltip
+              contentStyle={{
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-h)',
+              }}
+            />
+            <Legend />
+            <Bar
+              dataKey={awayKey}
+              stackId="runs"
+              fill={awayFill}
+              name={awayKey}
+              isAnimationActive={false}
+            />
+            <Bar
+              dataKey={homeKey}
+              stackId="runs"
+              fill={homeFill}
+              name={homeKey}
+              isAnimationActive={false}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <ChartDataTable
+        caption={`${awayKey} at ${homeKey} runs by inning. Final score ${data.awayTotal}–${data.homeTotal}.`}
+        columns={['Inning', awayKey, homeKey]}
+        rows={a11yRows}
+      />
     </div>
   );
 }

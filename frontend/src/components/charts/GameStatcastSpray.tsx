@@ -11,8 +11,10 @@ import type { StatcastBattedBall } from '../../types/api.compat';
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
 import { inningHalfBucket } from '../../utils/inningHalf';
 import { gameStatcastHalfTeamFills } from '../../utils/gameChartColors';
+import { chartA11yBattingSide, chartA11yFootnote, chartA11ySlice } from '../../utils/chartA11yRows';
 import { buildSprayTooltipRows, type StatcastChartTooltipRow } from '../../utils/statcastDisplay';
 import { statcastHcToFieldFeet } from '../../utils/statcastHitCoordinates';
+import ChartDataTable from './ChartDataTable';
 import StatcastMetricTooltipContent from './StatcastMetricTooltipContent';
 import { STATCAST_SPRAY_DOT_R, statcastSprayDiamondPath } from '../../utils/statcastMarkerGeometry';
 
@@ -320,6 +322,15 @@ export default function GameStatcastSpray({
     );
   }
 
+  const a11ySlice = chartA11ySlice(points);
+  const a11yRows = a11ySlice.rows.map((p) => [
+    p.playerName,
+    p.events?.trim() || '—',
+    chartA11yBattingSide(p.inningHalf),
+    p.launchSpeed != null ? String(p.launchSpeed) : '—',
+    p.launchAngle != null ? String(p.launchAngle) : '—',
+  ]);
+
   return (
     <div className="game-statcast-spray">
       <p className="muted small game-statcast-spray__caption">
@@ -345,8 +356,7 @@ export default function GameStatcastSpray({
         viewBox={`0 0 ${W} ${H}`}
         width="100%"
         height={H}
-        role="img"
-        aria-label="Spray chart: batted ball positions on the field"
+        aria-hidden="true"
       >
         <defs>
           <linearGradient id={`${gid}-chart-bg`} x1="0" y1="0" x2="0" y2="1">
@@ -522,6 +532,17 @@ export default function GameStatcastSpray({
           home
         </text>
       </svg>
+
+      <ChartDataTable
+        caption={
+          venueName
+            ? `Spray chart of batted ball field locations at ${venueName}.`
+            : 'Spray chart of batted ball field locations.'
+        }
+        columns={['Batter', 'Result', 'Side', 'Exit velo (mph)', 'Launch angle (°)']}
+        rows={a11yRows}
+        footnote={chartA11yFootnote('batted balls', a11ySlice)}
+      />
 
       {tip ? (
         <div

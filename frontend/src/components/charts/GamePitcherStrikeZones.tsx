@@ -22,6 +22,7 @@ import {
   svgPointStringStrikeSquare,
 } from '../../utils/statcastPlateNormalized';
 import StatcastMetricTooltipContent from './StatcastMetricTooltipContent';
+import ChartDataTable from './ChartDataTable';
 
 type GamePitcherStrikeZonesProps = {
   pitches: StatcastPitch[];
@@ -144,14 +145,14 @@ function PitcherStrikeZoneSvg({
       ? 'game-pitcher-zones__svg-wrap game-pitcher-zones__svg-wrap--featured'
       : 'game-pitcher-zones__svg-wrap';
 
+  const typeRows = useMemo(
+    () => groupPitchesByCode(pitches).map((g) => [g.label, String(g.pitches.length)]),
+    [pitches],
+  );
+
   return (
     <div className={wrapClass} onMouseLeave={clearTip} onBlur={clearTip}>
-      <svg
-        className="game-pitcher-zones__svg"
-        viewBox="0 0 100 100"
-        role="img"
-        aria-label={ariaLabel}
-      >
+      <svg className="game-pitcher-zones__svg" viewBox="0 0 100 100" aria-hidden="true">
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.14" />
@@ -246,6 +247,15 @@ function PitcherStrikeZoneSvg({
           );
         })}
       </svg>
+      <ChartDataTable
+        caption={
+          isolated
+            ? `${ariaLabel} (filtered pitch type). Counts by pitch type.`
+            : `${ariaLabel}. Counts by pitch type.`
+        }
+        columns={['Pitch type', 'Count']}
+        rows={typeRows}
+      />
       {tip ? <FloatingPitchTooltip tip={tip} /> : null}
     </div>
   );

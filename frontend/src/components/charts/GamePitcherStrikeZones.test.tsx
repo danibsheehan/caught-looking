@@ -59,8 +59,10 @@ describe('GamePitcherStrikeZones', () => {
     expect(screen.getByRole('option', { name: /Away Club — Casey Pitcher/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /4-Seam Fastball \(FF\)/i })).toBeInTheDocument();
     expect(
-      screen.getByRole('img', { name: /Pitch locations for Casey Pitcher/i }),
+      screen.getByRole('table', { name: /Pitch locations for Casey Pitcher/i }),
     ).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Pitch type' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '4-Seam Fastball (FF)' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Show all pitchers/i })).toBeInTheDocument();
   });
 

@@ -139,7 +139,13 @@ describe('GameBoxscorePanel', () => {
       () => expect(api.fetchGameTimeline).toHaveBeenCalledWith(662001, expect.any(AbortSignal)),
       asyncWait,
     );
-    expect(await screen.findByText('Inning', undefined, asyncWait)).toBeInTheDocument();
+    expect(
+      await screen.findByRole(
+        'table',
+        { name: /Away Club at Home Club runs by inning/i },
+        asyncWait,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('shows pitch-location loading and error states', () => {
