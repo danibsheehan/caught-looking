@@ -32,6 +32,7 @@ jobs:
                   filters: |
                       spa:
                         - 'frontend/**'
+                        - '.nvmrc'
                         - '.github/workflows/pages-preview.yml'
 
     preview:

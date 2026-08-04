@@ -45,6 +45,7 @@ jobs:
                         - 'backend/apidocs/**'
                         - 'redocly.yaml'
                         - 'Makefile'
+                        - '.nvmrc'
                         - '.github/workflows/ci.yml'
 
             - name: Skip heavy frontend gates (path filter)
