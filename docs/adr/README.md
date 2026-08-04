@@ -8,4 +8,4 @@ Short records of **why** the API and contract behave the way they do. Operationa
 | [0002](0002-upstream-qps.md) | Per-process MLB and Savant QPS caps |
 | [0003](0003-openapi-contract.md) | OpenAPI as the FE/BE contract |
 
-When defaults in `backend/config/config.go` or adaptive helpers in `backend/handlers/cache_ttl.go` change materially, update the matching ADR in the same change.
+When defaults in `backend/config/config.go` or adaptive helpers in `backend/handlers/cache_ttl.go` change materially, update the matching ADR in the same change. How-to for agents: `.cursor/skills/caching-and-upstream-perf/SKILL.md` and `.cursor/skills/openapi-maintain/SKILL.md` (they point back here for rationale).

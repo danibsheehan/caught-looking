@@ -13,6 +13,8 @@ description: >-
 
 Project-specific hardening for the chi API. For a diff-wide security pass, also use Cursor’s **`/review-security`** (or ask for a security review).
 
+**Threat model:** **`docs/threat-model.md`** — assets, trust boundaries, controls, residual risks. Update it in the **same change** when CORS allowlisting, rate-limit trust (`RemoteAddr` vs forwarded headers), outbound URL policy, generic upstream error responses, or QPS/instance abuse assumptions change. Do not duplicate the full threat table into this skill.
+
 ## Defaults already in the stack
 
 - **CORS**: `middleware.CORS` — allowlist origins from config; methods GET/HEAD/OPTIONS; no credentials.
@@ -62,3 +64,4 @@ CI also runs `npm audit --audit-level=high` on the frontend job.
 - Disabling rate limit or CORS allow-all in production defaults without an explicit, reviewed reason.
 - Hitting real `statsapi.mlb.com` from unit tests.
 - Introducing cookie/credentialed CORS without a clear auth design (API is currently credential-free GETs).
+- Changing the security posture above without updating **`docs/threat-model.md`**.
