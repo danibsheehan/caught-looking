@@ -7,16 +7,24 @@ import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['dist', 'coverage']),
+  globalIgnores(['dist', 'coverage', 'playwright-report', 'test-results', 'blob-report']),
   ...tseslint.configs.recommended,
   {
-    files: ['vite.config.ts'],
+    files: ['vite.config.ts', 'playwright.config.ts', 'e2e/**/*.{ts,tsx}'],
     languageOptions: {
       globals: globals.node,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^[A-Z_]' },
+      ],
+      'no-unused-vars': 'off',
     },
   },
   {
     files: ['**/*.{ts,tsx}'],
+    ignores: ['playwright.config.ts', 'e2e/**', 'vite.config.ts'],
     extends: [
       js.configs.recommended,
       reactHooks.configs.flat.recommended,
