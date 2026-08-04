@@ -194,7 +194,7 @@ Continuous integration runs in **GitHub Actions** on pushes to **`main`** and on
 ## Prerequisites
 
 - **Go** 1.26+
-- **Node.js** 22+ and **npm** (CI uses Node 22; newer LTS generally works)
+- **Node.js** 22+ and **npm** (CI uses Node 22; pin with [`.nvmrc`](.nvmrc) / `nvm use`)
 
 ---
 
@@ -206,6 +206,8 @@ The repo ships [`.vscode/settings.json`](.vscode/settings.json) so **VS Code** a
 | :--- | :--- |
 | Format on save | `.vscode/settings.json` — Prettier for TS/TSX/JS/JSON/SCSS/HTML under `frontend/` |
 | Prettier config | `frontend/prettier.config.js` |
+| EditorConfig | [`.editorconfig`](.editorconfig) — indent, charset, newlines (Go 4-space; Makefile tabs) |
+| Node pin | [`.nvmrc`](.nvmrc) — Actions and local `nvm use` |
 | Cursor agents | [`.cursor/rules/frontend-prettier.mdc`](.cursor/rules/frontend-prettier.mdc) — run `npx prettier --write` on changed files before finishing |
 
 CI still runs `npm run format:check`; format on save and agent rules reduce drift before push.
