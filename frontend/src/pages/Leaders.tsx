@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLeaders } from '../hooks/useLeaders';
 import type { LeadersQuery } from '../types/api.compat';
 
@@ -21,36 +21,70 @@ const CATEGORY_LABELS: Record<string, string> = {
   strikeoutWalkRatio: 'K/BB',
 };
 
+/** Mirrors backend allowlist so the UI never queries a stale group/category pair. */
+const CATEGORIES_BY_GROUP: Record<'hitting' | 'pitching', string[]> = {
+  hitting: [
+    'homeRuns',
+    'battingAverage',
+    'hits',
+    'runsBattedIn',
+    'onBasePlusSlugging',
+    'onBasePercentage',
+    'sluggingPercentage',
+    'stolenBases',
+    'runs',
+  ],
+  pitching: [
+    'earnedRunAverage',
+    'wins',
+    'strikeouts',
+    'saves',
+    'walksAndHitsPerInningPitched',
+    'strikeoutsPer9Inn',
+    'strikeoutWalkRatio',
+  ],
+};
+
+const DEFAULT_CATEGORY: Record<'hitting' | 'pitching', string> = {
+  hitting: 'homeRuns',
+  pitching: 'earnedRunAverage',
+};
+
 function labelCategory(code: string): string {
   return CATEGORY_LABELS[code] ?? code;
 }
 
+function categoryForGroup(group: 'hitting' | 'pitching', category: string): string {
+  const cats = CATEGORIES_BY_GROUP[group];
+  return cats.includes(category) ? category : DEFAULT_CATEGORY[group];
+}
+
 export default function Leaders() {
   const [group, setGroup] = useState<'hitting' | 'pitching'>('hitting');
-  const [category, setCategory] = useState('homeRuns');
+  const [category, setCategory] = useState(DEFAULT_CATEGORY.hitting);
   const [season, setSeason] = useState<number | undefined>(undefined);
+
+  const resolvedCategory = categoryForGroup(group, category);
 
   const query = useMemo<LeadersQuery>(
     () => ({
       group,
-      category,
+      category: resolvedCategory,
       season,
       limit: 10,
     }),
-    [group, category, season],
+    [group, resolvedCategory, season],
   );
 
   const { data, error, loading } = useLeaders(query);
 
-  useEffect(() => {
-    const cats = data?.categories;
-    if (!cats?.length) return;
-    if (!cats.includes(category)) {
-      setCategory(cats[0]!);
-    }
-  }, [data?.categories, category]);
+  const categories =
+    data?.group === group && data.categories.length > 0
+      ? data.categories
+      : CATEGORIES_BY_GROUP[group];
 
-  const seasonValue = data?.season ?? season ?? '';
+  const seasonValue = data?.group === group ? data.season : (season ?? '');
+  const table = data?.group === group ? data : null;
 
   return (
     <section className="page leaders-page">
@@ -82,7 +116,7 @@ export default function Leaders() {
               }
               onClick={() => {
                 setGroup(g);
-                setCategory(g === 'pitching' ? 'earnedRunAverage' : 'homeRuns');
+                setCategory(DEFAULT_CATEGORY[g]);
               }}
             >
               {g === 'hitting' ? 'Hitting' : 'Pitching'}
@@ -94,11 +128,11 @@ export default function Leaders() {
           <span className="form-field__label">Category</span>
           <select
             className="form-field__control"
-            value={category}
+            value={resolvedCategory}
             onChange={(e) => setCategory(e.target.value)}
-            disabled={loading && !data}
+            disabled={loading && !table}
           >
-            {(data?.categories ?? [category]).map((c) => (
+            {categories.map((c) => (
               <option key={c} value={c}>
                 {labelCategory(c)}
               </option>
@@ -129,7 +163,7 @@ export default function Leaders() {
         </label>
       </div>
 
-      {loading && !data ? <p className="muted">Loading leaders…</p> : null}
+      {loading && !table ? <p className="muted">Loading leaders…</p> : null}
 
       {error ? (
         <p className="error" role="alert">
@@ -137,11 +171,11 @@ export default function Leaders() {
         </p>
       ) : null}
 
-      {data ? (
+      {table ? (
         <div className="leaders-page__table-wrap">
           <table
             className="leaders-page__table"
-            aria-label={`${labelCategory(data.category)} leaders for ${data.season}`}
+            aria-label={`${labelCategory(table.category)} leaders for ${table.season}`}
           >
             <thead>
               <tr>
@@ -149,21 +183,22 @@ export default function Leaders() {
                 <th scope="col">Player</th>
                 <th scope="col">Team</th>
                 <th scope="col">Lg</th>
-                <th scope="col">{labelCategory(data.category)}</th>
+                <th scope="col">{labelCategory(table.category)}</th>
               </tr>
             </thead>
             <tbody>
-              {data.leaders.length === 0 ? (
+              {table.leaders.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="muted">
                     No leaders for this selection.
                   </td>
                 </tr>
               ) : (
-                data.leaders.map((row) => (
+                table.leaders.map((row) => (
                   <tr key={`${row.rank}-${row.playerId}`}>
                     <td>{row.rank}</td>
-                    <td>{row.playerName}</td> <td>{row.teamName || '—'}</td>
+                    <td>{row.playerName}</td>
+                    <td>{row.teamName || '—'}</td>
                     <td>{row.leagueName || '—'}</td>
                     <td className="leaders-page__value">{row.value}</td>
                   </tr>

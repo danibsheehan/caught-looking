@@ -92,6 +92,19 @@ describe('Leaders', () => {
     await user.click(screen.getByRole('tab', { name: 'Pitching' }));
     expect(await screen.findByText('Paul Skenes', {}, asyncWait)).toBeInTheDocument();
     expect(screen.getByText('1.97')).toBeInTheDocument();
+
+    await waitFor(
+      () =>
+        expect(api.fetchLeaders).toHaveBeenCalledWith(
+          expect.objectContaining({
+            group: 'pitching',
+            category: 'earnedRunAverage',
+            limit: 10,
+          }),
+          expect.any(AbortSignal),
+        ),
+      asyncWait,
+    );
   });
 
   it('surfaces fetch errors', async () => {
