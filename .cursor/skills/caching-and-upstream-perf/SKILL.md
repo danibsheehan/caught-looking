@@ -12,6 +12,8 @@ description: >-
 
 Most latency and reliability risk is **outbound MLB/Savant**, not React render. Prefer cache + coalescing + QPS caps over micro-optimizing UI.
 
+**Why (ADRs):** named TTLs and adaptive settle policy — **`docs/adr/0001-cache-ttls.md`**; outbound QPS/timeouts — **`docs/adr/0002-upstream-qps.md`**. This skill is how-to; update those ADRs in the **same change** when defaults in `backend/config/config.go`, adaptive helpers in `backend/handlers/cache_ttl.go`, or QPS/timeout knobs change materially. Do not paste ADR tables into the README.
+
 ## Backend cache
 
 - Use **`services.TTLCache`** on **`Handlers`** (`h.cache`). Prefer **`GetOrLoad(ctx, key, ttl, load)`** so concurrent misses share one upstream call (**singleflight**). The load runs with a context **detached from request cancel** so one aborted client does not fail peers.
@@ -68,3 +70,4 @@ Most latency and reliability risk is **outbound MLB/Savant**, not React render. 
 - Caching without TTL (or with hour-long TTL on live game data).
 - Parallel unbounded MLB calls per request without QPS awareness or coalescing.
 - Calling the real MLB API from unit tests.
+- Changing TTL/QPS defaults or settle policy without updating **ADR 0001** / **ADR 0002**.

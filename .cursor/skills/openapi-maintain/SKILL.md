@@ -10,6 +10,8 @@ description: >-
 
 # OpenAPI maintenance (caught-looking)
 
+**Why (ADR):** contract-first workflow — **`docs/adr/0003-openapi-contract.md`**. Update that ADR only when the **workflow itself** changes (source of truth, typegen, CI gates)—not for every new endpoint. This skill is the day-to-day how-to.
+
 ## When this applies
 
 - Editing `backend/handlers/`, `backend/models/`, or `backend/apidocs/openapi.yaml`.
@@ -45,7 +47,9 @@ For scaffolding a full route end-to-end, see **`.cursor/skills/add-api-endpoint/
 - Shipping handler or model JSON changes without updating `openapi.yaml`.
 - Editing `api.generated.ts` by hand instead of regenerating.
 - Drifting client paths from the spec or from `backend/router.go` / `main.go` mounts.
+- Changing the OpenAPI → typegen → CI contract workflow without updating **ADR 0003**.
 
 ## References
 
 - Spec: `backend/apidocs/openapi.yaml` · Redocly: `redocly.yaml` · CI: `.github/workflows/ci.yml` (`api:validate`, `api:types:check`).
+- ADR: **`docs/adr/0003-openapi-contract.md`**.

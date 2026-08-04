@@ -17,3 +17,4 @@ alwaysApply: false
 - **Compat layer**: `frontend/src/types/api.compat.ts` — re-exports schema types and `QueryOf<operations['…']>` helpers; add exports here when the app needs a stable name or a query shape OpenAPI cannot express cleanly.
 - **Lint**: from `frontend/`, `npm run api:validate` (Redocly, config in repo root `redocly.yaml`). From repo root: **`make check-openapi`** runs validate + types drift check.
 - **Go ↔ YAML**: JSON struct tags on **`models/`** types should match property names in the spec; paths and operationIds should match how **`frontend/src/api/client.ts`** calls the API.
+- **Why**: contract-first rationale is **`docs/adr/0003-openapi-contract.md`** — update that ADR only if the workflow (not a single endpoint) changes.
