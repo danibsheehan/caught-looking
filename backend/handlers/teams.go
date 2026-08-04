@@ -39,7 +39,7 @@ func (h *Handlers) Teams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "teams:" + sportID
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
 		path := "/teams?sportId=" + sportID
 		raw, err := h.mlb.Get(ctx, path)
 		if err != nil {
@@ -72,5 +72,5 @@ func (h *Handlers) Teams(w http.ResponseWriter, r *http.Request) {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }

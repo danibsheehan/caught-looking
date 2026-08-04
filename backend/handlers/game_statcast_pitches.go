@@ -23,7 +23,7 @@ func (h *Handlers) GameStatcastPitches(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "game-statcast-pitches-v4:" + pkStr
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStatcast, func(ctx context.Context) ([]byte, error) {
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStatcast, func(ctx context.Context) ([]byte, error) {
 		raw, err := h.fetchSavantGameCSV(ctx, pkStr)
 		if err != nil {
 			return nil, err
@@ -38,7 +38,7 @@ func (h *Handlers) GameStatcastPitches(w http.ResponseWriter, r *http.Request) {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }
 
 func parseStatcastPitchesCSV(raw []byte) []models.StatcastPitch {

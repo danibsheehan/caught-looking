@@ -18,6 +18,7 @@ Most latency and reliability risk is **outbound MLB/Savant**, not React render. 
 
 - Use **`services.TTLCache`** on **`Handlers`** (`h.cache`). Prefer **`GetOrLoad(ctx, key, ttl, load)`** so concurrent misses share one upstream call (**singleflight**). The load runs with a context **detached from request cancel** so one aborted client does not fail peers.
 - Adaptive TTLs (e.g. date scoreboard settled vs live): use **`GetOrLoadWithTTL`** so the load returns `(body, ttl, err)`.
+- **`GetOrLoad` / `GetOrLoadWithTTL`** return `(body, ttl, err)` — on hit, `ttl` is remaining time until expiry; on miss, the TTL used for `Set`. Pass that duration to **`writeJSONBytes(w, body, ttl)`** so responses get `Cache-Control: public, max-age=…` aligned with settle state (see ADR 0001).
 - Map failures with **`respondGetOrLoadError`**. Do **not** use naked `Get`+`Set` for response bodies — that races under concurrent misses.
 - **Keys**: stable, explicit strings from validated params (include season/ids/resource). Avoid unbounded raw query text; player search uses **`TTLPlayerSearch`**.
 - **TTLs** (from **`config.Config`** — pick the closest existing knob; add a named TTL only if none fit):

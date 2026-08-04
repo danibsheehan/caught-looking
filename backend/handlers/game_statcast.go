@@ -30,7 +30,7 @@ func (h *Handlers) GameStatcast(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "game-statcast:" + pkStr
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStatcast, func(ctx context.Context) ([]byte, error) {
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStatcast, func(ctx context.Context) ([]byte, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var raw []byte
 		var rawSchedule []byte
@@ -82,16 +82,17 @@ func (h *Handlers) GameStatcast(w http.ResponseWriter, r *http.Request) {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }
 
 // fetchSavantGameCSV returns the raw Statcast Search CSV for one game, cached so batted-ball
 // and pitch endpoints share a single Savant download per gamePk.
 func (h *Handlers) fetchSavantGameCSV(ctx context.Context, gamePkStr string) ([]byte, error) {
 	key := "savant-csv:" + gamePkStr
-	return h.cache.GetOrLoad(ctx, key, h.cfg.TTLStatcast, func(ctx context.Context) ([]byte, error) {
+	body, _, err := h.cache.GetOrLoad(ctx, key, h.cfg.TTLStatcast, func(ctx context.Context) ([]byte, error) {
 		return h.savant.Get(ctx, statcastSingleGamePath+gamePkStr)
 	})
+	return body, err
 }
 
 func parseStatcastBattedBallsCSV(raw []byte) []models.StatcastBattedBall {

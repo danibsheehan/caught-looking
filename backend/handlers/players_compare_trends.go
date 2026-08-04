@@ -81,7 +81,7 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 	}
 
 	cacheKey := "players-yearly:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + metric
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var p1, p2 []models.SeasonPoint
 		var n1, n2 string
@@ -149,7 +149,7 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }
 
 func validYearByYearMetric(group, metric string) bool {
@@ -289,7 +289,7 @@ func (h *Handlers) PlayersCompareGameLog(w http.ResponseWriter, r *http.Request)
 	}
 
 	cacheKey := "players-gamelog:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + strconv.Itoa(season) + ":" + strconv.Itoa(limit)
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var g1, g2 []models.GamePoint
 		var n1, n2 string
@@ -329,7 +329,7 @@ func (h *Handlers) PlayersCompareGameLog(w http.ResponseWriter, r *http.Request)
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }
 
 func (h *Handlers) fetchPlayerGameLog(ctx context.Context, id int64, group string, season, limit int) ([]models.GamePoint, string, error) {

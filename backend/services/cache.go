@@ -13,6 +13,12 @@ type cacheEntry struct {
 	expiresAt time.Time
 }
 
+// cacheLoadResult is the singleflight value for GetOrLoad / GetOrLoadWithTTL.
+type cacheLoadResult struct {
+	body []byte
+	ttl  time.Duration
+}
+
 // TTLCache is a concurrent string-keyed cache with per-entry TTL.
 type TTLCache struct {
 	m  sync.Map // string -> cacheEntry
@@ -25,16 +31,22 @@ func NewTTLCache() *TTLCache {
 
 // Get returns cached JSON bytes if present and not expired.
 func (c *TTLCache) Get(key string) ([]byte, bool) {
+	body, _, ok := c.getWithRemaining(key)
+	return body, ok
+}
+
+func (c *TTLCache) getWithRemaining(key string) ([]byte, time.Duration, bool) {
 	v, ok := c.m.Load(key)
 	if !ok {
-		return nil, false
+		return nil, 0, false
 	}
 	e := v.(cacheEntry)
-	if time.Now().After(e.expiresAt) {
+	now := time.Now()
+	if now.After(e.expiresAt) {
 		c.m.Delete(key)
-		return nil, false
+		return nil, 0, false
 	}
-	return e.body, true
+	return e.body, e.expiresAt.Sub(now), true
 }
 
 // Set stores JSON bytes with the given TTL.
@@ -42,10 +54,11 @@ func (c *TTLCache) Set(key string, body []byte, ttl time.Duration) {
 	c.m.Store(key, cacheEntry{body: body, expiresAt: time.Now().Add(ttl)})
 }
 
-// GetOrLoad returns cached bytes, or runs load once for concurrent misses (singleflight).
-// While waiting, the caller's ctx is respected. The shared load uses a context detached from
-// request cancellation so one aborted client does not fail coalesced peers.
-func (c *TTLCache) GetOrLoad(ctx context.Context, key string, ttl time.Duration, load func(context.Context) ([]byte, error)) ([]byte, error) {
+// GetOrLoad returns cached bytes and remaining TTL, or runs load once for concurrent misses
+// (singleflight). While waiting, the caller's ctx is respected. The shared load uses a context
+// detached from request cancellation so one aborted client does not fail coalesced peers.
+// On a fresh load, ttl is the duration passed to Set; on a hit, ttl is time until expiry.
+func (c *TTLCache) GetOrLoad(ctx context.Context, key string, ttl time.Duration, load func(context.Context) ([]byte, error)) ([]byte, time.Duration, error) {
 	return c.GetOrLoadWithTTL(ctx, key, func(ctx context.Context) ([]byte, time.Duration, error) {
 		body, err := load(ctx)
 		return body, ttl, err
@@ -54,29 +67,30 @@ func (c *TTLCache) GetOrLoad(ctx context.Context, key string, ttl time.Duration,
 
 // GetOrLoadWithTTL is like GetOrLoad, but the load function chooses the entry TTL (e.g. adaptive
 // TTLs based on parsed payload). Failed loads are not cached.
-func (c *TTLCache) GetOrLoadWithTTL(ctx context.Context, key string, load func(context.Context) ([]byte, time.Duration, error)) ([]byte, error) {
-	if body, ok := c.Get(key); ok {
-		return body, nil
+func (c *TTLCache) GetOrLoadWithTTL(ctx context.Context, key string, load func(context.Context) ([]byte, time.Duration, error)) ([]byte, time.Duration, error) {
+	if body, rem, ok := c.getWithRemaining(key); ok {
+		return body, rem, nil
 	}
 	ch := c.sf.DoChan(key, func() (interface{}, error) {
-		if body, ok := c.Get(key); ok {
-			return body, nil
+		if body, rem, ok := c.getWithRemaining(key); ok {
+			return cacheLoadResult{body: body, ttl: rem}, nil
 		}
 		body, ttl, err := load(context.WithoutCancel(ctx))
 		if err != nil {
 			return nil, err
 		}
 		c.Set(key, body, ttl)
-		return body, nil
+		return cacheLoadResult{body: body, ttl: ttl}, nil
 	})
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return nil, 0, ctx.Err()
 	case res := <-ch:
 		if res.Err != nil {
-			return nil, res.Err
+			return nil, 0, res.Err
 		}
-		return res.Val.([]byte), nil
+		out := res.Val.(cacheLoadResult)
+		return out.body, out.ttl, nil
 	}
 }
 

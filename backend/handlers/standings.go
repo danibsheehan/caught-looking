@@ -95,7 +95,7 @@ func (h *Handlers) Standings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "standings:" + strconv.Itoa(season) + ":" + leagueIDs + ":" + standingsType
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
 		q := url.Values{}
 		q.Set("season", strconv.Itoa(season))
 		q.Set("leagueId", leagueIDs)
@@ -179,5 +179,5 @@ func (h *Handlers) Standings(w http.ResponseWriter, r *http.Request) {
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }

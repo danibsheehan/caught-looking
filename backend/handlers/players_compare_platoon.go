@@ -57,7 +57,7 @@ func (h *Handlers) PlayersComparePlatoon(w http.ResponseWriter, r *http.Request)
 	}
 
 	cacheKey := "players-platoon:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + strconv.Itoa(season)
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var a, b models.PlatoonPlayer
 		g.Go(func() error {
@@ -86,7 +86,7 @@ func (h *Handlers) PlayersComparePlatoon(w http.ResponseWriter, r *http.Request)
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }
 
 func (h *Handlers) fetchPlayerPlatoonSplits(ctx context.Context, id int64, group string, season int) (models.PlatoonPlayer, error) {

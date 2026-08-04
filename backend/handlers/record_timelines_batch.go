@@ -68,7 +68,7 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 	}
 	cacheKey := "record-timelines-batch:" + strconv.Itoa(season) + ":" + strings.Join(keyParts, ",")
 	ttl := cacheTTLForSeason(season, h.cfg, time.Now())
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, ttl, func(ctx context.Context) ([]byte, error) {
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, ttl, func(ctx context.Context) ([]byte, error) {
 		g, ctx := errgroup.WithContext(ctx)
 		sem := make(chan struct{}, batchTimelineConcurrency)
 
@@ -84,7 +84,7 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 				case <-ctx.Done():
 					return ctx.Err()
 				}
-				b, err := h.getOrBuildRecordTimelineBytes(ctx, tid, season)
+				b, _, err := h.getOrBuildRecordTimelineBytes(ctx, tid, season)
 				if err != nil {
 					return err
 				}
@@ -117,5 +117,5 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 		respondGetOrLoadError(w, r, err)
 		return
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }

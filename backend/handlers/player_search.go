@@ -40,7 +40,7 @@ func (h *Handlers) PlayerSearch(w http.ResponseWriter, r *http.Request) {
 
 	const maxHits = 15
 	cacheKey := "player-search:" + strings.ToLower(q)
-	body, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLPlayerSearch, func(ctx context.Context) ([]byte, error) {
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLPlayerSearch, func(ctx context.Context) ([]byte, error) {
 		qs := url.Values{}
 		qs.Set("names", q)
 		path := "/people/search?" + qs.Encode()
@@ -86,5 +86,5 @@ func (h *Handlers) PlayerSearch(w http.ResponseWriter, r *http.Request) {
 	if err := json.Unmarshal(body, &cached); err == nil {
 		w.Header().Set("X-Result-Count", strconv.Itoa(len(cached.People)))
 	}
-	writeJSONBytes(w, body)
+	writeJSONBytes(w, body, ttl)
 }
