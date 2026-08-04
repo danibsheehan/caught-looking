@@ -46,10 +46,6 @@ jobs:
                         - 'redocly.yaml'
                         - 'Makefile'
                         - '.github/workflows/ci.yml'
-                        - '.github/workflows/coverage-comments.yml'
-                        - '.github/scripts/check_stack_docs.py'
-                        - '.github/scripts/check_cobertura_line_rate.py'
-                        - '.github/scripts/post_coverage_comment.py'
 
             - name: Skip heavy frontend gates (path filter)
               if: github.event_name == 'pull_request' && steps.filter.outputs.frontend != 'true'
@@ -139,10 +135,6 @@ jobs:
                         - 'backend/**'
                         - 'Makefile'
                         - '.github/workflows/ci.yml'
-                        - '.github/workflows/coverage-comments.yml'
-                        - '.github/scripts/check_cobertura_line_rate.py'
-                        - '.github/scripts/merge_cobertura_by_file.py'
-                        - '.github/scripts/post_coverage_comment.py'
 
             - name: Skip heavy backend gates (path filter)
               if: github.event_name == 'pull_request' && steps.filter.outputs.backend != 'true'

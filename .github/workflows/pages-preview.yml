@@ -2,6 +2,7 @@ name: Cloudflare Pages (PR preview)
 
 # Branch previews must bake in VITE_API_BASE. Without it the SPA defaults to `/api`,
 # Cloudflare Pages SPA fallback returns index.html, and JSON parse fails in the UI.
+# Skip drafts, Dependabot, and PRs that do not touch SPA-relevant paths.
 on:
     pull_request:
         types: [opened, synchronize, reopened, ready_for_review]
@@ -14,10 +15,30 @@ permissions:
     contents: read
 
 jobs:
+    changes:
+        name: Detect SPA-relevant changes
+        if: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            pull-requests: read
+        outputs:
+            spa: ${{ steps.filter.outputs.spa }}
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+            - id: filter
+              uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3
+              with:
+                  filters: |
+                      spa:
+                        - 'frontend/**'
+                        - '.github/workflows/pages-preview.yml'
+
     preview:
         # Gate on PR author (not github.actor): synchronize after a human commit
         # would otherwise deploy a preview for a Dependabot-authored PR.
-        if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
+        needs: changes
+        if: ${{ needs.changes.outputs.spa == 'true' }}
         name: Deploy PR preview (Cloudflare Pages)
         runs-on: ubuntu-latest
         permissions:
