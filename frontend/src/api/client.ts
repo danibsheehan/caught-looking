@@ -5,6 +5,8 @@ import type {
   GameTimelineResponse,
   GamesForDateQuery,
   GamesForDateResponse,
+  LeadersQuery,
+  LeadersResponse,
   LeagueSeasonBaselineResponse,
   PlayerCurrentTeamResponse,
   PlayersCurrentTeamsResponse,
@@ -85,6 +87,19 @@ export async function fetchStandings(
   if (query.standingsTypes) qs.set('standingsTypes', query.standingsTypes);
   const suffix = qs.toString() ? `?${qs.toString()}` : '';
   return apiGet<StandingsResponse>(`/standings${suffix}`, apiOpts(signal));
+}
+
+export async function fetchLeaders(
+  query: LeadersQuery = {},
+  signal?: AbortSignal,
+): Promise<LeadersResponse> {
+  const qs = new URLSearchParams();
+  if (query.season != null) qs.set('season', String(query.season));
+  if (query.group) qs.set('group', query.group);
+  if (query.category) qs.set('category', query.category);
+  if (query.limit != null) qs.set('limit', String(query.limit));
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  return apiGet<LeadersResponse>(`/leaders${suffix}`, apiOpts(signal));
 }
 
 export async function fetchTeams(

@@ -37,9 +37,9 @@ Web app for exploring **MLB statistics** with charts and comparisons. The UI tal
 
 **Production:** [caught-looking.com/standings](https://caught-looking.com/standings) or [www.caught-looking.com/standings](https://www.caught-looking.com/standings) — same SPA (Cloudflare Pages + Cloud Run API — see [Deployment (CI)](#deployment-ci)).
 
-**Standings → Teams → Players → Games** — from league table to slate to **per-game** detail (timeline, boxscore-style views, Statcast-backed panels where data exists). **OpenAPI / Redoc**: [https://docs.caught-looking.com/](https://docs.caught-looking.com/)
+**Standings → Leaders → Teams → Players → Games** — from league table and boards to slate to **per-game** detail (timeline, boxscore-style views, Statcast-backed panels where data exists). **OpenAPI / Redoc**: [https://docs.caught-looking.com/](https://docs.caught-looking.com/)
 
-SPA routes: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk` (default landing: `/standings`). Routing: [`frontend/src/App.tsx`](frontend/src/App.tsx).
+SPA routes: `/standings`, `/leaders`, `/teams`, `/players`, `/games`, `/games/:gamePk` (default landing: `/standings`). Routing: [`frontend/src/App.tsx`](frontend/src/App.tsx).
 
 ---
 
@@ -156,6 +156,7 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 | Area          | What you get                                                                                       |
 | :------------ | :------------------------------------------------------------------------------------------------- |
 | **Standings** | League standings for the configured season.                                                        |
+| **Leaders**   | Season statistical leaders (hitting / pitching categories from MLB Stats API).                   |
 | **Teams**     | Team overview with season stats and record timelines.                                              |
 | **Players**   | Side-by-side comparison (radar, trends, game log); hitting / pitching views.                       |
 | **Games**     | Date slate + **per-game** detail (timeline, boxscore-style views, Statcast panels when available). |

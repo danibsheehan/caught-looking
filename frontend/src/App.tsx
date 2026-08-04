@@ -8,9 +8,11 @@ const TeamOverview = lazy(() => import('./pages/TeamOverview'));
 const PlayerComparison = lazy(() => import('./pages/PlayerComparison'));
 const GamesSlate = lazy(() => import('./pages/GamesSlate'));
 const GameDetail = lazy(() => import('./pages/GameDetail'));
+const Leaders = lazy(() => import('./pages/Leaders'));
 
 const nav = [
   { to: '/standings', label: 'Standings' },
+  { to: '/leaders', label: 'Leaders' },
   { to: '/teams', label: 'Teams' },
   { to: '/players', label: 'Players' },
   { to: '/games', label: 'Games' },
@@ -61,6 +63,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/standings" replace />} />
               <Route path="/standings" element={<Standings />} />
+              <Route path="/leaders" element={<Leaders />} />
               <Route path="/teams" element={<TeamOverview />} />
               <Route path="/players" element={<PlayerComparison />} />
               <Route path="/games/:gamePk" element={<GameDetail />} />

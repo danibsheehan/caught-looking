@@ -10,6 +10,8 @@ export type GameSummary = components['schemas']['GameSummary'];
 export type PlayerSearchHit = components['schemas']['PlayerSearchHit'];
 export type GameTimelineResponse = components['schemas']['GameTimelineResponse'];
 export type LeagueSeasonBaselineResponse = components['schemas']['LeagueSeasonBaselineResponse'];
+export type LeadersResponse = components['schemas']['LeadersResponse'];
+export type LeaderRow = components['schemas']['LeaderRow'];
 export type PlayerCurrentTeamResponse = components['schemas']['PlayerCurrentTeamResponse'];
 export type PlayersCurrentTeamsResponse = components['schemas']['PlayersCurrentTeamsResponse'];
 export type TeamsResponse = components['schemas']['TeamsResponse'];
@@ -47,6 +49,7 @@ export type PlatoonSplitRow = components['schemas']['PlatoonSplitRow'];
 
 // Source query types from generated operations.
 export type StandingsQuery = QueryOf<operations['getStandings']>;
+export type LeadersQuery = QueryOf<operations['getLeaders']>;
 export type TeamsQuery = QueryOf<operations['listTeams']>;
 export type TeamSeasonStatsQuery = QueryOf<operations['getTeamSeasonStats']>;
 export type RecordTimelineQuery = QueryOf<operations['getRecordTimeline']>;

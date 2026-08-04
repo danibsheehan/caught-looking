@@ -70,6 +70,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /leaders:
+    get:
+      summary: Season statistical leaders
+      operationId: getLeaders
+      parameters:
+        - in: query
+          name: season
+          schema:
+            type: integer
+        - in: query
+          name: group
+          description: hitting or pitching (default hitting)
+          schema:
+            type: string
+            enum: [hitting, pitching]
+        - in: query
+          name: category
+          description: Allowlisted MLB leaderCategories value for the group
+          schema:
+            type: string
+        - in: query
+          name: limit
+          description: Max rows (1–25, default 10)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 25
+      responses:
+        "200":
+          description: Leaders board
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadersResponse"
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Upstream MLB failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /teams/{teamID}/record-timeline:
     get:
       summary: Team record over season
@@ -1154,3 +1200,43 @@ components:
           items:
             $ref: "#/components/schemas/GameSummary"
       required: [date, games]
+    LeaderRow:
+      type: object
+      properties:
+        rank:
+          type: integer
+        value:
+          type: string
+        playerId:
+          type: integer
+          format: int64
+        playerName:
+          type: string
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        leagueName:
+          type: string
+      required: [rank, value, playerId, playerName, teamId, teamName]
+    LeadersResponse:
+      type: object
+      properties:
+        season:
+          type: integer
+        group:
+          type: string
+        category:
+          type: string
+        limit:
+          type: integer
+        leaders:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaderRow"
+        categories:
+          type: array
+          items:
+            type: string
+          description: Allowlisted categories for the selected group
+      required: [season, group, category, limit, leaders, categories]

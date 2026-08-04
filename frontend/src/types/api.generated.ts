@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/leaders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Season statistical leaders */
+        get: operations["getLeaders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/teams/{teamID}/record-timeline": {
         parameters: {
             query?: never;
@@ -658,6 +675,25 @@ export interface components {
             date: string;
             games: components["schemas"]["GameSummary"][];
         };
+        LeaderRow: {
+            rank: number;
+            value: string;
+            /** Format: int64 */
+            playerId: number;
+            playerName: string;
+            teamId: number;
+            teamName: string;
+            leagueName?: string;
+        };
+        LeadersResponse: {
+            season: number;
+            group: string;
+            category: string;
+            limit: number;
+            leaders: components["schemas"]["LeaderRow"][];
+            /** @description Allowlisted categories for the selected group */
+            categories: string[];
+        };
     };
     responses: never;
     parameters: never;
@@ -729,6 +765,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StandingsResponse"];
+                };
+            };
+            /** @description Invalid query parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Upstream MLB failure */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getLeaders: {
+        parameters: {
+            query?: {
+                season?: number;
+                /** @description hitting or pitching (default hitting) */
+                group?: "hitting" | "pitching";
+                /** @description Allowlisted MLB leaderCategories value for the group */
+                category?: string;
+                /** @description Max rows (1–25, default 10) */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Leaders board */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadersResponse"];
                 };
             };
             /** @description Invalid query parameters */
