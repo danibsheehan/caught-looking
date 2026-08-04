@@ -3,6 +3,9 @@ name: CI
 # Push only on main so feature-branch work does not double-trigger with pull_request.
 # Otherwise every PR update runs twice (push + pull_request). Cobertura artifacts
 # are commented on by the workflow_run-based coverage-comments workflow.
+#
+# Draft PRs skip both jobs until ready_for_review. Path filters keep required check
+# names green on docs/skills-only (or single-side) PRs while skipping heavy steps.
 on:
     push:
         branches:
@@ -21,6 +24,7 @@ jobs:
     frontend:
         # Must match the branch protection "required status check" name exactly.
         name: Frontend (lint, typecheck, test+coverage, build)
+        if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
         runs-on: ubuntu-latest
         permissions:
             contents: read
@@ -29,42 +33,89 @@ jobs:
                 working-directory: frontend
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+            - name: Detect frontend-relevant changes
+              if: github.event_name == 'pull_request'
+              id: filter
+              uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3
+              with:
+                  filters: |
+                      frontend:
+                        - 'frontend/**'
+                        - 'backend/apidocs/**'
+                        - 'redocly.yaml'
+                        - 'Makefile'
+                        - '.github/workflows/ci.yml'
+
+            - name: Skip heavy frontend gates (path filter)
+              if: github.event_name == 'pull_request' && steps.filter.outputs.frontend != 'true'
+              run: echo 'No frontend-relevant paths changed; skipping npm gates.'
+              working-directory: ${{ github.workspace }}
+
+            # Always run: catches go.mod / README drift even when npm gates are path-skipped.
             - name: Stack docs vs manifests
               working-directory: ${{ github.workspace }}
               run: python3 .github/scripts/check_stack_docs.py
+
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
               with:
                   node-version: '22'
                   cache: npm
                   cache-dependency-path: frontend/package-lock.json
-            - run: npm ci
+
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
+              run: npm ci
+
             - name: Vulnerability scan
+              if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
               run: npm audit --audit-level=high
-            - run: npm run api:validate
-            - run: npm run api:types:check
-            - run: npm run lint
-            - run: npm run format:check
-            - run: npm run typecheck
+
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
+              run: npm run api:validate
+
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
+              run: npm run api:types:check
+
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
+              run: npm run lint
+
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
+              run: npm run format:check
+
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
+              run: npm run typecheck
+
             - name: Test with coverage (Vitest)
+              if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
               run: npm run test:coverage
+
             # Copy out of gitignored coverage/ for the PR coverage comment.
             # Keep the upload at workspace root so download-artifact extracts a flat file.
-            - run: cp coverage/cobertura-coverage.xml "${GITHUB_WORKSPACE}/gha-cobertura-frontend.xml"
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
+              run: cp coverage/cobertura-coverage.xml "${GITHUB_WORKSPACE}/gha-cobertura-frontend.xml"
+
             - name: Enforce frontend coverage threshold
+              if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
               run: >
                   python3 "${GITHUB_WORKSPACE}/.github/scripts/check_cobertura_line_rate.py"
                   "${GITHUB_WORKSPACE}/gha-cobertura-frontend.xml" 0.50
                   --label "Frontend coverage"
+
             - name: Upload frontend coverage artifact
+              if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               with:
                   name: frontend-cobertura
                   path: gha-cobertura-frontend.xml
                   if-no-files-found: error
-            - run: npm run build
+
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.frontend == 'true'
+              run: npm run build
 
     backend:
         name: Backend (vet, test+coverage, build)
+        if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
         runs-on: ubuntu-latest
         permissions:
             contents: read
@@ -73,32 +124,66 @@ jobs:
                 working-directory: backend
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+            - name: Detect backend-relevant changes
+              if: github.event_name == 'pull_request'
+              id: filter
+              uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3
+              with:
+                  filters: |
+                      backend:
+                        - 'backend/**'
+                        - 'Makefile'
+                        - '.github/workflows/ci.yml'
+
+            - name: Skip heavy backend gates (path filter)
+              if: github.event_name == 'pull_request' && steps.filter.outputs.backend != 'true'
+              run: echo 'No backend-relevant paths changed; skipping Go gates.'
+              working-directory: ${{ github.workspace }}
+
             - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
               with:
                   go-version: '1.26.5'
                   cache-dependency-path: backend/go.sum
-            - run: go mod download
-            - run: go vet ./...
+
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+              run: go mod download
+
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+              run: go vet ./...
+
             - name: Vulnerability scan
+              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
               run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
             - name: Test with race detector
+              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
               run: go test ./... -race -count=1
+
             - name: Test with coverage
+              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
               run: |
                   go test ./... -count=1 -coverprofile=coverage.out -covermode=atomic
                   go install github.com/boumenot/gocover-cobertura@v1.4.0
                   # Write as gha-cobertura.xml (gitignored paths stay out of the workspace snapshot).
                   "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura-raw.xml
                   python3 "$GITHUB_WORKSPACE/.github/scripts/merge_cobertura_by_file.py" gha-cobertura-raw.xml > "$GITHUB_WORKSPACE/gha-cobertura.xml"
+
             - name: Enforce backend coverage threshold
+              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
               run: >
                   python3 "${GITHUB_WORKSPACE}/.github/scripts/check_cobertura_line_rate.py"
                   "${GITHUB_WORKSPACE}/gha-cobertura.xml" 0.50
                   --label "Backend coverage"
+
             - name: Upload backend coverage artifact
+              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               with:
                   name: backend-cobertura
                   path: gha-cobertura.xml
                   if-no-files-found: error
-            - run: go build -o /dev/null .
+
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+              run: go build -o /dev/null .
