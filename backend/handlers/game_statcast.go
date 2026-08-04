@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -42,7 +42,7 @@ func (h *Handlers) GameStatcast(w http.ResponseWriter, r *http.Request) {
 		g.Go(func() error {
 			b, err := h.mlb.Get(gctx, "/schedule?sportId=1&gamePks="+pkStr)
 			if err != nil {
-				log.Printf("%s %s: schedule (venue) optional fetch: %v", r.Method, r.URL.Path, err)
+				slog.Warn("statcast schedule venue optional fetch failed", "method", r.Method, "path", r.URL.Path, "err", err)
 				return nil
 			}
 			rawSchedule = b
@@ -69,7 +69,7 @@ func (h *Handlers) GameStatcast(w http.ResponseWriter, r *http.Request) {
 				} `json:"dates"`
 			}
 			if err := json.Unmarshal(rawSchedule, &sched); err != nil {
-				log.Printf("GET %s: schedule parse for venue: %v", r.URL.Path, err)
+				slog.Warn("statcast schedule venue parse failed", "path", r.URL.Path, "err", err)
 			} else if len(sched.Dates) > 0 && len(sched.Dates[0].Games) > 0 && sched.Dates[0].Games[0].Venue != nil {
 				v := sched.Dates[0].Games[0].Venue
 				out.VenueID = v.ID

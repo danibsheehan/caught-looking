@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // newRouter returns the API router (middleware + routes). Used by main and tests.
@@ -35,6 +36,8 @@ func newRouter(cfg config.Config, h *handlers.Handlers) http.Handler {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
+	// Prometheus scrape endpoint — outside the rate-limited API group (like /health).
+	r.Handle("/metrics", promhttp.Handler())
 	r.Get("/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
 		apidocs.OpenAPISpec().ServeHTTP(w, r)
