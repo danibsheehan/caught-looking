@@ -4,6 +4,8 @@
 - **Last updated:** 2026-08-04
 - **Related:** [docs/adr/](adr/) (cache TTLs, QPS), [backend HTTP security skill](../.cursor/skills/backend-http-security/SKILL.md)
 
+Structured request/upstream logs use **`log/slog`** (JSON from `main`). Prometheus text exposition is at **`GET /metrics`**.
+
 ## Assets
 
 | Asset | Notes |
@@ -36,6 +38,7 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 | Anonymous scraper / bot | High request volume to API | Per-IP sliding window (`RATE_LIMIT_*`) on the API group; keyed by `Request.RemoteAddr` (forwarded IP headers **not** trusted unless a proxy rewrites `RemoteAddr`) |
 | Anonymous client | Force expensive upstream fan-out | TTL cache + singleflight; outbound `MLB_MAX_QPS` / `SAVANT_MAX_QPS`; Cloud Run `max-instances` capped (default 2) |
 | Anonymous client | Probe for error leakage / internals | Generic 502/504 JSON to clients; detail logged with `request_id` only |
+| Anonymous client | Scrape process metrics | `GET /metrics` (Prometheus default collectors) is **outside** the rate-limit group like `/health`. Prefer network/IAM restriction on Cloud Run for production scrapes; avoid high-cardinality custom labels |
 | Anonymous client | Oversized inbound body (future POST / misuse) | Routes are mostly GET today; **inbound** body size middleware is a planned follow-up. Outbound bodies already capped (`maxUpstreamBodyBytes`, 32 MiB) |
 | Misconfigured CORS | Cross-origin browser calls from unexpected sites | Explicit `ALLOWED_ORIGINS` / deploy `CORS_ALLOWED_ORIGINS` allowlist |
 | Compromised dependency | RCE / supply chain | CI `govulncheck` (Go) and `npm audit --audit-level=high` (frontend); Dependabot |

@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -106,7 +106,7 @@ func Load() Config {
 		if n, err := strconv.Atoi(v); err == nil {
 			cfg.DefaultSeason = n
 		} else {
-			log.Printf("config: ignoring invalid MLB_SEASON=%q: %v", v, err)
+			slog.Warn("config ignoring invalid env", "key", "MLB_SEASON", "value", v, "err", err)
 		}
 	}
 
@@ -118,7 +118,7 @@ func Load() Config {
 		if n, err := strconv.Atoi(v); err == nil {
 			cfg.RateLimitRequests = n
 		} else {
-			log.Printf("config: ignoring invalid RATE_LIMIT_REQUESTS=%q: %v", v, err)
+			slog.Warn("config ignoring invalid env", "key", "RATE_LIMIT_REQUESTS", "value", v, "err", err)
 		}
 	}
 
@@ -126,7 +126,7 @@ func Load() Config {
 		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			cfg.MLBMaxQPS = f
 		} else {
-			log.Printf("config: ignoring invalid MLB_MAX_QPS=%q: %v", v, err)
+			slog.Warn("config ignoring invalid env", "key", "MLB_MAX_QPS", "value", v, "err", err)
 		}
 	}
 
@@ -134,7 +134,7 @@ func Load() Config {
 		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			cfg.SavantMaxQPS = f
 		} else {
-			log.Printf("config: ignoring invalid SAVANT_MAX_QPS=%q: %v", v, err)
+			slog.Warn("config ignoring invalid env", "key", "SAVANT_MAX_QPS", "value", v, "err", err)
 		}
 	}
 
@@ -142,7 +142,7 @@ func Load() Config {
 		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
 			cfg.CacheMaxEntries = n
 		} else {
-			log.Printf("config: ignoring invalid CACHE_MAX_ENTRIES=%q", v)
+			slog.Warn("config ignoring invalid env", "key", "CACHE_MAX_ENTRIES", "value", v)
 		}
 	}
 
@@ -160,7 +160,7 @@ func parseDurationEnv(key string, dst *time.Duration) {
 	}
 	d, err := time.ParseDuration(v)
 	if err != nil {
-		log.Printf("config: ignoring invalid %s=%q: %v", key, v, err)
+		slog.Warn("config ignoring invalid env", "key", key, "value", v, "err", err)
 		return
 	}
 	*dst = d

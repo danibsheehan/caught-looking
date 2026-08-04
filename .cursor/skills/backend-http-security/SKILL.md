@@ -42,7 +42,8 @@ Extend behavior in **`backend/middleware/`** and **`backend/config/`** — do no
    - Build keys from validated params only (no raw unsanitized query strings that could explode cardinality — player search already uses a dedicated short TTL).
 
 5. **Logging**
-   - Prefer structured lines with `request_id`, method, path, event. Avoid logging secrets or full PII; upstream body snippets already truncated in client errors — still do not echo them to HTTP responses.
+   - Prefer **`log/slog`** with `request_id`, method, path, event. Avoid logging secrets or full PII; upstream body snippets already truncated in client errors — still do not echo them to HTTP responses.
+   - Process metrics: **`GET /metrics`** (Prometheus default collectors) sits outside the rate-limited API group; update **`docs/threat-model.md`** if scrape exposure or collectors change.
 
 ## Config / middleware changes
 

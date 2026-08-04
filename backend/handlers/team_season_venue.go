@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 
 	"caught-looking/backend/models"
 )
@@ -87,7 +87,7 @@ func (h *Handlers) fetchTeamVenueSplitsFromSchedule(ctx context.Context, teamID,
 func (h *Handlers) fetchTeamVenueSplitsBestEffort(ctx context.Context, teamID, season int) models.TeamVenueSplits {
 	out, err := h.fetchTeamVenueSplitsFromSchedule(ctx, teamID, season)
 	if err != nil {
-		log.Printf("team season stats: venue splits schedule: %v", err)
+		slog.Warn("venue splits schedule failed", "err", err)
 		return models.TeamVenueSplits{}
 	}
 	return out

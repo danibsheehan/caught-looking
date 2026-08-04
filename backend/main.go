@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +17,8 @@ import (
 )
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
+
 	cfg := config.Load()
 	if err := cfg.Validate(); err != nil {
 		log.Fatal(err)
@@ -23,7 +27,9 @@ func main() {
 	sweeperCtx, stopSweeper := context.WithCancel(context.Background())
 	defer stopSweeper()
 	if cfg.CacheSweepInterval > 0 {
-		go cache.RunSweeper(sweeperCtx, cfg.CacheSweepInterval, cfg.CacheMaxEntries, log.Printf)
+		go cache.RunSweeper(sweeperCtx, cfg.CacheSweepInterval, cfg.CacheMaxEntries, func(format string, args ...any) {
+			slog.Info("cache_sweep", "msg", fmt.Sprintf(format, args...))
+		})
 	}
 	mlb := services.NewMLBClient(cfg.MLBBaseURL, cfg.MLBMaxQPS, cfg.MLBHTTPTimeout)
 	savant := services.NewSavantClient(cfg.SavantBaseURL, cfg.SavantMaxQPS, cfg.SavantHTTPTimeout)
@@ -39,7 +45,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("listening on %s (MLB base %s)", cfg.HTTPAddr, cfg.MLBBaseURL)
+		slog.Info("listening", "addr", cfg.HTTPAddr, "mlb_base", cfg.MLBBaseURL)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal(err)
 		}
@@ -54,6 +60,6 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Printf("shutdown: %v", err)
+		slog.Error("shutdown", "err", err)
 	}
 }
