@@ -4,7 +4,8 @@
 Sources of truth:
   - frontend/package.json — react, typescript, vite
   - backend/go.mod — `go` directive (and optional toolchain)
-  - .github/workflows/ci.yml — node-version, go-version
+  - .nvmrc — Node major (preferred); else ci.yml node-version
+  - .github/workflows/ci.yml — go-version (and node-version if no .nvmrc)
 
 Checked docs:
   - README.md badges, Tech stack table, Prerequisites
@@ -68,15 +69,40 @@ def read_go_mod(go_mod: Path) -> dict[str, str]:
     return out
 
 
-def read_ci_versions(ci_yml: Path) -> dict[str, str]:
+def read_node_major(root: Path, ci_yml: Path) -> str:
+    nvmrc = root / ".nvmrc"
+    if nvmrc.is_file():
+        lines = [
+            line.strip()
+            for line in nvmrc.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+        if not lines:
+            raise ValueError(f"{nvmrc}: empty")
+        raw = lines[0].lstrip("v")
+        major = raw.split(".")[0]
+        if not major.isdigit():
+            raise ValueError(f"{nvmrc}: expected Node version, got {lines[0]!r}")
+        return major
+
     text = ci_yml.read_text(encoding="utf-8")
     node = re.search(r"(?m)^\s*node-version:\s*['\"]?(\d+)['\"]?\s*$", text)
-    go = re.search(r"(?m)^\s*go-version:\s*['\"]?([\d.]+)['\"]?\s*$", text)
     if not node:
-        raise ValueError(f"{ci_yml}: no node-version")
+        raise ValueError(f"{ci_yml}: no node-version and no .nvmrc")
+    return node.group(1)
+
+
+def read_ci_versions(root: Path, ci_yml: Path) -> dict[str, str]:
+    text = ci_yml.read_text(encoding="utf-8")
+    go = re.search(r"(?m)^\s*go-version:\s*['\"]?([\d.]+)['\"]?\s*$", text)
     if not go:
         raise ValueError(f"{ci_yml}: no go-version")
-    return {"node_major": node.group(1), "go_version": go.group(1)}
+    node_major = read_node_major(root, ci_yml)
+    if (root / ".nvmrc").is_file() and "node-version-file:" not in text:
+        raise ValueError(
+            f"{ci_yml}: .nvmrc is present but no node-version-file (pin Actions to .nvmrc)"
+        )
+    return {"node_major": node_major, "go_version": go.group(1)}
 
 
 def require_regex(text: str, pattern: str, label: str, errors: list[str]) -> re.Match[str] | None:
@@ -177,7 +203,7 @@ def main() -> int:
     try:
         pkg = read_package_versions(package_json)
         go = read_go_mod(go_mod)
-        ci = read_ci_versions(ci_yml)
+        ci = read_ci_versions(ROOT, ci_yml)
         readme = readme_path.read_text(encoding="utf-8")
         stack_text = stack_rule.read_text(encoding="utf-8")
     except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -218,7 +244,7 @@ def main() -> int:
             print(f"  - {err}", file=sys.stderr)
         print(
             "Update README badges/Prerequisites/Tech stack (and project-stack.mdc) "
-            "to match frontend/package.json, backend/go.mod, and .github/workflows/ci.yml.",
+            "to match frontend/package.json, backend/go.mod, .nvmrc, and .github/workflows/ci.yml.",
             file=sys.stderr,
         )
         return 1

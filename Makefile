@@ -27,7 +27,7 @@ check-openapi:
 	cd "$(PROJECT_ROOT)/frontend" && npm run api:validate
 	cd "$(PROJECT_ROOT)/frontend" && npm run api:types:check
 
-## check-stack-docs: verify README / project-stack versions match package.json, go.mod, CI
+## check-stack-docs: verify README / project-stack versions match package.json, go.mod, .nvmrc, CI
 check-stack-docs:
 	python3 "$(PROJECT_ROOT)/.github/scripts/check_stack_docs.py"
 
