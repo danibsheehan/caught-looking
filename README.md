@@ -29,7 +29,7 @@ Web app for exploring **MLB statistics** with charts and comparisons. The UI tal
 > [!NOTE]
 > **Live app:** [caught-looking.com/standings](https://caught-looking.com/standings) · [www.caught-looking.com/standings](https://www.caught-looking.com/standings) · **API reference (Redoc):** [docs.caught-looking.com](https://docs.caught-looking.com/)
 
-**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Design tokens](#design-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Prerequisites](#prerequisites) · [Editor setup](#editor-setup) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing)
+**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Design tokens](#design-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Prerequisites](#prerequisites) · [Editor setup](#editor-setup) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing) · [ADRs](docs/adr/)
 
 ---
 
@@ -46,6 +46,10 @@ SPA routes: `/standings`, `/teams`, `/players`, `/games`, `/games/:gamePk` (defa
 ## Architecture
 
 Browser **React** app calls same-origin **`/api`** (Vite proxy in dev, `VITE_API_BASE` in prod). **Go** applies cache TTLs, per-IP limits, and outbound QPS caps before fanning out to **MLB** JSON and **Savant** CSV.
+
+### Design decisions
+
+Rationale for cache TTLs, outbound QPS, and the OpenAPI contract: **[docs/adr/](docs/adr/)** (ADRs 0001–0003). Skills under `.cursor/skills/` remain the how-to; ADRs record the tradeoffs.
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
@@ -184,6 +188,7 @@ Continuous integration runs in **GitHub Actions** on pushes to **`main`** and on
 | :------------- | :--------------------------------------------------------------------------------------------------------------------- |
 | Shell / routes | [`frontend/src/App.tsx`](frontend/src/App.tsx), [`frontend/src/styles/_shell.scss`](frontend/src/styles/_shell.scss)   |
 | Global theme   | [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss); feature SCSS under `frontend/src/styles/features/`; README art in [`docs/readme-banner.svg`](docs/readme-banner.svg), [`docs/badge-live.svg`](docs/badge-live.svg) (minimal SVGs; paths are `./docs/…` from README root) |
+| Design decisions | [`docs/adr/`](docs/adr/) — cache TTLs, upstream QPS, OpenAPI contract |
 | Pages          | `frontend/src/pages/`                                                                                                  |
 | API client     | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev                          |
 | Types          | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts`                                              |
