@@ -26,6 +26,7 @@ jobs:
         name: Frontend (lint, typecheck, test+coverage, build)
         if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         permissions:
             contents: read
         defaults:
@@ -118,6 +119,7 @@ jobs:
         name: Backend (vet, test+coverage, build)
         if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         permissions:
             contents: read
         defaults:
