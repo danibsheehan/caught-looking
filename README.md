@@ -252,16 +252,16 @@ Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull req
 | Trigger | Behavior |
 | --- | --- |
 | **Draft PR** | CI skipped until Ready for review |
-| **PR (ready)** | Path filters skip heavy frontend and/or backend steps when that side’s paths are unchanged (jobs still report green for required checks) |
-| **Push to `main`** | Full gates always; **Deploy** may also run when vars/secrets are set — see [Deployment (CI)](#deployment-ci) |
+| **PR (ready)** | Path filters skip heavy frontend and/or backend steps when that side’s paths are unchanged (jobs still report green for required checks). Optional **e2e** / **sbom** skip the same way when their paths are unchanged |
+| **Push to `main`** | Required frontend/backend gates always run fully. Optional **e2e** / **sbom** are path-filtered (same as PRs). **Deploy** may also run when vars/secrets are set — see [Deployment (CI)](#deployment-ci) |
 | **Cloudflare PR preview** | Draft-skipped and path-filtered: deploys only when `frontend/**` (or the preview workflow) changes |
 
 #### Same-repo PR helpers
 
-| Workflow | Role |
+| Workflow / job | Role |
 | --- | --- |
 | [**PR guide**](.github/workflows/pr-guide.yml) | Scaffolds empty/default PR description (verify commands, **Touches**), sticky checklist comment, `area:*` labels from changed paths |
-| **Coverage comments** | Read/write jobs post or update Cobertura coverage comments for artifacts CI uploaded |
+| **Coverage comments** (CI job) | After frontend/backend succeed, posts or updates Cobertura coverage comments from uploaded artifacts (same-repo PRs only; does not run on `main`) |
 | [**Pages preview**](.github/workflows/pages-preview.yml) | Builds SPA with `VITE_API_BASE` → Cloudflare branch preview when SPA paths change |
 | [**Preview cleanup**](.github/workflows/pages-preview-cleanup.yml) | Deletes preview deployments when the PR is closed or merged |
 
