@@ -2,10 +2,15 @@ name: Cloudflare Pages (PR preview)
 
 # Branch previews must bake in VITE_API_BASE. Without it the SPA defaults to `/api`,
 # Cloudflare Pages SPA fallback returns index.html, and JSON parse fails in the UI.
-# Skip drafts, Dependabot, and PRs that do not touch SPA-relevant paths.
+# Workflow-level paths: non-SPA PRs never start this workflow (no Detect/Skipped noise).
+# Skip drafts, Dependabot, and forks at the job level.
 on:
     pull_request:
         types: [opened, synchronize, reopened, ready_for_review]
+        paths:
+            - 'frontend/**'
+            - '.nvmrc'
+            - '.github/workflows/pages-preview.yml'
 
 concurrency:
     group: pages-preview-${{ github.event.pull_request.number || github.ref }}
@@ -15,31 +20,10 @@ permissions:
     contents: read
 
 jobs:
-    changes:
-        name: Detect SPA-relevant changes
-        if: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-            pull-requests: read
-        outputs:
-            spa: ${{ steps.filter.outputs.spa }}
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
-            - id: filter
-              uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
-              with:
-                  filters: |
-                      spa:
-                        - 'frontend/**'
-                        - '.nvmrc'
-                        - '.github/workflows/pages-preview.yml'
-
     preview:
         # Gate on PR author (not github.actor): synchronize after a human commit
         # would otherwise deploy a preview for a Dependabot-authored PR.
-        needs: changes
-        if: ${{ needs.changes.outputs.spa == 'true' }}
+        if: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
         name: Deploy PR preview (Cloudflare Pages)
         runs-on: ubuntu-latest
         permissions:

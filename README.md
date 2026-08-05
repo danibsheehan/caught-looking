@@ -254,15 +254,14 @@ Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull req
 | **Draft PR** | CI skipped until Ready for review |
 | **PR (ready)** | Path filters skip heavy frontend and/or backend steps when that side’s paths are unchanged (jobs still report green for required checks). Optional **e2e** / **sbom** are skipped entirely when their paths are unchanged (via **Detect optional CI paths**; not a green no-op) |
 | **Push to `main`** | Required frontend/backend gates always run fully. Optional **e2e** / **sbom** skip entirely when paths are unchanged. **Deploy** may also run when vars/secrets are set — see [Deployment (CI)](#deployment-ci) |
-| **Cloudflare PR preview** | Draft-skipped and path-filtered: deploys only when `frontend/**` (or the preview workflow) changes |
-
+| **Cloudflare PR preview** | Workflow starts only when `frontend/**`, `.nvmrc`, or the preview workflow change; job still skips drafts, Dependabot, and forks |
 #### Same-repo PR helpers
 
 | Workflow / job | Role |
 | --- | --- |
 | [**PR guide**](.github/workflows/pr-guide.yml) | Scaffolds empty/default PR description (verify commands, **Touches**), sticky checklist comment, `area:*` labels from changed paths |
 | **Coverage comments** (CI job) | After frontend/backend succeed, posts or updates Cobertura coverage comments from uploaded artifacts (same-repo PRs only; does not run on `main`) |
-| [**Pages preview**](.github/workflows/pages-preview.yml) | Builds SPA with `VITE_API_BASE` → Cloudflare branch preview when SPA paths change |
+| [**Pages preview**](.github/workflows/pages-preview.yml) | Builds SPA with `VITE_API_BASE` → Cloudflare branch preview; does not run at all for non-SPA path PRs |
 | [**Preview cleanup**](.github/workflows/pages-preview-cleanup.yml) | Deletes preview deployments when the PR is closed or merged |
 
 Fork PRs may skip guide, coverage comments, or previews (`GITHUB_TOKEN` / secrets limits); those steps are non-blocking or skipped.
