@@ -244,7 +244,7 @@ Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull req
 
 | Job | What it does |
 | --- | --- |
-| **e2e** | Playwright Chromium smoke: `vite build` + `vite preview` with stubbed `/api` (no live Go/MLB) |
+| **e2e** | Playwright: stub smoke (`vite preview` + stubbed `/api`) and contract path (real Go API + fixture MLB/Savant) |
 | **sbom** | Syft SPDX SBOM of the repo — uploaded as a workflow artifact |
 
 #### When jobs run
@@ -359,13 +359,14 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 | `npm run test`            | Vitest (watch mode)                                                    |
 | `npm run test:run`        | Vitest once (matches CI)                                               |
 | `npm run test:coverage`   | Vitest once with V8 coverage (`frontend/coverage/`, open `index.html`) |
-| `npm run test:e2e`        | Playwright Chromium smoke (`vite build` + preview; stubbed `/api`)     |
+| `npm run test:e2e`        | Playwright Chromium stub smoke (`vite build` + preview; stubbed `/api`) |
+| `npm run test:e2e:contract` | Playwright contract path (Go API + `e2e-upstream` fixtures; no live MLB) |
 
 | Concern | Detail |
 | :--- | :--- |
 | Unit tests | Vitest (jsdom) + Testing Library + `@testing-library/jest-dom` ([`frontend/src/test/setup.ts`](frontend/src/test/setup.ts)) |
 | Mocking | Prefer mocking [`frontend/src/api/client`](frontend/src/api/client.ts) over the real API |
-| Browser smoke | `frontend/e2e/` (Playwright) — `npm run test:e2e` or `make test-e2e`; install once: `npx playwright install chromium` |
+| Browser smoke | `frontend/e2e/` (Playwright) — stub: `npm run test:e2e` / `make test-e2e`; contract: `npm run test:e2e:contract` / `make test-e2e-contract`; install once: `npx playwright install chromium` |
 
 ### OpenAPI workflow
 
@@ -390,7 +391,8 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 | `make test-backend`       | Faster backend subset: `go vet`, `govulncheck`, tests, build            |
 | `make test-backend-race`  | Backend tests with the race detector                                    |
 | `make test-frontend`      | `npm run test:run` in `frontend/`                                       |
-| `make test-e2e`           | Playwright Chromium smoke (`frontend/e2e/`; stubbed `/api`)             |
+| `make test-e2e`           | Playwright Chromium stub smoke (`frontend/e2e/`; stubbed `/api`)        |
+| `make test-e2e-contract`  | Playwright against Go API + fixture upstream (`cmd/e2e-upstream`)       |
 | `make cover-backend`      | Go coverage summary (`backend/coverage.out`)                            |
 | `make cover-backend-html` | Same + `backend/coverage.html`                                          |
 | `make cover-frontend`     | Vitest coverage report under `frontend/coverage/`                       |

@@ -11,6 +11,8 @@ const baseURL = `http://${previewHost}:${previewPort}`;
  */
 export default defineConfig({
   testDir: './e2e',
+  /** Stub smoke only; contract path uses playwright.contract.config.ts. */
+  testIgnore: '**/contract.spec.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
