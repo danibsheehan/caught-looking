@@ -14,3 +14,4 @@ export { default as GameScoreBar } from './GameScoreBar';
 export { default as GameStatcastScatter } from './GameStatcastScatter';
 export { default as GameStatcastSpray } from './GameStatcastSpray';
 export { default as GamePitcherStrikeZones } from './GamePitcherStrikeZones';
+export { default as ChartDataTable } from './ChartDataTable';

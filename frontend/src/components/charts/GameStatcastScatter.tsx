@@ -14,9 +14,11 @@ import {
 } from 'recharts';
 import type { StatcastBattedBall } from '../../types/api.compat';
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
+import { chartA11yBattingSide, chartA11yFootnote, chartA11ySlice } from '../../utils/chartA11yRows';
 import { buildScatterTooltipRows } from '../../utils/statcastDisplay';
 import { inningHalfBucket } from '../../utils/inningHalf';
 import { gameStatcastHalfTeamFills } from '../../utils/gameChartColors';
+import ChartDataTable from './ChartDataTable';
 import StatcastMetricTooltipContent from './StatcastMetricTooltipContent';
 import { StatcastScatterShapeCircle, StatcastScatterShapeDiamond } from './statcastMarkers';
 import {
@@ -129,6 +131,15 @@ export default function GameStatcastScatter({
 
   const showLevelReference = xDomain[0] < 0 && xDomain[1] > 0;
 
+  const a11ySlice = chartA11ySlice(points);
+  const a11yRows = a11ySlice.rows.map((p) => [
+    p.playerName,
+    String(p.launchSpeed),
+    String(p.launchAngle),
+    p.events?.trim() || '—',
+    chartA11yBattingSide(p.inningHalf),
+  ]);
+
   return (
     <div className="game-statcast-scatter">
       <p className="muted small game-statcast-scatter__caption">
@@ -138,85 +149,93 @@ export default function GameStatcastScatter({
         read bottom to top as harder-hit contact. Hover a point for the batter and play result—where
         the ball went on the field is on the spray chart.
       </p>
-      <ResponsiveContainer width="100%" height={400}>
-        <ScatterChart margin={{ top: 12, right: 14, left: 8, bottom: 30 }}>
-          {launchAngleBands.map((b) => (
-            <ReferenceArea
-              key={b.key}
-              x1={b.x1}
-              x2={b.x2}
-              y1={yDomain[0]}
-              y2={yDomain[1]}
-              fill={LA_BAND_FILL[b.key]}
-              stroke="none"
+      <div aria-hidden="true">
+        <ResponsiveContainer width="100%" height={400}>
+          <ScatterChart margin={{ top: 12, right: 14, left: 8, bottom: 30 }}>
+            {launchAngleBands.map((b) => (
+              <ReferenceArea
+                key={b.key}
+                x1={b.x1}
+                x2={b.x2}
+                y1={yDomain[0]}
+                y2={yDomain[1]}
+                fill={LA_BAND_FILL[b.key]}
+                stroke="none"
+              />
+            ))}
+            <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
+            <XAxis
+              type="number"
+              dataKey="launchAngle"
+              name="Launch angle"
+              domain={xDomain}
+              tick={chartCartesianTick}
+              label={{
+                value: 'Launch angle (°)',
+                position: 'insideBottom',
+                offset: -4,
+                fill: 'var(--muted)',
+                fontSize: 11,
+                fontFamily: 'var(--sans)',
+              }}
             />
-          ))}
-          <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
-          <XAxis
-            type="number"
-            dataKey="launchAngle"
-            name="Launch angle"
-            domain={xDomain}
-            tick={chartCartesianTick}
-            label={{
-              value: 'Launch angle (°)',
-              position: 'insideBottom',
-              offset: -4,
-              fill: 'var(--muted)',
-              fontSize: 11,
-              fontFamily: 'var(--sans)',
-            }}
-          />
-          <YAxis
-            type="number"
-            dataKey="launchSpeed"
-            name="Exit velo"
-            domain={yDomain}
-            tick={chartCartesianTick}
-            width={44}
-            label={{
-              value: 'Exit velocity (mph)',
-              angle: -90,
-              position: 'insideLeft',
-              fill: 'var(--muted)',
-              fontSize: 11,
-              fontFamily: 'var(--sans)',
-            }}
-          />
-          {showLevelReference ? (
-            <ReferenceLine
-              x={0}
-              stroke="var(--border)"
-              strokeDasharray="4 4"
-              strokeOpacity={0.85}
+            <YAxis
+              type="number"
+              dataKey="launchSpeed"
+              name="Exit velo"
+              domain={yDomain}
+              tick={chartCartesianTick}
+              width={44}
+              label={{
+                value: 'Exit velocity (mph)',
+                angle: -90,
+                position: 'insideLeft',
+                fill: 'var(--muted)',
+                fontSize: 11,
+                fontFamily: 'var(--sans)',
+              }}
             />
-          ) : null}
-          <Tooltip cursor={{ strokeDasharray: '3 3' }} content={StatcastTooltip} />
-          <Legend
-            wrapperStyle={{ fontSize: '0.82rem', paddingTop: 6 }}
-            formatter={(value) => <span style={{ color: 'var(--text)' }}>{value}</span>}
-          />
-          {top.length > 0 ? (
-            <Scatter
-              name="Away batting (circles)"
-              data={top}
-              fill={topColor}
-              shape={StatcastScatterShapeCircle}
+            {showLevelReference ? (
+              <ReferenceLine
+                x={0}
+                stroke="var(--border)"
+                strokeDasharray="4 4"
+                strokeOpacity={0.85}
+              />
+            ) : null}
+            <Tooltip cursor={{ strokeDasharray: '3 3' }} content={StatcastTooltip} />
+            <Legend
+              wrapperStyle={{ fontSize: '0.82rem', paddingTop: 6 }}
+              formatter={(value) => <span style={{ color: 'var(--text)' }}>{value}</span>}
             />
-          ) : null}
-          {bottom.length > 0 ? (
-            <Scatter
-              name="Home batting (diamonds)"
-              data={bottom}
-              fill={bottomColor}
-              shape={StatcastScatterShapeDiamond}
-            />
-          ) : null}
-          {other.length > 0 ? (
-            <Scatter name="Inning half unknown" data={other} fill={otherColor} />
-          ) : null}
-        </ScatterChart>
-      </ResponsiveContainer>
+            {top.length > 0 ? (
+              <Scatter
+                name="Away batting (circles)"
+                data={top}
+                fill={topColor}
+                shape={StatcastScatterShapeCircle}
+              />
+            ) : null}
+            {bottom.length > 0 ? (
+              <Scatter
+                name="Home batting (diamonds)"
+                data={bottom}
+                fill={bottomColor}
+                shape={StatcastScatterShapeDiamond}
+              />
+            ) : null}
+            {other.length > 0 ? (
+              <Scatter name="Inning half unknown" data={other} fill={otherColor} />
+            ) : null}
+          </ScatterChart>
+        </ResponsiveContainer>
+      </div>
+      <ChartDataTable
+        caption="Batted balls by exit velocity and launch angle."
+        columns={['Batter', 'Exit velo (mph)', 'Launch angle (°)', 'Result', 'Side']}
+        rows={a11yRows}
+        footnote={chartA11yFootnote('batted balls', a11ySlice)}
+      />
       <ul className="game-statcast-scatter__band-legend muted small" aria-hidden="true">
         <li>
           <span className="game-statcast-scatter__band-swatch game-statcast-scatter__band-swatch--grounder" />
