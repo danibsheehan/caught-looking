@@ -90,15 +90,18 @@ describe('GamePitcherStrikeZones', () => {
     expect(sliderBtn).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('switches to heat map and exposes a zone-cell data table', async () => {
+  it('switches to density map and exposes a zone-cell data table', async () => {
     const user = userEvent.setup();
     render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />);
-    const heatBtn = screen.getByRole('button', { name: /^Heat$/i });
-    expect(heatBtn).toHaveAttribute('aria-pressed', 'false');
-    await user.click(heatBtn);
-    expect(heatBtn).toHaveAttribute('aria-pressed', 'true');
+    const densityBtn = screen.getByRole('button', { name: /^Density$/i });
+    expect(densityBtn).toHaveAttribute('aria-pressed', 'false');
+    await user.click(densityBtn);
+    expect(densityBtn).toHaveAttribute('aria-pressed', 'true');
     expect(
-      screen.getByRole('table', { name: /Pitch heat map for Casey Pitcher/i }),
+      screen.getByText(/Each square is a plate zone; the number is how many pitches/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('table', { name: /Pitch density map for Casey Pitcher/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Col \(3B→1B\)/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Pitches/i })).toBeInTheDocument();

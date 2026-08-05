@@ -329,7 +329,13 @@
     display: inline-flex;
     flex-wrap: wrap;
     gap: 0.35rem;
-    margin: 0 0 0.55rem;
+    margin: 0 0 0.35rem;
+  }
+
+  &__mode-hint {
+    margin: 0 0 0.65rem;
+    max-width: 36rem;
+    line-height: 1.35;
   }
 
   &__mode-btn {
@@ -359,7 +365,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
-    margin: -0.25rem 0 0.55rem;
+    margin: -0.15rem 0 0.55rem;
   }
 
   &__heat-scale-bar {
@@ -368,11 +374,22 @@
     height: 0.45rem;
     border-radius: 0.2rem;
     border: 1px solid var(--border);
-    background: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--accent) 12%, transparent),
-      var(--accent)
-    );
+  }
+
+  &__heat-count {
+    fill: var(--text-h);
+    font-family: var(--mono, ui-monospace, monospace);
+    font-size: 3.1px;
+    font-weight: 600;
+    pointer-events: none;
+    paint-order: stroke fill;
+    stroke: var(--bg);
+    stroke-width: 0.45px;
+
+    &--on-dense {
+      fill: var(--bg);
+      stroke: color-mix(in srgb, var(--text-h) 35%, transparent);
+    }
   }
 
   &__section {
@@ -446,6 +463,10 @@
       margin-left: auto;
       margin-right: auto;
     }
+
+    &--heat {
+      --game-plate-fill: #d8d3c8;
+    }
   }
 
   &__svg {
@@ -462,10 +483,13 @@
   }
 
   &__svg-label {
-    fill: var(--text);
-    opacity: 0.78;
+    fill: var(--text-h);
+    opacity: 0.92;
     font-family: var(--sans, system-ui, sans-serif);
-    font-weight: 500;
+    font-weight: 600;
+    paint-order: stroke fill;
+    stroke: var(--bg);
+    stroke-width: 0.7px;
 
     &--pitcher {
       font-size: 3.4px;
@@ -477,7 +501,7 @@
 
     &--catcher {
       font-size: 2.85px;
-      opacity: 0.65;
+      opacity: 0.8;
     }
   }
 

@@ -86,11 +86,16 @@ function clampBinIndex(raw: number, bins: number): number {
   return Math.floor(raw);
 }
 
-/** Perceptual fill opacity for a cell given the map's max count (teal accent). */
+/** Perceptual fill opacity for a cell given the map's max count. */
 export function heatCellFillOpacity(count: number, maxCount: number): number {
   if (count <= 0 || maxCount <= 0) return 0;
   const t = Math.sqrt(count / maxCount);
-  return 0.1 + 0.78 * t;
+  return 0.28 + 0.62 * t;
+}
+
+/** Prefer light ink on dense cells; dark ink on sparse cells. */
+export function heatCellUsesLightLabel(count: number, maxCount: number): boolean {
+  return heatCellFillOpacity(count, maxCount) >= 0.58;
 }
 
 /** Non-zero cells for a11y tables, ordered high-z → low-z then 3B → 1B. */

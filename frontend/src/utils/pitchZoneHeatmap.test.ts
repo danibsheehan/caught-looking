@@ -4,6 +4,7 @@ import { DEFAULT_SZ_BOT_FT, DEFAULT_SZ_TOP_FT, PLATE_HALF_FT } from './statcastP
 import {
   buildPitchZoneHeatmap,
   heatCellFillOpacity,
+  heatCellUsesLightLabel,
   heatCellsForDataTable,
 } from './pitchZoneHeatmap';
 
@@ -53,8 +54,15 @@ describe('buildPitchZoneHeatmap', () => {
 describe('heatCellFillOpacity', () => {
   it('returns 0 for empty cells and scales with sqrt density', () => {
     expect(heatCellFillOpacity(0, 4)).toBe(0);
-    expect(heatCellFillOpacity(4, 4)).toBeCloseTo(0.88);
-    expect(heatCellFillOpacity(1, 4)).toBeCloseTo(0.1 + 0.78 * 0.5);
+    expect(heatCellFillOpacity(4, 4)).toBeCloseTo(0.9);
+    expect(heatCellFillOpacity(1, 4)).toBeCloseTo(0.28 + 0.62 * 0.5);
+  });
+});
+
+describe('heatCellUsesLightLabel', () => {
+  it('prefers light labels on dense cells', () => {
+    expect(heatCellUsesLightLabel(1, 8)).toBe(false);
+    expect(heatCellUsesLightLabel(8, 8)).toBe(true);
   });
 });
 
