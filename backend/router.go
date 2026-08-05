@@ -19,8 +19,9 @@ func newRouter(cfg config.Config, h *handlers.Handlers) http.Handler {
 	r.Use(chimiddleware.RequestID)
 	r.Use(chimiddleware.Recoverer)
 	r.Use(middleware.Logger)
-	r.Use(middleware.MaxBodyBytes(cfg.HTTPMaxBodyBytes))
+	// CORS before MaxBodyBytes so 413 (and other early rejects) still get ACAO headers.
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
+	r.Use(middleware.MaxBodyBytes(cfg.HTTPMaxBodyBytes))
 	// Large JSON (e.g. game Statcast) shrinks sharply with gzip; clients send Accept-Encoding as usual.
 	if !cfg.HTTPDisableCompression {
 		r.Use(chimiddleware.Compress(5,

@@ -144,6 +144,36 @@ func TestSwaggerUI(t *testing.T) {
 	}
 }
 
+func TestBodyTooLargeIncludesCORSHeaders(t *testing.T) {
+	cfg := config.Config{
+		AllowedOrigins:   []string{"http://localhost:5173"},
+		HTTPMaxBodyBytes: 64,
+	}
+	h := handlers.New(
+		cfg,
+		services.NewTTLCache(),
+		services.NewMLBClient("http://127.0.0.1:9", 0, 0),
+		services.NewSavantClient("http://127.0.0.1:9", 0, 0),
+	)
+	router := newRouter(cfg, h)
+
+	// Drive the router directly so Content-Length is preserved (http.Client may
+	// strip GET bodies / Content-Length and never hit the early 413 path).
+	body := strings.Repeat("x", 200)
+	req := httptest.NewRequest(http.MethodGet, "/teams", strings.NewReader(body))
+	req.Header.Set("Origin", "http://localhost:5173")
+	req.ContentLength = int64(len(body))
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status: got %d want %d", rec.Code, http.StatusRequestEntityTooLarge)
+	}
+	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:5173" {
+		t.Fatalf("Access-Control-Allow-Origin: got %q want %q", got, "http://localhost:5173")
+	}
+}
+
 func TestRateLimitIgnoresForwardedForSpoofing(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/teams" {
