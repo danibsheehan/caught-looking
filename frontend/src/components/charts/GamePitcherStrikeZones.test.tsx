@@ -89,4 +89,18 @@ describe('GamePitcherStrikeZones', () => {
     await user.click(sliderBtn);
     expect(sliderBtn).toHaveAttribute('aria-pressed', 'false');
   });
+
+  it('switches to heat map and exposes a zone-cell data table', async () => {
+    const user = userEvent.setup();
+    render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />);
+    const heatBtn = screen.getByRole('button', { name: /^Heat$/i });
+    expect(heatBtn).toHaveAttribute('aria-pressed', 'false');
+    await user.click(heatBtn);
+    expect(heatBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByRole('table', { name: /Pitch heat map for Casey Pitcher/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Col \(3B→1B\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Pitches/i })).toBeInTheDocument();
+  });
 });

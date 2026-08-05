@@ -325,6 +325,56 @@
     }
   }
 
+  &__mode {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0 0 0.55rem;
+  }
+
+  &__mode-btn {
+    font: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+    padding: 0.28rem 0.55rem;
+
+    &:hover {
+      border-color: var(--accent-border);
+      background: var(--accent-bg);
+    }
+
+    &--active {
+      color: var(--text-h);
+      border-color: var(--accent-border);
+      background: var(--accent-bg);
+    }
+  }
+
+  &__heat-scale {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    margin: -0.25rem 0 0.55rem;
+  }
+
+  &__heat-scale-bar {
+    display: block;
+    width: min(8rem, 40%);
+    height: 0.45rem;
+    border-radius: 0.2rem;
+    border: 1px solid var(--border);
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent) 12%, transparent),
+      var(--accent)
+    );
+  }
+
   &__section {
     padding: 0;
 

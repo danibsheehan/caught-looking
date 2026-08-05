@@ -159,7 +159,7 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 | **Leaders**   | Season statistical leaders (hitting / pitching categories from MLB Stats API).                   |
 | **Teams**     | Team overview with season stats and record timelines.                                              |
 | **Players**   | Side-by-side comparison (radar, trends, game log); hitting / pitching views.                       |
-| **Games**     | Date slate + **per-game** detail (timeline, boxscore, Statcast). Live games refresh boxscore/timeline on a short poll (paused when the tab is hidden). |
+| **Games**     | Date slate + **per-game** detail (timeline, boxscore, Statcast). Live games refresh boxscore/timeline on a short poll (paused when the tab is hidden). Pitch location supports per-pitcher dots or a zone heat map. |
 | **Docs**      | [OpenAPI/Redoc](https://docs.caught-looking.com/) from `backend/apidocs/openapi.yaml`.             |
 
 ---

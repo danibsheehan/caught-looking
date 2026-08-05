@@ -21,6 +21,12 @@ import {
   projNormToSvgStrikeSquare,
   svgPointStringStrikeSquare,
 } from '../../utils/statcastPlateNormalized';
+import {
+  buildPitchZoneHeatmap,
+  heatCellFillOpacity,
+  heatCellsForDataTable,
+  type PitchZoneHeatCell,
+} from '../../utils/pitchZoneHeatmap';
 import StatcastMetricTooltipContent from './StatcastMetricTooltipContent';
 import ChartDataTable from './ChartDataTable';
 
@@ -28,6 +34,12 @@ type GamePitcherStrikeZonesProps = {
   pitches: StatcastPitch[];
   box: GameBoxscoreResponse | null;
 };
+
+type PlotMode = 'dots' | 'heat';
+
+type HoverTip =
+  | { kind: 'pitch'; pitch: StatcastPitch; clientX: number; clientY: number }
+  | { kind: 'heat'; cell: PitchZoneHeatCell; clientX: number; clientY: number };
 
 type PitchCodeGroup = { code: string; label: string; pitches: StatcastPitch[] };
 
@@ -86,11 +98,10 @@ const PLATE_POLYGON_NORM = [
   [-1, -0.04],
 ] as const;
 
-type HoverTip = { pitch: StatcastPitch; clientX: number; clientY: number };
-
 function PitcherStrikeZoneSvg({
   pitches,
   repertoirePitches,
+  mode,
   variant = 'default',
   isolated = false,
   ariaLabel = 'Pitch locations from catcher view, normalized to the batter strike zone',
@@ -98,6 +109,7 @@ function PitcherStrikeZoneSvg({
   pitches: StatcastPitch[];
   /** Full sample for usage share → opacity (not the filtered subset when a legend type is isolated). */
   repertoirePitches: StatcastPitch[];
+  mode: PlotMode;
   variant?: 'default' | 'featured';
   isolated?: boolean;
   ariaLabel?: string;
@@ -106,6 +118,10 @@ function PitcherStrikeZoneSvg({
   const gradId = `${svgId}-zoneFill`;
   const [tip, setTip] = useState<HoverTip | null>(null);
   const shareByCode = useMemo(() => pitchShareByCode(repertoirePitches), [repertoirePitches]);
+  const heatMap = useMemo(
+    () => (mode === 'heat' ? buildPitchZoneHeatmap(pitches) : null),
+    [mode, pitches],
+  );
 
   const zonePoints = useMemo(
     () => ZONE_POLYGON_NORM.map(([x, z]) => svgPointStringStrikeSquare(x, z)).join(' '),
@@ -150,6 +166,15 @@ function PitcherStrikeZoneSvg({
     [pitches],
   );
 
+  const heatRows = useMemo(() => {
+    if (!heatMap) return [];
+    return heatCellsForDataTable(heatMap).map((c) => [
+      String(c.col + 1),
+      String(c.row + 1),
+      String(c.count),
+    ]);
+  }, [heatMap]);
+
   return (
     <div className={wrapClass} onMouseLeave={clearTip} onBlur={clearTip}>
       <svg className="game-pitcher-zones__svg" viewBox="0 0 100 100" aria-hidden="true">
@@ -160,6 +185,45 @@ function PitcherStrikeZoneSvg({
           </linearGradient>
         </defs>
         <rect x="0" y="0" width="100" height="100" fill="var(--bg)" rx="0.8" />
+        {mode === 'heat' && heatMap
+          ? heatMap.cells.map((cell) => {
+              if (cell.count <= 0) return null;
+              const points = [
+                svgPointStringStrikeSquare(cell.x0, cell.z0),
+                svgPointStringStrikeSquare(cell.x1, cell.z0),
+                svgPointStringStrikeSquare(cell.x1, cell.z1),
+                svgPointStringStrikeSquare(cell.x0, cell.z1),
+              ].join(' ');
+              return (
+                <polygon
+                  key={`h-${cell.col}-${cell.row}`}
+                  points={points}
+                  fill="var(--accent)"
+                  fillOpacity={heatCellFillOpacity(cell.count, heatMap.maxCount)}
+                  stroke="var(--bg)"
+                  strokeWidth={0.2}
+                  vectorEffect="non-scaling-stroke"
+                  style={{ cursor: 'default' }}
+                  onMouseEnter={(ev) =>
+                    setTip({
+                      kind: 'heat',
+                      cell,
+                      clientX: ev.clientX,
+                      clientY: ev.clientY,
+                    })
+                  }
+                  onMouseMove={(ev) =>
+                    setTip({
+                      kind: 'heat',
+                      cell,
+                      clientX: ev.clientX,
+                      clientY: ev.clientY,
+                    })
+                  }
+                />
+              );
+            })
+          : null}
         <g className="game-pitcher-zones__svg-scene">
           <text
             className="game-pitcher-zones__svg-label game-pitcher-zones__svg-label--pitcher"
@@ -209,7 +273,7 @@ function PitcherStrikeZoneSvg({
         ))}
         <polygon
           points={zonePoints}
-          fill={`url(#${gradId})`}
+          fill={mode === 'heat' ? 'none' : `url(#${gradId})`}
           stroke="var(--border)"
           strokeWidth={0.55}
           vectorEffect="non-scaling-stroke"
@@ -222,52 +286,100 @@ function PitcherStrikeZoneSvg({
           opacity={0.95}
           vectorEffect="non-scaling-stroke"
         />
-        {pitches.map((p, i) => {
-          const { xN, zN } = normalizedPlateLocation(p);
-          const { x, y } = projNormToSvgStrikeSquare(xN, zN);
-          const { fill, fillOpacity } = pitchMarkerFillStyle(p, shareByCode, {
-            isolated,
-          });
-          const r = variant === 'featured' ? 1.55 : 1.35;
-          return (
-            <circle
-              key={`${p.pitcher}-${i}-${p.plateX}-${p.plateZ}`}
-              cx={x}
-              cy={y}
-              r={r}
-              fill={fill}
-              fillOpacity={fillOpacity}
-              stroke="var(--bg)"
-              strokeWidth={0.35}
-              vectorEffect="non-scaling-stroke"
-              style={{ cursor: 'default' }}
-              onMouseEnter={(ev) => setTip({ pitch: p, clientX: ev.clientX, clientY: ev.clientY })}
-              onMouseMove={(ev) => setTip({ pitch: p, clientX: ev.clientX, clientY: ev.clientY })}
-            />
-          );
-        })}
+        {mode === 'dots'
+          ? pitches.map((p, i) => {
+              const { xN, zN } = normalizedPlateLocation(p);
+              const { x, y } = projNormToSvgStrikeSquare(xN, zN);
+              const { fill, fillOpacity } = pitchMarkerFillStyle(p, shareByCode, {
+                isolated,
+              });
+              const r = variant === 'featured' ? 1.55 : 1.35;
+              return (
+                <circle
+                  key={`${p.pitcher}-${i}-${p.plateX}-${p.plateZ}`}
+                  cx={x}
+                  cy={y}
+                  r={r}
+                  fill={fill}
+                  fillOpacity={fillOpacity}
+                  stroke="var(--bg)"
+                  strokeWidth={0.35}
+                  vectorEffect="non-scaling-stroke"
+                  style={{ cursor: 'default' }}
+                  onMouseEnter={(ev) =>
+                    setTip({
+                      kind: 'pitch',
+                      pitch: p,
+                      clientX: ev.clientX,
+                      clientY: ev.clientY,
+                    })
+                  }
+                  onMouseMove={(ev) =>
+                    setTip({
+                      kind: 'pitch',
+                      pitch: p,
+                      clientX: ev.clientX,
+                      clientY: ev.clientY,
+                    })
+                  }
+                />
+              );
+            })
+          : null}
       </svg>
-      <ChartDataTable
-        caption={
-          isolated
-            ? `${ariaLabel} (filtered pitch type). Counts by pitch type.`
-            : `${ariaLabel}. Counts by pitch type.`
-        }
-        columns={['Pitch type', 'Count']}
-        rows={typeRows}
-      />
+      {mode === 'heat' ? (
+        <div className="game-pitcher-zones__heat-scale" aria-hidden="true">
+          <span className="muted small">Fewer</span>
+          <span className="game-pitcher-zones__heat-scale-bar" />
+          <span className="muted small">More</span>
+        </div>
+      ) : null}
+      {mode === 'heat' ? (
+        <ChartDataTable
+          caption={
+            isolated
+              ? `${ariaLabel} (heat map, filtered pitch type). Non-empty zone cells.`
+              : `${ariaLabel} (heat map). Non-empty zone cells.`
+          }
+          columns={['Col (3B→1B)', 'Row (low→high)', 'Pitches']}
+          rows={heatRows}
+        />
+      ) : (
+        <ChartDataTable
+          caption={
+            isolated
+              ? `${ariaLabel} (filtered pitch type). Counts by pitch type.`
+              : `${ariaLabel}. Counts by pitch type.`
+          }
+          columns={['Pitch type', 'Count']}
+          rows={typeRows}
+        />
+      )}
       {tip ? <FloatingPitchTooltip tip={tip} /> : null}
     </div>
   );
 }
 
 function FloatingPitchTooltip({ tip }: { tip: HoverTip }) {
-  const p = tip.pitch;
-  const rows = buildPitchZoneTooltipRows({
-    pitchName: p.pitchName,
-    pitchType: p.pitchType,
-    releaseSpeed: p.releaseSpeed,
-  });
+  const rows =
+    tip.kind === 'pitch'
+      ? buildPitchZoneTooltipRows({
+          pitchName: tip.pitch.pitchName,
+          pitchType: tip.pitch.pitchType,
+          releaseSpeed: tip.pitch.releaseSpeed,
+        })
+      : [
+          {
+            variant: 'title' as const,
+            text: `Zone cell · col ${tip.cell.col + 1}, row ${tip.cell.row + 1}`,
+          },
+          {
+            variant: 'step' as const,
+            step: 1 as const,
+            title: 'Pitches',
+            body: String(tip.cell.count),
+          },
+        ];
   return (
     <div
       role="tooltip"
@@ -297,6 +409,37 @@ function partitionPitchersBySide(rows: PitcherStatcastRow[]) {
   return { away, home, unknown };
 }
 
+function PlotModeToggle({
+  mode,
+  onChange,
+  groupLabel,
+}: {
+  mode: PlotMode;
+  onChange: (next: PlotMode) => void;
+  groupLabel: string;
+}) {
+  return (
+    <div className="game-pitcher-zones__mode" role="group" aria-label={groupLabel}>
+      <button
+        type="button"
+        className={`game-pitcher-zones__mode-btn${mode === 'dots' ? ' game-pitcher-zones__mode-btn--active' : ''}`}
+        aria-pressed={mode === 'dots'}
+        onClick={() => onChange('dots')}
+      >
+        Locations
+      </button>
+      <button
+        type="button"
+        className={`game-pitcher-zones__mode-btn${mode === 'heat' ? ' game-pitcher-zones__mode-btn--active' : ''}`}
+        aria-pressed={mode === 'heat'}
+        onClick={() => onChange('heat')}
+      >
+        Heat
+      </button>
+    </div>
+  );
+}
+
 function OnePitcherCard({
   row,
   box,
@@ -312,6 +455,7 @@ function OnePitcherCard({
 }) {
   const titleId = useId();
   const [isolatedCode, setIsolatedCode] = useState<string | null>(null);
+  const [plotMode, setPlotMode] = useState<PlotMode>('dots');
 
   const legendGroups = useMemo(() => groupPitchesByCode(row.pitches), [row.pitches]);
   const shareByCode = useMemo(() => pitchShareByCode(row.pitches), [row.pitches]);
@@ -340,12 +484,20 @@ function OnePitcherCard({
           ) : null}
         </header>
       ) : null}
+      <PlotModeToggle
+        mode={plotMode}
+        onChange={setPlotMode}
+        groupLabel={`Plot style for ${row.name}`}
+      />
       <PitcherStrikeZoneSvg
         pitches={plotPitches}
         repertoirePitches={row.pitches}
+        mode={plotMode}
         variant={featured ? 'featured' : 'default'}
         isolated={isolatedCode != null}
-        ariaLabel={`Pitch locations for ${row.name}`}
+        ariaLabel={
+          plotMode === 'heat' ? `Pitch heat map for ${row.name}` : `Pitch locations for ${row.name}`
+        }
       />
       <ul className="game-pitcher-zones__legend" aria-label="Pitch types">
         {legendGroups.map((g) => {
