@@ -20,7 +20,7 @@ Web app for exploring **MLB statistics** with charts and comparisons. A **Go** b
 | **Surfaces** | Near-black fields (`#070b10`, `#0a1018`) with cool gray body type |
 | **Accent** | Teal `--accent` (`#00f5c4`) for links, focus, and primary chart chrome |
 | **Type** | **DM Sans** for prose; **Space Mono** for numerals and axes |
-| **Charts** | Multi-series seeds (teal / violet / pink-tinted) from [`neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) — not extra `html` CSS variables |
+| **Charts** | Team ink via registry + brand palette; [`neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) is a non-team series helper (not extra `html` CSS variables) |
 
 | ◆ | What stands out |
 | :---: | :--- |
@@ -55,7 +55,7 @@ Web app for exploring **MLB statistics** with charts and comparisons. A **Go** b
 | :--- | :--- |
 | **Browser** | React SPA → same-origin **`/api`** (Vite proxy in dev; `VITE_API_BASE` in prod) |
 | **Go API** | Cache TTLs, per-IP limits, outbound QPS caps |
-| **Upstream** | **MLB** Stats API (JSON) and **Savant** (CSV / Statcast) |
+| **Upstream** | **MLB** Stats API (JSON) for most routes; **Savant** (CSV) for Statcast game views only |
 
 ### Design decisions
 
@@ -75,13 +75,21 @@ flowchart LR
     SAV["Baseball Savant<br/>CSV / Statcast"]
   end
   SPA -->|"GET /api/*"| SRV
-  SRV --> MLB
-  SRV --> SAV
+  SRV -->|"most routes"| MLB
+  SRV -->|"Statcast only"| SAV
 ```
 
-### Request path (happy path)
+### Upstream by feature
 
-Typical **read** from the SPA: JSON in, JSON out; the Go layer adds cache keys, rate limits, and upstream timeouts.
+| SPA area | Primary upstream | Notes |
+| :--- | :--- | :--- |
+| Standings, Leaders, Teams, Players, Games slate / boxscore / timeline | **MLB** Stats API (JSON) | Typical path below |
+| Game Statcast (spray / launch metrics) | **Savant** CSV | Optional parallel **MLB** `/schedule` for venue only — MLB failure does not fail the request |
+| Game Statcast pitches (location / type) | **Savant** CSV only | Shared Savant download cache with batted-ball Statcast (`savant-csv:{gamePk}`) |
+
+### Request path — typical MLB-backed read
+
+Most of the app: JSON in, JSON out. Go adds cache keys, rate limits, and upstream timeouts.
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
@@ -90,12 +98,34 @@ sequenceDiagram
     participant SPA as React SPA
     participant API as Go API chi
     participant MLB as MLB Stats API
-    participant SV as Savant
     SPA->>+API: GET /api/…
     API->>MLB: proxied GET (TTL cache)
     MLB-->>API: JSON
     API-->>-SPA: 200 + JSON
-    Note over API, SV: Game / Statcast views may also pull CSV over HTTPS from Savant
+```
+
+### Request path — Statcast (Savant-backed)
+
+Game Statcast panels do **not** follow the MLB-primary path. Savant CSV is the source of truth; both Statcast endpoints share one cached CSV fetch per `gamePk`.
+
+```mermaid
+%%{init: {'theme':'dark'}}%%
+sequenceDiagram
+    autonumber
+    participant SPA as React SPA
+    participant API as Go API chi
+    participant SV as Savant CSV
+    participant MLB as MLB Stats API
+    SPA->>+API: GET /api/games/{gamePk}/statcast…
+    par Required
+        API->>SV: Statcast Search CSV (TTL cache)
+        SV-->>API: CSV rows
+    and Optional (batted-ball endpoint only)
+        API->>MLB: GET /schedule?gamePks=… (venue)
+        MLB-->>API: JSON or skip on error
+    end
+    API-->>-SPA: 200 + JSON (parsed Statcast)
+    Note over API,MLB: Pitches endpoint skips MLB entirely
 ```
 
 ### App chrome (CSS)
@@ -122,7 +152,7 @@ Team-branded series are keyed by **team id** from the API — not the three-node
 | Obsidian pairs | [`mlbTeamObsidianRegistry.ts`](frontend/src/utils/mlbTeamObsidianRegistry.ts) | Ink / label pairs tuned for dark charts |
 | Brand resolve | [`mlbTeamColors.ts`](frontend/src/utils/mlbTeamColors.ts) | MLB primaries/secondaries, comparison fallbacks, distinctness |
 | Contrast | [`chartColorContrast.ts`](frontend/src/utils/chartColorContrast.ts) | Nudge colors vs the plot surface |
-| Non-team series | [`neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) | Cycle teal / violet / pink-tinted seeds |
+| Non-team palette | [`neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) | Teal / violet / pink-tinted series helper (unit-tested; app charts today use the team path above) |
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
