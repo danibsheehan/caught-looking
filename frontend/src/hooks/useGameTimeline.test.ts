@@ -10,6 +10,7 @@ vi.mock('../api/client', () => ({
 
 const mockTimeline: GameTimelineResponse = {
   gamePk: 662000,
+  status: 'Final',
   awayTeam: 'Away',
   homeTeam: 'Home',
   awayId: 121,
@@ -49,8 +50,9 @@ describe('useGameTimeline', () => {
   it('surfaces errors', async () => {
     vi.mocked(fetchGameTimeline).mockRejectedValue(new Error('timeline down'));
 
-    const { result } = renderHook(() => useGameTimeline(662000));
+    const { result, unmount } = renderHook(() => useGameTimeline(662000));
 
     await waitFor(() => expect(result.current.error?.message).toBe('timeline down'));
+    unmount();
   });
 });

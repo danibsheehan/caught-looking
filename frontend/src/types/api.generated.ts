@@ -477,6 +477,8 @@ export interface components {
         };
         GameTimelineResponse: {
             gamePk: number;
+            /** @description MLB display state (e.g. In Progress, Final); omitted when unknown */
+            status?: string;
             homeTeam: string;
             awayTeam: string;
             homeId: number;
@@ -528,6 +530,8 @@ export interface components {
         };
         GameBoxscoreResponse: {
             gamePk: number;
+            /** @description MLB display state (e.g. In Progress, Final); omitted when unknown */
+            status?: string;
             away: components["schemas"]["TeamBoxSide"];
             home: components["schemas"]["TeamBoxSide"];
         };

@@ -220,6 +220,7 @@ export default function GameBoxscorePanel({
             homeRuns={data.home.totals.runs}
             awayScoreColor={runsByInningTeamFills.awayFill}
             homeScoreColor={runsByInningTeamFills.homeFill}
+            statusLabel={data.status?.trim() || 'Final'}
           />
           <ChartSuspense height={260} label="Loading runs-by-inning chart">
             <GameScoreBar key={String(gamePk)} gamePk={gamePk} showCaption={false} />

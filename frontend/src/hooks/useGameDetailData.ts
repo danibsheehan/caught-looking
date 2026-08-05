@@ -4,6 +4,11 @@ import type {
   GameStatcastPitchesResponse,
   GameStatcastResponse,
 } from '../types/api.compat';
+import {
+  LIVE_GAME_POLL_INTERVAL_MS,
+  LIVE_GAME_POLL_MAX_INTERVAL_MS,
+  gameStatusSettled,
+} from '../utils/gameStatus';
 import { useAsyncResource, type AsyncResourceResult } from './useAsyncResource';
 
 export type GameDetailData = {
@@ -15,6 +20,7 @@ export type GameDetailData = {
 /**
  * Loads box score, Statcast batted balls, and Statcast pitch rows for a game.
  * Each slice loads independently (parallel requests, independent errors).
+ * Box score polls while the game is unsettled (aligned with live score TTL); Statcast does not.
  */
 export function useGameDetailData(gamePk: number | null): GameDetailData {
   const pkReady = gamePk != null;
@@ -27,6 +33,11 @@ export function useGameDetailData(gamePk: number | null): GameDetailData {
       fetch: (signal) => {
         if (gamePk == null) throw new Error('useGameDetailData: gamePk required');
         return fetchGameBoxscore(gamePk, signal);
+      },
+      poll: {
+        intervalMs: LIVE_GAME_POLL_INTERVAL_MS,
+        maxIntervalMs: LIVE_GAME_POLL_MAX_INTERVAL_MS,
+        while: (data) => !gameStatusSettled(data.status),
       },
     },
     [gamePk],

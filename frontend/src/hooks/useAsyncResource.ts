@@ -16,6 +16,20 @@ export type AsyncResourceResult<T> = {
   loading: boolean;
 };
 
+export type AsyncResourcePoll<T> = {
+  /** Base delay between successful polls (e.g. live game TTL). */
+  intervalMs: number;
+  /** Cap for exponential backoff after errors (default 5 minutes). */
+  maxIntervalMs?: number;
+  /** Keep polling while this returns true for the latest successful payload. */
+  while: (data: T) => boolean;
+  /**
+   * When true (default), skip firing polls while `document.visibilityState` is hidden;
+   * resume with an immediate refresh when the tab becomes visible again.
+   */
+  pauseWhenHidden?: boolean;
+};
+
 export type UseAsyncResourceInput<T> = {
   /** When false, no request runs; see `resetOnDisable` for `data` / `error` handling. */
   enabled?: boolean;
@@ -34,8 +48,11 @@ export type UseAsyncResourceInput<T> = {
   /**
    * When true, clear `data` at the start of each fetch (e.g. route param changed).
    * Default false so in-flight refetches can keep showing the previous payload.
+   * Background polls never clear data even when this is true (only the initial deps-driven fetch does).
    */
   clearDataBeforeFetch?: boolean;
+  /** Optional live refresh loop (pause when settled / tab hidden; backoff on errors). */
+  poll?: AsyncResourcePoll<T>;
 };
 
 /**
@@ -52,16 +69,20 @@ export function useAsyncResource<T>(
     initialPending = true,
     resetOnDisable = true,
     clearDataBeforeFetch = false,
+    poll,
   } = input;
 
   const fetchRef = useRef(fetchFn);
   const resetOnDisableRef = useRef(resetOnDisable);
   const clearDataBeforeFetchRef = useRef(clearDataBeforeFetch);
+  const pollRef = useRef(poll);
+  const dataRef = useRef<T | null>(null);
 
   useEffect(() => {
     fetchRef.current = fetchFn;
     resetOnDisableRef.current = resetOnDisable;
     clearDataBeforeFetchRef.current = clearDataBeforeFetch;
+    pollRef.current = poll;
   });
 
   const active = enabled;
@@ -73,47 +94,131 @@ export function useAsyncResource<T>(
   const requestSeqRef = useRef(0);
 
   useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  useEffect(() => {
     if (!active) {
       startTransition(() => {
         setLoading(false);
         setError(null);
         if (resetOnDisableRef.current) {
           setData(null);
+          dataRef.current = null;
         }
       });
       return;
     }
 
-    const seq = ++requestSeqRef.current;
     let cancelled = false;
-    const ac = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let ac: AbortController | null = null;
+    let delayMs = pollRef.current?.intervalMs ?? 0;
+    let isPoll = false;
 
-    startTransition(() => {
-      setLoading(true);
-      setError(null);
-      if (clearDataBeforeFetchRef.current) {
-        setData(null);
+    const clearTimer = () => {
+      if (timeoutId != null) {
+        clearTimeout(timeoutId);
+        timeoutId = undefined;
       }
-    });
+    };
 
-    fetchRef
-      .current(ac.signal)
-      .then((json) => {
-        if (!cancelled) setData(json);
-      })
-      .catch((e) => {
-        if (cancelled || isAbortError(e)) return;
-        setError(normalizeAsyncError(e));
-      })
-      .finally(() => {
-        if (seq !== requestSeqRef.current) return;
-        setLoading(false);
+    const schedule = (ms: number) => {
+      clearTimer();
+      if (cancelled || !pollRef.current) return;
+      timeoutId = setTimeout(() => {
+        isPoll = true;
+        void run();
+      }, ms);
+    };
+
+    const run = async () => {
+      if (cancelled) return;
+
+      const pollCfg = pollRef.current;
+      if (
+        isPoll &&
+        pollCfg &&
+        pollCfg.pauseWhenHidden !== false &&
+        typeof document !== 'undefined' &&
+        document.visibilityState === 'hidden'
+      ) {
+        schedule(pollCfg.intervalMs);
+        return;
+      }
+
+      const seq = ++requestSeqRef.current;
+      ac?.abort();
+      ac = new AbortController();
+      const clearBefore = !isPoll && clearDataBeforeFetchRef.current;
+      const showLoading = dataRef.current == null || clearBefore;
+
+      startTransition(() => {
+        setError(null);
+        if (clearBefore) {
+          setData(null);
+          dataRef.current = null;
+        }
+        if (showLoading) {
+          setLoading(true);
+        }
       });
+
+      try {
+        const json = await fetchRef.current(ac.signal);
+        if (cancelled || seq !== requestSeqRef.current) return;
+        dataRef.current = json;
+        setData(json);
+        setError(null);
+        delayMs = pollCfg?.intervalMs ?? delayMs;
+        if (pollCfg?.while(json)) {
+          schedule(pollCfg.intervalMs);
+        } else {
+          clearTimer();
+        }
+      } catch (e) {
+        if (cancelled || isAbortError(e) || seq !== requestSeqRef.current) return;
+        setError(normalizeAsyncError(e));
+        const cfg = pollRef.current;
+        if (cfg) {
+          const max = cfg.maxIntervalMs ?? 5 * 60_000;
+          const base = cfg.intervalMs;
+          delayMs = Math.min(max, Math.max(base, delayMs * 2 || base * 2));
+          schedule(delayMs);
+        }
+      } finally {
+        if (seq === requestSeqRef.current) {
+          setLoading(false);
+        }
+      }
+    };
+
+    const onVisibility = () => {
+      if (cancelled || typeof document === 'undefined') return;
+      if (document.visibilityState !== 'visible') return;
+      const cfg = pollRef.current;
+      const latest = dataRef.current;
+      if (!cfg || latest == null || !cfg.while(latest)) return;
+      clearTimer();
+      isPoll = true;
+      void run();
+    };
+
+    isPoll = false;
+    void run();
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility);
+    }
 
     return () => {
       cancelled = true;
+      clearTimer();
       requestSeqRef.current += 1;
-      ac.abort();
+      ac?.abort();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility);
+      }
     };
     // `deps` is the caller’s full dependency list (same contract as `useEffect(fn, deps)`).
     // eslint-disable-next-line react-hooks/exhaustive-deps

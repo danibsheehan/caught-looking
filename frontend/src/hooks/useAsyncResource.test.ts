@@ -133,4 +133,82 @@ describe('useAsyncResource', () => {
     await waitFor(() => expect(result.current.data).toBe(2));
     expect(result.current.error).toBeNull();
   });
+
+  it('polls until while() returns false and keeps prior data between polls', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ n: 1, done: false })
+        .mockResolvedValueOnce({ n: 2, done: true });
+
+      const { result } = renderHook(() =>
+        useAsyncResource(
+          {
+            fetch,
+            initialPending: false,
+            poll: {
+              intervalMs: 1_000,
+              while: (data) => !data.done,
+            },
+          },
+          [],
+        ),
+      );
+
+      await vi.waitFor(() => expect(result.current.data?.n).toBe(1));
+      expect(result.current.loading).toBe(false);
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await vi.waitFor(() => expect(result.current.data?.n).toBe(2));
+      expect(fetch).toHaveBeenCalledTimes(2);
+
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(fetch).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('backs off after poll errors then recovers', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, done: false })
+        .mockRejectedValueOnce(new Error('network'))
+        .mockResolvedValueOnce({ ok: true, done: true });
+
+      const { result } = renderHook(() =>
+        useAsyncResource(
+          {
+            fetch,
+            initialPending: false,
+            poll: {
+              intervalMs: 1_000,
+              maxIntervalMs: 10_000,
+              while: (data) => !data.done,
+            },
+          },
+          [],
+        ),
+      );
+
+      await vi.waitFor(() => expect(result.current.data?.ok).toBe(true));
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await vi.waitFor(() => expect(result.current.error?.message).toBe('network'));
+      expect(result.current.data?.ok).toBe(true);
+      expect(fetch).toHaveBeenCalledTimes(2);
+
+      await vi.advanceTimersByTimeAsync(2_000);
+      await vi.waitFor(() => expect(result.current.data?.done).toBe(true));
+      expect(result.current.error).toBeNull();
+      expect(fetch).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

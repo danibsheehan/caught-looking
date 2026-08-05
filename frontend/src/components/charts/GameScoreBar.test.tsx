@@ -7,6 +7,7 @@ const asyncWait = { timeout: 10_000 };
 
 const timeline: GameTimelineResponse = {
   gamePk: 662001,
+  status: 'Final',
   homeTeam: 'Home Club',
   awayTeam: 'Away Club',
   homeId: 200,
