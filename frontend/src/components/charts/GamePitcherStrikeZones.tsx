@@ -293,15 +293,18 @@ function PitcherStrikeZoneSvg({
               vectorEffect="non-scaling-stroke"
               pointerEvents="none"
             />
-            <polygon
-              points={platePoints}
-              fill="var(--game-plate-fill, #e8e4dc)"
-              stroke="var(--border)"
-              strokeWidth={0.45}
-              opacity={0.95}
-              vectorEffect="non-scaling-stroke"
-              pointerEvents="none"
-            />
+            {/* Locations only: opaque plate sits over fringe cells and hides density counts. */}
+            {mode === 'dots' ? (
+              <polygon
+                points={platePoints}
+                fill="var(--game-plate-fill, #e8e4dc)"
+                stroke="var(--border)"
+                strokeWidth={0.45}
+                opacity={0.95}
+                vectorEffect="non-scaling-stroke"
+                pointerEvents="none"
+              />
+            ) : null}
             {mode === 'dots'
               ? pitches.map((p, i) => {
                   const { xN, zN } = normalizedPlateLocation(p);
