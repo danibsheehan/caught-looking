@@ -92,6 +92,7 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 
 		out := models.GameBoxscoreResponse{
 			GamePk: gamePk,
+			Status: status,
 			Away:   buildTeamSide(root.Teams.Away),
 			Home:   buildTeamSide(root.Teams.Home),
 		}

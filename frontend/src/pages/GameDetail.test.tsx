@@ -13,6 +13,7 @@ const asyncWait = { timeout: 10_000 };
 const api = vi.hoisted(() => {
   const box: GameBoxscoreResponse = {
     gamePk: 662000,
+    status: 'Final',
     away: {
       teamId: 121,
       teamName: 'Away',

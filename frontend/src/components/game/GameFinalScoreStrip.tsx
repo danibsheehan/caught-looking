@@ -16,10 +16,10 @@ export default function GameFinalScoreStrip({
   homeRuns,
   awayScoreColor,
   homeScoreColor,
-  statusLabel = 'Final',
+  statusLabel = 'Live',
 }: GameFinalScoreStripProps) {
   return (
-    <div className="game-final-score-strip" aria-label="Final score">
+    <div className="game-final-score-strip" aria-label={`${statusLabel} score`}>
       <div className="game-final-score-strip__team">
         <div className="game-final-score-strip__name">{awayTeamName}</div>
         <div className="game-final-score-strip__num" style={{ color: awayScoreColor }}>

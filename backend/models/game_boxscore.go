@@ -2,7 +2,9 @@ package models
 
 // GameBoxscoreResponse is GET /games/{gamePk}/boxscore.
 type GameBoxscoreResponse struct {
-	GamePk int64       `json:"gamePk"`
+	GamePk int64 `json:"gamePk"`
+	// Status is the MLB display state (e.g. "In Progress", "Final"); empty when unknown.
+	Status string      `json:"status,omitempty"`
 	Away   TeamBoxSide `json:"away"`
 	Home   TeamBoxSide `json:"home"`
 }

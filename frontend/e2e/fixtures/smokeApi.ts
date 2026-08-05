@@ -88,6 +88,7 @@ export const gamesForDate = {
 
 export const boxscore = {
   gamePk: SMOKE_GAME_PK,
+  status: 'Final',
   away: {
     teamId: 121,
     teamName: 'Away',
@@ -106,6 +107,7 @@ export const boxscore = {
 
 export const timeline = {
   gamePk: SMOKE_GAME_PK,
+  status: 'Final',
   homeTeam: 'Home',
   awayTeam: 'Away',
   homeId: 144,

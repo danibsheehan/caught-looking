@@ -64,6 +64,7 @@ const api = vi.hoisted(() => {
 
   const box: GameBoxscoreResponse = {
     gamePk: 662000,
+    status: 'Final',
     away: {
       teamId: 121,
       teamName: 'Away',
@@ -185,6 +186,7 @@ const api = vi.hoisted(() => {
 
   const gameTimeline: GameTimelineResponse = {
     gamePk: 662000,
+    status: 'Final',
     homeTeam: 'Home',
     awayTeam: 'Away',
     homeId: 144,

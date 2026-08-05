@@ -9,7 +9,9 @@ type InningScore struct {
 
 // GameTimelineResponse is GET /games/{gamePk}/timeline.
 type GameTimelineResponse struct {
-	GamePk    int64         `json:"gamePk"`
+	GamePk int64 `json:"gamePk"`
+	// Status is the MLB display state (e.g. "In Progress", "Final"); empty when unknown.
+	Status    string        `json:"status,omitempty"`
 	HomeTeam  string        `json:"homeTeam"`
 	AwayTeam  string        `json:"awayTeam"`
 	HomeID    int           `json:"homeId"`

@@ -782,6 +782,9 @@ components:
       properties:
         gamePk:
           type: integer
+        status:
+          type: string
+          description: MLB display state (e.g. In Progress, Final); omitted when unknown
         homeTeam:
           type: string
         awayTeam:
@@ -890,6 +893,9 @@ components:
       properties:
         gamePk:
           type: integer
+        status:
+          type: string
+          description: MLB display state (e.g. In Progress, Final); omitted when unknown
         away:
           $ref: "#/components/schemas/TeamBoxSide"
         home:

@@ -81,6 +81,9 @@ func TestGameTimeline_success(t *testing.T) {
 	if len(out.Innings) != 2 || out.HomeTotal != 4 || out.AwayTotal != 3 {
 		t.Fatalf("innings/totals: %+v", out)
 	}
+	if out.Status != "Final" {
+		t.Fatalf("Status: got %q want Final", out.Status)
+	}
 }
 
 func TestGameTimeline_upstreamError(t *testing.T) {

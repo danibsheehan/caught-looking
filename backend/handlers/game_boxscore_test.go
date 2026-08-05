@@ -102,6 +102,37 @@ func TestGameBoxscore_invalidGamePk(t *testing.T) {
 	}
 }
 
+func TestGameBoxscore_includesScheduleStatus(t *testing.T) {
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path == "/game/999/boxscore":
+			_, _ = w.Write([]byte(minimalBoxscoreJSON))
+		case strings.HasPrefix(r.URL.Path, "/schedule"):
+			_, _ = w.Write([]byte(`{"dates":[{"games":[{"status":{"detailedState":"In Progress","abstractGameState":"Live"}}]}]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/games/{gamePk}/boxscore", h.GameBoxscore)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/games/999/boxscore", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+	var out models.GameBoxscoreResponse
+	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if out.Status != "In Progress" {
+		t.Fatalf("Status: got %q want In Progress", out.Status)
+	}
+}
+
 func TestGameBoxscore_success(t *testing.T) {
 	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/game/999/boxscore" {

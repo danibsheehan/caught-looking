@@ -105,8 +105,10 @@ func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 
+		status := gameDisplayStatus(payload.Status.DetailedState, payload.Status.AbstractGameState)
 		out := models.GameTimelineResponse{
 			GamePk:    gamePk,
+			Status:    status,
 			HomeTeam:  box.Teams.Home.Team.Name,
 			AwayTeam:  box.Teams.Away.Team.Name,
 			HomeID:    box.Teams.Home.Team.ID,
@@ -119,7 +121,6 @@ func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return nil, 0, err
 		}
-		status := gameDisplayStatus(payload.Status.DetailedState, payload.Status.AbstractGameState)
 		return body, cacheTTLForGameStatus(status, h.cfg), nil
 	})
 	if err != nil {

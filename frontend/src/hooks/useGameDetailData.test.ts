@@ -16,6 +16,7 @@ vi.mock('../api/client', () => ({
 
 const mockBox: GameBoxscoreResponse = {
   gamePk: 662000,
+  status: 'Final',
   away: {
     teamId: 121,
     teamName: 'Away',
@@ -114,5 +115,30 @@ describe('useGameDetailData', () => {
       expect(fetchGameBoxscore).toHaveBeenCalledWith(200, expect.any(AbortSignal)),
     );
     expect(fetchGameBoxscore).toHaveBeenCalledTimes(2);
+  });
+
+  it('polls boxscore while In Progress then stops when Final', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(fetchGameBoxscore)
+        .mockResolvedValueOnce({ ...mockBox, status: 'In Progress' })
+        .mockResolvedValueOnce({ ...mockBox, status: 'Final' });
+      vi.mocked(fetchGameStatcast).mockResolvedValue(mockStatcast);
+      vi.mocked(fetchGameStatcastPitches).mockResolvedValue(mockPitches);
+
+      const { result } = renderHook(() => useGameDetailData(662000));
+
+      await vi.waitFor(() => expect(result.current.box.data?.status).toBe('In Progress'));
+      expect(fetchGameBoxscore).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(45_000);
+      await vi.waitFor(() => expect(result.current.box.data?.status).toBe('Final'));
+      expect(fetchGameBoxscore).toHaveBeenCalledTimes(2);
+
+      await vi.advanceTimersByTimeAsync(45_000);
+      expect(fetchGameBoxscore).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

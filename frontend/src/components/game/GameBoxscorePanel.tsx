@@ -1,6 +1,7 @@
 import { lazy, useMemo, useState } from 'react';
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
 import { gameInningBarFills } from '../../utils/gameChartColors';
+import { gameStatusLabel } from '../../utils/gameStatus';
 import { ChartSuspense } from '../charts/ChartSuspense';
 import GamePitcherStrikeZones from '../charts/GamePitcherStrikeZones';
 
@@ -220,6 +221,7 @@ export default function GameBoxscorePanel({
             homeRuns={data.home.totals.runs}
             awayScoreColor={runsByInningTeamFills.awayFill}
             homeScoreColor={runsByInningTeamFills.homeFill}
+            statusLabel={gameStatusLabel(data.status)}
           />
           <ChartSuspense height={260} label="Loading runs-by-inning chart">
             <GameScoreBar key={String(gamePk)} gamePk={gamePk} showCaption={false} />
