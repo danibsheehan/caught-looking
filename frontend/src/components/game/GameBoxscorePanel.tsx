@@ -400,9 +400,8 @@ export default function GameBoxscorePanel({
           <h2>Pitch location</h2>
           <p className="muted small">
             Catcher&apos;s view toward the pitcher. <strong>Locations</strong> shows each pitch
-            colored by type (key below the chart). <strong>Density</strong> bins pitches into plate
-            zones with counts; use the pitch-type filter dropdown — shade means count, not pitch
-            type.
+            colored by type. <strong>Density</strong> shows a count grid over the plate; use Pitch
+            type to filter.
           </p>
           {pitchLocation.loading ? (
             <p className="muted">Loading pitch data…</p>

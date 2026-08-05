@@ -18,7 +18,9 @@ import {
   NORM_Z_MAX,
   NORM_Z_MIN,
   normalizedPlateLocation,
+  projNormToSvg,
   projNormToSvgStrikeSquare,
+  svgPointString,
   svgPointStringStrikeSquare,
 } from '../../utils/statcastPlateNormalized';
 import {
@@ -127,16 +129,19 @@ function PitcherStrikeZoneSvg({
     [mode, pitches],
   );
 
-  const zonePoints = useMemo(
-    () => ZONE_POLYGON_NORM.map(([x, z]) => svgPointStringStrikeSquare(x, z)).join(' '),
-    [],
-  );
-  const platePoints = useMemo(
-    () => PLATE_POLYGON_NORM.map(([x, z]) => svgPointStringStrikeSquare(x, z)).join(' '),
-    [],
-  );
+  const toSvg = mode === 'heat' ? projNormToSvg : projNormToSvgStrikeSquare;
+
+  const zonePoints = useMemo(() => {
+    const pt = mode === 'heat' ? svgPointString : svgPointStringStrikeSquare;
+    return ZONE_POLYGON_NORM.map(([x, z]) => pt(x, z)).join(' ');
+  }, [mode]);
+  const platePoints = useMemo(() => {
+    const pt = mode === 'heat' ? svgPointString : svgPointStringStrikeSquare;
+    return PLATE_POLYGON_NORM.map(([x, z]) => pt(x, z)).join(' ');
+  }, [mode]);
 
   const gridLines = useMemo(() => {
+    if (mode === 'heat') return [];
     const xs = [-1, 0, 1];
     const zs = [0, 0.5, 1];
     const segs: { x1: number; y1: number; x2: number; y2: number }[] = [];
@@ -151,12 +156,7 @@ function PitcherStrikeZoneSvg({
       segs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
     }
     return segs;
-  }, []);
-
-  const labelPitcher = useMemo(() => ({ x: 50, y: 3.4 }), []);
-  const label3b = useMemo(() => projNormToSvgStrikeSquare(-1.28, 1.05), []);
-  const label1b = useMemo(() => projNormToSvgStrikeSquare(1.28, 1.05), []);
-  const labelCatcher = useMemo(() => ({ x: 50, y: 98.4 }), []);
+  }, [mode]);
 
   const clearTip = useCallback(() => setTip(null), []);
 
@@ -185,203 +185,182 @@ function PitcherStrikeZoneSvg({
       onMouseLeave={clearTip}
       onBlur={clearTip}
     >
-      <svg className="game-pitcher-zones__svg" viewBox="0 0 100 100" aria-hidden="true">
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.14" />
-            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.04" />
-          </linearGradient>
-        </defs>
-        <rect x="0" y="0" width="100" height="100" fill="var(--bg)" rx="0.8" />
-        {mode === 'heat' && heatMap
-          ? heatMap.cells.map((cell) => {
-              const points = [
-                svgPointStringStrikeSquare(cell.x0, cell.z0),
-                svgPointStringStrikeSquare(cell.x1, cell.z0),
-                svgPointStringStrikeSquare(cell.x1, cell.z1),
-                svgPointStringStrikeSquare(cell.x0, cell.z1),
-              ].join(' ');
-              const filled = cell.count > 0;
-              return (
-                <polygon
-                  key={`h-${cell.col}-${cell.row}`}
-                  points={points}
-                  fill={filled ? heatFill : 'var(--border)'}
-                  fillOpacity={filled ? heatCellFillOpacity(cell.count, heatMap.maxCount) : 0.22}
-                  stroke="color-mix(in srgb, var(--text-h) 22%, transparent)"
-                  strokeWidth={0.25}
-                  vectorEffect="non-scaling-stroke"
-                  style={{ cursor: filled ? 'default' : undefined }}
-                  onMouseEnter={
-                    filled
-                      ? (ev) =>
-                          setTip({
-                            kind: 'heat',
-                            cell,
-                            clientX: ev.clientX,
-                            clientY: ev.clientY,
-                          })
-                      : undefined
-                  }
-                  onMouseMove={
-                    filled
-                      ? (ev) =>
-                          setTip({
-                            kind: 'heat',
-                            cell,
-                            clientX: ev.clientX,
-                            clientY: ev.clientY,
-                          })
-                      : undefined
-                  }
-                />
-              );
-            })
-          : null}
-        <g className="game-pitcher-zones__svg-scene" pointerEvents="none">
-          <text
-            className="game-pitcher-zones__svg-label game-pitcher-zones__svg-label--pitcher"
-            x={labelPitcher.x}
-            y={labelPitcher.y}
-            textAnchor="middle"
-          >
-            Pitcher
-          </text>
-          <text
-            className="game-pitcher-zones__svg-label game-pitcher-zones__svg-label--corner"
-            x={label3b.x}
-            y={label3b.y}
-            textAnchor="start"
-          >
-            3B
-          </text>
-          <text
-            className="game-pitcher-zones__svg-label game-pitcher-zones__svg-label--corner"
-            x={label1b.x}
-            y={label1b.y}
-            textAnchor="end"
-          >
-            1B
-          </text>
-          <text
-            className="game-pitcher-zones__svg-label game-pitcher-zones__svg-label--catcher"
-            x={labelCatcher.x}
-            y={labelCatcher.y}
-            textAnchor="middle"
-          >
-            Catcher
-          </text>
-        </g>
-        {mode === 'dots'
-          ? gridLines.map((s, i) => (
-              <line
-                key={i}
-                x1={s.x1}
-                y1={s.y1}
-                x2={s.x2}
-                y2={s.y2}
-                stroke="var(--border)"
-                strokeOpacity={0.45}
-                strokeWidth={0.35}
-                vectorEffect="non-scaling-stroke"
-              />
-            ))
-          : null}
-        <polygon
-          points={zonePoints}
-          fill={mode === 'heat' ? 'none' : `url(#${gradId})`}
-          stroke="var(--text-h)"
-          strokeOpacity={mode === 'heat' ? 0.85 : 0.55}
-          strokeWidth={mode === 'heat' ? 0.85 : 0.55}
-          vectorEffect="non-scaling-stroke"
-          pointerEvents="none"
-        />
-        <polygon
-          points={platePoints}
-          fill="var(--game-plate-fill, #e8e4dc)"
-          stroke="var(--border)"
-          strokeWidth={0.45}
-          opacity={0.95}
-          vectorEffect="non-scaling-stroke"
-          pointerEvents="none"
-        />
-        {mode === 'heat' && heatMap
-          ? heatMap.cells.map((cell) => {
-              if (cell.count <= 0) return null;
-              const mid = projNormToSvgStrikeSquare(
-                (cell.x0 + cell.x1) / 2,
-                (cell.z0 + cell.z1) / 2,
-              );
-              return (
-                <text
-                  key={`hc-${cell.col}-${cell.row}`}
-                  className={
-                    heatCellUsesLightLabel(cell.count, heatMap.maxCount)
-                      ? 'game-pitcher-zones__heat-count game-pitcher-zones__heat-count--on-dense'
-                      : 'game-pitcher-zones__heat-count'
-                  }
-                  x={mid.x}
-                  y={mid.y}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  pointerEvents="none"
-                >
-                  {cell.count}
-                </text>
-              );
-            })
-          : null}
-        {mode === 'dots'
-          ? pitches.map((p, i) => {
-              const { xN, zN } = normalizedPlateLocation(p);
-              const { x, y } = projNormToSvgStrikeSquare(xN, zN);
-              const { fill, fillOpacity } = pitchMarkerFillStyle(p, shareByCode, {
-                isolated,
-              });
-              const r = variant === 'featured' ? 1.55 : 1.35;
-              return (
-                <circle
-                  key={`${p.pitcher}-${i}-${p.plateX}-${p.plateZ}`}
-                  cx={x}
-                  cy={y}
-                  r={r}
-                  fill={fill}
-                  fillOpacity={fillOpacity}
-                  stroke="var(--bg)"
-                  strokeWidth={0.35}
-                  vectorEffect="non-scaling-stroke"
-                  style={{ cursor: 'default' }}
-                  onMouseEnter={(ev) =>
-                    setTip({
-                      kind: 'pitch',
-                      pitch: p,
-                      clientX: ev.clientX,
-                      clientY: ev.clientY,
-                    })
-                  }
-                  onMouseMove={(ev) =>
-                    setTip({
-                      kind: 'pitch',
-                      pitch: p,
-                      clientX: ev.clientX,
-                      clientY: ev.clientY,
-                    })
-                  }
-                />
-              );
-            })
-          : null}
-      </svg>
+      <div className="game-pitcher-zones__plot">
+        <p className="game-pitcher-zones__plot-edge game-pitcher-zones__plot-edge--pitcher">
+          Pitcher
+        </p>
+        <div className="game-pitcher-zones__plot-body">
+          <p className="game-pitcher-zones__plot-edge game-pitcher-zones__plot-edge--side">3B</p>
+          <svg className="game-pitcher-zones__svg" viewBox="0 0 100 100" aria-hidden="true">
+            <defs>
+              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.14" />
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.04" />
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="100" height="100" fill="var(--bg)" rx="0.8" />
+            {mode === 'heat' && heatMap
+              ? heatMap.cells.map((cell) => {
+                  const left = toSvg(cell.x0, cell.z0).x;
+                  const right = toSvg(cell.x1, cell.z0).x;
+                  const top = toSvg(cell.x0, cell.z1).y;
+                  const bottom = toSvg(cell.x0, cell.z0).y;
+                  const gap = 0.35;
+                  const x = Math.min(left, right) + gap / 2;
+                  const y = Math.min(top, bottom) + gap / 2;
+                  const width = Math.max(0, Math.abs(right - left) - gap);
+                  const height = Math.max(0, Math.abs(bottom - top) - gap);
+                  const filled = cell.count > 0;
+                  const midX = x + width / 2;
+                  const midY = y + height / 2;
+                  return (
+                    <g key={`h-${cell.col}-${cell.row}`}>
+                      <rect
+                        x={x}
+                        y={y}
+                        width={width}
+                        height={height}
+                        rx={0.45}
+                        fill={filled ? heatFill : 'var(--border)'}
+                        fillOpacity={
+                          filled ? heatCellFillOpacity(cell.count, heatMap.maxCount) : 0.14
+                        }
+                        style={{ cursor: filled ? 'default' : undefined }}
+                        onMouseEnter={
+                          filled
+                            ? (ev) =>
+                                setTip({
+                                  kind: 'heat',
+                                  cell,
+                                  clientX: ev.clientX,
+                                  clientY: ev.clientY,
+                                })
+                            : undefined
+                        }
+                        onMouseMove={
+                          filled
+                            ? (ev) =>
+                                setTip({
+                                  kind: 'heat',
+                                  cell,
+                                  clientX: ev.clientX,
+                                  clientY: ev.clientY,
+                                })
+                            : undefined
+                        }
+                      />
+                      {filled ? (
+                        <text
+                          className={
+                            heatCellUsesLightLabel(cell.count, heatMap.maxCount)
+                              ? 'game-pitcher-zones__heat-count game-pitcher-zones__heat-count--on-dense'
+                              : 'game-pitcher-zones__heat-count'
+                          }
+                          x={midX}
+                          y={midY}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          pointerEvents="none"
+                        >
+                          {cell.count}
+                        </text>
+                      ) : null}
+                    </g>
+                  );
+                })
+              : null}
+            {mode === 'dots'
+              ? gridLines.map((s, i) => (
+                  <line
+                    key={i}
+                    x1={s.x1}
+                    y1={s.y1}
+                    x2={s.x2}
+                    y2={s.y2}
+                    stroke="var(--border)"
+                    strokeOpacity={0.45}
+                    strokeWidth={0.35}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))
+              : null}
+            <polygon
+              points={zonePoints}
+              fill={mode === 'heat' ? 'none' : `url(#${gradId})`}
+              stroke="var(--text-h)"
+              strokeOpacity={mode === 'heat' ? 0.9 : 0.55}
+              strokeWidth={mode === 'heat' ? 1.05 : 0.55}
+              vectorEffect="non-scaling-stroke"
+              pointerEvents="none"
+            />
+            <polygon
+              points={platePoints}
+              fill="var(--game-plate-fill, #e8e4dc)"
+              stroke="var(--border)"
+              strokeWidth={0.45}
+              opacity={0.95}
+              vectorEffect="non-scaling-stroke"
+              pointerEvents="none"
+            />
+            {mode === 'dots'
+              ? pitches.map((p, i) => {
+                  const { xN, zN } = normalizedPlateLocation(p);
+                  const { x, y } = toSvg(xN, zN);
+                  const { fill, fillOpacity } = pitchMarkerFillStyle(p, shareByCode, {
+                    isolated,
+                  });
+                  const r = variant === 'featured' ? 1.55 : 1.35;
+                  return (
+                    <circle
+                      key={`${p.pitcher}-${i}-${p.plateX}-${p.plateZ}`}
+                      cx={x}
+                      cy={y}
+                      r={r}
+                      fill={fill}
+                      fillOpacity={fillOpacity}
+                      stroke="var(--bg)"
+                      strokeWidth={0.35}
+                      vectorEffect="non-scaling-stroke"
+                      style={{ cursor: 'default' }}
+                      onMouseEnter={(ev) =>
+                        setTip({
+                          kind: 'pitch',
+                          pitch: p,
+                          clientX: ev.clientX,
+                          clientY: ev.clientY,
+                        })
+                      }
+                      onMouseMove={(ev) =>
+                        setTip({
+                          kind: 'pitch',
+                          pitch: p,
+                          clientX: ev.clientX,
+                          clientY: ev.clientY,
+                        })
+                      }
+                    />
+                  );
+                })
+              : null}
+          </svg>
+          <p className="game-pitcher-zones__plot-edge game-pitcher-zones__plot-edge--side">1B</p>
+        </div>
+        <p className="game-pitcher-zones__plot-edge game-pitcher-zones__plot-edge--catcher">
+          Catcher
+        </p>
+      </div>
       {mode === 'heat' && heatMap ? (
         <div className="game-pitcher-zones__heat-scale" aria-hidden="true">
-          <span className="muted small">0</span>
+          <span className="game-pitcher-zones__heat-scale-label">Fewer</span>
           <span
             className="game-pitcher-zones__heat-scale-bar"
             style={{
-              background: `linear-gradient(90deg, color-mix(in srgb, ${heatFill} 18%, transparent), ${heatFill})`,
+              background: `linear-gradient(90deg, color-mix(in srgb, ${heatFill} 12%, var(--bg)), ${heatFill})`,
             }}
           />
-          <span className="muted small">{heatMap.maxCount || 0} pitches</span>
+          <span className="game-pitcher-zones__heat-scale-label">
+            More · max {heatMap.maxCount || 0}
+          </span>
         </div>
       ) : null}
       {mode === 'heat' ? (
@@ -535,23 +514,38 @@ function OnePitcherCard({
           ) : null}
         </header>
       ) : null}
-      <PlotModeToggle
-        mode={plotMode}
-        onChange={setPlotMode}
-        groupLabel={`Plot style for ${row.name}`}
-      />
-      {plotMode === 'heat' ? (
-        <p className="muted small game-pitcher-zones__mode-hint">
-          Each square is a plate zone; brighter cells (and higher numbers) mean more pitches landed
-          there
-          {isolatedCode ? ' for the selected pitch type' : ''}. Shade is density only — not pitch
-          type.
-        </p>
-      ) : (
-        <p className="muted small game-pitcher-zones__mode-hint">
-          Each dot is one pitch, colored by type. Tap a type below to isolate it.
-        </p>
-      )}
+      <div className="game-pitcher-zones__controls">
+        <PlotModeToggle
+          mode={plotMode}
+          onChange={setPlotMode}
+          groupLabel={`Plot style for ${row.name}`}
+        />
+        {plotMode === 'heat' ? (
+          <div className="game-pitcher-zones__density-filter">
+            <label className="game-pitcher-zones__density-filter-label" htmlFor={densityFilterId}>
+              Pitch type
+            </label>
+            <select
+              id={densityFilterId}
+              className="game-pitcher-zones__density-filter-select"
+              value={isolatedCode ?? ''}
+              onChange={(e) => setIsolatedCode(e.target.value ? e.target.value : null)}
+            >
+              <option value="">All types</option>
+              {legendGroups.map((g) => (
+                <option key={g.code} value={g.code}>
+                  {g.label} ({g.pitches.length})
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+      </div>
+      <p className="muted small game-pitcher-zones__mode-hint">
+        {plotMode === 'heat'
+          ? 'Brighter cells and larger numbers = more pitches in that plate zone.'
+          : 'Each dot is one pitch, colored by type. Tap a type below to isolate it.'}
+      </p>
       <PitcherStrikeZoneSvg
         pitches={plotPitches}
         repertoirePitches={row.pitches}
@@ -565,26 +559,7 @@ function OnePitcherCard({
             : `Pitch locations for ${row.name}`
         }
       />
-      {plotMode === 'heat' ? (
-        <div className="game-pitcher-zones__density-filter">
-          <label className="game-pitcher-zones__density-filter-label" htmlFor={densityFilterId}>
-            Pitch type filter
-          </label>
-          <select
-            id={densityFilterId}
-            className="game-pitcher-zones__density-filter-select"
-            value={isolatedCode ?? ''}
-            onChange={(e) => setIsolatedCode(e.target.value ? e.target.value : null)}
-          >
-            <option value="">All pitch types</option>
-            {legendGroups.map((g) => (
-              <option key={g.code} value={g.code}>
-                {g.label} ({g.pitches.length})
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : (
+      {plotMode === 'dots' ? (
         <ul className="game-pitcher-zones__legend" aria-label="Pitch types">
           {legendGroups.map((g) => {
             const share = shareByCode.get(g.code) ?? 0;
@@ -613,7 +588,7 @@ function OnePitcherCard({
             );
           })}
         </ul>
-      )}
+      ) : null}
     </article>
   );
 }
