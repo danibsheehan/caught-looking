@@ -3,6 +3,7 @@ import {
   DEFAULT_PLAYER_COMPARE_URL,
   buildPlayerCompareSearchParams,
   parsePlayerCompareSearchParams,
+  playerCompareIdsQueryIsValid,
 } from './playerCompareSearchParams';
 
 describe('parsePlayerCompareSearchParams', () => {
@@ -39,6 +40,20 @@ describe('parsePlayerCompareSearchParams', () => {
   it('coerces metric to a valid value for the group', () => {
     const sp = new URLSearchParams('ids=1,2&group=hitting&metric=era');
     expect(parsePlayerCompareSearchParams(sp).metric).toBe('ops');
+  });
+});
+
+describe('playerCompareIdsQueryIsValid', () => {
+  it('is false for missing, duplicate, or non-numeric ids', () => {
+    expect(playerCompareIdsQueryIsValid(new URLSearchParams())).toBe(false);
+    expect(playerCompareIdsQueryIsValid(new URLSearchParams('ids=5,5'))).toBe(false);
+    expect(playerCompareIdsQueryIsValid(new URLSearchParams('ids=abc'))).toBe(false);
+    expect(playerCompareIdsQueryIsValid(new URLSearchParams('ids=1'))).toBe(false);
+  });
+
+  it('is true for two distinct positive integers', () => {
+    expect(playerCompareIdsQueryIsValid(new URLSearchParams('ids=1,2'))).toBe(true);
+    expect(playerCompareIdsQueryIsValid(new URLSearchParams('ids= 660271 , 592450 '))).toBe(true);
   });
 });
 

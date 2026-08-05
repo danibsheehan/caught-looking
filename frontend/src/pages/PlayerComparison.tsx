@@ -1,4 +1,4 @@
-import { lazy, useCallback, useEffect, useMemo } from 'react';
+import { lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ChartSuspense } from '../components/charts/ChartSuspense';
 import PlayerCompareAheadChart from '../components/charts/PlayerCompareAheadChart';
@@ -33,6 +33,7 @@ import {
 import {
   buildPlayerCompareSearchParams,
   parsePlayerCompareSearchParams,
+  playerCompareIdsQueryIsValid,
   type PlayerCompareUrlState,
 } from '../utils/playerCompareSearchParams';
 import {
@@ -48,6 +49,8 @@ function defaultCareerMetric(group: 'hitting' | 'pitching'): YearByYearMetric {
 export default function PlayerComparison() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlState = useMemo(() => parsePlayerCompareSearchParams(searchParams), [searchParams]);
+  /** Which picker is mid-Change (search UI); URL keeps the last committed pair until a new pick. */
+  const [clearedSide, setClearedSide] = useState<'1' | '2' | null>(null);
 
   const patchUrl = useCallback(
     (patch: Partial<PlayerCompareUrlState>) => {
@@ -65,20 +68,25 @@ export default function PlayerComparison() {
   useEffect(() => {
     setSearchParams(
       (prev) => {
-        if (prev.get('ids')) return prev;
+        // Seed defaults when ids are missing, or replace invalid ids that parse fell back from.
+        if (playerCompareIdsQueryIsValid(prev)) return prev;
         return buildPlayerCompareSearchParams(parsePlayerCompareSearchParams(prev), prev);
       },
       { replace: true },
     );
   }, [setSearchParams]);
 
-  const pick1: PlayerPick = useMemo(
-    () => ({ id: urlState.id1, fullName: urlState.name1 }),
-    [urlState.id1, urlState.name1],
+  useEffect(() => {
+    setClearedSide(null);
+  }, [urlState.id1, urlState.id2]);
+
+  const pick1: PlayerPick | null = useMemo(
+    () => (clearedSide === '1' ? null : { id: urlState.id1, fullName: urlState.name1 }),
+    [clearedSide, urlState.id1, urlState.name1],
   );
-  const pick2: PlayerPick = useMemo(
-    () => ({ id: urlState.id2, fullName: urlState.name2 }),
-    [urlState.id2, urlState.name2],
+  const pick2: PlayerPick | null = useMemo(
+    () => (clearedSide === '2' ? null : { id: urlState.id2, fullName: urlState.name2 }),
+    [clearedSide, urlState.id2, urlState.name2],
   );
   const season = urlState.season;
   const compareScope = urlState.scope;
@@ -87,7 +95,11 @@ export default function PlayerComparison() {
 
   const setPick1 = useCallback(
     (p: PlayerPick | null) => {
-      if (!p) return;
+      if (!p) {
+        setClearedSide('1');
+        return;
+      }
+      setClearedSide((side) => (side === '1' ? null : side));
       patchUrl({
         id1: p.id,
         name1: p.fullName,
@@ -99,7 +111,11 @@ export default function PlayerComparison() {
   );
   const setPick2 = useCallback(
     (p: PlayerPick | null) => {
-      if (!p) return;
+      if (!p) {
+        setClearedSide('2');
+        return;
+      }
+      setClearedSide((side) => (side === '2' ? null : side));
       patchUrl({
         id2: p.id,
         name2: p.fullName,
@@ -110,8 +126,8 @@ export default function PlayerComparison() {
     [patchUrl, urlState.id1, urlState.id2, urlState.name1, urlState.name2],
   );
 
-  const p1 = pick1.id;
-  const p2 = pick2.id;
+  const p1 = pick1?.id ?? NaN;
+  const p2 = pick2?.id ?? NaN;
   const valid = Number.isFinite(p1) && Number.isFinite(p2) && p1 > 0 && p2 > 0 && p1 !== p2;
 
   const {

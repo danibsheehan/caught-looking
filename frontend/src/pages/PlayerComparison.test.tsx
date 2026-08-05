@@ -1,7 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import userEvent from '@testing-library/user-event';
+import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PlayersRadarResponse } from '../types/api.compat';
+import { DEFAULT_PLAYER_COMPARE_URL } from '../utils/playerCompareSearchParams';
 import PlayerComparison from './PlayerComparison';
 
 const asyncWait = { timeout: 10_000 };
@@ -90,5 +92,36 @@ describe('PlayerComparison deep links', () => {
     );
 
     expect(await screen.findByDisplayValue('2024', {}, asyncWait)).toBeInTheDocument();
+  });
+
+  it('rewrites invalid ids in the URL to the default matchup', async () => {
+    const router = createMemoryRouter([{ path: '/players', element: <PlayerComparison /> }], {
+      initialEntries: ['/players?ids=5,5&season=2024'],
+    });
+    render(<RouterProvider router={router} />);
+
+    await waitFor(() => {
+      const ids = new URLSearchParams(router.state.location.search).get('ids');
+      expect(ids).toBe(`${DEFAULT_PLAYER_COMPARE_URL.id1},${DEFAULT_PLAYER_COMPARE_URL.id2}`);
+    }, asyncWait);
+  });
+
+  it('lets Change clear a picker so search UI appears', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/players?ids=1,2&season=2024&n1=Alpha%20One&n2=Beta%20Two']}>
+        <PlayerComparison />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Alpha One', {}, asyncWait)).toBeInTheDocument();
+    const changeButtons = screen.getAllByRole('button', { name: 'Change' });
+    expect(changeButtons).toHaveLength(2);
+
+    await user.click(changeButtons[0]!);
+
+    expect(await screen.findByRole('searchbox', {}, asyncWait)).toBeInTheDocument();
+    expect(screen.queryByText('Alpha One')).not.toBeInTheDocument();
+    expect(screen.getByText('Beta Two')).toBeInTheDocument();
   });
 });

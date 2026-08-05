@@ -58,6 +58,16 @@ function metricForGroup(group: PlayerCompareGroup, raw: string | null): YearByYe
   return allowed.includes(raw as YearByYearMetric) ? (raw as YearByYearMetric) : fallback;
 }
 
+/** True when `ids` is two distinct positive integers (what parse will keep). */
+export function playerCompareIdsQueryIsValid(sp: URLSearchParams): boolean {
+  const idsRaw = sp.get('ids');
+  if (!idsRaw) return false;
+  const parts = idsRaw.split(',').map((s) => s.trim());
+  const a = parsePositiveInt(parts[0] ?? null);
+  const b = parsePositiveInt(parts[1] ?? null);
+  return a != null && b != null && a !== b;
+}
+
 /**
  * Read `/players` query state. Missing or invalid fields fall back to portfolio defaults
  * (Ohtani / Judge, current season hitting snapshot).
