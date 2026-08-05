@@ -155,28 +155,21 @@ func TestBodyTooLargeIncludesCORSHeaders(t *testing.T) {
 		services.NewMLBClient("http://127.0.0.1:9", 0, 0),
 		services.NewSavantClient("http://127.0.0.1:9", 0, 0),
 	)
-	srv := httptest.NewServer(newRouter(cfg, h))
-	t.Cleanup(srv.Close)
+	router := newRouter(cfg, h)
 
-	// GET is the API surface; oversized Content-Length still trips MaxBodyBytes.
+	// Drive the router directly so Content-Length is preserved (http.Client may
+	// strip GET bodies / Content-Length and never hit the early 413 path).
 	body := strings.Repeat("x", 200)
-	req, err := http.NewRequest(http.MethodGet, srv.URL+"/teams", strings.NewReader(body))
-	if err != nil {
-		t.Fatal(err)
-	}
+	req := httptest.NewRequest(http.MethodGet, "/teams", strings.NewReader(body))
 	req.Header.Set("Origin", "http://localhost:5173")
 	req.ContentLength = int64(len(body))
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
 
-	res, err := srv.Client().Do(req)
-	if err != nil {
-		t.Fatal(err)
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status: got %d want %d", rec.Code, http.StatusRequestEntityTooLarge)
 	}
-	t.Cleanup(func() { _ = res.Body.Close() })
-
-	if res.StatusCode != http.StatusRequestEntityTooLarge {
-		t.Fatalf("status: got %d want %d", res.StatusCode, http.StatusRequestEntityTooLarge)
-	}
-	if got := res.Header.Get("Access-Control-Allow-Origin"); got != "http://localhost:5173" {
+	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:5173" {
 		t.Fatalf("Access-Control-Allow-Origin: got %q want %q", got, "http://localhost:5173")
 	}
 }
