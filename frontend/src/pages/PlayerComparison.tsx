@@ -49,8 +49,19 @@ function defaultCareerMetric(group: 'hitting' | 'pitching'): YearByYearMetric {
 export default function PlayerComparison() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlState = useMemo(() => parsePlayerCompareSearchParams(searchParams), [searchParams]);
-  /** Which picker is mid-Change (search UI); URL keeps the last committed pair until a new pick. */
-  const [clearedSide, setClearedSide] = useState<'1' | '2' | null>(null);
+  /**
+   * Mid-Change search UI for one picker. Tied to the committed id pair so a URL update
+   * (new pick, deep link, back/forward) drops the clear without an effect.
+   */
+  const [clearedPick, setClearedPick] = useState<{
+    side: '1' | '2';
+    id1: number;
+    id2: number;
+  } | null>(null);
+  const clearedSide =
+    clearedPick && clearedPick.id1 === urlState.id1 && clearedPick.id2 === urlState.id2
+      ? clearedPick.side
+      : null;
 
   const patchUrl = useCallback(
     (patch: Partial<PlayerCompareUrlState>) => {
@@ -76,10 +87,6 @@ export default function PlayerComparison() {
     );
   }, [setSearchParams]);
 
-  useEffect(() => {
-    setClearedSide(null);
-  }, [urlState.id1, urlState.id2]);
-
   const pick1: PlayerPick | null = useMemo(
     () => (clearedSide === '1' ? null : { id: urlState.id1, fullName: urlState.name1 }),
     [clearedSide, urlState.id1, urlState.name1],
@@ -96,10 +103,10 @@ export default function PlayerComparison() {
   const setPick1 = useCallback(
     (p: PlayerPick | null) => {
       if (!p) {
-        setClearedSide('1');
+        setClearedPick({ side: '1', id1: urlState.id1, id2: urlState.id2 });
         return;
       }
-      setClearedSide((side) => (side === '1' ? null : side));
+      setClearedPick((cur) => (cur?.side === '1' ? null : cur));
       patchUrl({
         id1: p.id,
         name1: p.fullName,
@@ -112,10 +119,10 @@ export default function PlayerComparison() {
   const setPick2 = useCallback(
     (p: PlayerPick | null) => {
       if (!p) {
-        setClearedSide('2');
+        setClearedPick({ side: '2', id1: urlState.id1, id2: urlState.id2 });
         return;
       }
-      setClearedSide((side) => (side === '2' ? null : side));
+      setClearedPick((cur) => (cur?.side === '2' ? null : cur));
       patchUrl({
         id2: p.id,
         name2: p.fullName,
