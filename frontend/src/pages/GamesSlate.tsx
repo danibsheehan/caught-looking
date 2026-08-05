@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import GameListSkeleton from '../components/skeletons/GameListSkeleton';
 import { TeamSelector } from '../components/ui';
@@ -40,14 +40,21 @@ function dateFromSearchParams(searchParams: URLSearchParams): string {
   return localISODate();
 }
 
+function teamIdFromSearchParams(searchParams: URLSearchParams): number | '' {
+  const q = searchParams.get('team');
+  if (q == null || q.trim() === '') return '';
+  const n = Number(q);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) return '';
+  return n;
+}
+
 export default function GamesSlate() {
   const [searchParams, setSearchParams] = useSearchParams();
   const date = useMemo(() => dateFromSearchParams(searchParams), [searchParams]);
+  const teamId = useMemo(() => teamIdFromSearchParams(searchParams), [searchParams]);
 
   const { data: teamsData } = useTeams({ sportId: '1' });
   const teams = useMemo(() => teamsData?.teams ?? [], [teamsData]);
-
-  const [teamId, setTeamId] = useState<number | ''>('');
 
   const {
     data,
@@ -81,6 +88,18 @@ export default function GamesSlate() {
     );
   }
 
+  function onTeamChange(next: number | '') {
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (next === '') p.delete('team');
+        else p.set('team', String(next));
+        return p;
+      },
+      { replace: true },
+    );
+  }
+
   return (
     <section className="page">
       <header className="page-head">
@@ -107,7 +126,7 @@ export default function GamesSlate() {
               label="Team (optional)"
               teams={teams}
               value={teamId}
-              onChange={setTeamId}
+              onChange={onTeamChange}
               placeholder="All teams"
             />
           ) : null}

@@ -1,6 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router';
 import { useLeaders } from '../hooks/useLeaders';
 import type { LeadersQuery } from '../types/api.compat';
+import {
+  CATEGORIES_BY_GROUP,
+  DEFAULT_CATEGORY,
+  buildLeadersSearchParams,
+  parseLeadersSearchParams,
+  type LeadersGroup,
+} from '../utils/leadersSearchParams';
 
 const CATEGORY_LABELS: Record<string, string> = {
   homeRuns: 'Home runs',
@@ -21,59 +29,46 @@ const CATEGORY_LABELS: Record<string, string> = {
   strikeoutWalkRatio: 'K/BB',
 };
 
-/** Mirrors backend allowlist so the UI never queries a stale group/category pair. */
-const CATEGORIES_BY_GROUP: Record<'hitting' | 'pitching', string[]> = {
-  hitting: [
-    'homeRuns',
-    'battingAverage',
-    'hits',
-    'runsBattedIn',
-    'onBasePlusSlugging',
-    'onBasePercentage',
-    'sluggingPercentage',
-    'stolenBases',
-    'runs',
-  ],
-  pitching: [
-    'earnedRunAverage',
-    'wins',
-    'strikeouts',
-    'saves',
-    'walksAndHitsPerInningPitched',
-    'strikeoutsPer9Inn',
-    'strikeoutWalkRatio',
-  ],
-};
-
-const DEFAULT_CATEGORY: Record<'hitting' | 'pitching', string> = {
-  hitting: 'homeRuns',
-  pitching: 'earnedRunAverage',
-};
-
 function labelCategory(code: string): string {
   return CATEGORY_LABELS[code] ?? code;
 }
 
-function categoryForGroup(group: 'hitting' | 'pitching', category: string): string {
-  const cats = CATEGORIES_BY_GROUP[group];
-  return cats.includes(category) ? category : DEFAULT_CATEGORY[group];
-}
-
 export default function Leaders() {
-  const [group, setGroup] = useState<'hitting' | 'pitching'>('hitting');
-  const [category, setCategory] = useState(DEFAULT_CATEGORY.hitting);
-  const [season, setSeason] = useState<number | undefined>(undefined);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlState = useMemo(() => parseLeadersSearchParams(searchParams), [searchParams]);
+  const { group, category, season } = urlState;
 
-  const resolvedCategory = categoryForGroup(group, category);
+  const patchUrl = useCallback(
+    (patch: Partial<typeof urlState>) => {
+      setSearchParams(
+        (prev) => {
+          const cur = parseLeadersSearchParams(prev);
+          return buildLeadersSearchParams({ ...cur, ...patch }, prev);
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        if (prev.get('group') || prev.get('category')) return prev;
+        return buildLeadersSearchParams(parseLeadersSearchParams(prev), prev);
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
 
   const query = useMemo<LeadersQuery>(
     () => ({
       group,
-      category: resolvedCategory,
+      category,
       season,
       limit: 10,
     }),
-    [group, resolvedCategory, season],
+    [group, category, season],
   );
 
   const { data, error, loading } = useLeaders(query);
@@ -99,13 +94,14 @@ export default function Leaders() {
                 · season <strong>{seasonValue}</strong>
               </>
             ) : null}
+            . Filters stay in the URL for sharing.
           </p>
         </div>
       </header>
 
       <div className="leaders-page__controls" role="group" aria-label="Leaders filters">
         <div className="leaders-page__tabs" role="tablist" aria-label="Stat group">
-          {(['hitting', 'pitching'] as const).map((g) => (
+          {(['hitting', 'pitching'] as const).map((g: LeadersGroup) => (
             <button
               key={g}
               type="button"
@@ -115,8 +111,7 @@ export default function Leaders() {
                 group === g ? 'leaders-page__tab leaders-page__tab--active' : 'leaders-page__tab'
               }
               onClick={() => {
-                setGroup(g);
-                setCategory(DEFAULT_CATEGORY[g]);
+                patchUrl({ group: g, category: DEFAULT_CATEGORY[g] });
               }}
             >
               {g === 'hitting' ? 'Hitting' : 'Pitching'}
@@ -128,8 +123,8 @@ export default function Leaders() {
           <span className="form-field__label">Category</span>
           <select
             className="form-field__control"
-            value={resolvedCategory}
-            onChange={(e) => setCategory(e.target.value)}
+            value={category}
+            onChange={(e) => patchUrl({ category: e.target.value })}
             disabled={loading && !table}
           >
             {categories.map((c) => (
@@ -153,11 +148,11 @@ export default function Leaders() {
             onChange={(e) => {
               const v = e.target.value.trim();
               if (v === '') {
-                setSeason(undefined);
+                patchUrl({ season: undefined });
                 return;
               }
               const n = Number(v);
-              if (Number.isFinite(n)) setSeason(n);
+              if (Number.isFinite(n)) patchUrl({ season: n });
             }}
           />
         </label>
