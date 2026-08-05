@@ -13,15 +13,20 @@
 
 > League tables, spray geometry, and Statcast-backed panels—**built for a dark dugout**, not a bright dashboard template.
 
-**Neon on obsidian** — near-black fields (`#070b10`, `#0a1018`), **teal** (`--accent`, `#00f5c4`) for links, focus, and primary chart chrome, cool gray body type for readable contrast. Multi-series charts cycle **teal, violet, and pink-tinted companion** hex seeds via [`frontend/src/utils/neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) (not extra `html` CSS variables). **DM Sans** carries prose; **Space Mono** carries numerals and axes so stats scan like telemetry, not wallpaper.
+Web app for exploring **MLB statistics** with charts and comparisons. A **Go** backend proxies and caches the public **MLB Stats API** (`statsapi.mlb.com`) and, for some game views, **Baseball Savant** (Statcast CSV over HTTPS).
 
-Web app for exploring **MLB statistics** with charts and comparisons. The UI talks to a small **Go** backend that proxies and caches requests to the public **MLB Stats API** (`statsapi.mlb.com`) and, for some game views, **Baseball Savant** (Statcast CSV over HTTPS).
+| ◆ | Theme |
+| :---: | :--- |
+| **Surfaces** | Near-black fields (`#070b10`, `#0a1018`) with cool gray body type |
+| **Accent** | Teal `--accent` (`#00f5c4`) for links, focus, and primary chart chrome |
+| **Type** | **DM Sans** for prose; **Space Mono** for numerals and axes |
+| **Charts** | Team ink via registry + brand palette; [`neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) is a non-team series helper (not extra `html` CSS variables) |
 
 | ◆ | What stands out |
 | :---: | :--- |
-| **Contract** | Handlers and the SPA share one **OpenAPI** spec → generated TypeScript types + Redoc. |
-| **Color** | **Shell** tokens in SCSS; **team ink** from registry + MLB brand picks, contrast-adjusted per chart surface. |
-| **Ops** | Per-IP limits, outbound **QPS caps**, and TTL caches so public upstreams stay friendly at scale. |
+| **Contract** | Handlers and the SPA share one **OpenAPI** spec → generated TypeScript types + Redoc |
+| **Color** | **Shell** tokens in SCSS; **team ink** from registry + MLB brand picks, contrast-adjusted per chart surface |
+| **Ops** | Per-IP limits, outbound **QPS caps**, and TTL caches so public upstreams stay friendly at scale |
 
 > [!TIP]
 > Ship shape in one command: **`make install`** then **`make dev`** — API on **`:8080`**, Vite on **`:5173`**, browser hits **`/api`** through the proxy.
@@ -35,21 +40,26 @@ Web app for exploring **MLB statistics** with charts and comparisons. The UI tal
 
 ## Overview
 
-**Production:** [caught-looking.com/standings](https://caught-looking.com/standings) or [www.caught-looking.com/standings](https://www.caught-looking.com/standings) — same SPA (Cloudflare Pages + Cloud Run API — see [Deployment (CI)](#deployment-ci)).
-
-**Standings → Leaders → Teams → Players → Games** — from league table and boards to slate to **per-game** detail (timeline, boxscore-style views, Statcast-backed panels where data exists). **OpenAPI / Redoc**: [https://docs.caught-looking.com/](https://docs.caught-looking.com/)
-
-SPA routes: `/standings`, `/leaders`, `/teams`, `/players`, `/games`, `/games/:gamePk` (default landing: `/standings`). Routing: [`frontend/src/App.tsx`](frontend/src/App.tsx).
+| | |
+| :--- | :--- |
+| **Live app** | [caught-looking.com/standings](https://caught-looking.com/standings) · [www](https://www.caught-looking.com/standings) — Cloudflare Pages + Cloud Run ([Deployment](#deployment-ci)) |
+| **API docs** | [docs.caught-looking.com](https://docs.caught-looking.com/) (OpenAPI / Redoc) |
+| **Flow** | Standings → Leaders → Teams → Players → Games (slate + **per-game** timeline / boxscore / Statcast) |
+| **Routes** | `/standings` (default), `/leaders`, `/teams`, `/players`, `/games`, `/games/:gamePk` — [`App.tsx`](frontend/src/App.tsx) |
 
 ---
 
 ## Architecture
 
-Browser **React** app calls same-origin **`/api`** (Vite proxy in dev, `VITE_API_BASE` in prod). **Go** applies cache TTLs, per-IP limits, and outbound QPS caps before fanning out to **MLB** JSON (most routes) and **Savant** CSV (**Statcast** game views only).
+| Layer | Role |
+| :--- | :--- |
+| **Browser** | React SPA → same-origin **`/api`** (Vite proxy in dev; `VITE_API_BASE` in prod) |
+| **Go API** | Cache TTLs, per-IP limits, outbound QPS caps |
+| **Upstream** | **MLB** Stats API (JSON) for most routes; **Savant** (CSV) for Statcast game views only |
 
 ### Design decisions
 
-Rationale for cache TTLs, outbound QPS, and the OpenAPI contract: **[docs/adr/](docs/adr/)** (ADRs 0001–0003). Skills under `.cursor/skills/` remain the how-to; ADRs record the tradeoffs.
+Rationale for cache TTLs, outbound QPS, and the OpenAPI contract: **[docs/adr/](docs/adr/)** (ADRs 0001–0003). Skills under `.cursor/skills/` are the how-to; ADRs record the tradeoffs.
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
@@ -118,9 +128,11 @@ sequenceDiagram
     Note over API,MLB: Pitches endpoint skips MLB entirely
 ```
 
-**App chrome (CSS)** — the global shell is fixed: obsidian base below, surface and teal **`--accent`** above (bottom → top). This stack does **not** include chart series colors.
+### App chrome (CSS)
 
-_Arrows = stacking narrative for the shell only, not layout or data flow._
+Global shell only (bottom → top). This stack does **not** include chart series colors.
+
+_Arrows = stacking narrative for the shell, not layout or data flow._
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
@@ -131,7 +143,16 @@ flowchart BT
   style teal fill:#0a1018,stroke:#00f5c4,color:#00f5c4
 ```
 
-**Chart data ink (dynamic)** — team-branded bars, lines, and stacks use colors **keyed by team id** from the API, not the three-node shell stack above. [`mlbTeamObsidianRegistry.ts`](frontend/src/utils/mlbTeamObsidianRegistry.ts) supplies obsidian-tuned ink/label pairs; [`mlbTeamColors.ts`](frontend/src/utils/mlbTeamColors.ts) resolves MLB primaries/secondaries, comparison fallbacks, and distinctness when many clubs share a chart. Everything is nudged for contrast vs the plot surface via [`chartColorContrast.ts`](frontend/src/utils/chartColorContrast.ts). [`neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) is a teal / violet / pink-tinted series helper (unit-tested); app charts today use the team path above.
+### Chart data ink (dynamic)
+
+Team-branded series are keyed by **team id** from the API — not the three-node shell stack above.
+
+| Step | Module | Role |
+| :--- | :--- | :--- |
+| Obsidian pairs | [`mlbTeamObsidianRegistry.ts`](frontend/src/utils/mlbTeamObsidianRegistry.ts) | Ink / label pairs tuned for dark charts |
+| Brand resolve | [`mlbTeamColors.ts`](frontend/src/utils/mlbTeamColors.ts) | MLB primaries/secondaries, comparison fallbacks, distinctness |
+| Contrast | [`chartColorContrast.ts`](frontend/src/utils/chartColorContrast.ts) | Nudge colors vs the plot surface |
+| Non-team palette | [`neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) | Teal / violet / pink-tinted series helper (unit-tested; app charts today use the team path above) |
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
@@ -147,7 +168,12 @@ flowchart LR
 
 Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss). Update these tables when values change.
 
-**Typography** — `--sans`, `--heading`, and `--mono` are font stacks (DM Sans for UI and headings, Space Mono for numerals/ticks); see the file for full fallbacks.
+**Typography** — font stacks on `html` (full fallbacks in the SCSS file):
+
+| Variable | Face | Use |
+| :--- | :--- | :--- |
+| `--sans` / `--heading` | DM Sans | UI and headings |
+| `--mono` | Space Mono | Numerals and axis ticks |
 
 ### Colors & surfaces
 
@@ -183,31 +209,75 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 
 ## Features
 
-| Area          | What you get                                                                                       |
-| :------------ | :------------------------------------------------------------------------------------------------- |
-| **Standings** | League standings for the configured season.                                                        |
-| **Leaders**   | Season statistical leaders (hitting / pitching categories from MLB Stats API). Filters live in the URL for sharing. |
-| **Teams**     | Team overview with season stats and record timelines. Team, season, and panel tab are shareable via the URL. |
-| **Players**   | Side-by-side comparison (radar, trends, game log); hitting / pitching views. Matchup filters (`ids`, season, scope, group) are shareable deep links. |
-| **Games**     | Date slate + **per-game** detail (timeline, boxscore, Statcast). Live games refresh boxscore/timeline on a short poll (paused when the tab is hidden). Pitch location supports per-pitcher dots or a zone density map with cell counts. Slate `date` / optional `team` stay in the URL. |
-| **Docs**      | [OpenAPI/Redoc](https://docs.caught-looking.com/) from `backend/apidocs/openapi.yaml`.             |
+| Area | What you get | Shareable URL |
+| :--- | :--- | :--- |
+| **Standings** | League standings for the configured season | — |
+| **Leaders** | Season leaders (hitting / pitching from MLB Stats API) | Filters in the URL |
+| **Teams** | Season stats + record timelines | Team, season, panel tab |
+| **Players** | Side-by-side compare (radar, trends, game log); hitting / pitching | `ids`, season, scope, group |
+| **Games** | Date slate + per-game timeline / boxscore / Statcast; live poll (paused when tab hidden); pitch dots or zone density | Slate `date` / optional `team` |
+| **Docs** | [OpenAPI/Redoc](https://docs.caught-looking.com/) from `backend/apidocs/openapi.yaml` | — |
 
 ---
 
 ## Tech stack
 
-| Layer    | Technology                                                                                                                                         |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frontend | React 19, TypeScript 6.0, Vite, React Router, Recharts, ESLint, Prettier                                                                           |
-| Backend  | Go 1.26, [chi](https://github.com/go-chi/chi) router, TTL cache, per-IP HTTP rate limit, inbound body size cap, token-bucket QPS caps for MLB and Savant outbound traffic |
-| Data     | MLB Stats API v1 (JSON); Baseball Savant (CSV) for Statcast-oriented game data                                                                     |
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 19, TypeScript 6.0, Vite, React Router, Recharts, ESLint, Prettier |
+| Backend | Go 1.26, [chi](https://github.com/go-chi/chi), TTL cache, per-IP rate limit, inbound body size cap, token-bucket QPS caps (MLB + Savant) |
+| Data | MLB Stats API v1 (JSON); Baseball Savant (CSV) for Statcast game data |
 
 <details>
 <summary><strong>CI & quality gates</strong> (expand)</summary>
 
-Continuous integration runs in **GitHub Actions** on pushes to **`main`** and on **non-draft pull requests**: **frontend** — stack-docs drift check (`make check-stack-docs`), OpenAPI lint (`api:validate`), generated-type drift check (`api:types:check`), ESLint, Prettier (`format:check`), TypeScript, **`npm audit`** (high+), **Vitest with V8 coverage**, production build; **backend** — `go vet`, **`govulncheck`**, **`go test -race`**, **`go test` with coverage** (Cobertura XML via `gocover-cobertura`), `go build`; **e2e** (optional, not required for merge yet) — **Playwright** Chromium smoke against `vite build` + `vite preview` with stubbed `/api` (no live Go/MLB); **sbom** (optional, not required) — Syft SPDX SBOM of the repo uploaded as a workflow artifact. **Draft** PRs skip CI until **Ready for review**. On PRs, **path filters** skip the heavy frontend and/or backend gates when that side’s paths are unchanged (jobs still report green so required checks stay satisfied); pushes to **`main`** always run the full gates. **Cloudflare PR previews** are also path-filtered (and draft-skipped): they deploy only when `frontend/**` (or the preview workflow) changes. On pull requests from the same repository, [**PR guide**](.github/workflows/pr-guide.yml) scaffolds an empty or default PR description (suggested verify commands, **Touches** metadata), posts or updates a sticky comment (checklist hints, reviewer focus), and applies **`area:*`** labels from changed paths; separate read/write-scoped jobs add or update coverage comments for whichever Cobertura artifacts CI uploaded; [**Pages preview**](.github/workflows/pages-preview.yml) builds the SPA with **`VITE_API_BASE`** and publishes a Cloudflare branch preview when SPA paths change; [**preview cleanup**](.github/workflows/pages-preview-cleanup.yml) deletes those deployments when the PR is closed or merged. Fork PRs may not receive guide, coverage comments, or previews due to `GITHUB_TOKEN` / secrets limits (those steps are non-blocking or skipped). Pushes to **`main`** can also run **Deploy** (Cloud Run API + Cloudflare Pages frontend) when repository variables and secrets are set; see **Deployment (CI)**.
+Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull requests. Draft PRs skip CI until **Ready for review**. Local parity: **`make ci-local`**.
 
-**Dependabot** ([`.github/dependabot.yml`](.github/dependabot.yml)) opens weekly version-update PRs for **Go modules** (`backend/`), **npm** (`frontend/`; minor/patch updates are **grouped**), and **GitHub Actions** (ungrouped). It does **not** edit README badges or Prerequisites — when a bump changes React / Vite / TypeScript / Go / CI Node majors (or TypeScript major.minor), update those docs in the same PR; CI runs **`make check-stack-docs`** to catch drift. Review Dependabot PRs like any other change — CI (including `govulncheck` and `npm audit`) still gates merges. Separately, enable **Dependabot alerts** and **Dependabot security updates** in the repo’s GitHub **Settings → Code security** so known advisories can open fix PRs outside the weekly cadence.
+#### Required gates
+
+| Job | Checks |
+| --- | --- |
+| **Frontend** | `make check-stack-docs`, OpenAPI lint (`api:validate`), type drift (`api:types:check`), ESLint, Prettier (`format:check`), TypeScript, `npm audit` (high+), Vitest + V8 coverage, production build |
+| **Backend** | `go vet`, `govulncheck`, `go test -race`, `go test` + coverage (Cobertura via `gocover-cobertura`), `go build` |
+
+#### Optional (not required for merge)
+
+| Job | What it does |
+| --- | --- |
+| **e2e** | Playwright Chromium smoke: `vite build` + `vite preview` with stubbed `/api` (no live Go/MLB) |
+| **sbom** | Syft SPDX SBOM of the repo — uploaded as a workflow artifact |
+
+#### When jobs run
+
+| Trigger | Behavior |
+| --- | --- |
+| **Draft PR** | CI skipped until Ready for review |
+| **PR (ready)** | Path filters skip heavy frontend and/or backend steps when that side’s paths are unchanged (jobs still report green for required checks) |
+| **Push to `main`** | Full gates always; **Deploy** may also run when vars/secrets are set — see [Deployment (CI)](#deployment-ci) |
+| **Cloudflare PR preview** | Draft-skipped and path-filtered: deploys only when `frontend/**` (or the preview workflow) changes |
+
+#### Same-repo PR helpers
+
+| Workflow | Role |
+| --- | --- |
+| [**PR guide**](.github/workflows/pr-guide.yml) | Scaffolds empty/default PR description (verify commands, **Touches**), sticky checklist comment, `area:*` labels from changed paths |
+| **Coverage comments** | Read/write jobs post or update Cobertura coverage comments for artifacts CI uploaded |
+| [**Pages preview**](.github/workflows/pages-preview.yml) | Builds SPA with `VITE_API_BASE` → Cloudflare branch preview when SPA paths change |
+| [**Preview cleanup**](.github/workflows/pages-preview-cleanup.yml) | Deletes preview deployments when the PR is closed or merged |
+
+Fork PRs may skip guide, coverage comments, or previews (`GITHUB_TOKEN` / secrets limits); those steps are non-blocking or skipped.
+
+#### Dependabot
+
+[`.github/dependabot.yml`](.github/dependabot.yml) opens **weekly** version PRs for:
+
+- **Go modules** (`backend/`)
+- **npm** (`frontend/` — minor/patch **grouped**)
+- **GitHub Actions** (ungrouped)
+
+It does **not** update README badges or Prerequisites. When a bump changes React / Vite / TypeScript / Go / CI Node majors (or TypeScript major.minor), update those docs in the same PR — CI’s `make check-stack-docs` catches drift. Review Dependabot PRs like any other change (`govulncheck` and `npm audit` still gate merges).
+
+Also enable **Dependabot alerts** and **Dependabot security updates** under GitHub **Settings → Code security** for advisory fix PRs outside the weekly cadence.
 
 </details>
 
@@ -215,16 +285,17 @@ Continuous integration runs in **GitHub Actions** on pushes to **`main`** and on
 
 ## Project layout
 
-| Concern        | Path                                                                                                                   |
-| :------------- | :--------------------------------------------------------------------------------------------------------------------- |
-| Shell / routes | [`frontend/src/App.tsx`](frontend/src/App.tsx), [`frontend/src/styles/_shell.scss`](frontend/src/styles/_shell.scss)   |
-| Global theme   | [`frontend/src/styles/_base.scss`](frontend/src/styles/_base.scss); feature SCSS under `frontend/src/styles/features/`; README art in [`docs/readme-banner.svg`](docs/readme-banner.svg), [`docs/badge-live.svg`](docs/badge-live.svg) (minimal SVGs; paths are `./docs/…` from README root) |
+| Concern | Path |
+| :--- | :--- |
+| Shell / routes | [`frontend/src/App.tsx`](frontend/src/App.tsx), [`_shell.scss`](frontend/src/styles/_shell.scss) |
+| Global theme | [`_base.scss`](frontend/src/styles/_base.scss); feature SCSS under `frontend/src/styles/features/` |
+| README art | [`docs/readme-banner.svg`](docs/readme-banner.svg), [`docs/badge-live.svg`](docs/badge-live.svg) (linked as `./docs/…` from README root) |
 | Design decisions | [`docs/adr/`](docs/adr/) — cache TTLs, upstream QPS, OpenAPI contract |
-| Pages          | `frontend/src/pages/`                                                                                                  |
-| API client     | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev                          |
-| Types          | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts`                                              |
-| Backend        | `backend/` — chi, MLB + Savant clients, `backend/apidocs/openapi.yaml`                                                 |
-| Threat model   | [`docs/threat-model.md`](docs/threat-model.md) — assets, controls, residual risks for the public read proxy            |
+| Pages | `frontend/src/pages/` |
+| API client | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev |
+| Types | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts` |
+| Backend | `backend/` — chi, MLB + Savant clients, `backend/apidocs/openapi.yaml` |
+| Threat model | [`docs/threat-model.md`](docs/threat-model.md) — assets, controls, residual risks |
 
 ---
 
@@ -237,17 +308,17 @@ Continuous integration runs in **GitHub Actions** on pushes to **`main`** and on
 
 ## Editor setup
 
-The repo ships [`.vscode/settings.json`](.vscode/settings.json) so **VS Code** and **Cursor** format `frontend/` files on save with **Prettier** (`frontend/prettier.config.js`). Install the recommended [**Prettier**](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) extension when prompted (see [`.vscode/extensions.json`](.vscode/extensions.json)). Accept workspace settings if the editor asks.
+**VS Code** / **Cursor**: format-on-save for `frontend/` via Prettier. Install the recommended [Prettier extension](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) when prompted; accept workspace settings if asked.
 
 | What | Where |
 | :--- | :--- |
-| Format on save | `.vscode/settings.json` — Prettier for TS/TSX/JS/JSON/SCSS/HTML under `frontend/` |
+| Format on save | [`.vscode/settings.json`](.vscode/settings.json) — Prettier for TS/TSX/JS/JSON/SCSS/HTML under `frontend/` |
 | Prettier config | `frontend/prettier.config.js` |
 | EditorConfig | [`.editorconfig`](.editorconfig) — indent, charset, newlines (Go 4-space; Makefile tabs) |
 | Node pin | [`.nvmrc`](.nvmrc) — Actions and local `nvm use` |
-| Cursor agents | [`.cursor/rules/frontend-prettier.mdc`](.cursor/rules/frontend-prettier.mdc) — run `npx prettier --write` on changed files before finishing |
+| Cursor agents | [`.cursor/rules/frontend-prettier.mdc`](.cursor/rules/frontend-prettier.mdc) — `npx prettier --write` on changed files |
 
-CI still runs `npm run format:check`; format on save and agent rules reduce drift before push.
+CI still runs `npm run format:check`.
 
 ---
 
@@ -290,16 +361,22 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 | `npm run test:coverage`   | Vitest once with V8 coverage (`frontend/coverage/`, open `index.html`) |
 | `npm run test:e2e`        | Playwright Chromium smoke (`vite build` + preview; stubbed `/api`)     |
 
-Tests use **Vitest** (jsdom), **Testing Library**, and **`@testing-library/jest-dom`** matchers (`frontend/src/test/setup.ts`). Prefer mocking **`frontend/src/api/client`** in unit tests rather than calling the real API. Browser smoke lives under **`frontend/e2e/`** (Playwright); run with **`npm run test:e2e`** or **`make test-e2e`** (install Chromium once via `npx playwright install chromium`).
+| Concern | Detail |
+| :--- | :--- |
+| Unit tests | Vitest (jsdom) + Testing Library + `@testing-library/jest-dom` ([`frontend/src/test/setup.ts`](frontend/src/test/setup.ts)) |
+| Mocking | Prefer mocking [`frontend/src/api/client`](frontend/src/api/client.ts) over the real API |
+| Browser smoke | `frontend/e2e/` (Playwright) — `npm run test:e2e` or `make test-e2e`; install once: `npx playwright install chromium` |
 
 ### OpenAPI workflow
 
-- Source of truth: `backend/apidocs/openapi.yaml`
-- Deployed docs (Redoc): [https://docs.caught-looking.com/](https://docs.caught-looking.com/)
-- Validate spec: `cd frontend && npm run api:validate`
-- Regenerate types: `cd frontend && npm run api:types`
-- App-facing type surface: `frontend/src/types/api.compat.ts` (backed by generated `frontend/src/types/api.generated.ts`)
-- GitHub Pages deploy: `.github/workflows/openapi-pages.yml` publishes a static Redoc site from `main` when `backend/apidocs/openapi.yaml` changes.
+| Step | Command / path |
+| :--- | :--- |
+| Spec source | `backend/apidocs/openapi.yaml` |
+| Live Redoc | [docs.caught-looking.com](https://docs.caught-looking.com/) |
+| Validate | `cd frontend && npm run api:validate` |
+| Generate types | `cd frontend && npm run api:types` |
+| App-facing types | `frontend/src/types/api.compat.ts` (from `api.generated.ts`) |
+| Docs deploy | `.github/workflows/openapi-pages.yml` — Redoc from `main` when the OpenAPI file changes |
 
 ### Tests from the repo root (`Makefile`)
 
@@ -318,7 +395,10 @@ Tests use **Vitest** (jsdom), **Testing Library**, and **`@testing-library/jest-
 | `make cover-backend-html` | Same + `backend/coverage.html`                                          |
 | `make cover-frontend`     | Vitest coverage report under `frontend/coverage/`                       |
 
-Backend tests live as `*_test.go` next to packages under `backend/`. Frontend tests are colocated as `*.test.ts` / `*.test.tsx` next to sources. Conventions for agents and contributors are summarized in **`.cursor/skills/backend-go-tests/SKILL.md`** (Go) and **`.cursor/skills/frontend-vitest-tests/SKILL.md`** (frontend).
+| Where tests live | Convention |
+| :--- | :--- |
+| Backend | `*_test.go` next to packages under `backend/` — [`.cursor/skills/backend-go-tests/SKILL.md`](.cursor/skills/backend-go-tests/SKILL.md) |
+| Frontend | `*.test.ts` / `*.test.tsx` next to sources — [`.cursor/skills/frontend-vitest-tests/SKILL.md`](.cursor/skills/frontend-vitest-tests/SKILL.md) |
 
 ---
 
@@ -326,54 +406,88 @@ Backend tests live as `*_test.go` next to packages under `backend/`. Frontend te
 
 ### Backend (environment variables)
 
-| Variable              | Purpose                                                                                                                      |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `PORT` or `HTTP_ADDR` | Listen address (default `:8080`; `PORT` is prefixed with `:` if set)                                                         |
-| `MLB_BASE_URL`        | MLB Stats API base (default `https://statsapi.mlb.com/api/v1`)                                                               |
-| `SAVANT_BASE_URL`     | Baseball Savant base URL (default `https://baseballsavant.mlb.com`; trailing slashes stripped)                               |
-| `ALLOWED_ORIGINS`     | Comma-separated CORS origins (defaults include Vite on `5173`)                                                               |
-| `MLB_SEASON`          | Default season (defaults to the current calendar year; override e.g. `2025`)                                                 |
-| `MLB_LEAGUE_IDS`      | Default league ids for standings (default `103,104`)                                                                         |
-| `CACHE_TTL_STANDINGS` | Standings cache TTL (Go duration, e.g. `1h`; default `1h`)                                                                   |
-| `CACHE_TTL_SCORES`    | Scores-related cache TTL (default `5m`)                                                                                      |
-| `CACHE_TTL_LIVE_SCORES` | Short TTL for today/live scoreboards and in-game boxscore/timeline (default `45s`)                                         |
-| `CACHE_TTL_STATCAST`  | Statcast / Savant CSV cache TTL per game (default `6h`)                                                                      |
-| `CACHE_TTL_PLAYER_SEARCH` | Player-search cache TTL for name query keys (default `3m`)                                                              |
-| `CACHE_SWEEP_INTERVAL` | Interval for removing expired entries and applying `CACHE_MAX_ENTRIES` (default `2m`; `0` disables background sweeps)        |
-| `CACHE_MAX_ENTRIES`   | Max in-memory cache entries before sweeps evict back to ~90% of the cap (default `2000`; `0` = unlimited)                    |
-| `RATE_LIMIT_REQUESTS` | Max requests per client IP per sliding window (default `120`; set `0` to disable)                                            |
-| `RATE_LIMIT_WINDOW`   | Sliding window for that limit (default `1m`)                                                                                 |
-| `HTTP_MAX_BODY_BYTES` | Max inbound request body size in bytes (default `65536` / 64 KiB; set `0` to disable). Oversize → HTTP 413                    |
-| `MLB_MAX_QPS`         | Max outbound GETs per second to the MLB API **per process** (token bucket, default `20`; `0` = unlimited)                    |
-| `MLB_HTTP_TIMEOUT`    | Per-attempt timeout for outbound MLB GETs (Go duration; default `15s`; `0s` or negative values use the client default `15s`) |
-| `SAVANT_MAX_QPS`      | Max outbound GETs per second to Savant **per process** (token bucket, default `5`; `0` = unlimited)                          |
-| `SAVANT_HTTP_TIMEOUT` | Per-attempt timeout for outbound Savant GETs (Go duration; default `30s`; `0s` or negative values use the client default `30s`) |
+#### Listen & upstreams
+
+| Variable | Purpose |
+| --- | --- |
+| `PORT` or `HTTP_ADDR` | Listen address (default `:8080`; `PORT` is prefixed with `:` if set) |
+| `MLB_BASE_URL` | MLB Stats API base (default `https://statsapi.mlb.com/api/v1`) |
+| `SAVANT_BASE_URL` | Baseball Savant base (default `https://baseballsavant.mlb.com`; trailing slashes stripped) |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins (defaults include Vite on `5173`) |
+| `MLB_SEASON` | Default season (current calendar year; override e.g. `2025`) |
+| `MLB_LEAGUE_IDS` | Default league ids for standings (default `103,104`) |
+
+#### Cache
+
+| Variable | Purpose |
+| --- | --- |
+| `CACHE_TTL_STANDINGS` | Standings TTL (Go duration; default `1h`) |
+| `CACHE_TTL_SCORES` | Scores-related TTL (default `5m`) |
+| `CACHE_TTL_LIVE_SCORES` | Today/live scoreboards + in-game boxscore/timeline (default `45s`) |
+| `CACHE_TTL_STATCAST` | Statcast / Savant CSV per game (default `6h`) |
+| `CACHE_TTL_PLAYER_SEARCH` | Player-search name query keys (default `3m`) |
+| `CACHE_SWEEP_INTERVAL` | Expired-entry sweep + `CACHE_MAX_ENTRIES` enforcement (default `2m`; `0` disables) |
+| `CACHE_MAX_ENTRIES` | Max entries before sweeps trim to ~90% (default `2000`; `0` = unlimited) |
+
+#### Limits & outbound QPS
+
+| Variable | Purpose |
+| --- | --- |
+| `RATE_LIMIT_REQUESTS` | Max requests per client IP per window (default `120`; `0` disables) |
+| `RATE_LIMIT_WINDOW` | Sliding window for that limit (default `1m`) |
+| `HTTP_MAX_BODY_BYTES` | Max inbound body bytes (default `65536`; `0` disables). Oversize → 413 |
+| `MLB_MAX_QPS` | Outbound MLB GETs/sec **per process** (token bucket, default `20`; `0` = unlimited) |
+| `MLB_HTTP_TIMEOUT` | Per-attempt MLB timeout (default `15s`; `0s`/negative → client default `15s`) |
+| `SAVANT_MAX_QPS` | Outbound Savant GETs/sec **per process** (default `5`; `0` = unlimited) |
+| `SAVANT_HTTP_TIMEOUT` | Per-attempt Savant timeout (default `30s`; `0s`/negative → client default `30s`) |
 
 ### Frontend (Vite)
 
-| Variable        | Purpose                                                                                                                                                                         |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_API_BASE` | API base URL **without** trailing slash. In dev, omit it to use `/api` + the Vite proxy. Production builds served at [caught-looking.com](https://caught-looking.com/standings) or [www.caught-looking.com](https://www.caught-looking.com/standings) set this to the deployed Cloud Run API URL. |
+| Variable | Purpose |
+| --- | --- |
+| `VITE_API_BASE` | API origin **without** trailing slash. Omit in dev (`/api` + Vite proxy). Production builds for [caught-looking.com](https://caught-looking.com/standings) / [www](https://www.caught-looking.com/standings) set this to the Cloud Run API URL. |
 
 ---
 
 ## Deployment (CI)
 
-Pushes to **`main`** (and manual **Run workflow** via `workflow_dispatch`) run [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): build and push the API container to **Artifact Registry**, deploy to **Cloud Run**, then build the SPA with **`VITE_API_BASE`** set to the deployed service URL and publish **`frontend/dist`** to **Cloudflare Pages** (via [`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)). Pull requests from this repository run [`.github/workflows/pages-preview.yml`](.github/workflows/pages-preview.yml): the same SPA build with **`VITE_API_BASE`** pointed at the live Cloud Run API (from **`API_PUBLIC_URL`**, or looked up via `gcloud`), published as a **branch preview** (`https://<branch>.<project>.pages.dev`). When the PR is closed or merged, [`.github/workflows/pages-preview-cleanup.yml`](.github/workflows/pages-preview-cleanup.yml) deletes that branch’s preview deployments (Cloudflare keeps them indefinitely otherwise). Without **`VITE_API_BASE`**, the client falls back to same-origin **`/api`**, Pages serves `index.html`, and the UI shows a JSON parse error. Forks skip deploy jobs.
+| Trigger | Workflow | What happens |
+| --- | --- | --- |
+| Push to **`main`** (or manual **Run workflow**) | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) | Build/push API image → **Artifact Registry** → **Cloud Run**; build SPA with **`VITE_API_BASE`** → **`frontend/dist`** to **Cloudflare Pages** ([`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)) |
+| Same-repo PR | [`.github/workflows/pages-preview.yml`](.github/workflows/pages-preview.yml) | Same SPA build; **`VITE_API_BASE`** = live Cloud Run URL (`API_PUBLIC_URL`, or `gcloud` lookup) → branch preview (`https://<branch>.<project>.pages.dev`) |
+| PR closed/merged | [`.github/workflows/pages-preview-cleanup.yml`](.github/workflows/pages-preview-cleanup.yml) | Deletes that branch’s preview deployments (Cloudflare keeps them otherwise) |
 
-Prefer **Direct Upload** from Actions for this project (empty Pages project is fine). If the Pages project is also connected to Git with its own build, either disable that build or set **`VITE_API_BASE`** in the Cloudflare Pages **Preview** environment to the Cloud Run origin so native builds do not overwrite Actions previews with a broken bundle.
+Without **`VITE_API_BASE`**, the client falls back to same-origin **`/api`**, Pages serves `index.html`, and the UI shows a JSON parse error. Forks skip deploy jobs.
 
-**One-time Google Cloud setup (example)**
+| Pages setup tip | |
+| :--- | :--- |
+| Prefer | **Direct Upload** from Actions (empty Pages project is fine) |
+| If Git-connected build also runs | Disable that build **or** set **`VITE_API_BASE`** in Cloudflare Pages **Preview** to the Cloud Run origin so native builds do not overwrite Actions previews |
 
-- Enable billing, **Cloud Run**, **Artifact Registry**, and **Cloud Build** (optional; not required for this workflow’s Docker build in Actions).
-- Create a **Docker** Artifact Registry repository (e.g. name matching `GCP_ARTIFACT_REPOSITORY`).
-- Create a **deploy service account** for GitHub with at least: **Artifact Registry Repository Administrator** (push images + set cleanup policies), **Cloud Run Admin**, and **Service Account User** (on the project’s Cloud Run runtime service account if prompted). Do **not** create a JSON key for CI. If the SA already has only **Artifact Registry Writer**, upgrade it to **Repository Administrator** (or grant `artifactregistry.repositories.update`) so the cleanup-policy step can run.
-- Configure **Workload Identity Federation** for this GitHub repository and allow the deploy service account to be impersonated by the repository’s GitHub Actions principal. Store the provider resource name in **`GCP_WORKLOAD_IDENTITY_PROVIDER`** and the service account email in **`GCP_DEPLOY_SERVICE_ACCOUNT`**.
+<details>
+<summary><strong>One-time Google Cloud setup</strong> (expand)</summary>
 
-**One-time Cloudflare setup**
+1. Enable billing, **Cloud Run**, **Artifact Registry**, and optionally **Cloud Build** (not required for this workflow’s Docker build in Actions).
+2. Create a **Docker** Artifact Registry repository (name matching `GCP_ARTIFACT_REPOSITORY`).
+3. Create a **deploy service account** with at least:
+   - **Artifact Registry Repository Administrator** (push images + cleanup policies)
+   - **Cloud Run Admin**
+   - **Service Account User** (on the Cloud Run runtime SA if prompted)
+4. Do **not** create a JSON key for CI. If the SA only has **Artifact Registry Writer**, upgrade to **Repository Administrator** (or grant `artifactregistry.repositories.update`) so cleanup-policy can run.
+5. Configure **Workload Identity Federation** so this repo’s GitHub Actions principal can impersonate the deploy SA. Store:
+   - Provider → `GCP_WORKLOAD_IDENTITY_PROVIDER`
+   - SA email → `GCP_DEPLOY_SERVICE_ACCOUNT`
 
-- Create a **Pages** project (name must match **`CLOUDFLARE_PAGES_PROJECT_NAME`**). The project can be empty; Actions uploads the build output.
-- Create a least-privilege **API token** with **Account → Cloudflare Pages → Edit** (and **Account → Read** if required by your account), rotate it periodically, and store **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** as repository secrets.
+</details>
+
+<details>
+<summary><strong>One-time Cloudflare setup</strong> (expand)</summary>
+
+1. Create a **Pages** project whose name matches **`CLOUDFLARE_PAGES_PROJECT_NAME`** (can be empty; Actions uploads the build).
+2. Create a least-privilege **API token**: **Account → Cloudflare Pages → Edit** (and **Account → Read** if required). Rotate periodically.
+3. Store **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** as repository secrets.
+
+</details>
 
 **GitHub repository variables**
 
@@ -388,9 +502,9 @@ Prefer **Direct Upload** from Actions for this project (empty Pages project is f
 | `CLOUDRUN_MAX_INSTANCES`        | `2`                              | Optional. Cloud Run max instances (default **`2`**). Caps worst-case request spend.            |
 | `CLOUDRUN_MIN_INSTANCES`        | `0`                              | Optional. Cloud Run min instances (default **`0`**, scale-to-zero when idle).                  |
 | `GCP_ARTIFACT_KEEP_COUNT`       | `5`                              | Optional. Artifact Registry versions to keep per package (default **`5`**); older images are deleted by the cleanup policy. |
-| `CORS_ALLOWED_ORIGINS`          | `https://caught-looking.com,https://www.caught-looking.com` | Comma-separated **`ALLOWED_ORIGINS`** for the API (apex + `www`). Deploy also appends `https://<project>.pages.dev` and `https://*.<project>.pages.dev` when **`CLOUDFLARE_PAGES_PROJECT_NAME`** is set. |
-| `CLOUDFLARE_PAGES_PROJECT_NAME` | `your-project`                   | If **unset**, only the API deploy runs (useful while wiring Cloudflare).                       |
-| `API_PUBLIC_URL`                | `https://….run.app`              | Optional. Cloud Run API origin (no trailing slash) for **PR preview** builds. If unset, the preview workflow looks the URL up with `gcloud`. |
+| `CORS_ALLOWED_ORIGINS` | `https://caught-looking.com,https://www.caught-looking.com` | API `ALLOWED_ORIGINS` (apex + `www`). Deploy also appends `https://<project>.pages.dev` and `https://*.<project>.pages.dev` when `CLOUDFLARE_PAGES_PROJECT_NAME` is set. |
+| `CLOUDFLARE_PAGES_PROJECT_NAME` | `your-project` | If **unset**, only the API deploy runs |
+| `API_PUBLIC_URL` | `https://….run.app` | Optional Cloud Run origin for PR preview builds (no trailing slash). If unset, preview looks it up via `gcloud`. |
 
 **GitHub repository secrets**
 
@@ -399,9 +513,12 @@ Prefer **Direct Upload** from Actions for this project (empty Pages project is f
 | `CLOUDFLARE_API_TOKEN`  | Cloudflare API token         |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account id        |
 
-After the first successful deploy, **`CORS_ALLOWED_ORIGINS`** must include the real SPA origins (this project: **`https://caught-looking.com`** and **`https://www.caught-looking.com`**). Pages project and branch-preview origins are added automatically from **`CLOUDFLARE_PAGES_PROJECT_NAME`**. If you add or change custom-domain origins, update the variable and push to **`main`** (or update the Cloud Run service env) so CORS matches the browser.
+After the first successful deploy:
 
-**Cost / abuse** — Deploy sets Cloud Run **`--min-instances=0`** and **`--max-instances=2`** (override via the variables above). Each deploy also applies an Artifact Registry cleanup policy: keep the **`GCP_ARTIFACT_KEEP_COUNT`** most recent versions and delete older ones (runs about once per day on Google’s side). The API still defaults to per-IP HTTP rate limiting and outbound QPS caps for MLB and Savant (see env vars above). Pair these with a **Billing budget + alert** in GCP; budgets notify by default and do not stop spend unless you add an automatic action.
+| Check | Detail |
+| :--- | :--- |
+| **CORS** | `CORS_ALLOWED_ORIGINS` must include real SPA origins (`https://caught-looking.com`, `https://www.caught-looking.com`). Pages + branch-preview origins are appended from `CLOUDFLARE_PAGES_PROJECT_NAME`. Custom domains → update the variable and push to `main` (or patch Cloud Run env). |
+| **Cost / abuse** | Deploy uses `--min-instances=0`, `--max-instances=2` (override via vars above). Artifact Registry cleanup keeps `GCP_ARTIFACT_KEEP_COUNT` newest versions (~daily). API still has per-IP limits + outbound QPS caps. Pair with a GCP **billing budget + alert** (notify-only unless you add an automatic action). |
 
 ---
 
@@ -418,6 +535,12 @@ Makefile    # install, dev, backend, frontend, ci-local, test-*, cover-*
 
 ## Contributing
 
-Use the [pull request template](.github/pull_request_template.md) for **Summary** and **How to verify**. The [**PR guide**](.github/workflows/pr-guide.yml) workflow scaffolds the description when it is empty or still the default template (suggested verify commands plus a **Touches** line) and posts a sticky comment with checklist hints and reviewer focus. Before opening a PR, run **`make ci-local`** from the repo root (same gates as CI, including stack-docs drift, `npm audit`, coverage ≥50%, and OpenAPI type drift). Keep API changes in sync: **Go JSON / OpenAPI** ↔ generated frontend types (`frontend/src/types/api.generated.ts`) and `frontend/src/api/client.ts`. Agent contributors: see **`.cursor/skills/pr-ready/SKILL.md`**.
+| Step | Action |
+| :--- | :--- |
+| Template | [PR template](.github/pull_request_template.md) — **Summary** + **How to verify** |
+| Scaffold | [PR guide](.github/workflows/pr-guide.yml) fills empty/default descriptions (verify commands, **Touches**) and posts a sticky checklist comment |
+| Before open | `make ci-local` from repo root (same gates as CI: stack-docs, `npm audit`, coverage ≥50%, OpenAPI type drift) |
+| API changes | Keep **Go JSON / OpenAPI** ↔ `frontend/src/types/api.generated.ts` + `frontend/src/api/client.ts` in sync |
+| Agents | [`.cursor/skills/pr-ready/SKILL.md`](.cursor/skills/pr-ready/SKILL.md) |
 
-**Security:** the API is an unauthenticated read proxy — see the [threat model](docs/threat-model.md) for assets, controls, and residual risks. Handler conventions: **`.cursor/skills/backend-http-security/SKILL.md`**.
+**Security:** unauthenticated read proxy — [threat model](docs/threat-model.md). Handler conventions: [`.cursor/skills/backend-http-security/SKILL.md`](.cursor/skills/backend-http-security/SKILL.md).
