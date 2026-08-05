@@ -399,9 +399,9 @@ export default function GameBoxscorePanel({
         <div className="panel chart-panel game-boxscore__pitch-location">
           <h2>Pitch location</h2>
           <p className="muted small">
-            Catcher&apos;s view toward the pitcher: each pitch where it crossed the plate
-            (horizontal and vertical feet), with a light depth perspective on the grid. Colors are
-            pitch type.
+            Catcher&apos;s view toward the pitcher. <strong>Locations</strong> shows each pitch
+            colored by type. <strong>Density</strong> shows a count grid over the plate; use Pitch
+            type to filter.
           </p>
           {pitchLocation.loading ? (
             <p className="muted">Loading pitch data…</p>
