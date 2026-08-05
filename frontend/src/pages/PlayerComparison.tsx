@@ -1,4 +1,5 @@
-import { lazy, useMemo, useState } from 'react';
+import { lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { ChartSuspense } from '../components/charts/ChartSuspense';
 import PlayerCompareAheadChart from '../components/charts/PlayerCompareAheadChart';
 import PlayerCompareStatsTable from '../components/charts/PlayerCompareStatsTable';
@@ -30,48 +31,111 @@ import {
   resolveObsidianMatchupFills,
 } from '../utils/mlbTeamObsidianRegistry';
 import {
+  buildPlayerCompareSearchParams,
+  parsePlayerCompareSearchParams,
+  playerCompareIdsQueryIsValid,
+  type PlayerCompareUrlState,
+} from '../utils/playerCompareSearchParams';
+import {
   HITTING_CAREER_METRICS,
   PITCHING_CAREER_METRICS,
   yearByYearMetricShortLabel,
 } from '../utils/yearByYearMetric';
-
-const DEFAULT_SEASON = 2026;
 
 function defaultCareerMetric(group: 'hitting' | 'pitching'): YearByYearMetric {
   return group === 'pitching' ? 'era' : 'ops';
 }
 
 export default function PlayerComparison() {
-  const [pick1, setPick1] = useState<PlayerPick | null>({
-    id: 660271,
-    fullName: 'Shohei Ohtani',
-  });
-  const [pick2, setPick2] = useState<PlayerPick | null>({
-    id: 592450,
-    fullName: 'Aaron Judge',
-  });
-  const [season, setSeason] = useState(DEFAULT_SEASON);
-  const [compareScope, setCompareScope] = useState<'season' | 'career'>('season');
-  const [group, setGroup] = useState<'hitting' | 'pitching'>('hitting');
-  const [careerMetric, setCareerMetric] = useState<YearByYearMetric>(() =>
-    defaultCareerMetric('hitting'),
-  );
-  const [prevGroup, setPrevGroup] = useState(group);
-  if (prevGroup !== group) {
-    setPrevGroup(group);
-    setCareerMetric(defaultCareerMetric(group));
-  }
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlState = useMemo(() => parsePlayerCompareSearchParams(searchParams), [searchParams]);
+  /**
+   * Mid-Change search UI for one picker. Tied to the committed id pair so a URL update
+   * (new pick, deep link, back/forward) drops the clear without an effect.
+   */
+  const [clearedPick, setClearedPick] = useState<{
+    side: '1' | '2';
+    id1: number;
+    id2: number;
+  } | null>(null);
+  const clearedSide =
+    clearedPick && clearedPick.id1 === urlState.id1 && clearedPick.id2 === urlState.id2
+      ? clearedPick.side
+      : null;
 
-  const p1 = pick1?.id;
-  const p2 = pick2?.id;
-  const valid =
-    p1 != null &&
-    p2 != null &&
-    Number.isFinite(p1) &&
-    Number.isFinite(p2) &&
-    p1 > 0 &&
-    p2 > 0 &&
-    p1 !== p2;
+  const patchUrl = useCallback(
+    (patch: Partial<PlayerCompareUrlState>) => {
+      setSearchParams(
+        (prev) => {
+          const cur = parsePlayerCompareSearchParams(prev);
+          return buildPlayerCompareSearchParams({ ...cur, ...patch }, prev);
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        // Seed defaults when ids are missing, or replace invalid ids that parse fell back from.
+        if (playerCompareIdsQueryIsValid(prev)) return prev;
+        return buildPlayerCompareSearchParams(parsePlayerCompareSearchParams(prev), prev);
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
+
+  const pick1: PlayerPick | null = useMemo(
+    () => (clearedSide === '1' ? null : { id: urlState.id1, fullName: urlState.name1 }),
+    [clearedSide, urlState.id1, urlState.name1],
+  );
+  const pick2: PlayerPick | null = useMemo(
+    () => (clearedSide === '2' ? null : { id: urlState.id2, fullName: urlState.name2 }),
+    [clearedSide, urlState.id2, urlState.name2],
+  );
+  const season = urlState.season;
+  const compareScope = urlState.scope;
+  const group = urlState.group;
+  const careerMetric = urlState.metric;
+
+  const setPick1 = useCallback(
+    (p: PlayerPick | null) => {
+      if (!p) {
+        setClearedPick({ side: '1', id1: urlState.id1, id2: urlState.id2 });
+        return;
+      }
+      setClearedPick((cur) => (cur?.side === '1' ? null : cur));
+      patchUrl({
+        id1: p.id,
+        name1: p.fullName,
+        id2: urlState.id2 === p.id ? urlState.id1 : urlState.id2,
+        name2: urlState.id2 === p.id ? urlState.name1 : urlState.name2,
+      });
+    },
+    [patchUrl, urlState.id1, urlState.id2, urlState.name1, urlState.name2],
+  );
+  const setPick2 = useCallback(
+    (p: PlayerPick | null) => {
+      if (!p) {
+        setClearedPick({ side: '2', id1: urlState.id1, id2: urlState.id2 });
+        return;
+      }
+      setClearedPick((cur) => (cur?.side === '2' ? null : cur));
+      patchUrl({
+        id2: p.id,
+        name2: p.fullName,
+        id1: urlState.id1 === p.id ? urlState.id2 : urlState.id1,
+        name1: urlState.id1 === p.id ? urlState.name2 : urlState.name1,
+      });
+    },
+    [patchUrl, urlState.id1, urlState.id2, urlState.name1, urlState.name2],
+  );
+
+  const p1 = pick1?.id ?? NaN;
+  const p2 = pick2?.id ?? NaN;
+  const valid = Number.isFinite(p1) && Number.isFinite(p2) && p1 > 0 && p2 > 0 && p1 !== p2;
 
   const {
     data: compareData,
@@ -85,6 +149,15 @@ export default function PlayerComparison() {
     group,
     enabled: valid,
   });
+
+  useEffect(() => {
+    const a = compareData?.players?.[0];
+    const b = compareData?.players?.[1];
+    if (!a || !b) return;
+    if (a.id !== urlState.id1 || b.id !== urlState.id2) return;
+    if (a.fullName === urlState.name1 && b.fullName === urlState.name2) return;
+    patchUrl({ name1: a.fullName, name2: b.fullName });
+  }, [compareData, patchUrl, urlState.id1, urlState.id2, urlState.name1, urlState.name2]);
 
   const { teamId1: radarTeam1, teamId2: radarTeam2 } = usePlayerCurrentTeams(p1, p2, valid);
 
@@ -151,7 +224,8 @@ export default function PlayerComparison() {
           <p className="muted">
             Compare two MLB players using the stats API. <strong>Season</strong> mode: same-year
             snapshot plus game log and platoon. <strong>Career</strong> mode: career snapshot plus
-            year-by-year arcs (no single-season game log or platoon).
+            year-by-year arcs (no single-season game log or platoon). Selection is reflected in the
+            URL so you can share or bookmark a matchup.
           </p>
           {valid && compareRegistryChrome ? (
             <p className="muted small players-compare__registry-key" aria-label="Chart color key">
@@ -194,7 +268,7 @@ export default function PlayerComparison() {
               value={compareScope}
               onChange={(e) => {
                 const v = e.target.value;
-                setCompareScope(v === 'career' ? 'career' : 'season');
+                patchUrl({ scope: v === 'career' ? 'career' : 'season' });
               }}
             >
               <option value="season">Season</option>
@@ -214,7 +288,7 @@ export default function PlayerComparison() {
                   ? 'Pick the year for game log and platoon (those charts appear when Compare is set to Season).'
                   : 'Used for the season snapshot, game log, and platoon charts.'
               }
-              onChange={(e) => setSeason(Number(e.target.value) || DEFAULT_SEASON)}
+              onChange={(e) => patchUrl({ season: Number(e.target.value) || urlState.season })}
             />
           </label>
           <label className="players-compare__field">
@@ -223,8 +297,8 @@ export default function PlayerComparison() {
               className="players-compare__select"
               value={group}
               onChange={(e) => {
-                const v = e.target.value;
-                setGroup(v === 'pitching' ? 'pitching' : 'hitting');
+                const v = e.target.value === 'pitching' ? 'pitching' : 'hitting';
+                patchUrl({ group: v, metric: defaultCareerMetric(v) });
               }}
             >
               <option value="hitting">Hitting</option>
@@ -363,7 +437,7 @@ export default function PlayerComparison() {
                 <select
                   className="players-compare__select"
                   value={careerMetric}
-                  onChange={(e) => setCareerMetric(e.target.value as YearByYearMetric)}
+                  onChange={(e) => patchUrl({ metric: e.target.value as YearByYearMetric })}
                 >
                   {(group === 'pitching' ? PITCHING_CAREER_METRICS : HITTING_CAREER_METRICS).map(
                     (opt) => (

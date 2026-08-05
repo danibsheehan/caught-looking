@@ -1,4 +1,5 @@
-import { lazy, useMemo, useState } from 'react';
+import { lazy, useCallback, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router';
 import { ChartSuspense } from '../components/charts/ChartSuspense';
 import RecordTimelineStrip from '../components/charts/RecordTimelineStrip';
 import TeamSeasonDeepDive from '../components/charts/TeamSeasonDeepDive';
@@ -11,8 +12,12 @@ import { PlayerCard, StatCard, TeamSelector } from '../components/ui';
 import { useStandings, useTeamSeasonStats, useTeams } from '../hooks/useMLB';
 import { sortStandingTeams, standingTeamForId, teamLabelMap } from '../utils/standings';
 import { getObsidianTeamColor } from '../utils/mlbTeamObsidianRegistry';
-
-const DEFAULT_SEASON = 2026;
+import {
+  DEFAULT_TEAM_OVERVIEW_SEASON,
+  buildTeamOverviewSearchParams,
+  parseTeamOverviewSearchParams,
+  type TeamOverviewUrlState,
+} from '../utils/teamOverviewSearchParams';
 
 function formatSignedInt(v: number | undefined): string {
   if (v == null || Number.isNaN(v)) return '—';
@@ -28,9 +33,40 @@ function formatStandingToken(dashOrValue: string | undefined): string {
 export default function TeamOverview() {
   const { data, loading, error } = useTeams({ sportId: '1' });
   const teams = useMemo(() => data?.teams ?? [], [data]);
-  const [teamId, setTeamId] = useState<number | ''>('');
-  const [season, setSeason] = useState(DEFAULT_SEASON);
-  const [panelTab, setPanelTab] = useState<'trend' | 'deep'>('trend');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlState = useMemo(() => parseTeamOverviewSearchParams(searchParams), [searchParams]);
+  const { teamId, season, panelTab } = {
+    teamId: urlState.teamId,
+    season: urlState.season,
+    panelTab: urlState.tab,
+  };
+
+  const patchUrl = useCallback(
+    (patch: Partial<TeamOverviewUrlState>) => {
+      setSearchParams(
+        (prev) => {
+          const cur = parseTeamOverviewSearchParams(prev);
+          return buildTeamOverviewSearchParams({ ...cur, ...patch }, prev);
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  const setTeamId = useCallback((id: number | '') => patchUrl({ teamId: id }), [patchUrl]);
+  const setSeason = useCallback((s: number) => patchUrl({ season: s }), [patchUrl]);
+  const setPanelTab = useCallback((tab: 'trend' | 'deep') => patchUrl({ tab }), [patchUrl]);
+
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        if (prev.get('season') || prev.get('team') || prev.get('tab')) return prev;
+        return buildTeamOverviewSearchParams(parseTeamOverviewSearchParams(prev), prev);
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
 
   const {
     data: standingsData,
@@ -118,7 +154,7 @@ export default function TeamOverview() {
           <h1>Teams</h1>
           <p className="muted">
             Division charts (win %, run differential, game results) plus season hitting / pitching
-            lines.
+            lines. Club, season, and panel tab stay in the URL.
           </p>
         </div>
         <div className="teams-page__controls">
@@ -138,7 +174,7 @@ export default function TeamOverview() {
               min={1900}
               max={2100}
               value={season}
-              onChange={(e) => setSeason(Number(e.target.value) || DEFAULT_SEASON)}
+              onChange={(e) => setSeason(Number(e.target.value) || DEFAULT_TEAM_OVERVIEW_SEASON)}
             />
           </label>
         </div>

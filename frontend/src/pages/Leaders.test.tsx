@@ -117,4 +117,33 @@ describe('Leaders', () => {
 
     expect(await screen.findByRole('alert', {}, asyncWait)).toHaveTextContent('leaders down');
   });
+
+  it('hydrates filters from the URL', async () => {
+    render(
+      <MemoryRouter initialEntries={['/leaders?group=pitching&category=wins&season=2024']}>
+        <Leaders />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('tab', { name: 'Pitching' }, asyncWait)).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByLabelText('Category')).toHaveValue('wins');
+    expect(screen.getByLabelText('Season')).toHaveValue(2024);
+
+    await waitFor(
+      () =>
+        expect(api.fetchLeaders).toHaveBeenCalledWith(
+          expect.objectContaining({
+            group: 'pitching',
+            category: 'wins',
+            season: 2024,
+            limit: 10,
+          }),
+          expect.any(AbortSignal),
+        ),
+      asyncWait,
+    );
+  });
 });

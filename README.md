@@ -156,10 +156,10 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 | Area          | What you get                                                                                       |
 | :------------ | :------------------------------------------------------------------------------------------------- |
 | **Standings** | League standings for the configured season.                                                        |
-| **Leaders**   | Season statistical leaders (hitting / pitching categories from MLB Stats API).                   |
-| **Teams**     | Team overview with season stats and record timelines.                                              |
-| **Players**   | Side-by-side comparison (radar, trends, game log); hitting / pitching views.                       |
-| **Games**     | Date slate + **per-game** detail (timeline, boxscore, Statcast). Live games refresh boxscore/timeline on a short poll (paused when the tab is hidden). Pitch location supports per-pitcher dots or a zone density map with cell counts. |
+| **Leaders**   | Season statistical leaders (hitting / pitching categories from MLB Stats API). Filters live in the URL for sharing. |
+| **Teams**     | Team overview with season stats and record timelines. Team, season, and panel tab are shareable via the URL. |
+| **Players**   | Side-by-side comparison (radar, trends, game log); hitting / pitching views. Matchup filters (`ids`, season, scope, group) are shareable deep links. |
+| **Games**     | Date slate + **per-game** detail (timeline, boxscore, Statcast). Live games refresh boxscore/timeline on a short poll (paused when the tab is hidden). Pitch location supports per-pitcher dots or a zone density map with cell counts. Slate `date` / optional `team` stay in the URL. |
 | **Docs**      | [OpenAPI/Redoc](https://docs.caught-looking.com/) from `backend/apidocs/openapi.yaml`.             |
 
 ---
