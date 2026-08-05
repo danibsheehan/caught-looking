@@ -201,64 +201,44 @@ function PitcherStrikeZoneSvg({
                 svgPointStringStrikeSquare(cell.x1, cell.z1),
                 svgPointStringStrikeSquare(cell.x0, cell.z1),
               ].join(' ');
-              const mid = projNormToSvgStrikeSquare(
-                (cell.x0 + cell.x1) / 2,
-                (cell.z0 + cell.z1) / 2,
-              );
               const filled = cell.count > 0;
               return (
-                <g key={`h-${cell.col}-${cell.row}`}>
-                  <polygon
-                    points={points}
-                    fill={filled ? heatFill : 'var(--border)'}
-                    fillOpacity={filled ? heatCellFillOpacity(cell.count, heatMap.maxCount) : 0.22}
-                    stroke="color-mix(in srgb, var(--text-h) 22%, transparent)"
-                    strokeWidth={0.25}
-                    vectorEffect="non-scaling-stroke"
-                    style={{ cursor: filled ? 'default' : undefined }}
-                    onMouseEnter={
-                      filled
-                        ? (ev) =>
-                            setTip({
-                              kind: 'heat',
-                              cell,
-                              clientX: ev.clientX,
-                              clientY: ev.clientY,
-                            })
-                        : undefined
-                    }
-                    onMouseMove={
-                      filled
-                        ? (ev) =>
-                            setTip({
-                              kind: 'heat',
-                              cell,
-                              clientX: ev.clientX,
-                              clientY: ev.clientY,
-                            })
-                        : undefined
-                    }
-                  />
-                  {filled ? (
-                    <text
-                      className={
-                        heatCellUsesLightLabel(cell.count, heatMap.maxCount)
-                          ? 'game-pitcher-zones__heat-count game-pitcher-zones__heat-count--on-dense'
-                          : 'game-pitcher-zones__heat-count'
-                      }
-                      x={mid.x}
-                      y={mid.y}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                    >
-                      {cell.count}
-                    </text>
-                  ) : null}
-                </g>
+                <polygon
+                  key={`h-${cell.col}-${cell.row}`}
+                  points={points}
+                  fill={filled ? heatFill : 'var(--border)'}
+                  fillOpacity={filled ? heatCellFillOpacity(cell.count, heatMap.maxCount) : 0.22}
+                  stroke="color-mix(in srgb, var(--text-h) 22%, transparent)"
+                  strokeWidth={0.25}
+                  vectorEffect="non-scaling-stroke"
+                  style={{ cursor: filled ? 'default' : undefined }}
+                  onMouseEnter={
+                    filled
+                      ? (ev) =>
+                          setTip({
+                            kind: 'heat',
+                            cell,
+                            clientX: ev.clientX,
+                            clientY: ev.clientY,
+                          })
+                      : undefined
+                  }
+                  onMouseMove={
+                    filled
+                      ? (ev) =>
+                          setTip({
+                            kind: 'heat',
+                            cell,
+                            clientX: ev.clientX,
+                            clientY: ev.clientY,
+                          })
+                      : undefined
+                  }
+                />
               );
             })
           : null}
-        <g className="game-pitcher-zones__svg-scene">
+        <g className="game-pitcher-zones__svg-scene" pointerEvents="none">
           <text
             className="game-pitcher-zones__svg-label game-pitcher-zones__svg-label--pitcher"
             x={labelPitcher.x}
@@ -314,6 +294,7 @@ function PitcherStrikeZoneSvg({
           strokeOpacity={mode === 'heat' ? 0.85 : 0.55}
           strokeWidth={mode === 'heat' ? 0.85 : 0.55}
           vectorEffect="non-scaling-stroke"
+          pointerEvents="none"
         />
         <polygon
           points={platePoints}
@@ -322,7 +303,34 @@ function PitcherStrikeZoneSvg({
           strokeWidth={0.45}
           opacity={0.95}
           vectorEffect="non-scaling-stroke"
+          pointerEvents="none"
         />
+        {mode === 'heat' && heatMap
+          ? heatMap.cells.map((cell) => {
+              if (cell.count <= 0) return null;
+              const mid = projNormToSvgStrikeSquare(
+                (cell.x0 + cell.x1) / 2,
+                (cell.z0 + cell.z1) / 2,
+              );
+              return (
+                <text
+                  key={`hc-${cell.col}-${cell.row}`}
+                  className={
+                    heatCellUsesLightLabel(cell.count, heatMap.maxCount)
+                      ? 'game-pitcher-zones__heat-count game-pitcher-zones__heat-count--on-dense'
+                      : 'game-pitcher-zones__heat-count'
+                  }
+                  x={mid.x}
+                  y={mid.y}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  pointerEvents="none"
+                >
+                  {cell.count}
+                </text>
+              );
+            })
+          : null}
         {mode === 'dots'
           ? pitches.map((p, i) => {
               const { xN, zN } = normalizedPlateLocation(p);
