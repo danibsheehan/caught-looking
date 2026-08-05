@@ -90,16 +90,19 @@ describe('GamePitcherStrikeZones', () => {
     expect(sliderBtn).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('switches to density map and exposes a zone-cell data table', async () => {
+  it('switches to density map without the Locations color key', async () => {
     const user = userEvent.setup();
     render(<GamePitcherStrikeZones pitches={samplePitches} box={box} />);
     const densityBtn = screen.getByRole('button', { name: /^Density$/i });
     expect(densityBtn).toHaveAttribute('aria-pressed', 'false');
     await user.click(densityBtn);
     expect(densityBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/Shade is density only — not pitch type/i)).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Pitch types' })).not.toBeInTheDocument();
     expect(
-      screen.getByText(/Each square is a plate zone; the number is how many pitches/i),
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: /4-Seam Fastball \(FF\)/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /Pitch type filter/i })).toBeInTheDocument();
     expect(
       screen.getByRole('table', { name: /Pitch density map for Casey Pitcher/i }),
     ).toBeInTheDocument();

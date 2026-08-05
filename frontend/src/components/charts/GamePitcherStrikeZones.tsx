@@ -153,10 +153,10 @@ function PitcherStrikeZoneSvg({
     return segs;
   }, []);
 
-  const labelPitcher = useMemo(() => ({ x: 50, y: 3.2 }), []);
+  const labelPitcher = useMemo(() => ({ x: 50, y: 3.4 }), []);
   const label3b = useMemo(() => projNormToSvgStrikeSquare(-1.28, 1.05), []);
   const label1b = useMemo(() => projNormToSvgStrikeSquare(1.28, 1.05), []);
-  const labelCatcher = useMemo(() => ({ x: 50, y: 98.2 }), []);
+  const labelCatcher = useMemo(() => ({ x: 50, y: 98.4 }), []);
 
   const clearTip = useCallback(() => setTip(null), []);
 
@@ -504,6 +504,7 @@ function OnePitcherCard({
   featured?: boolean;
 }) {
   const titleId = useId();
+  const densityFilterId = useId();
   const [isolatedCode, setIsolatedCode] = useState<string | null>(null);
   const [plotMode, setPlotMode] = useState<PlotMode>('dots');
 
@@ -515,8 +516,6 @@ function OnePitcherCard({
     }
     return row.pitches.filter((p) => resolvePitchCode(p) === isolatedCode);
   }, [row.pitches, isolatedCode]);
-
-  const heatFill = isolatedCode != null ? pitchHexForCode(isolatedCode) : 'var(--accent)';
 
   return (
     <article
@@ -543,9 +542,10 @@ function OnePitcherCard({
       />
       {plotMode === 'heat' ? (
         <p className="muted small game-pitcher-zones__mode-hint">
-          Each square is a plate zone; the number is how many pitches landed there
-          {isolatedCode ? ' for the selected pitch type' : ' (all pitch types)'}. Pitch-type colors
-          apply to Locations — tap a type below to filter this map.
+          Each square is a plate zone; brighter cells (and higher numbers) mean more pitches landed
+          there
+          {isolatedCode ? ' for the selected pitch type' : ''}. Shade is density only — not pitch
+          type.
         </p>
       ) : (
         <p className="muted small game-pitcher-zones__mode-hint">
@@ -556,7 +556,7 @@ function OnePitcherCard({
         pitches={plotPitches}
         repertoirePitches={row.pitches}
         mode={plotMode}
-        heatFill={heatFill}
+        heatFill="var(--accent)"
         variant={featured ? 'featured' : 'default'}
         isolated={isolatedCode != null}
         ariaLabel={
@@ -565,37 +565,55 @@ function OnePitcherCard({
             : `Pitch locations for ${row.name}`
         }
       />
-      <ul
-        className="game-pitcher-zones__legend"
-        aria-label={plotMode === 'heat' ? 'Filter density by pitch type' : 'Pitch types'}
-      >
-        {legendGroups.map((g) => {
-          const share = shareByCode.get(g.code) ?? 0;
-          const swatchOpacity = opacityFromUsageShare(share);
-          const active = isolatedCode === g.code;
-          return (
-            <li key={g.code} className="game-pitcher-zones__legend-item">
-              <button
-                type="button"
-                className={`game-pitcher-zones__legend-btn${active ? ' game-pitcher-zones__legend-btn--active' : ''}`}
-                aria-pressed={active}
-                onClick={() => setIsolatedCode((prev) => (prev === g.code ? null : g.code))}
-              >
-                <span
-                  className="game-pitcher-zones__legend-swatch"
-                  style={{
-                    backgroundColor: pitchHexForCode(g.code),
-                    opacity: swatchOpacity,
-                  }}
-                />
-                <span>
-                  {g.label} <span className="muted">({g.pitches.length})</span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      {plotMode === 'heat' ? (
+        <div className="game-pitcher-zones__density-filter">
+          <label className="game-pitcher-zones__density-filter-label" htmlFor={densityFilterId}>
+            Pitch type filter
+          </label>
+          <select
+            id={densityFilterId}
+            className="game-pitcher-zones__density-filter-select"
+            value={isolatedCode ?? ''}
+            onChange={(e) => setIsolatedCode(e.target.value ? e.target.value : null)}
+          >
+            <option value="">All pitch types</option>
+            {legendGroups.map((g) => (
+              <option key={g.code} value={g.code}>
+                {g.label} ({g.pitches.length})
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <ul className="game-pitcher-zones__legend" aria-label="Pitch types">
+          {legendGroups.map((g) => {
+            const share = shareByCode.get(g.code) ?? 0;
+            const swatchOpacity = opacityFromUsageShare(share);
+            const active = isolatedCode === g.code;
+            return (
+              <li key={g.code} className="game-pitcher-zones__legend-item">
+                <button
+                  type="button"
+                  className={`game-pitcher-zones__legend-btn${active ? ' game-pitcher-zones__legend-btn--active' : ''}`}
+                  aria-pressed={active}
+                  onClick={() => setIsolatedCode((prev) => (prev === g.code ? null : g.code))}
+                >
+                  <span
+                    className="game-pitcher-zones__legend-swatch"
+                    style={{
+                      backgroundColor: pitchHexForCode(g.code),
+                      opacity: swatchOpacity,
+                    }}
+                  />
+                  <span>
+                    {g.label} <span className="muted">({g.pitches.length})</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </article>
   );
 }

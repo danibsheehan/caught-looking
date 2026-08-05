@@ -483,26 +483,49 @@
   }
 
   &__svg-label {
-    fill: var(--text-h);
-    opacity: 0.92;
+    fill: #f4f8fc;
+    opacity: 1;
     font-family: var(--sans, system-ui, sans-serif);
-    font-weight: 600;
+    font-weight: 700;
     paint-order: stroke fill;
-    stroke: var(--bg);
-    stroke-width: 0.7px;
+    stroke: #070b10;
+    stroke-width: 1.35px;
+    stroke-linejoin: round;
 
     &--pitcher {
-      font-size: 3.4px;
+      font-size: 3.8px;
     }
 
     &--corner {
-      font-size: 3.1px;
+      font-size: 3.3px;
     }
 
     &--catcher {
-      font-size: 2.85px;
-      opacity: 0.8;
+      font-size: 3.3px;
     }
+  }
+
+  &__density-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0 0 0.35rem;
+    max-width: 22rem;
+  }
+
+  &__density-filter-label {
+    font-size: 0.8rem;
+    color: var(--text-h);
+  }
+
+  &__density-filter-select {
+    font: inherit;
+    color: var(--text-h);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+    padding: 0.4rem 0.5rem;
+    max-width: 100%;
   }
 
   &__legend {
