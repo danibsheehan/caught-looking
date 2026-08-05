@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gameStatusSettled } from './gameStatus';
+import { gameStatusLabel, gameStatusSettled } from './gameStatus';
 
 describe('gameStatusSettled', () => {
   it('treats empty as unsettled', () => {
@@ -22,5 +22,18 @@ describe('gameStatusSettled', () => {
     expect(gameStatusSettled('Warmup')).toBe(false);
     expect(gameStatusSettled('Pre-Game')).toBe(false);
     expect(gameStatusSettled('Delayed')).toBe(false);
+  });
+});
+
+describe('gameStatusLabel', () => {
+  it('returns trimmed MLB status when present', () => {
+    expect(gameStatusLabel(' Final ')).toBe('Final');
+    expect(gameStatusLabel('In Progress')).toBe('In Progress');
+  });
+
+  it('uses Live when status is missing (matches unsettled polling)', () => {
+    expect(gameStatusLabel(undefined)).toBe('Live');
+    expect(gameStatusLabel('')).toBe('Live');
+    expect(gameStatusLabel('   ')).toBe('Live');
   });
 });

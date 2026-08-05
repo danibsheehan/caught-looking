@@ -15,6 +15,15 @@ export function gameStatusSettled(status: string | null | undefined): boolean {
   );
 }
 
+/**
+ * Badge copy for the score strip. Empty status must not read as Final — polling treats
+ * blank/unknown as unsettled (same as {@link gameStatusSettled}).
+ */
+export function gameStatusLabel(status: string | null | undefined): string {
+  const s = (status ?? '').trim();
+  return s || 'Live';
+}
+
 /** Align with `CACHE_TTL_LIVE_SCORES` (45s) — polling sooner mostly hits the API cache. */
 export const LIVE_GAME_POLL_INTERVAL_MS = 45_000;
 
