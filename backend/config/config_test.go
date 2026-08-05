@@ -20,6 +20,7 @@ var loadEnvKeys = []string{
 	"MLB_LEAGUE_IDS",
 	"RATE_LIMIT_REQUESTS",
 	"RATE_LIMIT_WINDOW",
+	"HTTP_MAX_BODY_BYTES",
 	"MLB_MAX_QPS",
 	"MLB_HTTP_TIMEOUT",
 	"SAVANT_HTTP_TIMEOUT",
@@ -57,6 +58,7 @@ func TestLoad_defaults(t *testing.T) {
 		DefaultLeagueIDs:       "103,104",
 		RateLimitRequests:      120,
 		RateLimitWindow:        time.Minute,
+		HTTPMaxBodyBytes:       64 << 10,
 		MLBMaxQPS:              20,
 		MLBHTTPTimeout:         15 * time.Second,
 		SavantMaxQPS:           5,
@@ -197,6 +199,36 @@ func TestLoad_invalidRATE_LIMIT_WINDOWIgnored(t *testing.T) {
 	}
 }
 
+func TestLoad_HTTP_MAX_BODY_BYTES(t *testing.T) {
+	resetLoadEnv(t)
+	t.Setenv("HTTP_MAX_BODY_BYTES", "1024")
+
+	got := Load()
+	if got.HTTPMaxBodyBytes != 1024 {
+		t.Fatalf("HTTPMaxBodyBytes: got %d want 1024", got.HTTPMaxBodyBytes)
+	}
+}
+
+func TestLoad_HTTP_MAX_BODY_BYTES_zeroDisables(t *testing.T) {
+	resetLoadEnv(t)
+	t.Setenv("HTTP_MAX_BODY_BYTES", "0")
+
+	got := Load()
+	if got.HTTPMaxBodyBytes != 0 {
+		t.Fatalf("HTTPMaxBodyBytes: got %d want 0", got.HTTPMaxBodyBytes)
+	}
+}
+
+func TestLoad_invalidHTTP_MAX_BODY_BYTESIgnored(t *testing.T) {
+	resetLoadEnv(t)
+	t.Setenv("HTTP_MAX_BODY_BYTES", "-1")
+
+	got := Load()
+	if got.HTTPMaxBodyBytes != 64<<10 {
+		t.Fatalf("HTTPMaxBodyBytes: got %d want default 64KiB", got.HTTPMaxBodyBytes)
+	}
+}
+
 func TestLoad_MLB_MAX_QPS(t *testing.T) {
 	resetLoadEnv(t)
 	t.Setenv("MLB_MAX_QPS", "35.5")
@@ -273,6 +305,12 @@ func TestConfig_Validate(t *testing.T) {
 	bad.RateLimitWindow = 0
 	if err := bad.Validate(); err == nil {
 		t.Fatal("expected error for rate limit window")
+	}
+
+	bad = cfg
+	bad.HTTPMaxBodyBytes = -1
+	if err := bad.Validate(); err == nil {
+		t.Fatal("expected error for negative HTTP_MAX_BODY_BYTES")
 	}
 
 	bad = cfg

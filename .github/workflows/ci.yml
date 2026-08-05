@@ -238,3 +238,43 @@ jobs:
             - name: Playwright smoke
               if: github.event_name != 'pull_request' || steps.filter.outputs.e2e == 'true'
               run: npm run test:e2e
+
+    # Optional (not a required status check): SPDX SBOM via Syft for supply-chain visibility.
+    sbom:
+        name: SBOM (Syft)
+        if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+            - name: Detect SBOM-relevant changes
+              if: github.event_name == 'pull_request'
+              id: filter
+              uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+              with:
+                  filters: |
+                      sbom:
+                        - 'backend/go.mod'
+                        - 'backend/go.sum'
+                        - 'frontend/package.json'
+                        - 'frontend/package-lock.json'
+                        - '.github/workflows/ci.yml'
+
+            - name: Skip SBOM (path filter)
+              if: github.event_name == 'pull_request' && steps.filter.outputs.sbom != 'true'
+              run: echo 'No dependency-manifest paths changed; skipping SBOM.'
+
+            - name: Generate SPDX SBOM
+              if: github.event_name != 'pull_request' || steps.filter.outputs.sbom == 'true'
+              uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+              with:
+                  path: .
+                  format: spdx-json
+                  upload-artifact: true
+                  artifact-name: caught-looking-sbom
+                  upload-artifact-retention: 14
+                  upload-release-assets: false
+                  dependency-snapshot: false

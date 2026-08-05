@@ -13,12 +13,13 @@ description: >-
 
 Project-specific hardening for the chi API. For a diff-wide security pass, also use Cursor’s **`/review-security`** (or ask for a security review).
 
-**Threat model:** **`docs/threat-model.md`** — assets, trust boundaries, controls, residual risks. Update it in the **same change** when CORS allowlisting, rate-limit trust (`RemoteAddr` vs forwarded headers), outbound URL policy, generic upstream error responses, or QPS/instance abuse assumptions change. Do not duplicate the full threat table into this skill.
+**Threat model:** **`docs/threat-model.md`** — assets, trust boundaries, controls, residual risks. Update it in the **same change** when CORS allowlisting, rate-limit trust (`RemoteAddr` vs forwarded headers), inbound body caps, outbound URL policy, generic upstream error responses, or QPS/instance abuse assumptions change. Do not duplicate the full threat table into this skill.
 
 ## Defaults already in the stack
 
 - **CORS**: `middleware.CORS` — allowlist origins from config; methods GET/HEAD/OPTIONS; no credentials.
 - **Rate limit**: `middleware.HTTPRateLimit` on the API group — keyed by **`Request.RemoteAddr`** (forwarded IP headers intentionally ignored unless a trusted proxy rewrites RemoteAddr).
+- **Inbound body cap**: `middleware.MaxBodyBytes` globally — `HTTPMaxBodyBytes` / `HTTP_MAX_BODY_BYTES` (default 64 KiB; `0` disables). Oversize `Content-Length` → **413** `{"error":"request body too large"}`; `http.MaxBytesReader` still wraps `Body`.
 - **Recovery / request IDs**: chi `Recoverer` + `RequestID`.
 - **Outbound**: `MLBClient` / Savant clients use configured base URLs + path starting with `/` (not caller-controlled absolute URLs). QPS limits and HTTP timeouts from **`config.Config`**.
 
@@ -49,6 +50,7 @@ Extend behavior in **`backend/middleware/`** and **`backend/config/`** — do no
 
 - Tightening CORS: update **`AllowedOrigins`** loading in **`config.Load`** and keep browser origins explicit.
 - Rate limits: `RateLimitRequests` / `RateLimitWindow` (0 disables). Keep JSON 429 body shape: `{"error":"too many requests"}`.
+- Body size: `HTTPMaxBodyBytes` / `HTTP_MAX_BODY_BYTES` (0 disables). Keep JSON 413 body shape: `{"error":"request body too large"}`.
 - After middleware changes: add/adjust tests in **`backend/middleware/*_test.go`**.
 
 ## Verification

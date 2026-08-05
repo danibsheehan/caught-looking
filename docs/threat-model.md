@@ -39,9 +39,9 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 | Anonymous client | Force expensive upstream fan-out | TTL cache + singleflight; outbound `MLB_MAX_QPS` / `SAVANT_MAX_QPS`; Cloud Run `max-instances` capped (default 2) |
 | Anonymous client | Probe for error leakage / internals | Generic 502/504 JSON to clients; detail logged with `request_id` only |
 | Anonymous client | Scrape process metrics | `GET /metrics` (Prometheus default collectors) is **outside** the rate-limit group like `/health`. Prefer network/IAM restriction on Cloud Run for production scrapes; avoid high-cardinality custom labels |
-| Anonymous client | Oversized inbound body (future POST / misuse) | Routes are mostly GET today; **inbound** body size middleware is a planned follow-up. Outbound bodies already capped (`maxUpstreamBodyBytes`, 32 MiB) |
+| Anonymous client | Oversized inbound body (misuse / future POST) | Global `middleware.MaxBodyBytes` via `HTTP_MAX_BODY_BYTES` (default 64 KiB; `0` disables); early 413 when `Content-Length` exceeds the cap, plus `http.MaxBytesReader` on `Body`. Outbound bodies capped separately (`maxUpstreamBodyBytes`, 32 MiB) |
 | Misconfigured CORS | Cross-origin browser calls from unexpected sites | Explicit `ALLOWED_ORIGINS` / deploy `CORS_ALLOWED_ORIGINS` allowlist |
-| Compromised dependency | RCE / supply chain | CI `govulncheck` (Go) and `npm audit --audit-level=high` (frontend); Dependabot |
+| Compromised dependency | RCE / supply chain | CI `govulncheck` (Go) and `npm audit --audit-level=high` (frontend); optional Syft SBOM artifact on CI; Dependabot |
 | Operator / deploy | Accidental spend | Scale-to-zero Cloud Run, low max instances, Artifact Registry cleanup; GCP billing budget recommended (ops, not code) |
 
 ## Explicit non-goals
@@ -56,12 +56,11 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 1. **Per-process QPS × instance count** — two warm Cloud Run instances can approach 2× outbound budget. Keep max instances low or add a shared limiter only if traffic requires it.
 2. **Unauthenticated read API** — anyone can call Cloud Run URL directly; rate limits and QPS are the primary brakes.
 3. **In-memory cache only** — stampede risk on cold start / new instance; singleflight helps within one process only.
-4. **No inbound body limit middleware yet** — low urgency while handlers are GET-only; add before introducing large POST bodies.
-5. **Upstream outages** — reflected as generic gateway errors; no paid APM required for this model.
+4. **Upstream outages** — reflected as generic gateway errors; no paid APM required for this model.
 
 ## Verification expectations
 
-When changing CORS, rate limits, upstream clients, or cache keys, update this document if the threat or control changes, and run:
+When changing CORS, rate limits, inbound body caps, upstream clients, or cache keys, update this document if the threat or control changes, and run:
 
 ```bash
 make test-backend   # includes govulncheck
