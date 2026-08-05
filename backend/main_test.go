@@ -144,6 +144,43 @@ func TestSwaggerUI(t *testing.T) {
 	}
 }
 
+func TestBodyTooLargeIncludesCORSHeaders(t *testing.T) {
+	cfg := config.Config{
+		AllowedOrigins:   []string{"http://localhost:5173"},
+		HTTPMaxBodyBytes: 64,
+	}
+	h := handlers.New(
+		cfg,
+		services.NewTTLCache(),
+		services.NewMLBClient("http://127.0.0.1:9", 0, 0),
+		services.NewSavantClient("http://127.0.0.1:9", 0, 0),
+	)
+	srv := httptest.NewServer(newRouter(cfg, h))
+	t.Cleanup(srv.Close)
+
+	// GET is the API surface; oversized Content-Length still trips MaxBodyBytes.
+	body := strings.Repeat("x", 200)
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/teams", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Origin", "http://localhost:5173")
+	req.ContentLength = int64(len(body))
+
+	res, err := srv.Client().Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = res.Body.Close() })
+
+	if res.StatusCode != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status: got %d want %d", res.StatusCode, http.StatusRequestEntityTooLarge)
+	}
+	if got := res.Header.Get("Access-Control-Allow-Origin"); got != "http://localhost:5173" {
+		t.Fatalf("Access-Control-Allow-Origin: got %q want %q", got, "http://localhost:5173")
+	}
+}
+
 func TestRateLimitIgnoresForwardedForSpoofing(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/teams" {
