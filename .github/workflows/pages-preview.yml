@@ -131,6 +131,7 @@ jobs:
                   npm run build
 
             - name: Publish preview to Cloudflare Pages
+              id: pages
               uses: cloudflare/pages-action@f0a1cd58cd66095dee69bfa18fa5efd1dde93bca # v1
               with:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -140,3 +141,17 @@ jobs:
                   branch: ${{ github.head_ref }}
                   gitHubToken: ${{ secrets.GITHUB_TOKEN }}
                   workingDirectory: frontend
+
+            # Sticky so each push updates one comment instead of spamming the PR.
+            - name: Comment preview URL on PR
+              uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v2 branch
+              with:
+                  header: pages-preview
+                  message: |
+                      ### Cloudflare Pages preview
+
+                      **[Open preview](${{ steps.pages.outputs.alias }})**
+
+                      - Branch alias (stable): ${{ steps.pages.outputs.alias }}
+                      - This commit: ${{ steps.pages.outputs.url }}
+                      - Commit: `${{ github.event.pull_request.head.sha }}`
