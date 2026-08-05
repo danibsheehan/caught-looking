@@ -137,13 +137,14 @@ describe('useAsyncResource', () => {
   it('polls until while() returns false and keeps prior data between polls', async () => {
     vi.useFakeTimers();
     try {
+      type PollPayload = { n: number; done: boolean };
       const fetch = vi
         .fn()
         .mockResolvedValueOnce({ n: 1, done: false })
         .mockResolvedValueOnce({ n: 2, done: true });
 
       const { result } = renderHook(() =>
-        useAsyncResource(
+        useAsyncResource<PollPayload>(
           {
             fetch,
             initialPending: false,
@@ -174,6 +175,7 @@ describe('useAsyncResource', () => {
   it('backs off after poll errors then recovers', async () => {
     vi.useFakeTimers();
     try {
+      type PollPayload = { ok: boolean; done: boolean };
       const fetch = vi
         .fn()
         .mockResolvedValueOnce({ ok: true, done: false })
@@ -181,7 +183,7 @@ describe('useAsyncResource', () => {
         .mockResolvedValueOnce({ ok: true, done: true });
 
       const { result } = renderHook(() =>
-        useAsyncResource(
+        useAsyncResource<PollPayload>(
           {
             fetch,
             initialPending: false,
