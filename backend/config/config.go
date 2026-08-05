@@ -28,6 +28,8 @@ type Config struct {
 	DefaultLeagueIDs  string
 	RateLimitRequests int           // per client IP per window; 0 disables HTTP rate limiting
 	RateLimitWindow   time.Duration // sliding window for RateLimitRequests
+	// HTTPMaxBodyBytes caps inbound request bodies (MaxBytesReader); 0 disables.
+	HTTPMaxBodyBytes  int64
 	MLBMaxQPS         float64       // token-bucket limit for outbound MLB GETs per process; 0 = unlimited
 	MLBHTTPTimeout    time.Duration // per-attempt timeout for outbound MLB GETs; 0 = default (15s)
 	SavantMaxQPS      float64       // token-bucket limit for outbound Savant GETs per process; 0 = unlimited
@@ -57,6 +59,7 @@ func Load() Config {
 		DefaultLeagueIDs:   "103,104",
 		RateLimitRequests:  120,
 		RateLimitWindow:    time.Minute,
+		HTTPMaxBodyBytes:   64 << 10, // 64 KiB
 		MLBMaxQPS:          20,
 		MLBHTTPTimeout:     15 * time.Second,
 		SavantMaxQPS:       5,
@@ -119,6 +122,14 @@ func Load() Config {
 			cfg.RateLimitRequests = n
 		} else {
 			slog.Warn("config ignoring invalid env", "key", "RATE_LIMIT_REQUESTS", "value", v, "err", err)
+		}
+	}
+
+	if v := strings.TrimSpace(os.Getenv("HTTP_MAX_BODY_BYTES")); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n >= 0 {
+			cfg.HTTPMaxBodyBytes = n
+		} else {
+			slog.Warn("config ignoring invalid env", "key", "HTTP_MAX_BODY_BYTES", "value", v)
 		}
 	}
 
@@ -186,6 +197,9 @@ func (c Config) Validate() error {
 	}
 	if c.RateLimitRequests > 0 && c.RateLimitWindow <= 0 {
 		errs = append(errs, "RATE_LIMIT_WINDOW must be > 0 when RATE_LIMIT_REQUESTS > 0")
+	}
+	if c.HTTPMaxBodyBytes < 0 {
+		errs = append(errs, "HTTP_MAX_BODY_BYTES must be >= 0")
 	}
 	if c.MLBMaxQPS < 0 {
 		errs = append(errs, "MLB_MAX_QPS must be >= 0")

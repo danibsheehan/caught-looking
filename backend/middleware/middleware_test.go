@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -169,4 +170,82 @@ func TestWrapResponseWriter_UnwrapAndFlush(t *testing.T) {
 	if _, _, err := ww.Hijack(); err == nil {
 		t.Fatal("expected Hijack error for ResponseRecorder")
 	}
+}
+
+func TestMaxBodyBytes_contentLengthOverLimit(t *testing.T) {
+	var innerCalled bool
+	h := MaxBodyBytes(8)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		innerCalled = true
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	body := strings.Repeat("x", 16)
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	req.ContentLength = int64(len(body))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	if innerCalled {
+		t.Fatal("inner handler should not run when Content-Length exceeds cap")
+	}
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status: got %d want 413", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "request body too large") {
+		t.Fatalf("body: %q", rec.Body.String())
+	}
+}
+
+func TestMaxBodyBytes_underLimitAllowsHandler(t *testing.T) {
+	var read int
+	h := MaxBodyBytes(64)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("ReadAll: %v", err)
+		}
+		read = len(b)
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	body := "hello"
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d", rec.Code)
+	}
+	if read != len(body) {
+		t.Fatalf("read: got %d want %d", read, len(body))
+	}
+}
+
+func TestMaxBodyBytes_disabledNoops(t *testing.T) {
+	var n int
+	h := MaxBodyBytes(0)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n++
+		w.WriteHeader(http.StatusOK)
+	}))
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(strings.Repeat("y", 1024)))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || n != 1 {
+		t.Fatalf("status=%d n=%d", rec.Code, n)
+	}
+}
+
+func TestMaxBodyBytes_readExceedsWithoutContentLength(t *testing.T) {
+	h := MaxBodyBytes(8)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := io.ReadAll(r.Body)
+		if err == nil {
+			t.Error("expected MaxBytesReader error")
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// ContentLength -1: chunked-style unknown length; MaxBytesReader enforces on read.
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(strings.Repeat("z", 32)))
+	req.ContentLength = -1
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
 }
