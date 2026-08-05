@@ -10,7 +10,12 @@ export default defineConfig([
   globalIgnores(['dist', 'coverage', 'playwright-report', 'test-results', 'blob-report']),
   ...tseslint.configs.recommended,
   {
-    files: ['vite.config.ts', 'playwright.config.ts', 'e2e/**/*.{ts,tsx}'],
+    files: [
+      'vite.config.ts',
+      'playwright.config.ts',
+      'playwright.contract.config.ts',
+      'e2e/**/*.{ts,tsx}',
+    ],
     languageOptions: {
       globals: globals.node,
     },
@@ -24,7 +29,7 @@ export default defineConfig([
   },
   {
     files: ['**/*.{ts,tsx}'],
-    ignores: ['playwright.config.ts', 'e2e/**', 'vite.config.ts'],
+    ignores: ['playwright.config.ts', 'playwright.contract.config.ts', 'e2e/**', 'vite.config.ts'],
     extends: [
       js.configs.recommended,
       reactHooks.configs.flat.recommended,

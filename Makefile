@@ -3,7 +3,7 @@ PROJECT_ROOT := $(CURDIR)
 COVERAGE_MIN ?= 0.50
 CHECK_COVERAGE := python3 "$(PROJECT_ROOT)/.github/scripts/check_cobertura_line_rate.py"
 
-.PHONY: dev backend frontend install check-openapi check-stack-docs test-backend test-backend-race test-frontend test-e2e cover-backend cover-backend-html cover-frontend ci-local ci-local-frontend ci-local-backend
+.PHONY: dev backend frontend install check-openapi check-stack-docs test-backend test-backend-race test-frontend test-e2e test-e2e-contract cover-backend cover-backend-html cover-frontend ci-local ci-local-frontend ci-local-backend
 
 ## dev: run API (:8080) and Vite dev server together (one terminal)
 dev:
@@ -49,6 +49,10 @@ test-frontend:
 ## test-e2e: Playwright Chromium smoke (build + preview; stubbed /api)
 test-e2e:
 	cd "$(PROJECT_ROOT)/frontend" && npm run test:e2e
+
+## test-e2e-contract: Playwright against real Go API + fixture MLB/Savant (no live upstream)
+test-e2e-contract:
+	cd "$(PROJECT_ROOT)/frontend" && npm run test:e2e:contract
 
 ## cover-frontend: Vitest with V8 coverage report (frontend/coverage/)
 cover-frontend:
