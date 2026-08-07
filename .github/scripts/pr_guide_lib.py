@@ -32,8 +32,13 @@ AREA_DISPLAY = {
 META_START = "<!-- pr-guide:meta -->"
 META_END = "<!-- /pr-guide:meta -->"
 
-SUMMARY_PROMPT = "<!-- What changed and why (user-visible behavior, API, or data). -->"
-VERIFY_PROMPT = "<!-- Suggested starting points — edit or replace: -->"
+SUMMARY_PROMPT = (
+    "<!--\n"
+    "Lead with why (motivation / problem), then what changed for users, API, or data.\n"
+    "Prefer 1–3 short bullets. File lists alone are not enough.\n"
+    "-->"
+)
+VERIFY_PROMPT = "<!-- Suggested starting points — edit or replace with user-facing steps when useful: -->"
 
 LEGACY_TEMPLATE_MARKERS = (
     "## Checklist",
@@ -162,8 +167,8 @@ def has_meta_block(body: str) -> bool:
 def build_meta_block(areas: set[str]) -> str:
     return (
         f"**Touches:** {format_touches(areas)}\n\n"
-        "Checklist and reviewer focus: see the **PR guide** comment on this PR "
-        "(updated on each push)."
+        "Checklist and reviewer focus: see the sticky **PR guide** comment on this PR "
+        "(posted on open / reopen / ready-for-review)."
     )
 
 
@@ -178,6 +183,8 @@ def build_full_body(areas: set[str], verify: list[str]) -> str:
             "## How to verify",
             "",
             *verify_lines,
+            "",
+            "_Suggested local check:_ `make ci-local`",
             "",
             META_START,
             build_meta_block(areas),

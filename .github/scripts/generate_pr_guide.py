@@ -37,8 +37,9 @@ def main() -> int:
     lines: list[str] = [
         "## PR guide",
         "",
-        "_Auto-generated from changed paths. Fill in **Summary** and **How to verify** in the PR "
-        "description above._",
+        "_Auto-generated from changed paths. Prefer a why-first **Summary** in the PR "
+        "description above (motivation, then what changed); use this comment for path-based "
+        "checklist and suggested verify commands._",
         "",
         f"**Touches:** {format_touches(areas)}",
     ]
