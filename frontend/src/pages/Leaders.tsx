@@ -153,9 +153,9 @@ export default function Leaders() {
                   patchUrl({ season: n });
                 }
               }}
-              onBlur={() => {
+              onBlur={(e) => {
                 editingSeasonRef.current = false;
-                const next = clampLeadersSeason(Number(seasonText));
+                const next = clampLeadersSeason(Number(e.currentTarget.value));
                 setSeasonText(String(next));
                 if (next !== season) patchUrl({ season: next });
               }}

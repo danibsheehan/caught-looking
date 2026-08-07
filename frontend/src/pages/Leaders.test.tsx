@@ -182,4 +182,27 @@ describe('Leaders', () => {
       asyncWait,
     );
   });
+
+  it('commits the input DOM value on blur, not a stale draft', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/leaders?group=hitting&category=homeRuns&season=2026']}>
+        <Leaders />
+      </MemoryRouter>,
+    );
+
+    const input = await screen.findByLabelText('Season', {}, asyncWait);
+    await user.clear(input);
+    await user.type(input, '2025');
+    await user.tab();
+    expect(input).toHaveValue(2025);
+    await waitFor(
+      () =>
+        expect(api.fetchLeaders).toHaveBeenCalledWith(
+          expect.objectContaining({ season: 2025 }),
+          expect.any(AbortSignal),
+        ),
+      asyncWait,
+    );
+  });
 });
