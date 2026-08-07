@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import LeadersTop10Bar from '../components/charts/LeadersTop10Bar';
 import { useLeaders } from '../hooks/useLeaders';
@@ -6,8 +6,9 @@ import type { LeadersQuery } from '../types/api.compat';
 import {
   CATEGORIES_BY_GROUP,
   DEFAULT_CATEGORY,
-  DEFAULT_LEADERS_SEASON,
   buildLeadersSearchParams,
+  clampLeadersSeason,
+  leadersSearchParamsNormalized,
   parseLeadersSearchParams,
 } from '../utils/leadersSearchParams';
 
@@ -38,6 +39,8 @@ export default function Leaders() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlState = useMemo(() => parseLeadersSearchParams(searchParams), [searchParams]);
   const { group, category, season } = urlState;
+  const [seasonText, setSeasonText] = useState(() => String(season));
+  const editingSeasonRef = useRef(false);
 
   const patchUrl = useCallback(
     (patch: Partial<typeof urlState>) => {
@@ -53,9 +56,15 @@ export default function Leaders() {
   );
 
   useEffect(() => {
+    if (!editingSeasonRef.current) {
+      setSeasonText(String(season));
+    }
+  }, [season]);
+
+  useEffect(() => {
     setSearchParams(
       (prev) => {
-        if (prev.get('group') || prev.get('category') || prev.get('season')) return prev;
+        if (leadersSearchParamsNormalized(prev)) return prev;
         return buildLeadersSearchParams(parseLeadersSearchParams(prev), prev);
       },
       { replace: true },
@@ -132,9 +141,23 @@ export default function Leaders() {
               inputMode="numeric"
               min={1900}
               max={2100}
-              value={season}
+              value={seasonText}
+              onFocus={() => {
+                editingSeasonRef.current = true;
+              }}
               onChange={(e) => {
-                patchUrl({ season: Number(e.target.value) || DEFAULT_LEADERS_SEASON });
+                const raw = e.target.value;
+                setSeasonText(raw);
+                const n = Number(raw);
+                if (Number.isInteger(n) && n >= 1900 && n <= 2100) {
+                  patchUrl({ season: n });
+                }
+              }}
+              onBlur={() => {
+                editingSeasonRef.current = false;
+                const next = clampLeadersSeason(Number(seasonText));
+                setSeasonText(String(next));
+                if (next !== season) patchUrl({ season: next });
               }}
             />
           </label>

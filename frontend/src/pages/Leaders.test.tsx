@@ -147,4 +147,39 @@ describe('Leaders', () => {
       asyncWait,
     );
   });
+
+  it('rewrites invalid season query params to the default year', async () => {
+    render(
+      <MemoryRouter initialEntries={['/leaders?group=hitting&category=homeRuns&season=abc']}>
+        <Leaders />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByLabelText('Season', {}, asyncWait)).toHaveValue(2026);
+  });
+
+  it('keeps partial season edits while typing', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/leaders?group=hitting&category=homeRuns&season=2026']}>
+        <Leaders />
+      </MemoryRouter>,
+    );
+
+    const input = await screen.findByLabelText('Season', {}, asyncWait);
+    await user.clear(input);
+    await user.type(input, '202');
+    expect(input).toHaveValue(202);
+
+    await user.type(input, '4');
+    expect(input).toHaveValue(2024);
+    await waitFor(
+      () =>
+        expect(api.fetchLeaders).toHaveBeenCalledWith(
+          expect.objectContaining({ season: 2024 }),
+          expect.any(AbortSignal),
+        ),
+      asyncWait,
+    );
+  });
 });
