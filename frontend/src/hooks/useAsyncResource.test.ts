@@ -213,4 +213,107 @@ describe('useAsyncResource', () => {
       vi.useRealTimers();
     }
   });
+
+  it('skips poll fetches while the tab is hidden and refreshes on visible', async () => {
+    vi.useFakeTimers();
+    let visibility: 'visible' | 'hidden' | 'prerender' = 'visible';
+    const visibilityDesc = Object.getOwnPropertyDescriptor(Document.prototype, 'visibilityState');
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => visibility,
+    });
+
+    try {
+      type PollPayload = { n: number; done: boolean };
+      let seq = 0;
+      const fetch = vi.fn().mockImplementation(async () => {
+        seq += 1;
+        return { n: seq, done: false };
+      });
+
+      const { result } = renderHook(() =>
+        useAsyncResource<PollPayload>(
+          {
+            fetch,
+            initialPending: false,
+            poll: {
+              intervalMs: 1_000,
+              while: (data) => !data.done,
+            },
+          },
+          [],
+        ),
+      );
+
+      await vi.waitFor(() => expect(result.current.data?.n).toBe(1));
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      visibility = 'hidden';
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      await vi.advanceTimersByTimeAsync(3_000);
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      visibility = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      await vi.waitFor(() => expect(result.current.data?.n).toBe(2));
+      expect(fetch).toHaveBeenCalledTimes(2);
+    } finally {
+      if (visibilityDesc) {
+        Object.defineProperty(Document.prototype, 'visibilityState', visibilityDesc);
+      } else {
+        Reflect.deleteProperty(document, 'visibilityState');
+      }
+      vi.useRealTimers();
+    }
+  });
+
+  it('still polls when hidden if pauseWhenHidden is false', async () => {
+    vi.useFakeTimers();
+    let visibility: 'visible' | 'hidden' | 'prerender' = 'visible';
+    const visibilityDesc = Object.getOwnPropertyDescriptor(Document.prototype, 'visibilityState');
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => visibility,
+    });
+
+    try {
+      type PollPayload = { n: number; done: boolean };
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ n: 1, done: false })
+        .mockResolvedValueOnce({ n: 2, done: false });
+
+      renderHook(() =>
+        useAsyncResource<PollPayload>(
+          {
+            fetch,
+            initialPending: false,
+            poll: {
+              intervalMs: 1_000,
+              pauseWhenHidden: false,
+              while: (data) => !data.done,
+            },
+          },
+          [],
+        ),
+      );
+
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+
+      visibility = 'hidden';
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    } finally {
+      if (visibilityDesc) {
+        Object.defineProperty(Document.prototype, 'visibilityState', visibilityDesc);
+      } else {
+        Reflect.deleteProperty(document, 'visibilityState');
+      }
+      vi.useRealTimers();
+    }
+  });
 });

@@ -143,4 +143,27 @@ describe('GameDetail', () => {
 
     await waitFor(() => expect(api.fetchGameBoxscore).toHaveBeenCalled(), asyncWait);
   });
+
+  it('shows live-poll copy when the game is unsettled', async () => {
+    api.fetchGameBoxscore.mockResolvedValue({ ...api.box, status: 'In Progress' });
+
+    renderGameDetail('/games/662000');
+
+    expect(
+      await screen.findByText(
+        /Live game — box score and timeline refresh about every 45 seconds/i,
+        {},
+        asyncWait,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('hides live-poll copy when the game is Final', async () => {
+    renderGameDetail('/games/662000');
+
+    await screen.findByRole('heading', { level: 2, name: 'Team totals' }, asyncWait);
+    expect(
+      screen.queryByText(/Live game — box score and timeline refresh about every 45 seconds/i),
+    ).not.toBeInTheDocument();
+  });
 });

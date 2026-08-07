@@ -6,6 +6,7 @@ import GameStatcastSpray from '../components/charts/GameStatcastSpray';
 const GameStatcastScatter = lazy(() => import('../components/charts/GameStatcastScatter'));
 import GameBoxscorePanel from '../components/game/GameBoxscorePanel';
 import { useGameDetailData } from '../hooks/useGameDetailData';
+import { gameStatusSettled } from '../utils/gameStatus';
 
 export default function GameDetail() {
   const { gamePk: gamePkParam } = useParams();
@@ -18,6 +19,7 @@ export default function GameDetail() {
   }, [gamePkParam]);
 
   const { box, statcast, pitches } = useGameDetailData(gamePk);
+  const livePolling = Boolean(box.data && !gameStatusSettled(box.data.status));
 
   const backTo = useMemo(() => {
     if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -42,6 +44,12 @@ export default function GameDetail() {
           </p>
           <h1>Box score</h1>
           <p className="muted">Team totals, pitching and batting lines, and runs by inning.</p>
+          {livePolling ? (
+            <p className="muted small">
+              Live game — box score and timeline refresh about every 45 seconds (paused while this
+              tab is hidden).
+            </p>
+          ) : null}
         </div>
       </header>
 

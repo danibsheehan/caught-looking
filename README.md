@@ -231,6 +231,20 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 | **Games** | Date slate + per-game timeline / boxscore / Statcast; live poll (paused when tab hidden); pitch dots or zone density | Slate `date` / optional `team` |
 | **Docs** | [OpenAPI/Redoc](https://docs.caught-looking.com/) from `backend/apidocs/openapi.yaml` | — |
 
+### Live game polling (demo notes)
+
+On **Game Detail**, box score and inning timeline refresh while the game is unsettled. Interval matches live cache TTL (**45s** / `CACHE_TTL_LIVE_SCORES`); Statcast stays one-shot.
+
+| Behavior | Why it matters in an interview |
+| :--- | :--- |
+| Poll only while status is unsettled | Aligns SPA refresh with adaptive API TTLs — polling faster mostly hits the in-process cache |
+| Pause when the tab is hidden | Avoids burning Cloud Run / upstream QPS when nobody is watching |
+| Immediate refresh on tab visible | Board is not stale after switching back |
+| Stop on Final / postponed / cancelled | Same settle idea as backend TTLs (`gameStatusSettled`) |
+| Error backoff (capped) | Transient upstream blips do not stampede retries |
+
+**Demo script:** open a live (or fixture-unsettled) game → Network shows boxscore/timeline on ~45s cadence → switch to another tab → polls stop → return → one immediate refresh. Hook: `useAsyncResource` `poll` + `pauseWhenHidden` (default on). See [ADR 0001](docs/adr/0001-cache-ttls.md).
+
 ---
 
 ## Tech stack
