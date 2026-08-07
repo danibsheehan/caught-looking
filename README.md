@@ -330,7 +330,7 @@ make install   # once: Go modules + frontend npm dependencies
 make dev       # API on :8080 + Vite dev server (with /api proxy)
 ```
 
-- **API**: [http://127.0.0.1:8080](http://127.0.0.1:8080) — `GET /health` returns `ok`.
+- **API**: [http://127.0.0.1:8080](http://127.0.0.1:8080) — `GET /health` returns `ok`; `GET /metrics` exposes Prometheus text (Go defaults plus cache hit/miss, coalesce, and upstream 429/5xx counters).
 - **Frontend**: Vite (typically [http://localhost:5173](http://localhost:5173)) proxies `/api` to the backend so the browser uses same-origin `/api` in development.
 
 Run services separately if you prefer:

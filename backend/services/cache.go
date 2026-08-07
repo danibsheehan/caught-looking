@@ -15,8 +15,9 @@ type cacheEntry struct {
 
 // cacheLoadResult is the singleflight value for GetOrLoad / GetOrLoadWithTTL.
 type cacheLoadResult struct {
-	body []byte
-	ttl  time.Duration
+	body   []byte
+	ttl    time.Duration
+	loaded bool // true when load() ran (cache miss); false when filled from cache inside the flight
 }
 
 // TTLCache is a concurrent string-keyed cache with per-entry TTL.
@@ -69,27 +70,37 @@ func (c *TTLCache) GetOrLoad(ctx context.Context, key string, ttl time.Duration,
 // TTLs based on parsed payload). Failed loads are not cached.
 func (c *TTLCache) GetOrLoadWithTTL(ctx context.Context, key string, load func(context.Context) ([]byte, time.Duration, error)) ([]byte, time.Duration, error) {
 	if body, rem, ok := c.getWithRemaining(key); ok {
+		recordCacheHit()
 		return body, rem, nil
 	}
 	ch := c.sf.DoChan(key, func() (interface{}, error) {
 		if body, rem, ok := c.getWithRemaining(key); ok {
-			return cacheLoadResult{body: body, ttl: rem}, nil
+			return cacheLoadResult{body: body, ttl: rem, loaded: false}, nil
 		}
 		body, ttl, err := load(context.WithoutCancel(ctx))
 		if err != nil {
+			recordCacheMiss()
 			return nil, err
 		}
+		recordCacheMiss()
 		c.Set(key, body, ttl)
-		return cacheLoadResult{body: body, ttl: ttl}, nil
+		return cacheLoadResult{body: body, ttl: ttl, loaded: true}, nil
 	})
 	select {
 	case <-ctx.Done():
 		return nil, 0, ctx.Err()
 	case res := <-ch:
+		if res.Shared {
+			recordCacheCoalesce()
+		}
 		if res.Err != nil {
 			return nil, 0, res.Err
 		}
 		out := res.Val.(cacheLoadResult)
+		if !out.loaded {
+			// Served from cache inside the flight (lost the race to another loader or prior Set).
+			recordCacheHit()
+		}
 		return out.body, out.ttl, nil
 	}
 }
