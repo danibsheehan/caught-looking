@@ -120,5 +120,10 @@ describe('WinLossChart', () => {
     expect(screen.getByTestId('line-chart')).toHaveAttribute('data-points', '6');
     // 1 and 2 are tied at the peak; reducer chooses latest tied peak because of >=.
     expect(screen.getByTestId('reference-dot')).toHaveAttribute('data-x', '2');
+    expect(
+      screen.getByRole('table', { name: /Rolling win percentage through 2026/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Win %' })).toBeInTheDocument();
+    expect(screen.getAllByRole('cell', { name: '100.0%' }).length).toBeGreaterThanOrEqual(1);
   });
 });

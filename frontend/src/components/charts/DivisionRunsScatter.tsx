@@ -16,6 +16,7 @@ import {
   obsidianTeamChartPairsRegistryPrimary,
 } from '../../utils/mlbTeamColors';
 import { chartCartesianTick } from '../../utils/rechartsAxis';
+import ChartDataTable from './ChartDataTable';
 
 export type DivisionScatterPoint = {
   teamId: number;
@@ -69,6 +70,8 @@ export default function DivisionRunsScatter({ points, focusTeamId }: DivisionRun
     return { domain: [d0, d1] as [number, number], plot: points };
   }, [points]);
 
+  const a11yRows = useMemo(() => plot.map((p) => [p.label, String(p.rs), String(p.ra)]), [plot]);
+
   if (!plot.length) {
     return (
       <p className="muted">
@@ -80,52 +83,59 @@ export default function DivisionRunsScatter({ points, focusTeamId }: DivisionRun
 
   return (
     <div className="chart-frame" style={{ width: '100%', minHeight: 320 }}>
-      <ResponsiveContainer width="100%" height={320}>
-        <ScatterChart margin={{ top: 10, right: 12, left: 4, bottom: 28 }}>
-          <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
-          <XAxis
-            type="number"
-            dataKey="ra"
-            name="Runs allowed"
-            domain={domain}
-            tick={chartCartesianTick}
-            label={{
-              value: 'Runs allowed (season)',
-              position: 'insideBottom',
-              offset: -4,
-              fill: 'var(--muted)',
-              fontSize: 11,
-              fontFamily: 'var(--sans)',
-            }}
-          />
-          <YAxis
-            type="number"
-            dataKey="rs"
-            name="Runs scored"
-            domain={domain}
-            tick={chartCartesianTick}
-            width={48}
-            label={{
-              value: 'Runs scored (season)',
-              angle: -90,
-              position: 'insideLeft',
-              fill: 'var(--muted)',
-              fontSize: 11,
-              fontFamily: 'var(--sans)',
-            }}
-          />
-          <Tooltip cursor={{ strokeDasharray: '3 3' }} content={DivisionRunsTooltip} />
-          <ReferenceLine
-            segment={[
-              { x: domain[0], y: domain[0] },
-              { x: domain[1], y: domain[1] },
-            ]}
-            stroke="var(--border)"
-            strokeDasharray="4 4"
-          />
-          <Scatter data={plot} shape={(props) => scatterDot(props, focusTeamId, inkByTeamId)} />
-        </ScatterChart>
-      </ResponsiveContainer>
+      <div aria-hidden="true">
+        <ResponsiveContainer width="100%" height={320}>
+          <ScatterChart margin={{ top: 10, right: 12, left: 4, bottom: 28 }}>
+            <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
+            <XAxis
+              type="number"
+              dataKey="ra"
+              name="Runs allowed"
+              domain={domain}
+              tick={chartCartesianTick}
+              label={{
+                value: 'Runs allowed (season)',
+                position: 'insideBottom',
+                offset: -4,
+                fill: 'var(--muted)',
+                fontSize: 11,
+                fontFamily: 'var(--sans)',
+              }}
+            />
+            <YAxis
+              type="number"
+              dataKey="rs"
+              name="Runs scored"
+              domain={domain}
+              tick={chartCartesianTick}
+              width={48}
+              label={{
+                value: 'Runs scored (season)',
+                angle: -90,
+                position: 'insideLeft',
+                fill: 'var(--muted)',
+                fontSize: 11,
+                fontFamily: 'var(--sans)',
+              }}
+            />
+            <Tooltip cursor={{ strokeDasharray: '3 3' }} content={DivisionRunsTooltip} />
+            <ReferenceLine
+              segment={[
+                { x: domain[0], y: domain[0] },
+                { x: domain[1], y: domain[1] },
+              ]}
+              stroke="var(--border)"
+              strokeDasharray="4 4"
+            />
+            <Scatter data={plot} shape={(props) => scatterDot(props, focusTeamId, inkByTeamId)} />
+          </ScatterChart>
+        </ResponsiveContainer>
+      </div>
+      <ChartDataTable
+        caption="Division runs scored vs runs allowed."
+        columns={['Team', 'Runs scored', 'Runs allowed']}
+        rows={a11yRows}
+      />
     </div>
   );
 }

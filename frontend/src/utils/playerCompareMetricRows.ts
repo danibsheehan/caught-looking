@@ -68,3 +68,29 @@ export function buildCompareMetricRows(
     };
   });
 }
+
+function formatCompareRaw(key: string, v: number): string {
+  if (!Number.isFinite(v)) return '—';
+  if (key === 'hr' || key === 'rbi') return String(Math.round(v));
+  if (key === 'era' || key === 'whip' || key === 'k9' || key === 'bb9') return v.toFixed(2);
+  return v.toFixed(3);
+}
+
+/** Visually-hidden table rows for the radar (raw season/career values, not pair scores). */
+export function compareMetricA11yRows(
+  payload: PlayersRadarResponse | null,
+  group: 'hitting' | 'pitching',
+): { columns: [string, string, string]; rows: string[][] } | null {
+  const metrics = buildCompareMetricRows(payload, group);
+  if (!metrics.length || !payload?.players || payload.players.length < 2) return null;
+  const nameA = payload.players[0].fullName || 'Player A';
+  const nameB = payload.players[1].fullName || 'Player B';
+  return {
+    columns: ['Metric', nameA, nameB],
+    rows: metrics.map((m) => [
+      m.metric,
+      formatCompareRaw(m.key, m.v1),
+      formatCompareRaw(m.key, m.v2),
+    ]),
+  };
+}

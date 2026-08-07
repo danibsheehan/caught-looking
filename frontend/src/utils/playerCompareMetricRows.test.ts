@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { PlayersRadarResponse } from '../types/api.compat';
 import {
   buildCompareMetricRows,
+  compareMetricA11yRows,
   HITTING_COMPARE_AXES,
   pairScores,
   PITCHING_COMPARE_AXES,
@@ -87,5 +88,23 @@ describe('buildCompareMetricRows', () => {
     const rows = buildCompareMetricRows(payload, 'hitting');
     expect(rows[0]?.v1).toBe(0);
     expect(rows[0]?.v2).toBe(0);
+  });
+});
+
+describe('compareMetricA11yRows', () => {
+  it('returns null when payload cannot build metrics', () => {
+    expect(compareMetricA11yRows(null, 'hitting')).toBeNull();
+  });
+
+  it('builds raw-value columns for both players', () => {
+    const a11y = compareMetricA11yRows(
+      radarPayload({ avg: 0.3, hr: 40 }, { avg: 0.25, hr: 30 }),
+      'hitting',
+    );
+    expect(a11y?.columns).toEqual(['Metric', 'A', 'B']);
+    const avg = a11y?.rows.find((r) => r[0] === 'AVG');
+    expect(avg).toEqual(['AVG', '0.300', '0.250']);
+    const hr = a11y?.rows.find((r) => r[0] === 'HR');
+    expect(hr).toEqual(['HR', '40', '30']);
   });
 });

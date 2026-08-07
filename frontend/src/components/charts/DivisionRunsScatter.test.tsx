@@ -23,5 +23,9 @@ describe('DivisionRunsScatter', () => {
     expect(container.querySelector('.chart-frame')).toBeInTheDocument();
     expect(screen.getByText('Runs allowed (season)')).toBeInTheDocument();
     expect(screen.getByText('Runs scored (season)')).toBeInTheDocument();
+    const table = screen.getByRole('table', { name: /Division runs scored vs runs allowed/i });
+    expect(table).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'NYM' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '400' })).toBeInTheDocument();
   });
 });

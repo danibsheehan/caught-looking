@@ -34,3 +34,23 @@ export function buildPlatoonBarData(
   }
   return rows;
 }
+
+/** Visually-hidden table rows for platoon OPS bars. */
+export function platoonBarA11yRows(
+  player1: PlatoonPlayer | undefined,
+  player2: PlatoonPlayer | undefined,
+  name1: string,
+  name2: string,
+): { columns: [string, string, string, string, string]; rows: string[][] } {
+  const data = buildPlatoonBarData(player1, player2);
+  return {
+    columns: ['Split', name1, `${name1} n`, name2, `${name2} n`],
+    rows: data.map((r) => [
+      r.bucket,
+      r.opsPlayer1.toFixed(3),
+      String(r.sample1),
+      r.opsPlayer2.toFixed(3),
+      String(r.sample2),
+    ]),
+  };
+}

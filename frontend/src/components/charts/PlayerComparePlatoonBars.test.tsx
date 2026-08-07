@@ -28,11 +28,15 @@ const sample: PlayersPlatoonResponse = {
 };
 
 describe('PlayerComparePlatoonBars', () => {
-  it('renders chart legend with player names', () => {
+  it('renders an a11y data table with player OPS splits', () => {
     render(<PlayerComparePlatoonBars data={sample} />);
-    expect(screen.getByText('Player A')).toBeInTheDocument();
-    expect(screen.getByText('Player B')).toBeInTheDocument();
-    expect(screen.getByRole('application')).toBeInTheDocument();
+    const table = screen.getByRole('table', {
+      name: /Platoon OPS splits for Player A and Player B/i,
+    });
+    expect(table).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Player A' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Player B' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '0.900' })).toBeInTheDocument();
   });
 
   it('shows empty state when no splits', () => {

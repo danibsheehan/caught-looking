@@ -13,7 +13,8 @@ import {
 import type { PlayersPlatoonResponse } from '../../types/api.compat';
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors';
 import { chartCartesianTick } from '../../utils/rechartsAxis';
-import { buildPlatoonBarData } from '../../utils/playerPlatoonBarRows';
+import { buildPlatoonBarData, platoonBarA11yRows } from '../../utils/playerPlatoonBarRows';
+import ChartDataTable from './ChartDataTable';
 
 type Props = {
   data: PlayersPlatoonResponse;
@@ -29,6 +30,9 @@ export default function PlayerComparePlatoonBars({ data, teamId1, teamId2 }: Pro
   const { colorA, colorB } = usePlayerCompareChartColors(teamId1, teamId2);
   const [p1, p2] = data.players;
   const rows = useMemo(() => buildPlatoonBarData(p1, p2), [p1, p2]);
+  const n1 = p1?.fullName ?? 'Player 1';
+  const n2 = p2?.fullName ?? 'Player 2';
+  const a11y = useMemo(() => platoonBarA11yRows(p1, p2, n1, n2), [p1, p2, n1, n2]);
 
   if (rows.length === 0) {
     return (
@@ -36,15 +40,13 @@ export default function PlayerComparePlatoonBars({ data, teamId1, teamId2 }: Pro
     );
   }
 
-  const n1 = p1?.fullName ?? 'Player 1';
-  const n2 = p2?.fullName ?? 'Player 2';
   const pitchNote =
     data.group === 'pitching' ? 'Bars are opponent OPS (lower is better for the pitcher).' : null;
 
   return (
     <div className="players-compare-platoon">
       {pitchNote ? <p className="players-compare-platoon__note muted small">{pitchNote}</p> : null}
-      <div className="players-compare-platoon__chart-wrap">
+      <div className="players-compare-platoon__chart-wrap" aria-hidden="true">
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={rows} margin={{ top: 8, right: 12, left: 4, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -98,6 +100,11 @@ export default function PlayerComparePlatoonBars({ data, teamId1, teamId2 }: Pro
           </BarChart>
         </ResponsiveContainer>
       </div>
+      <ChartDataTable
+        caption={`Platoon OPS splits for ${n1} and ${n2}.`}
+        columns={a11y.columns}
+        rows={a11y.rows}
+      />
     </div>
   );
 }
