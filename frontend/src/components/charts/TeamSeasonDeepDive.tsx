@@ -211,7 +211,7 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
         } as CSSProperties
       }
     >
-      <p className="muted small teams-deep-dive__totals">
+      <p className="text text--muted text--small teams-deep-dive__totals">
         <span className="teams-deep-dive__total-item">
           Runs scored (season): <strong>{hitting.runs}</strong>
         </span>
@@ -251,7 +251,7 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
       {hasHitting ? (
         <>
           <h3 className="teams-deep-dive__section-title">Offense</h3>
-          <p className="muted small teams-deep-dive__hint">
+          <p className="text text--muted text--small teams-deep-dive__hint">
             Bar length vs rough full-season ceilings (not league rank). For K%, a longer bar means
             less strikeout-heavy team offense on this scale.
           </p>
@@ -273,7 +273,7 @@ export default function TeamSeasonDeepDive({ stats, teamId }: TeamSeasonDeepDive
       {hasPitching ? (
         <>
           <h3 className="teams-deep-dive__section-title">Pitching</h3>
-          <p className="muted small teams-deep-dive__hint">
+          <p className="text text--muted text--small teams-deep-dive__hint">
             For ERA / WHIP / BB/9 / RA/G / HR/9 / H/9, a longer bar means stronger run prevention on
             this scale. K/9 and K/BB use higher-is-better bars.
           </p>
@@ -301,11 +301,13 @@ function VenueSplitsPanel({ splits }: { splits: TeamVenueSplits }) {
     return (
       <div className="teams-deep-dive__venue">
         <h3 className="teams-deep-dive__section-title">Home and road</h3>
-        <p className="muted small teams-deep-dive__hint">
+        <p className="text text--muted text--small teams-deep-dive__hint">
           Run environment and record by venue from the regular-season schedule (completed games with
           scores). Loads when the schedule feed is available.
         </p>
-        <p className="muted small">No completed home/road games in this response yet.</p>
+        <p className="text text--muted text--small">
+          No completed home/road games in this response yet.
+        </p>
       </div>
     );
   }
@@ -313,7 +315,7 @@ function VenueSplitsPanel({ splits }: { splits: TeamVenueSplits }) {
   return (
     <div className="teams-deep-dive__venue">
       <h3 className="teams-deep-dive__section-title">Home and road</h3>
-      <p className="muted small teams-deep-dive__hint">
+      <p className="text text--muted text--small teams-deep-dive__hint">
         Completed regular-season games only: runs and record at home vs on the road, derived from
         the same schedule feed as the game-by-game strip.
       </p>
@@ -399,7 +401,7 @@ function RgDumbbell({
 
   return (
     <div className="teams-deep-dive__rg">
-      <p className="muted small teams-deep-dive__rg-lead">
+      <p className="text text--muted text--small teams-deep-dive__rg-lead">
         Runs per game: offense (R/G) vs runs allowed per game (RA/G) on one scale ({d0.toFixed(2)}–
         {d1.toFixed(2)} R/9).
       </p>

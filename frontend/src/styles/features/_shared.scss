@@ -1,18 +1,20 @@
-.muted {
-  color: var(--text);
+.text {
+  &--muted {
+    color: var(--text);
+  }
+
+  &--small {
+    font-size: 0.85rem;
+  }
+
+  &--error {
+    color: #fca5a5;
+  }
 }
 
-.muted.small {
+.text--muted.text--small {
   font-size: 0.9rem;
   margin-top: 0.25rem;
-}
-
-.error {
-  color: #fca5a5;
-}
-
-.small {
-  font-size: 0.85rem;
 }
 
 .players-compare__panel--chart .chart-frame,

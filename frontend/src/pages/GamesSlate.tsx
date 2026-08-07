@@ -105,7 +105,7 @@ export default function GamesSlate() {
       <header className="games-slate__header">
         <div>
           <h1>Games</h1>
-          <p className="muted">
+          <p className="text text--muted">
             Pick a date (and optionally a team), then open a game for runs by inning and the full
             timeline.
           </p>
@@ -134,7 +134,7 @@ export default function GamesSlate() {
       </header>
 
       {error ? (
-        <p className="error" role="alert">
+        <p className="text text--error" role="alert">
           {error.message}
         </p>
       ) : null}
@@ -144,7 +144,9 @@ export default function GamesSlate() {
         {loadingList ? (
           <GameListSkeleton rows={7} />
         ) : games.length === 0 ? (
-          <p className="muted">No games on this date (try another day or clear the team filter).</p>
+          <p className="text text--muted">
+            No games on this date (try another day or clear the team filter).
+          </p>
         ) : (
           <ul className="games-slate__list" role="list">
             {games.map((g) => {
@@ -156,7 +158,7 @@ export default function GamesSlate() {
                     <span className="games-slate__matchup">
                       {g.awayTeam} @ {g.homeTeam}
                     </span>
-                    <span className="games-slate__meta muted small">
+                    <span className="text text--muted text--small games-slate__meta">
                       {score} · {g.status}
                     </span>
                   </Link>

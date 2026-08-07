@@ -221,14 +221,17 @@ export default function PlayerComparison() {
       <header className="players-compare__head">
         <div>
           <h1>Player comparison</h1>
-          <p className="muted">
+          <p className="text text--muted">
             Compare two MLB players using the stats API. <strong>Season</strong> mode: same-year
             snapshot plus game log and platoon. <strong>Career</strong> mode: career snapshot plus
             year-by-year arcs (no single-season game log or platoon). Selection is reflected in the
             URL so you can share or bookmark a matchup.
           </p>
           {valid && compareRegistryChrome ? (
-            <p className="muted small players-compare__registry-key" aria-label="Chart color key">
+            <p
+              className="text text--muted text--small players-compare__registry-key"
+              aria-label="Chart color key"
+            >
               <span className="players-compare__registry-key-label">Series colors</span>
               <span className="players-compare__registry-swatch-wrap">
                 <span
@@ -307,7 +310,7 @@ export default function PlayerComparison() {
           </label>
         </div>
         {!valid ? (
-          <p className="muted players-compare__invalid-hint">
+          <p className="text text--muted players-compare__invalid-hint">
             Choose two different players to render the charts.
           </p>
         ) : null}
@@ -365,7 +368,7 @@ export default function PlayerComparison() {
 
         <div className="players-compare__panel players-compare__panel--chart">
           <h3 className="players-compare__chart-title">Radar</h3>
-          <p className="muted small">
+          <p className="text text--muted text--small">
             {compareScope === 'career'
               ? 'Career regular-season totals (pair-normalized per spoke).'
               : 'Season totals (pair-normalized per spoke).'}{' '}
@@ -385,7 +388,9 @@ export default function PlayerComparison() {
               />
             </ChartSuspense>
           ) : (
-            <p className="muted">Enter two different MLB player IDs and a season to compare.</p>
+            <p className="text text--muted">
+              Enter two different MLB player IDs and a season to compare.
+            </p>
           )}
         </div>
 
@@ -393,7 +398,7 @@ export default function PlayerComparison() {
           <>
             <div className="players-compare__panel players-compare__panel--chart">
               <h3 className="players-compare__chart-title">Who&apos;s ahead</h3>
-              <p className="muted small">
+              <p className="text text--muted text--small">
                 Same metrics as the radar: each dumbbell shows pair-normalized strength (100 =
                 better for that stat in this matchup). Hover a row for raw numbers.
               </p>
@@ -408,7 +413,7 @@ export default function PlayerComparison() {
               <h3 className="players-compare__chart-title">
                 {compareData.scope === 'career' ? 'Career totals' : 'Season totals'}
               </h3>
-              <p className="muted small">
+              <p className="text text--muted text--small">
                 Raw values from the same split as the radar. wOBA and FIP appear when provided by
                 the stats API; some seasons or players omit them.
               </p>
@@ -449,7 +454,7 @@ export default function PlayerComparison() {
                 </select>
               </label>
             </div>
-            <p className="muted small">
+            <p className="text text--muted text--small">
               {careerMetricLabel} each season. Dashed line is league context from AL+NL team season
               totals (not a player leaderboard average).
             </p>
@@ -457,7 +462,7 @@ export default function PlayerComparison() {
               <ChartSkeleton height={380} label="Loading year-by-year stats" />
             ) : null}
             {yearlyError ? (
-              <p className="error" role="alert">
+              <p className="text text--error" role="alert">
                 {yearlyError.message}
               </p>
             ) : null}
@@ -476,7 +481,7 @@ export default function PlayerComparison() {
 
       {valid && !showCareerTrajectory ? (
         <div className="players-compare__section players-compare__section--trajectory-muted">
-          <p className="players-compare__trajectory-hint muted">
+          <p className="text text--muted players-compare__trajectory-hint">
             <strong>Year-by-year</strong> career arcs are off while Compare is set to Season. Switch
             Compare to <strong>Career</strong> to load them (same players and stat group).
           </p>
@@ -495,7 +500,7 @@ export default function PlayerComparison() {
           </div>
           <div className="players-compare__panel players-compare__panel--chart">
             <h3 className="players-compare__chart-title">Recent games</h3>
-            <p className="muted small">
+            <p className="text text--muted text--small">
               Per-game {gameLogRateLabel} for the last games logged in {season} (up to 28).
               Horizontal reference: same league baseline as team-aggregate {gameLogRateLabel} for{' '}
               {season}.
@@ -504,7 +509,7 @@ export default function PlayerComparison() {
               <ChartSkeleton height={320} label="Loading game logs" />
             ) : null}
             {gameLogError ? (
-              <p className="error" role="alert">
+              <p className="text text--error" role="alert">
                 {gameLogError.message}
               </p>
             ) : null}
@@ -520,7 +525,7 @@ export default function PlayerComparison() {
           </div>
           <div className="players-compare__panel players-compare__panel--chart">
             <h3 className="players-compare__chart-title">Platoon splits</h3>
-            <p className="muted small">
+            <p className="text text--muted text--small">
               {group === 'hitting'
                 ? 'Regular-season OPS vs left-handed and right-handed pitchers (MLB statSplits).'
                 : 'Regular-season opponent OPS vs left-handed and right-handed batters faced.'}
@@ -529,7 +534,7 @@ export default function PlayerComparison() {
               <ChartSkeleton height={300} label="Loading platoon splits" />
             ) : null}
             {platoonError ? (
-              <p className="error" role="alert">
+              <p className="text text--error" role="alert">
                 {platoonError.message}
               </p>
             ) : null}
@@ -548,7 +553,7 @@ export default function PlayerComparison() {
 
       {valid && !showSeasonCharts ? (
         <div className="players-compare__section players-compare__section--season-year-muted">
-          <p className="players-compare__season-charts-hint muted">
+          <p className="text text--muted players-compare__season-charts-hint">
             Single-season <strong>game log</strong> and <strong>platoon</strong> charts are off
             while Compare is set to Career. Switch Compare to <strong>Season</strong> to load them
             for <strong>{season}</strong> (adjust the season year first if you need a different

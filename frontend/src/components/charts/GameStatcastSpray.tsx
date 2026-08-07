@@ -316,7 +316,7 @@ export default function GameStatcastSpray({
 
   if (!points.length) {
     return (
-      <p className="muted game-statcast-spray__empty">
+      <p className="text text--muted game-statcast-spray__empty">
         No field-location data for this game, so the spray chart cannot be shown.
       </p>
     );
@@ -333,7 +333,7 @@ export default function GameStatcastSpray({
 
   return (
     <div className="game-statcast-spray">
-      <p className="muted small game-statcast-spray__caption">
+      <p className="text text--muted text--small game-statcast-spray__caption">
         {venueName ? (
           <>
             Outline matches <strong>{venueName}</strong>&apos;s published left, center, and right
@@ -558,7 +558,7 @@ export default function GameStatcastSpray({
         </div>
       ) : null}
 
-      <ul className="game-statcast-spray__legend muted small" aria-hidden="true">
+      <ul className="text text--muted text--small game-statcast-spray__legend" aria-hidden="true">
         <li>
           <span
             className="game-statcast-spray__swatch game-statcast-spray__swatch--circle"

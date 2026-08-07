@@ -72,7 +72,7 @@ export default function PlayerPicker({ label, selected, onChange, disabled }: Pl
       {selected ? (
         <div className="player-picker__selected">
           <span className="player-picker__name">{selected.fullName}</span>
-          <span className="player-picker__id muted small">ID {selected.id}</span>
+          <span className="text text--muted text--small player-picker__id">ID {selected.id}</span>
           <button
             type="button"
             className="player-picker__change"
@@ -97,13 +97,13 @@ export default function PlayerPicker({ label, selected, onChange, disabled }: Pl
             aria-autocomplete="list"
           />
           {searchError ? (
-            <p className="error small" role="alert">
+            <p className="text text--error text--small" role="alert">
               {searchError}
             </p>
           ) : null}
-          {searching ? <p className="muted small">Searching…</p> : null}
+          {searching ? <p className="text text--muted text--small">Searching…</p> : null}
           {!searching && q.trim().length >= 2 && hits.length === 0 && !searchError ? (
-            <p className="muted small">No matches.</p>
+            <p className="text text--muted text--small">No matches.</p>
           ) : null}
           {hits.length > 0 ? (
             <ul id={listId} className="player-picker__results" role="listbox">
@@ -120,7 +120,7 @@ export default function PlayerPicker({ label, selected, onChange, disabled }: Pl
                     }}
                   >
                     <span className="player-picker__hit-name">{p.fullName}</span>
-                    <span className="muted small">
+                    <span className="text text--muted text--small">
                       {p.position ? `${p.position}` : ''}
                       {p.primaryNumber ? ` · #${p.primaryNumber}` : ''}
                       {!p.active ? ' · inactive' : ''}

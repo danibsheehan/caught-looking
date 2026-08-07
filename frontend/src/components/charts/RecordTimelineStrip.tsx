@@ -18,7 +18,9 @@ export default function RecordTimelineStrip({ teamId, season }: RecordTimelineSt
   const { data, error, loading } = useRecordTimeline(teamId, season);
 
   if (teamId == null || season == null) {
-    return <p className="muted">Select a team and season to see the results calendar.</p>;
+    return (
+      <p className="text text--muted">Select a team and season to see the results calendar.</p>
+    );
   }
 
   // Keep showing a skeleton while the hook still holds the previous club/season payload.
@@ -30,7 +32,7 @@ export default function RecordTimelineStrip({ teamId, season }: RecordTimelineSt
 
   if (error) {
     return (
-      <p className="error" role="alert">
+      <p className="text text--error" role="alert">
         {error.message}
       </p>
     );
@@ -41,7 +43,7 @@ export default function RecordTimelineStrip({ teamId, season }: RecordTimelineSt
   }
 
   if (!data.points?.length) {
-    return <p className="muted">No completed games in this sample yet.</p>;
+    return <p className="text text--muted">No completed games in this sample yet.</p>;
   }
 
   return <RecordCalendar points={data.points} resetKey={`${teamId}-${season}`} />;
@@ -51,7 +53,7 @@ function RecordCalendar({ points, resetKey }: { points: RecordPoint[]; resetKey:
   const months = buildRecordCalendarMonths(points);
   if (!months.length) {
     return (
-      <p className="muted">
+      <p className="text text--muted">
         Games are available, but their dates could not be placed on the calendar.
       </p>
     );
@@ -72,7 +74,7 @@ function RecordCalendarPager({ months, hasTies }: { months: CalendarMonth[]; has
 
   if (!month) {
     return (
-      <p className="muted">
+      <p className="text text--muted">
         Games are available, but their dates could not be placed on the calendar.
       </p>
     );
@@ -103,7 +105,7 @@ function RecordCalendarPager({ months, hasTies }: { months: CalendarMonth[]; has
           ›
         </button>
       </div>
-      <p className="muted small record-calendar__position">
+      <p className="text text--muted text--small record-calendar__position">
         {safeIndex + 1} of {months.length}
       </p>
       <section className="record-calendar__month" aria-label={month.label}>
@@ -131,7 +133,7 @@ function RecordCalendarPager({ months, hasTies }: { months: CalendarMonth[]; has
       <p className="record-calendar__detail" aria-live="polite">
         {hoverDetail ?? 'Hover a game day for date and record'}
       </p>
-      <p className="muted small record-calendar__legend">
+      <p className="text text--muted text--small record-calendar__legend">
         <span className="record-calendar__abbr record-calendar__abbr--win">W</span> win ·{' '}
         <span className="record-calendar__abbr record-calendar__abbr--loss">L</span> loss
         {hasTies ? (

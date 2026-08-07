@@ -203,7 +203,11 @@ export default function MultiTeamWinPctChart({
   }, [payload]);
 
   if (orderedIds.length === 0 || season == null) {
-    return <p className="muted">Select a division with teams to compare win percentage curves.</p>;
+    return (
+      <p className="text text--muted">
+        Select a division with teams to compare win percentage curves.
+      </p>
+    );
   }
 
   if (loading && !payload) {
@@ -212,14 +216,14 @@ export default function MultiTeamWinPctChart({
 
   if (error) {
     return (
-      <p className="error" role="alert">
+      <p className="text text--error" role="alert">
         {error.message}
       </p>
     );
   }
 
   if (!chartData.length) {
-    return <p className="muted">No completed games in this sample yet.</p>;
+    return <p className="text text--muted">No completed games in this sample yet.</p>;
   }
 
   return (

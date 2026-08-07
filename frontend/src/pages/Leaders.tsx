@@ -96,7 +96,7 @@ export default function Leaders() {
       <header className="leaders-page__header">
         <div>
           <h1>Leaders</h1>
-          <p className="muted">
+          <p className="text text--muted">
             Regular-season MLB leaders · season <strong>{seasonValue}</strong>. Filters stay in the
             URL for sharing.
           </p>
@@ -164,10 +164,10 @@ export default function Leaders() {
         </div>
       </header>
 
-      {loading && !table ? <p className="muted">Loading leaders…</p> : null}
+      {loading && !table ? <p className="text text--muted">Loading leaders…</p> : null}
 
       {error ? (
-        <p className="error" role="alert">
+        <p className="text text--error" role="alert">
           {error.message}
         </p>
       ) : null}
@@ -177,7 +177,7 @@ export default function Leaders() {
           {table.leaders.length > 0 ? (
             <div className="leaders-page__chart">
               <h2 className="leaders-page__chart-title">Top {table.leaders.length}</h2>
-              <p className="muted small leaders-page__chart-lede">
+              <p className="text text--muted text--small leaders-page__chart-lede">
                 {labelCategory(table.category)} · {table.season}. Bars use each player’s
                 current-team chart color when available.
               </p>
@@ -204,7 +204,7 @@ export default function Leaders() {
               <tbody>
                 {table.leaders.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="muted">
+                    <td colSpan={5} className="text text--muted">
                       No leaders for this selection.
                     </td>
                   </tr>
