@@ -82,7 +82,7 @@ export default function DivisionRunsScatter({ points, focusTeamId }: DivisionRun
   }
 
   return (
-    <div className="chart-frame" style={{ width: '100%', minHeight: 320 }}>
+    <div className="division-runs-scatter chart-frame" style={{ width: '100%', minHeight: 320 }}>
       <div aria-hidden="true">
         <ResponsiveContainer width="100%" height={320}>
           <ScatterChart margin={{ top: 10, right: 12, left: 4, bottom: 28 }}>

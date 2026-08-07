@@ -20,7 +20,7 @@ describe('DivisionRunsScatter', () => {
         focusTeamId={121}
       />,
     );
-    expect(container.querySelector('.chart-frame')).toBeInTheDocument();
+    expect(container.querySelector('.division-runs-scatter.chart-frame')).toBeInTheDocument();
     expect(screen.getByText('Runs allowed (season)')).toBeInTheDocument();
     expect(screen.getByText('Runs scored (season)')).toBeInTheDocument();
     const table = screen.getByRole('table', { name: /Division runs scored vs runs allowed/i });
