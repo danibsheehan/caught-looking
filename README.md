@@ -34,7 +34,7 @@ Web app for exploring **MLB statistics** with charts and comparisons. A **Go** b
 > [!NOTE]
 > **Live app:** [caught-looking.com/standings](https://caught-looking.com/standings) · [www.caught-looking.com/standings](https://www.caught-looking.com/standings) · **API reference (Redoc):** [docs.caught-looking.com](https://docs.caught-looking.com/)
 
-**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Design tokens](#design-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Prerequisites](#prerequisites) · [Editor setup](#editor-setup) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing) · [ADRs](docs/adr/)
+**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Cost and scale](#cost-and-scale-tradeoffs) · [Design tokens](#design-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Prerequisites](#prerequisites) · [Editor setup](#editor-setup) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing) · [ADRs](docs/adr/)
 
 ---
 
@@ -60,6 +60,19 @@ Web app for exploring **MLB statistics** with charts and comparisons. A **Go** b
 ### Design decisions
 
 Rationale for cache TTLs, outbound QPS, and the OpenAPI contract: **[docs/adr/](docs/adr/)** (ADRs 0001–0003). Skills under `.cursor/skills/` are the how-to; ADRs record the tradeoffs.
+
+### Cost and scale tradeoffs
+
+Built for a **low/zero incremental cloud bill** (Cloud Run scale-to-zero + Cloudflare Pages) without treating public MLB/Savant as free bandwidth. Conscious limits — not missing infrastructure:
+
+| Choice | Why it stays this way | Revisit when |
+| :--- | :--- | :--- |
+| **In-process TTL cache + singleflight** | No Redis/Memorystore cost; concurrent misses coalesce **per process**; hit/miss/coalesce show up on `GET /metrics` | Warm instance count or cold-start stampede forces a shared L2 |
+| **Per-process MLB/Savant QPS caps** | Predictable outbound load without a global rate coordinator | Aggregate `max-instances × QPS` risks upstream 429s |
+| **`CLOUDRUN_MAX_INSTANCES` default `2`** | Caps spend **and** the outbound budget multiplier | Traffic needs more capacity *and* a shared cache/limiter story |
+| **`CLOUDRUN_MIN_INSTANCES` default `0`** | Idle ≈ $0; cold starts refill the in-memory cache | Latency SLOs require a warm process |
+
+Residual risks (per-process QPS × instances, in-memory-only stampede) are spelled out in **[docs/threat-model.md](docs/threat-model.md)**. Deploy knobs: [Deployment (CI)](#deployment-ci).
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
@@ -519,7 +532,7 @@ After the first successful deploy:
 | Check | Detail |
 | :--- | :--- |
 | **CORS** | `CORS_ALLOWED_ORIGINS` must include real SPA origins (`https://caught-looking.com`, `https://www.caught-looking.com`). Pages + branch-preview origins are appended from `CLOUDFLARE_PAGES_PROJECT_NAME`. Custom domains → update the variable and push to `main` (or patch Cloud Run env). |
-| **Cost / abuse** | Deploy uses `--min-instances=0`, `--max-instances=2` (override via vars above). Artifact Registry cleanup keeps `GCP_ARTIFACT_KEEP_COUNT` newest versions (~daily). API still has per-IP limits + outbound QPS caps. Pair with a GCP **billing budget + alert** (notify-only unless you add an automatic action). |
+| **Cost / abuse** | Deploy uses `--min-instances=0`, `--max-instances=2` (override via vars above). Artifact Registry cleanup keeps `GCP_ARTIFACT_KEEP_COUNT` newest versions (~daily). API still has per-IP limits + outbound QPS caps. See [Cost and scale tradeoffs](#cost-and-scale-tradeoffs). Pair with a GCP **billing budget + alert** (notify-only unless you add an automatic action). |
 
 ---
 
