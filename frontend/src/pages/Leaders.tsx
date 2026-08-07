@@ -6,6 +6,7 @@ import type { LeadersQuery } from '../types/api.compat';
 import {
   CATEGORIES_BY_GROUP,
   DEFAULT_CATEGORY,
+  DEFAULT_LEADERS_SEASON,
   buildLeadersSearchParams,
   parseLeadersSearchParams,
 } from '../utils/leadersSearchParams';
@@ -54,7 +55,7 @@ export default function Leaders() {
   useEffect(() => {
     setSearchParams(
       (prev) => {
-        if (prev.get('group') || prev.get('category')) return prev;
+        if (prev.get('group') || prev.get('category') || prev.get('season')) return prev;
         return buildLeadersSearchParams(parseLeadersSearchParams(prev), prev);
       },
       { replace: true },
@@ -78,7 +79,7 @@ export default function Leaders() {
       ? data.categories
       : CATEGORIES_BY_GROUP[group];
 
-  const seasonValue = data?.group === group ? data.season : (season ?? '');
+  const seasonValue = data?.group === group ? data.season : season;
   const table = data?.group === group ? data : null;
 
   return (
@@ -87,14 +88,8 @@ export default function Leaders() {
         <div>
           <h1>Leaders</h1>
           <p className="muted">
-            Regular-season MLB leaders
-            {seasonValue !== '' ? (
-              <>
-                {' '}
-                · season <strong>{seasonValue}</strong>
-              </>
-            ) : null}
-            . Filters stay in the URL for sharing.
+            Regular-season MLB leaders · season <strong>{seasonValue}</strong>. Filters stay in the
+            URL for sharing.
           </p>
         </div>
         <div className="leaders-page__controls" role="group" aria-label="Leaders filters">
@@ -137,16 +132,9 @@ export default function Leaders() {
               inputMode="numeric"
               min={1900}
               max={2100}
-              placeholder="Default"
-              value={season ?? ''}
+              value={season}
               onChange={(e) => {
-                const v = e.target.value.trim();
-                if (v === '') {
-                  patchUrl({ season: undefined });
-                  return;
-                }
-                const n = Number(v);
-                if (Number.isFinite(n)) patchUrl({ season: n });
+                patchUrl({ season: Number(e.target.value) || DEFAULT_LEADERS_SEASON });
               }}
             />
           </label>
