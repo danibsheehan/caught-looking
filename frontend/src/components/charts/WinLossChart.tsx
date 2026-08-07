@@ -59,7 +59,9 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
   }, [rows]);
 
   if (teamId == null || season == null) {
-    return <p className="muted">Select a team and season to plot rolling win percentage.</p>;
+    return (
+      <p className="text text--muted">Select a team and season to plot rolling win percentage.</p>
+    );
   }
 
   if (loading && !data) {
@@ -68,14 +70,14 @@ export default function WinLossChart({ teamId, season }: WinLossChartProps) {
 
   if (error) {
     return (
-      <p className="error" role="alert">
+      <p className="text text--error" role="alert">
         {error.message}
       </p>
     );
   }
 
   if (!rows.length) {
-    return <p className="muted">No completed games in this sample yet.</p>;
+    return <p className="text text--muted">No completed games in this sample yet.</p>;
   }
 
   const peakRow = rows.reduce((best, row) => (row.pctPct >= best.pctPct ? row : best));

@@ -61,7 +61,7 @@ function SparkBlock({
     <div className="player-game-spark__block">
       <div className="player-game-spark__head">
         <span className="player-game-spark__title">{title}</span>
-        <span className="muted small">{name}</span>
+        <span className="text text--muted text--small">{name}</span>
       </div>
       <ResponsiveContainer width="100%" height={160}>
         <LineChart data={rows} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
@@ -162,7 +162,9 @@ export default function PlayerCompareRecentSparklines({ data, teamId1, teamId2 }
   );
 
   if (!rowsA.length && !rowsB.length) {
-    return <p className="muted">No game log for this season yet (or player did not play).</p>;
+    return (
+      <p className="text text--muted">No game log for this season yet (or player did not play).</p>
+    );
   }
 
   return (
@@ -185,7 +187,7 @@ export default function PlayerCompareRecentSparklines({ data, teamId1, teamId2 }
             </option>
           ))}
         </select>
-        <span className="player-game-spark__rolling-hint muted small">
+        <span className="text text--muted text--small player-game-spark__rolling-hint">
           Solid: per-game {metric.toUpperCase()}. Dashed: trailing mean over the window.
         </span>
       </div>

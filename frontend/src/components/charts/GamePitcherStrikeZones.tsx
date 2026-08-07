@@ -511,7 +511,7 @@ function OnePitcherCard({
             {row.name}
           </h3>
           {showTeamUnderName && row.side !== 'unknown' && box ? (
-            <p className="muted small game-pitcher-zones__team">
+            <p className="text text--muted text--small game-pitcher-zones__team">
               {row.side === 'away' ? box.away.teamName : box.home.teamName}
             </p>
           ) : null}
@@ -544,7 +544,7 @@ function OnePitcherCard({
           </div>
         ) : null}
       </div>
-      <p className="muted small game-pitcher-zones__mode-hint">
+      <p className="text text--muted text--small game-pitcher-zones__mode-hint">
         {plotMode === 'heat'
           ? 'Brighter cells and larger numbers = more pitches in that plate zone.'
           : 'Each dot is one pitch, colored by type. Tap a type below to isolate it.'}
@@ -584,7 +584,7 @@ function OnePitcherCard({
                     }}
                   />
                   <span>
-                    {g.label} <span className="muted">({g.pitches.length})</span>
+                    {g.label} <span className="text text--muted">({g.pitches.length})</span>
                   </span>
                 </button>
               </li>
@@ -644,7 +644,7 @@ export default function GamePitcherStrikeZones({ pitches, box }: GamePitcherStri
 
   if (!pitches.length) {
     return (
-      <p className="muted game-pitcher-zones__empty">
+      <p className="text text--muted game-pitcher-zones__empty">
         No pitch tracking data for this game (or data not available yet).
       </p>
     );

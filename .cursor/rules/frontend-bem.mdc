@@ -8,7 +8,7 @@ alwaysApply: false
 
 # Frontend — BEM (Block, Element, Modifier)
 
-The codebase still contains **legacy** class names (e.g. `muted`, `panel`, `error`). **Do not rename** those in drive-by edits. **Migrations happen in dedicated changes.**
+The codebase still contains **some legacy** class names. **Do not rename** those in drive-by edits. **Migrations happen in dedicated changes.** Shared text tone uses the **`text`** block (`text text--muted`, `text text--small`, `text text--error`).
 
 ## When this rule applies (enforce)
 

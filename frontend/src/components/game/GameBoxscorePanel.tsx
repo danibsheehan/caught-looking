@@ -210,7 +210,7 @@ export default function GameBoxscorePanel({
       {gamePk != null ? (
         <div className="game-boxscore__panel game-boxscore__panel--chart game-boxscore__runs-panel">
           <h2>Runs by inning</h2>
-          <p className="muted small">
+          <p className="text text--muted text--small">
             Stacked bars use each team’s primary color, brightened for readability on a dark
             background (fast-read scoring by inning).
           </p>
@@ -398,15 +398,15 @@ export default function GameBoxscorePanel({
       {pitchLocation != null ? (
         <div className="game-boxscore__panel game-boxscore__panel--chart game-boxscore__pitch-location">
           <h2>Pitch location</h2>
-          <p className="muted small">
+          <p className="text text--muted text--small">
             Catcher&apos;s view toward the pitcher. <strong>Locations</strong> shows each pitch
             colored by type. <strong>Density</strong> shows a count grid over the plate; use Pitch
             type to filter.
           </p>
           {pitchLocation.loading ? (
-            <p className="muted">Loading pitch data…</p>
+            <p className="text text--muted">Loading pitch data…</p>
           ) : pitchLocation.error ? (
-            <p className="error" role="alert">
+            <p className="text text--error" role="alert">
               {pitchLocation.error.message}
             </p>
           ) : pitchLocation.data ? (

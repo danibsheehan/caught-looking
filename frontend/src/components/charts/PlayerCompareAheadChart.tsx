@@ -42,10 +42,10 @@ function DumbbellRowTip({
     >
       <div style={{ fontWeight: 600, marginBottom: 4 }}>{row.metric}</div>
       <div style={{ fontVariantNumeric: 'tabular-nums' }}>
-        {nameA}: {v1s} <span className="muted">({Math.round(row.a)}%)</span>
+        {nameA}: {v1s} <span className="text text--muted">({Math.round(row.a)}%)</span>
       </div>
       <div style={{ fontVariantNumeric: 'tabular-nums' }}>
-        {nameB}: {v2s} <span className="muted">({Math.round(row.b)}%)</span>
+        {nameB}: {v2s} <span className="text text--muted">({Math.round(row.b)}%)</span>
       </div>
     </div>
   );
@@ -155,7 +155,7 @@ export default function PlayerCompareAheadChart({ data, group, teamId1, teamId2 
         </div>
       </div>
 
-      <p className="muted small player-ahead-chart__axis-label">
+      <p className="text text--muted text--small player-ahead-chart__axis-label">
         Scale: pair-normalized strength (100 = better for this matchup).
       </p>
 

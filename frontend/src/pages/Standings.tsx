@@ -115,10 +115,10 @@ export default function Standings() {
     return (
       <section className="page standings-page">
         <h1>Standings</h1>
-        <p className="error" role="alert">
+        <p className="text text--error" role="alert">
           {error.message}
         </p>
-        <p className="muted">
+        <p className="text text--muted">
           Is the Go API running? With the default Vite proxy, start the backend on port 8080, or set{' '}
           <code>VITE_API_BASE</code> to your API origin.
         </p>
@@ -133,7 +133,7 @@ export default function Standings() {
       <header className="standings-page__header">
         <div>
           <h1>Standings</h1>
-          <p className="muted">
+          <p className="text text--muted">
             Season <strong>{data?.season ?? '—'}</strong> · regular season · AL / NL
           </p>
           <div className="standings-page__stat-cards" role="list">
@@ -183,12 +183,12 @@ export default function Standings() {
       </header>
 
       {divisions.length === 0 ? (
-        <p className="muted">No standings returned.</p>
+        <p className="text text--muted">No standings returned.</p>
       ) : (
         <>
           <div className="standings-page__panel standings-page__panel--chart">
             <h2>Wins by team</h2>
-            <p className="muted small">
+            <p className="text text--muted text--small">
               Selected division: {selected?.divisionName || `ID ${selected?.divisionId}`}
             </p>
             <ChartSuspense height={320} label="Loading wins chart">
@@ -198,7 +198,7 @@ export default function Standings() {
 
           <div className="standings-page__panel standings-page__panel--chart">
             <h2>Cumulative win % vs games played</h2>
-            <p className="muted small">
+            <p className="text text--muted text--small">
               All clubs in this division load together. The horizontal axis is games completed
               (pace), not the calendar.
             </p>

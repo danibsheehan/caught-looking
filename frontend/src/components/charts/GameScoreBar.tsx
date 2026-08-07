@@ -58,7 +58,7 @@ export default function GameScoreBar({ gamePk, showCaption = true }: GameScoreBa
 
   if (pk == null || !Number.isFinite(pk) || pk <= 0) {
     return (
-      <p className="muted">
+      <p className="text text--muted">
         Enter a valid MLB <code>gamePk</code> to chart runs by inning.
       </p>
     );
@@ -70,20 +70,20 @@ export default function GameScoreBar({ gamePk, showCaption = true }: GameScoreBa
 
   if (error) {
     return (
-      <p className="error" role="alert">
+      <p className="text text--error" role="alert">
         {error.message}
       </p>
     );
   }
 
   if (!data?.innings?.length) {
-    return <p className="muted">No inning rows returned.</p>;
+    return <p className="text text--muted">No inning rows returned.</p>;
   }
 
   return (
     <div>
       {showCaption ? (
-        <p className="muted small" style={{ marginBottom: '0.5rem' }}>
+        <p className="text text--muted text--small" style={{ marginBottom: '0.5rem' }}>
           {awayKey} @ {homeKey} · final {data.awayTotal}–{data.homeTotal}
         </p>
       ) : null}

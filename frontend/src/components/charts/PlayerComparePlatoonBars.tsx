@@ -36,7 +36,9 @@ export default function PlayerComparePlatoonBars({ data, teamId1, teamId2 }: Pro
 
   if (rows.length === 0) {
     return (
-      <p className="muted">No platoon splits for this season (or MLB did not return vl/vr rows).</p>
+      <p className="text text--muted">
+        No platoon splits for this season (or MLB did not return vl/vr rows).
+      </p>
     );
   }
 
@@ -45,7 +47,9 @@ export default function PlayerComparePlatoonBars({ data, teamId1, teamId2 }: Pro
 
   return (
     <div className="players-compare-platoon">
-      {pitchNote ? <p className="players-compare-platoon__note muted small">{pitchNote}</p> : null}
+      {pitchNote ? (
+        <p className="text text--muted text--small players-compare-platoon__note">{pitchNote}</p>
+      ) : null}
       <div className="players-compare-platoon__chart-wrap" aria-hidden="true">
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={rows} margin={{ top: 8, right: 12, left: 4, bottom: 8 }}>

@@ -42,7 +42,7 @@ export default function PlayerCompareCareerLines({ data, teamId1, teamId2 }: Pro
   );
 
   if (!rows.length) {
-    return <p className="muted">No year-by-year data for this comparison.</p>;
+    return <p className="text text--muted">No year-by-year data for this comparison.</p>;
   }
 
   return (

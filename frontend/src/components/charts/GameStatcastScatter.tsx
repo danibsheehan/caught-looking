@@ -123,7 +123,7 @@ export default function GameStatcastScatter({
 
   if (!points.length) {
     return (
-      <p className="muted game-statcast-scatter__empty">
+      <p className="text text--muted game-statcast-scatter__empty">
         No tracked batted balls with launch data for this game (or data not available yet).
       </p>
     );
@@ -142,7 +142,7 @@ export default function GameStatcastScatter({
 
   return (
     <div className="game-statcast-scatter">
-      <p className="muted small game-statcast-scatter__caption">
+      <p className="text text--muted text--small game-statcast-scatter__caption">
         Each point is one batted ball. Away and home batting use each team’s color (circles vs
         diamonds), matching the spray chart. Tinted bands mark typical grounder, line drive, and
         fly-ball launch-angle ranges (see key below). Read left to right as more lofted contact;
@@ -236,7 +236,10 @@ export default function GameStatcastScatter({
         rows={a11yRows}
         footnote={chartA11yFootnote('batted balls', a11ySlice)}
       />
-      <ul className="game-statcast-scatter__band-legend muted small" aria-hidden="true">
+      <ul
+        className="text text--muted text--small game-statcast-scatter__band-legend"
+        aria-hidden="true"
+      >
         <li>
           <span className="game-statcast-scatter__band-swatch game-statcast-scatter__band-swatch--grounder" />
           Grounder (&lt;10°)

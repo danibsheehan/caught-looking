@@ -36,16 +36,18 @@ export default function GameDetail() {
     <section className="page games-detail">
       <header className="games-detail__header">
         <div>
-          <p className="muted small games-detail__back-row">
+          <p className="text text--muted text--small games-detail__back-row">
             <Link className="games-detail__back" to={backTo}>
               ← Games
               {date ? ` · ${date}` : ''}
             </Link>
           </p>
           <h1>Box score</h1>
-          <p className="muted">Team totals, pitching and batting lines, and runs by inning.</p>
+          <p className="text text--muted">
+            Team totals, pitching and batting lines, and runs by inning.
+          </p>
           {livePolling ? (
-            <p className="muted small">
+            <p className="text text--muted text--small">
               Live game — box score and timeline refresh about every 45 seconds (paused while this
               tab is hidden).
             </p>
@@ -54,9 +56,9 @@ export default function GameDetail() {
       </header>
 
       {box.loading ? (
-        <p className="muted">Loading box score…</p>
+        <p className="text text--muted">Loading box score…</p>
       ) : box.error ? (
-        <p className="error" role="alert">
+        <p className="text text--error" role="alert">
           {box.error.message}
         </p>
       ) : box.data ? (
@@ -73,15 +75,15 @@ export default function GameDetail() {
 
       <div className="game-statcast">
         <h2>Batted balls</h2>
-        <p className="muted small">
+        <p className="text text--muted text--small">
           The field view shows roughly where each ball was put in play. The scatter chart uses the
           same batted balls for exit velocity and launch angle. Team colors for away vs home batting
           match the runs-by-inning chart (circles vs diamonds repeat the away/home split).
         </p>
         {statcast.loading ? (
-          <p className="muted">Loading batted-ball data…</p>
+          <p className="text text--muted">Loading batted-ball data…</p>
         ) : statcast.error ? (
-          <p className="error" role="alert">
+          <p className="text text--error" role="alert">
             {statcast.error.message}
           </p>
         ) : statcast.data ? (

@@ -74,7 +74,7 @@ export default function DivisionRunsScatter({ points, focusTeamId }: DivisionRun
 
   if (!plot.length) {
     return (
-      <p className="muted">
+      <p className="text text--muted">
         Run totals for this division are not available yet (need runs scored and allowed in
         standings).
       </p>

@@ -57,7 +57,11 @@ export default function PlayerRadar({
   const { colorA, colorB } = usePlayerCompareChartColors(teamId1, teamId2);
 
   if (!ready) {
-    return <p className="muted">Enter two different MLB player IDs and a season to compare.</p>;
+    return (
+      <p className="text text--muted">
+        Enter two different MLB player IDs and a season to compare.
+      </p>
+    );
   }
 
   if (loading && !data) {
@@ -66,14 +70,14 @@ export default function PlayerRadar({
 
   if (error) {
     return (
-      <p className="error" role="alert">
+      <p className="text text--error" role="alert">
         {error.message}
       </p>
     );
   }
 
   if (!rows.length) {
-    return <p className="muted">Not enough stat rows for a radar (empty season?).</p>;
+    return <p className="text text--muted">Not enough stat rows for a radar (empty season?).</p>;
   }
 
   return (

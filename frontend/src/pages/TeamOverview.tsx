@@ -140,7 +140,7 @@ export default function TeamOverview() {
     return (
       <section className="page teams-page">
         <h1>Teams</h1>
-        <p className="error" role="alert">
+        <p className="text text--error" role="alert">
           {error.message}
         </p>
       </section>
@@ -152,7 +152,7 @@ export default function TeamOverview() {
       <header className="teams-page__header">
         <div>
           <h1>Teams</h1>
-          <p className="muted">
+          <p className="text text--muted">
             Division charts (win %, run differential, game results) plus season hitting / pitching
             lines. Club, season, and panel tab stay in the URL.
           </p>
@@ -208,18 +208,18 @@ export default function TeamOverview() {
 
           <div className="teams-page__panel">
             <h2 className="teams-page__snapshot-heading">Season snapshot</h2>
-            <p className="muted small teams-page__snapshot-lead">
+            <p className="text text--muted text--small teams-page__snapshot-lead">
               Race and form from regular-season standings (same season as above).
             </p>
             {standingsLoading ? (
-              <p className="muted small">Loading standings…</p>
+              <p className="text text--muted text--small">Loading standings…</p>
             ) : standingsError ? (
-              <p className="error" role="alert">
+              <p className="text text--error" role="alert">
                 {standingsError.message}
               </p>
             ) : snapshot ? (
               <>
-                <p className="muted small">
+                <p className="text text--muted text--small">
                   {snapshot.division.divisionName} · Division rank {snapshot.team.divisionRank}
                 </p>
                 <div className="teams-page__stat-cards teams-page__stat-cards--wide">
@@ -269,14 +269,16 @@ export default function TeamOverview() {
                 </div>
               </>
             ) : (
-              <p className="muted small">No standings row for this club and season yet.</p>
+              <p className="text text--muted text--small">
+                No standings row for this club and season yet.
+              </p>
             )}
           </div>
 
           <div className="teams-page__viz-grid">
             <div className="teams-page__panel teams-page__panel--chart">
               <h2>Runs scored vs. allowed</h2>
-              <p className="muted small">
+              <p className="text text--muted text--small">
                 Season totals for every club in this division. The dashed line is even run
                 differential (RS = RA). Above it scores more than it allows.
               </p>
@@ -286,7 +288,7 @@ export default function TeamOverview() {
             </div>
             <div className="teams-page__panel teams-page__panel--chart">
               <h2>Game-by-game results</h2>
-              <p className="muted small">
+              <p className="text text--muted text--small">
                 Season calendar — wins and losses by month. Starts on the latest month with games.
               </p>
               <RecordTimelineStrip teamId={selected.id} season={season} />
@@ -318,7 +320,7 @@ export default function TeamOverview() {
             {panelTab === 'trend' ? (
               <div className="teams-page__chart-area">
                 <h2>Division race — cumulative win %</h2>
-                <p className="muted small">
+                <p className="text text--muted text--small">
                   Every team in this division on the same pace axis (games completed). Your club is
                   emphasized.
                 </p>
@@ -344,9 +346,9 @@ export default function TeamOverview() {
               <>
                 <h2>Team stats (season)</h2>
                 {deepLoading ? (
-                  <p className="muted small">Loading team stats…</p>
+                  <p className="text text--muted text--small">Loading team stats…</p>
                 ) : deepError ? (
-                  <p className="error" role="alert">
+                  <p className="text text--error" role="alert">
                     {deepError.message}
                   </p>
                 ) : deepStats ? (
@@ -357,7 +359,7 @@ export default function TeamOverview() {
           </div>
         </>
       ) : (
-        <p className="muted">Choose a team to load snapshot and charts.</p>
+        <p className="text text--muted">Choose a team to load snapshot and charts.</p>
       )}
     </section>
   );
