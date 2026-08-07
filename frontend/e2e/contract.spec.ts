@@ -52,4 +52,10 @@ test('Standings → Games → box score → Statcast spray (contract)', async ({
   await expect(page.getByRole('heading', { level: 1, name: 'Box score' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Batted balls' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 3, name: 'Spray (field view)' })).toBeVisible();
+
+  await expect(page.getByRole('heading', { level: 2, name: 'Pitch location' })).toBeVisible();
+  const density = page.getByRole('button', { name: /^Density$/i });
+  await density.click();
+  await expect(density).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByLabel('Pitch type')).toBeVisible();
 });
