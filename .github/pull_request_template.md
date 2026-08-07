@@ -1,11 +1,17 @@
 ## Summary
 
-<!-- What changed and why (user-visible behavior, API, or data). -->
+<!--
+Why this change (motivation), then what changed for users/API/data.
+Prefer 1–3 short bullets. Do not list files or paste the PR guide checklist here.
+-->
 
 ## How to verify
 
-<!-- e.g. routes to exercise, or "N/A" for tooling-only. -->
+<!--
+User-facing steps: routes/pages to exercise, expected behavior, or "N/A" for tooling-only.
+CI commands belong in the sticky PR guide comment — not here.
+-->
 
 _Suggested local check:_ `make ci-local`
 
-_Checklist and reviewer focus: see the **PR guide** comment (posted automatically; updated on each push)._
+_Supporting checklist and path-based reviewer focus: see the sticky **PR guide** comment (not a substitute for Summary)._

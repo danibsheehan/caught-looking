@@ -286,7 +286,7 @@ Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull req
 
 | Workflow / job | Role |
 | --- | --- |
-| [**PR guide**](.github/workflows/pr-guide.yml) | On open / reopen / ready-for-review: scaffolds empty/default PR description (verify commands, **Touches**), sticky checklist comment, `area:*` labels from changed paths (does not re-run on every push) |
+| [**PR guide**](.github/workflows/pr-guide.yml) | On open / reopen / ready-for-review: scaffolds empty/default PR description prompts (**Summary** / **How to verify** stay author-written), sticky path-based checklist comment, `area:*` labels (does not re-run on every push) |
 | **Coverage comments** (CI job) | After frontend/backend succeed, posts or updates Cobertura coverage comments from uploaded artifacts (same-repo PRs only; does not run on `main`) |
 | [**Pages preview**](.github/workflows/pages-preview.yml) | Builds SPA with `VITE_API_BASE` → Cloudflare branch preview; does not run at all for non-SPA path PRs |
 | [**Preview cleanup**](.github/workflows/pages-preview-cleanup.yml) | Deletes preview deployments when the PR is closed or merged |
@@ -565,8 +565,8 @@ Makefile    # install, dev, backend, frontend, ci-local, test-*, cover-*
 
 | Step | Action |
 | :--- | :--- |
-| Template | [PR template](.github/pull_request_template.md) — **Summary** + **How to verify** |
-| Scaffold | [PR guide](.github/workflows/pr-guide.yml) fills empty/default descriptions (verify commands, **Touches**) and posts a sticky checklist comment |
+| Template | [PR template](.github/pull_request_template.md) — **Summary** (why + what) + **How to verify** (user-facing steps) |
+| Scaffold | [PR guide](.github/workflows/pr-guide.yml) prompts empty descriptions and posts a sticky path-based checklist (**Touches**, CI commands); does not invent Summary |
 | Before open | `make ci-local` from repo root (same gates as CI: stack-docs, `npm audit`, coverage ≥50%, OpenAPI type drift) |
 | API changes | Keep **Go JSON / OpenAPI** ↔ `frontend/src/types/api.generated.ts` + `frontend/src/api/client.ts` in sync |
 | Agents | [`.cursor/skills/pr-ready/SKILL.md`](.cursor/skills/pr-ready/SKILL.md) |

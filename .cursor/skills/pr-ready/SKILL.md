@@ -48,10 +48,13 @@ Also: **`npx prettier --write`** on any frontend files you changed before `forma
 
 ### 2. PR description
 
-Fill **`.github/pull_request_template.md`**:
+Fill **`.github/pull_request_template.md`** before opening the PR (do not rely on the sticky
+**PR guide** comment — that is path-derived checklist only):
 
-- **Summary** — what changed and why
-- **How to verify** — routes/pages to exercise, or `N/A` for tooling-only
+- **Summary** — why first (motivation), then what changed for users / API / data. Prefer 1–3
+  short bullets. Do **not** list files, paste CI commands, or restate the auto-generated guide.
+- **How to verify** — user-facing steps (routes/pages, expected behavior), or `N/A` for
+  tooling-only. Keep `make test-*` / lint commands out of this section.
 
 Do not push or create the PR unless the user asked.
 

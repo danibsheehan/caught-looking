@@ -1,8 +1,9 @@
 name: PR guide
 
 # Sticky PR guide comment + path labels. Non-blocking; separate from CI.
-# No synchronize: avoid a full guide/labeler run on every push. Labels and the
-# sticky comment reflect paths at open / ready_for_review / reopen time.
+# Scaffold keeps Summary / How to verify author-written (prompts only); CI verify
+# commands live in the sticky comment. No synchronize: labels and the sticky
+# comment reflect paths at open / ready_for_review / reopen time.
 on:
     pull_request:
         types: [opened, reopened, ready_for_review]

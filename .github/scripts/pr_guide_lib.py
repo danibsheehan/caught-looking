@@ -32,8 +32,18 @@ AREA_DISPLAY = {
 META_START = "<!-- pr-guide:meta -->"
 META_END = "<!-- /pr-guide:meta -->"
 
-SUMMARY_PROMPT = "<!-- What changed and why (user-visible behavior, API, or data). -->"
-VERIFY_PROMPT = "<!-- Suggested starting points — edit or replace: -->"
+SUMMARY_PROMPT = (
+    "<!--\n"
+    "Why this change (motivation), then what changed for users/API/data.\n"
+    "Prefer 1–3 short bullets. Do not list files or paste the PR guide checklist here.\n"
+    "-->"
+)
+VERIFY_PROMPT = (
+    "<!--\n"
+    "User-facing steps: routes/pages to exercise, expected behavior, or \"N/A\" for tooling-only.\n"
+    "CI commands belong in the sticky PR guide comment — not here.\n"
+    "-->"
+)
 
 LEGACY_TEMPLATE_MARKERS = (
     "## Checklist",
@@ -162,13 +172,12 @@ def has_meta_block(body: str) -> bool:
 def build_meta_block(areas: set[str]) -> str:
     return (
         f"**Touches:** {format_touches(areas)}\n\n"
-        "Checklist and reviewer focus: see the **PR guide** comment on this PR "
-        "(updated on each push)."
+        "Supporting checklist (CI commands, path-based reviewer focus): see the sticky "
+        "**PR guide** comment — not a substitute for **Summary** above."
     )
 
 
-def build_full_body(areas: set[str], verify: list[str]) -> str:
-    verify_lines = [VERIFY_PROMPT, ""] + [f"- {command}" for command in verify]
+def build_full_body(areas: set[str]) -> str:
     return "\n".join(
         [
             "## Summary",
@@ -177,7 +186,9 @@ def build_full_body(areas: set[str], verify: list[str]) -> str:
             "",
             "## How to verify",
             "",
-            *verify_lines,
+            VERIFY_PROMPT,
+            "",
+            "_Suggested local check:_ `make ci-local`",
             "",
             META_START,
             build_meta_block(areas),
@@ -187,9 +198,9 @@ def build_full_body(areas: set[str], verify: list[str]) -> str:
     )
 
 
-def merge_pr_body(current: str, areas: set[str], verify: list[str]) -> str | None:
+def merge_pr_body(current: str, areas: set[str]) -> str | None:
     if should_full_scaffold(current):
-        return build_full_body(areas, verify)
+        return build_full_body(areas)
     if has_meta_block(current):
         meta = f"{META_START}\n{build_meta_block(areas)}\n{META_END}"
         return re.sub(
