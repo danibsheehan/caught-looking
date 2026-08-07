@@ -81,7 +81,11 @@ describe('Leaders', () => {
       await screen.findByRole('heading', { level: 1, name: 'Leaders' }, asyncWait),
     ).toBeInTheDocument();
     expect(await screen.findByText('Cal Raleigh', {}, asyncWait)).toBeInTheDocument();
-    expect(screen.getByText('60')).toBeInTheDocument();
+    expect(document.querySelector('.leaders-page__value')?.textContent).toBe('60');
+    expect(
+      await screen.findByRole('heading', { level: 2, name: /Top \d+/ }, asyncWait),
+    ).toBeInTheDocument();
+    expect(document.querySelector('.leaders-top10-bar')).toBeInTheDocument();
 
     await waitFor(() => expect(api.fetchLeaders).toHaveBeenCalled(), asyncWait);
     expect(api.fetchLeaders).toHaveBeenCalledWith(
@@ -89,7 +93,7 @@ describe('Leaders', () => {
       expect.any(AbortSignal),
     );
 
-    await user.click(screen.getByRole('tab', { name: 'Pitching' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Stat group' }), 'pitching');
     expect(await screen.findByText('Paul Skenes', {}, asyncWait)).toBeInTheDocument();
     expect(screen.getByText('1.97')).toBeInTheDocument();
 
@@ -125,10 +129,7 @@ describe('Leaders', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole('tab', { name: 'Pitching' }, asyncWait)).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    expect(await screen.findByLabelText('Stat group', {}, asyncWait)).toHaveValue('pitching');
     expect(screen.getByLabelText('Category')).toHaveValue('wins');
     expect(screen.getByLabelText('Season')).toHaveValue(2024);
 
@@ -141,6 +142,64 @@ describe('Leaders', () => {
             season: 2024,
             limit: 10,
           }),
+          expect.any(AbortSignal),
+        ),
+      asyncWait,
+    );
+  });
+
+  it('rewrites invalid season query params to the default year', async () => {
+    render(
+      <MemoryRouter initialEntries={['/leaders?group=hitting&category=homeRuns&season=abc']}>
+        <Leaders />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByLabelText('Season', {}, asyncWait)).toHaveValue(2026);
+  });
+
+  it('keeps partial season edits while typing', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/leaders?group=hitting&category=homeRuns&season=2026']}>
+        <Leaders />
+      </MemoryRouter>,
+    );
+
+    const input = await screen.findByLabelText('Season', {}, asyncWait);
+    await user.clear(input);
+    await user.type(input, '202');
+    expect(input).toHaveValue(202);
+
+    await user.type(input, '4');
+    expect(input).toHaveValue(2024);
+    await waitFor(
+      () =>
+        expect(api.fetchLeaders).toHaveBeenCalledWith(
+          expect.objectContaining({ season: 2024 }),
+          expect.any(AbortSignal),
+        ),
+      asyncWait,
+    );
+  });
+
+  it('commits the input DOM value on blur, not a stale draft', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/leaders?group=hitting&category=homeRuns&season=2026']}>
+        <Leaders />
+      </MemoryRouter>,
+    );
+
+    const input = await screen.findByLabelText('Season', {}, asyncWait);
+    await user.clear(input);
+    await user.type(input, '2025');
+    await user.tab();
+    expect(input).toHaveValue(2025);
+    await waitFor(
+      () =>
+        expect(api.fetchLeaders).toHaveBeenCalledWith(
+          expect.objectContaining({ season: 2025 }),
           expect.any(AbortSignal),
         ),
       asyncWait,

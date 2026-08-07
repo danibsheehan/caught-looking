@@ -4,6 +4,7 @@ export { default as DivisionRunsScatter } from './DivisionRunsScatter';
 export { default as RecordTimelineStrip } from './RecordTimelineStrip';
 export { default as TeamSeasonDeepDive } from './TeamSeasonDeepDive';
 export { default as WinLossChart } from './WinLossChart';
+export { default as LeadersTop10Bar } from './LeadersTop10Bar';
 export { default as PlayerRadar } from './PlayerRadar';
 export { default as PlayerCompareAheadChart } from './PlayerCompareAheadChart';
 export { default as PlayerCompareCareerLines } from './PlayerCompareCareerLines';
