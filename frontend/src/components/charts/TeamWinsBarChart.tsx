@@ -36,7 +36,7 @@ export default function TeamWinsBarChart({ data, height = 320 }: TeamWinsBarChar
   const labelColors = useMemo(() => pairs.map((p) => p.label), [pairs]);
 
   return (
-    <div className="chart-frame" style={{ width: '100%', minHeight: height }}>
+    <div className="team-wins-bar chart-frame" style={{ width: '100%', minHeight: height }}>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} margin={{ top: 22, right: 10, left: 4, bottom: 30 }}>
           <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />

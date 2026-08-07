@@ -17,13 +17,8 @@
   margin-top: 0.25rem;
 }
 
-.players-compare__panel--chart .chart-frame,
-.standings-page__panel--chart .chart-frame,
-.teams-page__panel--chart .chart-frame,
-.teams-page__chart-area .chart-frame,
-.leaders-page__chart .chart-frame,
-.game-statcast .chart-frame,
-.game-boxscore__panel--chart .chart-frame {
+/** Shared Recharts shell — width + spacing inside page chart panels. */
+.chart-frame {
   width: 100%;
   margin-top: 0.5rem;
 }
@@ -86,13 +81,7 @@
     padding-inline: 0.65rem;
   }
 
-  .players-compare__panel--chart .chart-frame,
-  .standings-page__panel--chart .chart-frame,
-  .teams-page__panel--chart .chart-frame,
-  .teams-page__chart-area .chart-frame,
-  .leaders-page__chart .chart-frame,
-  .game-statcast .chart-frame,
-  .game-boxscore__panel--chart .chart-frame {
+  .chart-frame {
     margin-inline: -0.15rem;
   }
 }

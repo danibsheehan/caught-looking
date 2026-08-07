@@ -13,7 +13,7 @@ describe('TeamWinsBarChart', () => {
       />,
     );
 
-    expect(container.querySelector('.chart-frame')).toBeInTheDocument();
+    expect(container.querySelector('.team-wins-bar.chart-frame')).toBeInTheDocument();
     await waitFor(() => {
       expect(container.querySelectorAll('.recharts-bar-rectangle').length).toBe(2);
     });
@@ -22,7 +22,7 @@ describe('TeamWinsBarChart', () => {
 
   it('still mounts chart chrome with no teams', () => {
     const { container } = render(<TeamWinsBarChart data={[]} />);
-    expect(container.querySelector('.chart-frame')).toBeInTheDocument();
+    expect(container.querySelector('.team-wins-bar.chart-frame')).toBeInTheDocument();
     expect(container.querySelector('.recharts-responsive-container')).toBeInTheDocument();
   });
 });
