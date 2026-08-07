@@ -94,7 +94,19 @@ export const boxscore = {
     teamName: 'Away',
     totals: { runs: 3, hits: 8, errors: 0 },
     batting: [],
-    pitching: [],
+    pitching: [
+      {
+        playerId: 2001,
+        name: 'Casey Pitcher',
+        ip: '6.0',
+        h: 4,
+        r: 2,
+        er: 2,
+        bb: 1,
+        so: 6,
+        hr: 0,
+      },
+    ],
   },
   home: {
     teamId: 144,
@@ -124,5 +136,73 @@ export const statcast = {
 
 export const pitches = {
   gamePk: SMOKE_GAME_PK,
-  pitches: [],
+  pitches: [
+    {
+      plateX: -0.2,
+      plateZ: 2.1,
+      pitchName: '4-Seam Fastball',
+      pitchType: 'FF',
+      pitcher: 2001,
+      releaseSpeed: 94.2,
+    },
+    {
+      plateX: 0.4,
+      plateZ: 3.0,
+      pitchName: 'Slider',
+      pitchType: 'SL',
+      pitcher: 2001,
+      releaseSpeed: 87.0,
+    },
+    {
+      plateX: -0.5,
+      plateZ: 1.8,
+      pitchName: '4-Seam Fastball',
+      pitchType: 'FF',
+      pitcher: 2001,
+      releaseSpeed: 95.1,
+    },
+  ],
+};
+
+export const leadersPitchingWins = {
+  season: 2024,
+  group: 'pitching',
+  category: 'wins',
+  limit: 10,
+  categories: ['earnedRunAverage', 'wins', 'strikeouts'],
+  leaders: [
+    {
+      rank: 1,
+      value: '18',
+      playerId: 1,
+      playerName: 'Smoke Ace',
+      teamId: 121,
+      teamName: 'New York Mets',
+      leagueName: 'NL',
+    },
+  ],
+};
+
+export const seasonStats = {
+  season: 2026,
+  teamId: 121,
+  hitting: {
+    gamesPlayed: 15,
+    runs: 75,
+    runsPerGame: 5,
+    doubles: 28,
+    stolenBases: 12,
+  },
+  pitching: { gamesPlayed: 15, runsAllowed: 60, runsAllowedPerGame: 4 },
+  venueSplits: {
+    home: { games: 0, wins: 0, losses: 0, runsScored: 0, runsAllowed: 0 },
+    away: { games: 0, wins: 0, losses: 0, runsScored: 0, runsAllowed: 0 },
+  },
+};
+
+export const recordTimeline = {
+  teamId: 121,
+  season: 2026,
+  points: [],
+  finishedGames: 0,
 };

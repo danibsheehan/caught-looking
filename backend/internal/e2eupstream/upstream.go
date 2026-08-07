@@ -205,9 +205,12 @@ const linescoreJSON = `{
 }`
 
 // Combined Savant CSV: batted-ball rows need launch_speed/angle; pitch rows need plate_x/z.
+// Pitcher ids match boxscore pitchers (2001 away / 2002 home) so SPA density maps resolve names.
 const statcastCSV = `launch_speed,launch_angle,batter,pitcher,player_name,events,inning_topbot,hc_x,hc_y,plate_x,plate_z,pitch_name,pitch_type,release_speed,sz_top,sz_bot,stand
-95.1,12.2,12345,67890,Test Batter,single,Top,130.0,45.0,-0.42,2.15,4-Seam Fastball,FF,94.2,3.41,1.74,R
-88.0,-5.0,12345,67891,Test Batter 2,grounded_into_double_play,Bot,118.0,12.0,0.31,3.05,Slider,SL,87.0,3.37,1.79,R
+95.1,12.2,1001,2001,Away Batter,single,Top,130.0,45.0,-0.42,2.15,4-Seam Fastball,FF,94.2,3.41,1.74,R
+88.0,-5.0,1002,2002,Home Batter,grounded_into_double_play,Bot,118.0,12.0,0.31,3.05,Slider,SL,87.0,3.37,1.79,R
+,,,2001,,,,,-0.2,2.1,4-Seam Fastball,FF,95.0,3.41,1.74,R
+,,,2001,,,,,0.4,3.0,Slider,SL,86.5,3.41,1.74,R
 `
 
 // Handler returns the fixture mux (MLB JSON paths + Savant CSV + /health).
