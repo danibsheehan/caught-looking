@@ -225,7 +225,7 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 | Area | What you get | Shareable URL |
 | :--- | :--- | :--- |
 | **Standings** | League standings for the configured season | — |
-| **Leaders** | Season leaders (hitting / pitching from MLB Stats API) | Filters in the URL |
+| **Leaders** | Season leaders (hitting / pitching from MLB Stats API) with a top-10 bar above the table | Filters in the URL |
 | **Teams** | Season stats + record timelines | Team, season, panel tab |
 | **Players** | Side-by-side compare (radar, trends, game log); hitting / pitching | `ids`, season, scope, group |
 | **Games** | Date slate + per-game timeline / boxscore / Statcast; live poll (paused when tab hidden); pitch dots or zone density | Slate `date` / optional `team` |

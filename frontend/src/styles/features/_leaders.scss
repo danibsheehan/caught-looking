@@ -41,6 +41,20 @@
     min-width: 10rem;
   }
 
+  &__chart {
+    margin-bottom: 1.25rem;
+  }
+
+  &__chart-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.1rem;
+    color: var(--text-h);
+  }
+
+  &__chart-lede {
+    margin: 0 0 0.75rem;
+  }
+
   &__table-wrap {
     overflow-x: auto;
     border: 1px solid var(--border);

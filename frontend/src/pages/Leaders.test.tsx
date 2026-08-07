@@ -81,7 +81,11 @@ describe('Leaders', () => {
       await screen.findByRole('heading', { level: 1, name: 'Leaders' }, asyncWait),
     ).toBeInTheDocument();
     expect(await screen.findByText('Cal Raleigh', {}, asyncWait)).toBeInTheDocument();
-    expect(screen.getByText('60')).toBeInTheDocument();
+    expect(document.querySelector('.leaders-page__value')?.textContent).toBe('60');
+    expect(
+      await screen.findByRole('heading', { level: 2, name: /Top \d+/ }, asyncWait),
+    ).toBeInTheDocument();
+    expect(document.querySelector('.leaders-top10-bar')).toBeInTheDocument();
 
     await waitFor(() => expect(api.fetchLeaders).toHaveBeenCalled(), asyncWait);
     expect(api.fetchLeaders).toHaveBeenCalledWith(

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
+import LeadersTop10Bar from '../components/charts/LeadersTop10Bar';
 import { useLeaders } from '../hooks/useLeaders';
 import type { LeadersQuery } from '../types/api.compat';
 import {
@@ -167,41 +168,56 @@ export default function Leaders() {
       ) : null}
 
       {table ? (
-        <div className="leaders-page__table-wrap">
-          <table
-            className="leaders-page__table"
-            aria-label={`${labelCategory(table.category)} leaders for ${table.season}`}
-          >
-            <thead>
-              <tr>
-                <th scope="col">Rank</th>
-                <th scope="col">Player</th>
-                <th scope="col">Team</th>
-                <th scope="col">Lg</th>
-                <th scope="col">{labelCategory(table.category)}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {table.leaders.length === 0 ? (
+        <>
+          {table.leaders.length > 0 ? (
+            <div className="leaders-page__chart panel chart-panel">
+              <h2 className="leaders-page__chart-title">Top {table.leaders.length}</h2>
+              <p className="muted small leaders-page__chart-lede">
+                {labelCategory(table.category)} · {table.season}. Bars use each player’s
+                current-team chart color when available.
+              </p>
+              <LeadersTop10Bar
+                leaders={table.leaders}
+                categoryLabel={labelCategory(table.category)}
+              />
+            </div>
+          ) : null}
+          <div className="leaders-page__table-wrap">
+            <table
+              className="leaders-page__table"
+              aria-label={`${labelCategory(table.category)} leaders for ${table.season}`}
+            >
+              <thead>
                 <tr>
-                  <td colSpan={5} className="muted">
-                    No leaders for this selection.
-                  </td>
+                  <th scope="col">Rank</th>
+                  <th scope="col">Player</th>
+                  <th scope="col">Team</th>
+                  <th scope="col">Lg</th>
+                  <th scope="col">{labelCategory(table.category)}</th>
                 </tr>
-              ) : (
-                table.leaders.map((row) => (
-                  <tr key={`${row.rank}-${row.playerId}`}>
-                    <td>{row.rank}</td>
-                    <td>{row.playerName}</td>
-                    <td>{row.teamName || '—'}</td>
-                    <td>{row.leagueName || '—'}</td>
-                    <td className="leaders-page__value">{row.value}</td>
+              </thead>
+              <tbody>
+                {table.leaders.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="muted">
+                      No leaders for this selection.
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  table.leaders.map((row) => (
+                    <tr key={`${row.rank}-${row.playerId}`}>
+                      <td>{row.rank}</td>
+                      <td>{row.playerName}</td>
+                      <td>{row.teamName || '—'}</td>
+                      <td>{row.leagueName || '—'}</td>
+                      <td className="leaders-page__value">{row.value}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : null}
     </section>
   );
