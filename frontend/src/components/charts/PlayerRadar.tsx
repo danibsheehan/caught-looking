@@ -12,8 +12,9 @@ import {
 import type { PlayersRadarResponse } from '../../types/api.compat';
 import ChartSkeleton from '../skeletons/ChartSkeleton';
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors';
-import { buildCompareMetricRows } from '../../utils/playerCompareMetricRows';
+import { buildCompareMetricRows, compareMetricA11yRows } from '../../utils/playerCompareMetricRows';
 import { polarAxisTickSans } from '../../utils/rechartsAxis';
+import ChartDataTable from './ChartDataTable';
 
 function toRadarRows(
   payload: PlayersRadarResponse | null,
@@ -48,6 +49,7 @@ export default function PlayerRadar({
   teamId2,
 }: PlayerRadarProps) {
   const rows = useMemo(() => toRadarRows(data, group), [data, group]);
+  const a11y = useMemo(() => compareMetricA11yRows(data, group), [data, group]);
 
   const nameA = data?.players?.[0]?.fullName ?? 'Player A';
   const nameB = data?.players?.[1]?.fullName ?? 'Player B';
@@ -75,42 +77,53 @@ export default function PlayerRadar({
   }
 
   return (
-    <ResponsiveContainer width="100%" height={420}>
-      <RadarChart
-        data={rows}
-        cx="50%"
-        cy="50%"
-        outerRadius="72%"
-        margin={{ top: 16, right: 24, bottom: 16, left: 24 }}
-      >
-        <PolarGrid stroke="var(--border)" />
-        <PolarAngleAxis dataKey="metric" tick={polarAxisTickSans} />
-        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-        <Radar
-          name={nameA}
-          dataKey="a"
-          stroke={colorA}
-          fill={colorA}
-          fillOpacity={0.35}
-          isAnimationActive={false}
+    <div>
+      <div aria-hidden="true">
+        <ResponsiveContainer width="100%" height={420}>
+          <RadarChart
+            data={rows}
+            cx="50%"
+            cy="50%"
+            outerRadius="72%"
+            margin={{ top: 16, right: 24, bottom: 16, left: 24 }}
+          >
+            <PolarGrid stroke="var(--border)" />
+            <PolarAngleAxis dataKey="metric" tick={polarAxisTickSans} />
+            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+            <Radar
+              name={nameA}
+              dataKey="a"
+              stroke={colorA}
+              fill={colorA}
+              fillOpacity={0.35}
+              isAnimationActive={false}
+            />
+            <Radar
+              name={nameB}
+              dataKey="b"
+              stroke={colorB}
+              fill={colorB}
+              fillOpacity={0.22}
+              isAnimationActive={false}
+            />
+            <Legend />
+            <Tooltip
+              contentStyle={{
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-h)',
+              }}
+            />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
+      {a11y ? (
+        <ChartDataTable
+          caption={`Player comparison radar for ${nameA} and ${nameB} (${group}).`}
+          columns={a11y.columns}
+          rows={a11y.rows}
         />
-        <Radar
-          name={nameB}
-          dataKey="b"
-          stroke={colorB}
-          fill={colorB}
-          fillOpacity={0.22}
-          isAnimationActive={false}
-        />
-        <Legend />
-        <Tooltip
-          contentStyle={{
-            background: 'var(--bg)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-h)',
-          }}
-        />
-      </RadarChart>
-    </ResponsiveContainer>
+      ) : null}
+    </div>
   );
 }
