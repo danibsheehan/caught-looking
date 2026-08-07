@@ -37,9 +37,9 @@ def main() -> int:
     lines: list[str] = [
         "## PR guide",
         "",
-        "_Supporting checklist from changed paths — **not** the change rationale. "
-        "Read **Summary** (why + what) and **How to verify** (user-facing steps) in the "
-        "PR description above; fill those in if they are still empty._",
+        "_Auto-generated from changed paths. Prefer a why-first **Summary** in the PR "
+        "description above (motivation, then what changed); use this comment for path-based "
+        "checklist and suggested verify commands._",
         "",
         f"**Touches:** {format_touches(areas)}",
     ]

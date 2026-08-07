@@ -7,7 +7,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from pr_guide_lib import analyze_paths, merge_pr_body
+from pr_guide_lib import analyze_paths, merge_pr_body, verify_commands
 
 
 def main() -> int:
@@ -27,7 +27,7 @@ def main() -> int:
     ]
     current = Path(args.current_body).read_text(encoding="utf-8")
     areas, _ = analyze_paths(paths)
-    merged = merge_pr_body(current, areas)
+    merged = merge_pr_body(current, areas, verify_commands(areas))
     if merged is None:
         return 1
 
