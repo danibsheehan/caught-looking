@@ -33,10 +33,10 @@ export default function GameDetail() {
   }
 
   return (
-    <section className="page">
-      <header className="page-head">
+    <section className="page games-detail">
+      <header className="games-detail__header">
         <div>
-          <p className="muted small" style={{ marginBottom: '0.35rem' }}>
+          <p className="muted small games-detail__back-row">
             <Link className="games-detail__back" to={backTo}>
               ← Games
               {date ? ` · ${date}` : ''}
@@ -71,7 +71,7 @@ export default function GameDetail() {
         />
       ) : null}
 
-      <div className="panel chart-panel game-statcast">
+      <div className="game-statcast">
         <h2>Batted balls</h2>
         <p className="muted small">
           The field view shows roughly where each ball was put in play. The scatter chart uses the

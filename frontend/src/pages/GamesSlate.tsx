@@ -101,8 +101,8 @@ export default function GamesSlate() {
   }
 
   return (
-    <section className="page">
-      <header className="page-head">
+    <section className="page games-slate">
+      <header className="games-slate__header">
         <div>
           <h1>Games</h1>
           <p className="muted">
@@ -110,7 +110,7 @@ export default function GamesSlate() {
             timeline.
           </p>
         </div>
-        <div className="page-controls">
+        <div className="games-slate__controls">
           <label className="form-field">
             <span className="form-field__label">Date</span>
             <input
@@ -139,7 +139,7 @@ export default function GamesSlate() {
         </p>
       ) : null}
 
-      <div className="panel games-slate">
+      <div className="games-slate__panel">
         <h2>Games on this day</h2>
         {loadingList ? (
           <GameListSkeleton rows={7} />
