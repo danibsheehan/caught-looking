@@ -15,25 +15,13 @@
   font-size: 0.85rem;
 }
 
-.panel {
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 1rem 1.1rem;
-  margin-bottom: 1.25rem;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.panel h2 {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
-}
-
-.chart-panel .chart-frame,
 .players-compare__panel--chart .chart-frame,
 .standings-page__panel--chart .chart-frame,
 .teams-page__panel--chart .chart-frame,
-.teams-page__chart-area .chart-frame {
+.teams-page__chart-area .chart-frame,
+.leaders-page__chart .chart-frame,
+.game-statcast .chart-frame,
+.game-boxscore__panel--chart .chart-frame {
   width: 100%;
   margin-top: 0.5rem;
 }
@@ -86,18 +74,23 @@
 }
 
 @media (max-width: 520px) {
-  .chart-panel,
   .players-compare__panel--chart,
   .standings-page__panel--chart,
-  .teams-page__panel--chart {
+  .teams-page__panel--chart,
+  .leaders-page__chart,
+  .game-statcast,
+  .game-boxscore__panel--chart,
+  .page-skeleton__panel--chart {
     padding-inline: 0.65rem;
   }
 
-  .chart-panel .chart-frame,
   .players-compare__panel--chart .chart-frame,
   .standings-page__panel--chart .chart-frame,
   .teams-page__panel--chart .chart-frame,
-  .teams-page__chart-area .chart-frame {
+  .teams-page__chart-area .chart-frame,
+  .leaders-page__chart .chart-frame,
+  .game-statcast .chart-frame,
+  .game-boxscore__panel--chart .chart-frame {
     margin-inline: -0.15rem;
   }
 }

@@ -1,4 +1,34 @@
 .games-slate {
+  &__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  &__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem 1.25rem;
+  }
+
+  &__panel {
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem 1.1rem;
+    margin-bottom: 1.25rem;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+
+    h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+    }
+  }
+
   &__list {
     list-style: none;
     margin: 0.5rem 0 0;
@@ -48,7 +78,18 @@
 }
 
 .game-statcast {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem 1.1rem;
   margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+
+  h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+  }
 
   &__subhead {
     font-size: 1rem;
@@ -620,6 +661,19 @@
 }
 
 .games-detail {
+  &__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  &__back-row {
+    margin-bottom: 0.35rem;
+  }
+
   &__back {
     color: var(--accent);
     text-decoration: none;
@@ -682,6 +736,11 @@
     margin-bottom: 1.25rem;
     background: var(--surface);
     box-shadow: var(--shadow);
+
+    h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+    }
   }
 
   &__totals-grid &__panel,

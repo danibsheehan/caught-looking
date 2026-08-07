@@ -20,7 +20,12 @@
   }
 
   &__chart {
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem 1.1rem;
     margin-bottom: 1.25rem;
+    background: var(--surface);
+    box-shadow: var(--shadow);
   }
 
   &__chart-title {

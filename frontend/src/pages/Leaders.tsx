@@ -175,7 +175,7 @@ export default function Leaders() {
       {table ? (
         <>
           {table.leaders.length > 0 ? (
-            <div className="leaders-page__chart panel chart-panel">
+            <div className="leaders-page__chart">
               <h2 className="leaders-page__chart-title">Top {table.leaders.length}</h2>
               <p className="muted small leaders-page__chart-lede">
                 {labelCategory(table.category)} · {table.season}. Bars use each player’s

@@ -208,7 +208,7 @@ export default function GameBoxscorePanel({
       </div>
 
       {gamePk != null ? (
-        <div className="game-boxscore__runs-panel panel chart-panel">
+        <div className="game-boxscore__panel game-boxscore__panel--chart game-boxscore__runs-panel">
           <h2>Runs by inning</h2>
           <p className="muted small">
             Stacked bars use each team’s primary color, brightened for readability on a dark
@@ -396,7 +396,7 @@ export default function GameBoxscorePanel({
       </div>
 
       {pitchLocation != null ? (
-        <div className="panel chart-panel game-boxscore__pitch-location">
+        <div className="game-boxscore__panel game-boxscore__panel--chart game-boxscore__pitch-location">
           <h2>Pitch location</h2>
           <p className="muted small">
             Catcher&apos;s view toward the pitcher. <strong>Locations</strong> shows each pitch
