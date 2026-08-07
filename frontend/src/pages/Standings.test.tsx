@@ -25,6 +25,17 @@ const api = vi.hoisted(() => {
         divisionName: 'NL East',
         active: true,
       },
+      {
+        id: 112,
+        name: 'Cubs',
+        abbreviation: 'CHC',
+        teamName: 'Chicago Cubs',
+        leagueId: 104,
+        leagueName: 'National League',
+        divisionId: 202,
+        divisionName: 'NL Central',
+        active: true,
+      },
     ],
   };
 
@@ -95,9 +106,9 @@ vi.mock('../api/client', async (importOriginal) => {
   };
 });
 
-function renderStandings() {
+function renderStandings(path = '/standings') {
   return render(
-    <MemoryRouter initialEntries={['/standings']}>
+    <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/standings" element={<Standings />} />
       </Routes>
@@ -168,5 +179,30 @@ describe('Standings', () => {
         ),
       asyncWait,
     );
+  }, 15_000);
+
+  it('restores division and team focus from the URL', async () => {
+    renderStandings('/standings?team=112');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Standings' }, asyncWait),
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole('combobox', { name: 'Jump to team' })).toHaveValue('112');
+    expect(screen.getByRole('combobox', { name: 'Division' })).toHaveValue('1');
+    expect(screen.getByRole('heading', { level: 2, name: 'NL Central' })).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('Cubs')).toBeInTheDocument();
+  }, 15_000);
+
+  it('restores division from division id when team is absent', async () => {
+    renderStandings('/standings?division=202');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Standings' }, asyncWait),
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole('combobox', { name: 'Jump to team' })).toHaveValue('');
+    expect(screen.getByRole('combobox', { name: 'Division' })).toHaveValue('1');
+    expect(screen.getByRole('heading', { level: 2, name: 'NL Central' })).toBeInTheDocument();
   }, 15_000);
 });

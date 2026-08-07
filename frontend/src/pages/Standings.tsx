@@ -1,4 +1,5 @@
-import { lazy, useMemo, useState } from 'react';
+import { lazy, useCallback, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router';
 import { ChartSuspense } from '../components/charts/ChartSuspense';
 
 const MultiTeamWinPctChart = lazy(() => import('../components/charts/MultiTeamWinPctChart'));
@@ -9,19 +10,61 @@ import { useStandings, useTeams } from '../hooks/useMLB';
 import StandingsPageSkeleton from '../components/skeletons/StandingsPageSkeleton';
 import { obsidianRegistryLabelMap } from '../utils/mlbTeamColors';
 import { divisionIndexForTeam, sortStandingTeams, teamLabelMap } from '../utils/standings';
+import {
+  buildStandingsSearchParams,
+  parseStandingsSearchParams,
+  standingsSearchParamsNormalized,
+  type StandingsUrlState,
+} from '../utils/standingsSearchParams';
 
 export default function Standings() {
   const { data: teamsData } = useTeams({ sportId: '1' });
   const { data, error, loading } = useStandings({});
   const surfaceHex = useChartSurfaceHex();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlState = useMemo(() => parseStandingsSearchParams(searchParams), [searchParams]);
 
   const abbrevById = useMemo(() => teamLabelMap(teamsData), [teamsData]);
 
   const divisions = useMemo(() => data?.divisions ?? [], [data]);
   const teams = teamsData?.teams ?? [];
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const [focusTeamId, setFocusTeamId] = useState<number | ''>('');
 
+  const patchUrl = useCallback(
+    (patch: Partial<StandingsUrlState>) => {
+      setSearchParams(
+        (prev) => {
+          const cur = parseStandingsSearchParams(prev);
+          return buildStandingsSearchParams({ ...cur, ...patch }, prev);
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        if (standingsSearchParamsNormalized(prev)) return prev;
+        return buildStandingsSearchParams(parseStandingsSearchParams(prev), prev);
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
+
+  const selectedIdx = useMemo(() => {
+    if (urlState.teamId !== '') {
+      const byTeam = divisionIndexForTeam(divisions, urlState.teamId);
+      if (byTeam >= 0) return byTeam;
+    }
+    if (urlState.divisionId !== '') {
+      const byDiv = divisions.findIndex((d) => d.divisionId === urlState.divisionId);
+      if (byDiv >= 0) return byDiv;
+    }
+    return 0;
+  }, [divisions, urlState.divisionId, urlState.teamId]);
+
+  const focusTeamId = urlState.teamId;
   const safeIdx = Math.min(Math.max(0, selectedIdx), Math.max(0, divisions.length - 1));
   const selected = divisions[safeIdx];
 
@@ -56,10 +99,12 @@ export default function Standings() {
   }, [divisions, surfaceHex]);
 
   function onTeamSelected(id: number | '') {
-    setFocusTeamId(id);
-    if (id === '') return;
-    const idx = divisionIndexForTeam(divisions, id);
-    if (idx >= 0) setSelectedIdx(idx);
+    if (id === '') {
+      const div = divisions[safeIdx];
+      patchUrl({ teamId: '', divisionId: div?.divisionId ?? '' });
+      return;
+    }
+    patchUrl({ teamId: id, divisionId: '' });
   }
 
   if (loading && !data) {
@@ -121,8 +166,9 @@ export default function Standings() {
                 className="form-field__select"
                 value={safeIdx}
                 onChange={(e) => {
-                  setFocusTeamId('');
-                  setSelectedIdx(Number(e.target.value));
+                  const idx = Number(e.target.value);
+                  const div = divisions[idx];
+                  patchUrl({ teamId: '', divisionId: div?.divisionId ?? '' });
                 }}
               >
                 {divisions.map((d, i) => (

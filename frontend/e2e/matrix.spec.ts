@@ -37,6 +37,16 @@ test('deep link restores Teams club, season, and deep tab', async ({ page }) => 
   );
 });
 
+test('deep link restores Standings team focus and division', async ({ page }) => {
+  await page.goto('/standings?team=112');
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Standings' })).toBeVisible();
+  await expect(page.getByLabel('Jump to team')).toHaveValue('112');
+  await expect(page.getByLabel('Division')).toHaveValue('1');
+  await expect(page.getByRole('heading', { level: 2, name: 'NL Central' })).toBeVisible();
+  await expect(page.getByRole('table').getByText('Cubs')).toBeVisible();
+});
+
 test('Game Detail density toggle switches pitch plot mode', async ({ page }) => {
   await page.goto(`/games/${SMOKE_GAME_PK}?date=${SMOKE_DATE}`);
 

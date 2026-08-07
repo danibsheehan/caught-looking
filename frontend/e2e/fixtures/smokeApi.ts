@@ -34,6 +34,24 @@ export const standings = {
         },
       ],
     },
+    {
+      divisionId: 202,
+      divisionName: 'NL Central',
+      leagueId: 104,
+      teams: [
+        {
+          teamId: 112,
+          teamName: 'Cubs',
+          wins: 9,
+          losses: 6,
+          pct: '.600',
+          gamesPlayed: 15,
+          divisionRank: '1',
+          gamesBack: '-',
+          wildCardGamesBack: '-',
+        },
+      ],
+    },
   ],
 };
 
@@ -59,6 +77,17 @@ export const teams = {
       leagueName: 'National League',
       divisionId: 201,
       divisionName: 'NL East',
+      active: true,
+    },
+    {
+      id: 112,
+      name: 'Cubs',
+      abbreviation: 'CHC',
+      teamName: 'Chicago Cubs',
+      leagueId: 104,
+      leagueName: 'National League',
+      divisionId: 202,
+      divisionName: 'NL Central',
       active: true,
     },
   ],
