@@ -159,6 +159,7 @@ func (u upstreamGET) do(ctx context.Context, path string) ([]byte, error) {
 			return nil, readErr
 		}
 		if res.StatusCode < 200 || res.StatusCode >= 300 {
+			recordUpstreamHTTPStatus(u.name, res.StatusCode)
 			lastErr = fmt.Errorf("%s GET %s: status %d: %s", u.name, path, res.StatusCode, truncate(body, 200))
 			if attempt+1 < maxAttempts && upstreamStatusRetryable(res.StatusCode) {
 				if err := sleepContext(ctx, retryAfterDelay(res, attempt+1)); err != nil {

@@ -73,6 +73,15 @@ func TestMetrics(t *testing.T) {
 	if !strings.Contains(string(body), "go_goroutines") {
 		t.Fatalf("expected default Go collector metrics, got %q", truncateForTest(string(body), 200))
 	}
+	for _, name := range []string{
+		"caught_looking_cache_requests_total",
+		"caught_looking_cache_coalesce_total",
+		"caught_looking_upstream_http_total",
+	} {
+		if !strings.Contains(string(body), name) {
+			t.Fatalf("expected custom metric %q in /metrics, got %q", name, truncateForTest(string(body), 400))
+		}
+	}
 }
 
 func truncateForTest(s string, n int) string {
