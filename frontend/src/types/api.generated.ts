@@ -699,10 +699,59 @@ export interface components {
             categories: string[];
         };
     };
-    responses: never;
+    responses: {
+        /** @description Invalid path or query parameters */
+        BadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Per-IP rate limit exceeded */
+        TooManyRequests: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Local encode/decode or unexpected failure */
+        InternalError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Upstream MLB/Savant failure or parse error */
+        BadGateway: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Request deadline exceeded */
+        GatewayTimeout: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
-    headers: never;
+    headers: {
+        /** @description Set on successful JSON responses. `public, max-age=<seconds>` when the entry is cacheable (TTL from in-process cache); `private, no-store` when TTL is non-positive. See docs/adr/0001-cache-ttls.md. */
+        CacheControl: string;
+    };
     pathItems: never;
 }
 export type $defs = Record<string, never>;
@@ -741,12 +790,18 @@ export interface operations {
             /** @description Teams list */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["TeamsResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getStandings: {
@@ -765,30 +820,18 @@ export interface operations {
             /** @description Division standings */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["StandingsResponse"];
                 };
             };
-            /** @description Invalid query parameters */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Upstream MLB failure */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getLeaders: {
@@ -811,30 +854,18 @@ export interface operations {
             /** @description Leaders board */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["LeadersResponse"];
                 };
             };
-            /** @description Invalid query parameters */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Upstream MLB failure */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getRecordTimeline: {
@@ -853,12 +884,18 @@ export interface operations {
             /** @description Team timeline */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["RecordTimelineResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getTeamSeasonStats: {
@@ -877,12 +914,18 @@ export interface operations {
             /** @description Team season stats */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["TeamSeasonStatsResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getRecordTimelinesBatch: {
@@ -900,12 +943,18 @@ export interface operations {
             /** @description Record timelines batch */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["RecordTimelinesBatchResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getGamesForDate: {
@@ -923,30 +972,18 @@ export interface operations {
             /** @description Games for date */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["GamesForDateResponse"];
                 };
             };
-            /** @description Invalid query parameters */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Upstream MLB failure */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getGameTimeline: {
@@ -963,30 +1000,18 @@ export interface operations {
             /** @description Game timeline */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["GameTimelineResponse"];
                 };
             };
-            /** @description Invalid gamePk */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Upstream MLB failure */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getGameBoxscore: {
@@ -1003,30 +1028,18 @@ export interface operations {
             /** @description Game boxscore */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["GameBoxscoreResponse"];
                 };
             };
-            /** @description Invalid gamePk */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Upstream MLB failure */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getGameStatcast: {
@@ -1043,12 +1056,18 @@ export interface operations {
             /** @description Statcast batted-ball events */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["GameStatcastResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getGameStatcastPitches: {
@@ -1065,12 +1084,18 @@ export interface operations {
             /** @description Statcast pitch rows */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["GameStatcastPitchesResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     searchPlayers: {
@@ -1087,12 +1112,18 @@ export interface operations {
             /** @description Search results */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["PlayersSearchResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getPlayersCurrentTeams: {
@@ -1110,19 +1141,18 @@ export interface operations {
             /** @description Current team id per player */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["PlayersCurrentTeamsResponse"];
                 };
             };
-            /** @description Invalid or duplicate ids */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getPlayerCurrentTeam: {
@@ -1139,12 +1169,18 @@ export interface operations {
             /** @description Current team id */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerCurrentTeamResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     comparePlayers: {
@@ -1164,12 +1200,18 @@ export interface operations {
             /** @description Player compare data */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["PlayersRadarResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     comparePlayersYearByYear: {
@@ -1188,12 +1230,18 @@ export interface operations {
             /** @description Year-by-year values */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["PlayersYearByYearResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     comparePlayersGameLog: {
@@ -1213,12 +1261,18 @@ export interface operations {
             /** @description Player game log compare */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["PlayersGameLogResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     comparePlayersPlatoon: {
@@ -1237,12 +1291,18 @@ export interface operations {
             /** @description Platoon split comparison */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["PlayersPlatoonResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getLeagueSeasonBaseline: {
@@ -1260,12 +1320,18 @@ export interface operations {
             /** @description League baseline values */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["LeagueSeasonBaselineResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
 }

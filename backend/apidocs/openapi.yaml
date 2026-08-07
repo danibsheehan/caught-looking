@@ -2,7 +2,10 @@ openapi: 3.0.3
 info:
   title: Caught Looking API
   version: 0.1.0
-  description: Read-only baseball analytics endpoints.
+  description: >-
+    Read-only baseball analytics endpoints. Successful JSON responses set
+    `Cache-Control` from the in-process TTL. Errors use `{"error":"<message>"}`
+    (see shared response components for 400/429/500/502/504).
 servers:
   - url: /
 paths:
@@ -30,10 +33,23 @@ paths:
       responses:
         "200":
           description: Teams list
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/TeamsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /standings:
     get:
       summary: Get standings
@@ -54,22 +70,23 @@ paths:
       responses:
         "200":
           description: Division standings
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/StandingsResponse"
         "400":
-          description: Invalid query parameters
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
         "502":
-          description: Upstream MLB failure
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /leaders:
     get:
       summary: Season statistical leaders
@@ -100,22 +117,23 @@ paths:
       responses:
         "200":
           description: Leaders board
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/LeadersResponse"
         "400":
-          description: Invalid query parameters
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
         "502":
-          description: Upstream MLB failure
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /teams/{teamID}/record-timeline:
     get:
       summary: Team record over season
@@ -133,10 +151,23 @@ paths:
       responses:
         "200":
           description: Team timeline
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecordTimelineResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /teams/{teamID}/season-stats:
     get:
       summary: Team season stats
@@ -154,10 +185,23 @@ paths:
       responses:
         "200":
           description: Team season stats
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/TeamSeasonStatsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /record-timelines/batch:
     get:
       summary: Fetch record timelines for many teams
@@ -176,10 +220,23 @@ paths:
       responses:
         "200":
           description: Record timelines batch
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecordTimelinesBatchResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /games/for-date:
     get:
       summary: Games scheduled for date
@@ -198,22 +255,23 @@ paths:
       responses:
         "200":
           description: Games for date
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/GamesForDateResponse"
         "400":
-          description: Invalid query parameters
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
         "502":
-          description: Upstream MLB failure
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /games/{gamePk}/timeline:
     get:
       summary: Inning-by-inning game runs
@@ -227,22 +285,23 @@ paths:
       responses:
         "200":
           description: Game timeline
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/GameTimelineResponse"
         "400":
-          description: Invalid gamePk
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
         "502":
-          description: Upstream MLB failure
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /games/{gamePk}/boxscore:
     get:
       summary: Game boxscore
@@ -256,22 +315,23 @@ paths:
       responses:
         "200":
           description: Game boxscore
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/GameBoxscoreResponse"
         "400":
-          description: Invalid gamePk
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
         "502":
-          description: Upstream MLB failure
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /games/{gamePk}/statcast:
     get:
       summary: Game statcast batted balls
@@ -285,10 +345,23 @@ paths:
       responses:
         "200":
           description: Statcast batted-ball events
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/GameStatcastResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /games/{gamePk}/statcast/pitches:
     get:
       summary: Game statcast pitch rows
@@ -302,10 +375,23 @@ paths:
       responses:
         "200":
           description: Statcast pitch rows
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/GameStatcastPitchesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /players/search:
     get:
       summary: Player lookup by names string
@@ -319,10 +405,23 @@ paths:
       responses:
         "200":
           description: Search results
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlayersSearchResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /players/current-teams:
     get:
       summary: Current team for two players (single request)
@@ -341,12 +440,23 @@ paths:
       responses:
         "200":
           description: Current team id per player
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlayersCurrentTeamsResponse"
         "400":
-          description: Invalid or duplicate ids
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /players/{playerID}/current-team:
     get:
       summary: Player current team
@@ -360,10 +470,23 @@ paths:
       responses:
         "200":
           description: Current team id
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlayerCurrentTeamResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /players/compare:
     get:
       summary: Multi-player compare snapshot
@@ -391,10 +514,23 @@ paths:
       responses:
         "200":
           description: Player compare data
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlayersRadarResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /players/compare/year-by-year:
     get:
       summary: Multi-player year-by-year trend
@@ -417,10 +553,23 @@ paths:
       responses:
         "200":
           description: Year-by-year values
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlayersYearByYearResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /players/compare/game-log:
     get:
       summary: Multi-player rolling game log
@@ -447,10 +596,23 @@ paths:
       responses:
         "200":
           description: Player game log compare
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlayersGameLogResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /players/compare/platoon:
     get:
       summary: Multi-player platoon split comparison
@@ -473,10 +635,23 @@ paths:
       responses:
         "200":
           description: Platoon split comparison
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlayersPlatoonResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
   /league/season-baseline:
     get:
       summary: League baseline for season
@@ -494,11 +669,65 @@ paths:
       responses:
         "200":
           description: League baseline values
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/LeagueSeasonBaselineResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
+
 components:
+  headers:
+    CacheControl:
+      description: >-
+        Set on successful JSON responses. `public, max-age=<seconds>` when the
+        entry is cacheable (TTL from in-process cache); `private, no-store` when
+        TTL is non-positive. See docs/adr/0001-cache-ttls.md.
+      schema:
+        type: string
+        example: public, max-age=60
+  responses:
+    BadRequest:
+      description: Invalid path or query parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    TooManyRequests:
+      description: Per-IP rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalError:
+      description: Local encode/decode or unexpected failure
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    BadGateway:
+      description: Upstream MLB/Savant failure or parse error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    GatewayTimeout:
+      description: Request deadline exceeded
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
   schemas:
     ErrorResponse:
       type: object
