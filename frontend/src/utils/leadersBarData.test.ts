@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { LeaderRow } from '../types/api.compat';
-import { buildLeadersBarData, parseLeaderValue, shortPlayerLabel } from './leadersBarData';
+import {
+  buildLeadersBarData,
+  leadersYAxisWidth,
+  parseLeaderValue,
+  shortPlayerLabel,
+} from './leadersBarData';
 
 const sample: LeaderRow[] = [
   {
@@ -40,6 +45,15 @@ describe('shortPlayerLabel', () => {
     expect(shortPlayerLabel('Vladimir Guerrero Jr')).toBe('Guerrero');
     expect(shortPlayerLabel('John Doe III')).toBe('Doe');
     expect(shortPlayerLabel('Madonna')).toBe('Madonna');
+    expect(shortPlayerLabel('Pete Crow-Armstrong')).toBe('Crow-Armstrong');
+  });
+});
+
+describe('leadersYAxisWidth', () => {
+  it('grows with longer labels so hyphenated surnames fit', () => {
+    expect(leadersYAxisWidth(['Olson'])).toBe(100);
+    expect(leadersYAxisWidth(['Crow-Armstrong'])).toBeGreaterThan(100);
+    expect(leadersYAxisWidth(['Crow-Armstrong'])).toBeLessThanOrEqual(152);
   });
 });
 

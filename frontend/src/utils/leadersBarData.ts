@@ -30,8 +30,15 @@ export function shortPlayerLabel(fullName: string): string {
     parts.pop();
   }
   if (parts.length === 0) return '—';
-  if (parts.length === 1) return parts[0]!.slice(0, 14);
-  return parts[parts.length - 1]!.slice(0, 14);
+  if (parts.length === 1) return parts[0]!.slice(0, 18);
+  return parts[parts.length - 1]!.slice(0, 18);
+}
+
+/** Pixel width for the category Y-axis from the longest tick label. */
+export function leadersYAxisWidth(labels: readonly string[]): number {
+  const longest = labels.reduce((max, label) => Math.max(max, label.length), 0);
+  // ~7.5px per character at 11px sans, plus end-anchor gutter.
+  return Math.min(152, Math.max(100, Math.ceil(longest * 7.5) + 20));
 }
 
 export function buildLeadersBarData(leaders: readonly LeaderRow[]): LeadersBarDatum[] {

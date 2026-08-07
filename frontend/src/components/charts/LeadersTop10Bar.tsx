@@ -15,7 +15,11 @@ import {
   CHART_NEUTRAL_FALLBACK,
   obsidianTeamChartPairsRegistryPrimary,
 } from '../../utils/mlbTeamColors';
-import { buildLeadersBarData, type LeadersBarDatum } from '../../utils/leadersBarData';
+import {
+  buildLeadersBarData,
+  leadersYAxisWidth,
+  type LeadersBarDatum,
+} from '../../utils/leadersBarData';
 import { chartCartesianTick, polarAxisTickSans } from '../../utils/rechartsAxis';
 
 type LeadersTop10BarProps = {
@@ -50,11 +54,12 @@ export default function LeadersTop10Bar({
   }
 
   const chartHeight = Math.max(height, 28 * data.length + 48);
+  const yAxisWidth = leadersYAxisWidth(data.map((r) => r.label));
 
   return (
     <div className="leaders-top10-bar chart-frame" aria-hidden="true">
       <ResponsiveContainer width="100%" height={chartHeight}>
-        <BarChart layout="vertical" data={data} margin={{ top: 8, right: 28, left: 4, bottom: 8 }}>
+        <BarChart layout="vertical" data={data} margin={{ top: 8, right: 28, left: 8, bottom: 8 }}>
           <CartesianGrid
             strokeDasharray="3 4"
             stroke="var(--chart-grid-faint)"
@@ -64,7 +69,7 @@ export default function LeadersTop10Bar({
           <YAxis
             type="category"
             dataKey="label"
-            width={88}
+            width={yAxisWidth}
             interval={0}
             tick={polarAxisTickSans}
             tickLine={false}
