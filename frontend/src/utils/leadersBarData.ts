@@ -16,8 +16,19 @@ export function parseLeaderValue(raw: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function shortPlayerLabel(fullName: string): string {
+/** Generational / honorific suffixes that should not become the chart label. */
+const NAME_SUFFIXES = new Set(['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'v', 'vi']);
+
+function isNameSuffix(token: string): boolean {
+  return NAME_SUFFIXES.has(token.toLowerCase());
+}
+
+/** Last-name-ish tick for horizontal bars; skips Jr./Sr./II/… suffixes. */
+export function shortPlayerLabel(fullName: string): string {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  while (parts.length > 1 && isNameSuffix(parts[parts.length - 1]!)) {
+    parts.pop();
+  }
   if (parts.length === 0) return '—';
   if (parts.length === 1) return parts[0]!.slice(0, 14);
   return parts[parts.length - 1]!.slice(0, 14);

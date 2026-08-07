@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LeaderRow } from '../types/api.compat';
-import { buildLeadersBarData, parseLeaderValue } from './leadersBarData';
+import { buildLeadersBarData, parseLeaderValue, shortPlayerLabel } from './leadersBarData';
 
 const sample: LeaderRow[] = [
   {
@@ -32,6 +32,17 @@ describe('parseLeaderValue', () => {
   });
 });
 
+describe('shortPlayerLabel', () => {
+  it('uses the family name and skips generational suffixes', () => {
+    expect(shortPlayerLabel('Cal Raleigh')).toBe('Raleigh');
+    expect(shortPlayerLabel('Ken Griffey Jr.')).toBe('Griffey');
+    expect(shortPlayerLabel('Ronald Acuña Jr.')).toBe('Acuña');
+    expect(shortPlayerLabel('Vladimir Guerrero Jr')).toBe('Guerrero');
+    expect(shortPlayerLabel('John Doe III')).toBe('Doe');
+    expect(shortPlayerLabel('Madonna')).toBe('Madonna');
+  });
+});
+
 describe('buildLeadersBarData', () => {
   it('maps leaders to chart rows with short labels', () => {
     const rows = buildLeadersBarData(sample);
@@ -44,5 +55,19 @@ describe('buildLeadersBarData', () => {
       valueLabel: '60',
     });
     expect(rows[1]?.label).toBe('Judge');
+  });
+
+  it('labels suffix names with the family name', () => {
+    const rows = buildLeadersBarData([
+      {
+        rank: 1,
+        value: '40',
+        playerId: 3,
+        playerName: 'Ken Griffey Jr.',
+        teamId: 136,
+        teamName: 'Seattle Mariners',
+      },
+    ]);
+    expect(rows[0]?.label).toBe('Griffey');
   });
 });
