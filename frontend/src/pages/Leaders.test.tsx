@@ -93,7 +93,7 @@ describe('Leaders', () => {
       expect.any(AbortSignal),
     );
 
-    await user.click(screen.getByRole('tab', { name: 'Pitching' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Stat group' }), 'pitching');
     expect(await screen.findByText('Paul Skenes', {}, asyncWait)).toBeInTheDocument();
     expect(screen.getByText('1.97')).toBeInTheDocument();
 
@@ -129,10 +129,7 @@ describe('Leaders', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole('tab', { name: 'Pitching' }, asyncWait)).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    expect(await screen.findByLabelText('Stat group', {}, asyncWait)).toHaveValue('pitching');
     expect(screen.getByLabelText('Category')).toHaveValue('wins');
     expect(screen.getByLabelText('Season')).toHaveValue(2024);
 

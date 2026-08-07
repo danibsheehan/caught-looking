@@ -8,7 +8,6 @@ import {
   DEFAULT_CATEGORY,
   buildLeadersSearchParams,
   parseLeadersSearchParams,
-  type LeadersGroup,
 } from '../utils/leadersSearchParams';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -98,66 +97,61 @@ export default function Leaders() {
             . Filters stay in the URL for sharing.
           </p>
         </div>
-      </header>
-
-      <div className="leaders-page__controls" role="group" aria-label="Leaders filters">
-        <div className="leaders-page__tabs" role="tablist" aria-label="Stat group">
-          {(['hitting', 'pitching'] as const).map((g: LeadersGroup) => (
-            <button
-              key={g}
-              type="button"
-              role="tab"
-              aria-selected={group === g}
-              className={
-                group === g ? 'leaders-page__tab leaders-page__tab--active' : 'leaders-page__tab'
-              }
-              onClick={() => {
+        <div className="leaders-page__controls" role="group" aria-label="Leaders filters">
+          <label className="form-field">
+            <span className="form-field__label">Stat group</span>
+            <select
+              className="form-field__select"
+              value={group}
+              onChange={(e) => {
+                const g = e.target.value === 'pitching' ? 'pitching' : 'hitting';
                 patchUrl({ group: g, category: DEFAULT_CATEGORY[g] });
               }}
             >
-              {g === 'hitting' ? 'Hitting' : 'Pitching'}
-            </button>
-          ))}
+              <option value="hitting">Hitting</option>
+              <option value="pitching">Pitching</option>
+            </select>
+          </label>
+
+          <label className="form-field leaders-page__field">
+            <span className="form-field__label">Category</span>
+            <select
+              className="form-field__select"
+              value={category}
+              onChange={(e) => patchUrl({ category: e.target.value })}
+              disabled={loading && !table}
+            >
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {labelCategory(c)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="form-field">
+            <span className="form-field__label">Season</span>
+            <input
+              className="form-field__input"
+              type="number"
+              inputMode="numeric"
+              min={1900}
+              max={2100}
+              placeholder="Default"
+              value={season ?? ''}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                if (v === '') {
+                  patchUrl({ season: undefined });
+                  return;
+                }
+                const n = Number(v);
+                if (Number.isFinite(n)) patchUrl({ season: n });
+              }}
+            />
+          </label>
         </div>
-
-        <label className="form-field leaders-page__field">
-          <span className="form-field__label">Category</span>
-          <select
-            className="form-field__control"
-            value={category}
-            onChange={(e) => patchUrl({ category: e.target.value })}
-            disabled={loading && !table}
-          >
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {labelCategory(c)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="form-field leaders-page__field">
-          <span className="form-field__label">Season</span>
-          <input
-            className="form-field__control"
-            type="number"
-            inputMode="numeric"
-            min={1900}
-            max={2100}
-            placeholder="Default"
-            value={season ?? ''}
-            onChange={(e) => {
-              const v = e.target.value.trim();
-              if (v === '') {
-                patchUrl({ season: undefined });
-                return;
-              }
-              const n = Number(v);
-              if (Number.isFinite(n)) patchUrl({ season: n });
-            }}
-          />
-        </label>
-      </div>
+      </header>
 
       {loading && !table ? <p className="muted">Loading leaders…</p> : null}
 
