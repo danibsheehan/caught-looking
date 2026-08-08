@@ -15,6 +15,13 @@ import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
 import { useRecordTimelinesBatch } from '../../hooks/useRecordTimelinesBatch';
 import { obsidianTeamChartPairsRegistryPrimary } from '../../utils/mlbTeamColors';
 import { chartCartesianTick } from '../../utils/rechartsAxis';
+import {
+  buildDivisionRaceChartRows,
+  DIVISION_RACE_FORM_WINDOW,
+  divisionRaceValueKey,
+  maxGamesBehind,
+  type DivisionRaceChartMode,
+} from '../../utils/recordTimelineChart';
 
 type MultiTeamWinPctChartProps = {
   /** Preserve **standings order** (e.g. division rank) for color assignment. */
@@ -23,6 +30,18 @@ type MultiTeamWinPctChartProps = {
   getLabel: (teamId: number) => string;
   /** Division leader + storyline (full opacity); others dimmed until hover. */
   heroTeamIds?: readonly number[];
+};
+
+const MODES: Array<{ id: DivisionRaceChartMode; label: string }> = [
+  { id: 'season', label: 'Season' },
+  { id: 'race', label: 'Race' },
+  { id: 'form', label: 'Form' },
+];
+
+const MODE_HINT: Record<DivisionRaceChartMode, string> = {
+  season: 'Cumulative win % by games completed (pace), not calendar date.',
+  race: 'Games behind the division pace leader. Separation stays readable late in the year.',
+  form: `Trailing win % over the last ${DIVISION_RACE_FORM_WINDOW} games (shorter early on).`,
 };
 
 function WinPctYAxisTick(
@@ -51,23 +70,52 @@ function WinPctYAxisTick(
   );
 }
 
-type WinPctTipEntry = {
+function GamesBehindYAxisTick(
+  props: Record<string, unknown> & {
+    x?: number;
+    y?: number;
+    payload?: { value?: number | string };
+  },
+) {
+  const { x = 0, y = 0, payload } = props;
+  const v = payload?.value;
+  const n = typeof v === 'number' ? v : Number(v);
+  const isZero = n === 0;
+  const label = Number.isInteger(n) ? String(n) : n.toFixed(1);
+  return (
+    <text
+      x={x}
+      y={y}
+      dy={4}
+      textAnchor="end"
+      fill={isZero ? 'var(--chart-y-mid-tick)' : 'var(--chart-tick)'}
+      fontSize={11}
+      fontFamily="var(--mono)"
+    >
+      {label}
+    </text>
+  );
+}
+
+type TipEntry = {
   dataKey?: string | number;
   name?: string;
   value?: unknown;
   color?: string;
 };
 
-function WinPctDivisionTooltip({
+function DivisionRaceTooltip({
   active,
   payload,
   label,
   getLabel,
+  mode,
 }: {
   active?: boolean;
   label?: string | number;
-  payload?: readonly WinPctTipEntry[];
+  payload?: readonly TipEntry[];
   getLabel: (teamId: number) => string;
+  mode: DivisionRaceChartMode;
 }) {
   if (!active || !payload?.length) return null;
   const gameLabel = label != null && label !== '' ? `Game ${label}` : 'Game';
@@ -87,11 +135,18 @@ function WinPctDivisionTooltip({
       <div style={{ fontWeight: 600, marginBottom: '0.35rem' }}>{gameLabel}</div>
       {payload.map((entry) => {
         const key = String(entry.dataKey ?? '');
-        const m = /^pct_(\d+)$/.exec(key);
+        const m = /^v_(\d+)$/.exec(key);
         const teamId = m ? Number(m[1]) : null;
         const name = teamId != null ? getLabel(teamId) : ((entry.name as string) ?? 'Team');
         const v = entry.value;
-        const pct = v != null && typeof v === 'number' ? `${v.toFixed(1)}%` : '—';
+        let display = '—';
+        if (v != null && typeof v === 'number') {
+          if (mode === 'race') {
+            display = v === 0 ? '—' : `${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)} GB`;
+          } else {
+            display = `${v.toFixed(1)}%`;
+          }
+        }
         return (
           <div
             key={key}
@@ -106,7 +161,7 @@ function WinPctDivisionTooltip({
             }}
           >
             <span style={{ color: entry.color ?? 'var(--text-h)' }}>{name}</span>
-            <span>{pct}</span>
+            <span>{display}</span>
           </div>
         );
       })}
@@ -122,6 +177,7 @@ export default function MultiTeamWinPctChart({
 }: MultiTeamWinPctChartProps) {
   const surfaceHex = useChartSurfaceHex();
   const [hoveredTeamId, setHoveredTeamId] = useState<number | null>(null);
+  const [mode, setMode] = useState<DivisionRaceChartMode>('season');
 
   const { data: payload, error, loading, orderedIds } = useRecordTimelinesBatch(teamIds, season);
 
@@ -183,24 +239,16 @@ export default function MultiTeamWinPctChart({
 
   const chartData = useMemo(() => {
     if (!payload?.timelines?.length) return [];
-    let maxGames = 0;
-    for (const tl of payload.timelines) {
-      maxGames = Math.max(maxGames, tl.points?.length ?? 0);
-    }
-    const rows: Array<Record<string, number | undefined> & { gameIndex: number }> = [];
-    for (let i = 1; i <= maxGames; i++) {
-      const row: Record<string, number | undefined> & { gameIndex: number } = {
-        gameIndex: i,
-      };
-      for (const tl of payload.timelines) {
-        const pt = tl.points[i - 1];
-        const key = `pct_${tl.teamId}`;
-        if (pt) row[key] = pt.pct * 100;
-      }
-      rows.push(row);
-    }
-    return rows;
-  }, [payload]);
+    return buildDivisionRaceChartRows(mode, payload.timelines);
+  }, [payload, mode]);
+
+  const raceMaxGb = useMemo(() => {
+    if (mode !== 'race') return 0;
+    return maxGamesBehind(chartData, orderedIds);
+  }, [mode, chartData, orderedIds]);
+
+  const yDomain: [number, number] =
+    mode === 'race' ? [0, Math.max(1, Math.ceil(raceMaxGb))] : [0, 100];
 
   if (orderedIds.length === 0 || season == null) {
     return (
@@ -227,11 +275,39 @@ export default function MultiTeamWinPctChart({
   }
 
   return (
-    <div onMouseLeave={() => setHoveredTeamId(null)}>
+    <div className="division-race-chart" onMouseLeave={() => setHoveredTeamId(null)}>
+      <div className="division-race-chart__controls">
+        <div
+          className="division-race-chart__mode"
+          role="group"
+          aria-label="Division race chart mode"
+        >
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              className={
+                mode === m.id
+                  ? 'division-race-chart__mode-btn division-race-chart__mode-btn--active'
+                  : 'division-race-chart__mode-btn'
+              }
+              aria-pressed={mode === m.id}
+              onClick={() => setMode(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <p className="division-race-chart__hint text text--muted text--small">{MODE_HINT[mode]}</p>
+      </div>
       <ResponsiveContainer width="100%" height={360}>
         <LineChart data={chartData} margin={{ top: 10, right: 14, left: 4, bottom: 28 }}>
           <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
-          <ReferenceLine y={50} stroke="var(--chart-y-mid)" strokeWidth={1} />
+          {mode === 'race' ? (
+            <ReferenceLine y={0} stroke="var(--chart-y-mid)" strokeWidth={1} />
+          ) : (
+            <ReferenceLine y={50} stroke="var(--chart-y-mid)" strokeWidth={1} />
+          )}
           <XAxis
             dataKey="gameIndex"
             tick={chartCartesianTick}
@@ -243,15 +319,34 @@ export default function MultiTeamWinPctChart({
               fontFamily: 'var(--sans)',
             }}
           />
-          <YAxis domain={[0, 100]} tick={<WinPctYAxisTick />} width={48} />
+          <YAxis
+            domain={yDomain}
+            reversed={mode === 'race'}
+            tick={mode === 'race' ? <GamesBehindYAxisTick /> : <WinPctYAxisTick />}
+            width={48}
+            label={
+              mode === 'race'
+                ? {
+                    value: 'GB',
+                    angle: -90,
+                    position: 'insideLeft',
+                    offset: 8,
+                    fill: 'var(--muted)',
+                    fontFamily: 'var(--sans)',
+                    fontSize: 11,
+                  }
+                : undefined
+            }
+          />
           <Tooltip
             cursor={{ strokeDasharray: '3 3' }}
             content={(props) => (
-              <WinPctDivisionTooltip
+              <DivisionRaceTooltip
                 active={props.active}
-                payload={props.payload as readonly WinPctTipEntry[] | undefined}
+                payload={props.payload as readonly TipEntry[] | undefined}
                 label={props.label}
                 getLabel={getLabel}
+                mode={mode}
               />
             )}
           />
@@ -270,9 +365,9 @@ export default function MultiTeamWinPctChart({
             const lastG = lastGameByTeamId.get(id);
             return (
               <Line
-                key={id}
+                key={`${mode}-${id}`}
                 type="monotone"
-                dataKey={`pct_${id}`}
+                dataKey={divisionRaceValueKey(id)}
                 name={getLabel(id)}
                 stroke={ink}
                 strokeWidth={lineStrokeWidth(id)}

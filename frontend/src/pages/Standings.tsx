@@ -197,10 +197,10 @@ export default function Standings() {
           </div>
 
           <div className="standings-page__panel standings-page__panel--chart">
-            <h2>Cumulative win % vs games played</h2>
+            <h2>Division race</h2>
             <p className="text text--muted text--small">
-              All clubs in this division load together. The horizontal axis is games completed
-              (pace), not the calendar.
+              All clubs in this division load together. Switch Season, Race, or Form to read the
+              year differently.
             </p>
             <ChartSuspense height={360} label="Loading win % chart">
               <MultiTeamWinPctChart
