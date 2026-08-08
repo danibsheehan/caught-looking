@@ -14,6 +14,10 @@ export type AsyncResourceResult<T> = {
   data: T | null;
   error: Error | null;
   loading: boolean;
+  /** Epoch ms when `data` was last successfully set; null if no successful payload yet. */
+  updatedAt: number | null;
+  /** Re-run fetch immediately (as a poll: keeps prior `data` even when `clearDataBeforeFetch`). */
+  reload: () => void;
 };
 
 export type AsyncResourcePoll<T> = {
@@ -90,8 +94,10 @@ export function useAsyncResource<T>(
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(() => active && initialPending);
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   /** Incremented on each cleanup so superseded fetches (e.g. mocks that ignore abort) do not clear `loading`. */
   const requestSeqRef = useRef(0);
+  const reloadImplRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     dataRef.current = data;
@@ -105,8 +111,10 @@ export function useAsyncResource<T>(
         if (resetOnDisableRef.current) {
           setData(null);
           dataRef.current = null;
+          setUpdatedAt(null);
         }
       });
+      reloadImplRef.current = () => {};
       return;
     }
 
@@ -154,10 +162,14 @@ export function useAsyncResource<T>(
       const showLoading = dataRef.current == null || clearBefore;
 
       startTransition(() => {
-        setError(null);
+        // Keep the last poll error visible while retrying with prior data (stale UI).
+        if (clearBefore || dataRef.current == null) {
+          setError(null);
+        }
         if (clearBefore) {
           setData(null);
           dataRef.current = null;
+          setUpdatedAt(null);
         }
         if (showLoading) {
           setLoading(true);
@@ -169,6 +181,7 @@ export function useAsyncResource<T>(
         if (cancelled || seq !== requestSeqRef.current) return;
         dataRef.current = json;
         setData(json);
+        setUpdatedAt(Date.now());
         setError(null);
         delayMs = pollCfg?.intervalMs ?? delayMs;
         if (pollCfg?.while(json)) {
@@ -204,6 +217,13 @@ export function useAsyncResource<T>(
       void run();
     };
 
+    reloadImplRef.current = () => {
+      if (cancelled) return;
+      clearTimer();
+      isPoll = true;
+      void run();
+    };
+
     isPoll = false;
     void run();
 
@@ -216,6 +236,7 @@ export function useAsyncResource<T>(
       clearTimer();
       requestSeqRef.current += 1;
       ac?.abort();
+      reloadImplRef.current = () => {};
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', onVisibility);
       }
@@ -224,5 +245,9 @@ export function useAsyncResource<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, ...deps]);
 
-  return { data, error, loading };
+  const reload = () => {
+    reloadImplRef.current();
+  };
+
+  return { data, error, loading, updatedAt, reload };
 }

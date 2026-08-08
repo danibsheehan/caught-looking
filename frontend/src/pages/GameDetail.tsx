@@ -8,6 +8,14 @@ import GameBoxscorePanel from '../components/game/GameBoxscorePanel';
 import { useGameDetailData } from '../hooks/useGameDetailData';
 import { gameStatusSettled } from '../utils/gameStatus';
 
+function formatUpdatedAt(ms: number): string {
+  return new Date(ms).toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
 export default function GameDetail() {
   const { gamePk: gamePkParam } = useParams();
   const [searchParams] = useSearchParams();
@@ -20,6 +28,7 @@ export default function GameDetail() {
 
   const { box, statcast, pitches } = useGameDetailData(gamePk);
   const livePolling = Boolean(box.data && !gameStatusSettled(box.data.status));
+  const boxStale = Boolean(box.data && box.error);
 
   const backTo = useMemo(() => {
     if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -46,18 +55,30 @@ export default function GameDetail() {
           <p className="text text--muted">
             Team totals, pitching and batting lines, and runs by inning.
           </p>
-          {livePolling ? (
-            <p className="text text--muted text--small">
+          {boxStale ? (
+            <div className="games-detail__stale" role="alert">
+              <p className="games-detail__stale-msg">
+                Could not refresh the box score ({box.error!.message}). Showing the last good data
+                {box.updatedAt != null ? ` from ${formatUpdatedAt(box.updatedAt)}` : ''}.
+                Reconnecting automatically...
+              </p>
+              <button type="button" className="games-detail__stale-retry" onClick={box.reload}>
+                Retry now
+              </button>
+            </div>
+          ) : livePolling ? (
+            <p className="text text--muted text--small games-detail__live-note">
               Live game — box score and timeline refresh about every 45 seconds (paused while this
               tab is hidden).
+              {box.updatedAt != null ? ` Last updated ${formatUpdatedAt(box.updatedAt)}.` : ''}
             </p>
           ) : null}
         </div>
       </header>
 
-      {box.loading ? (
+      {box.loading && !box.data ? (
         <p className="text text--muted">Loading box score…</p>
-      ) : box.error ? (
+      ) : box.error && !box.data ? (
         <p className="text text--error" role="alert">
           {box.error.message}
         </p>

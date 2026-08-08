@@ -269,6 +269,88 @@ describe('useAsyncResource', () => {
     }
   });
 
+  it('sets updatedAt on success and reload refetches without clearing data', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetch = vi.fn().mockResolvedValueOnce({ n: 1 }).mockResolvedValueOnce({ n: 2 });
+
+      const { result } = renderHook(() =>
+        useAsyncResource(
+          {
+            fetch,
+            initialPending: false,
+            clearDataBeforeFetch: true,
+          },
+          [],
+        ),
+      );
+
+      await vi.waitFor(() => expect(result.current.data).toEqual({ n: 1 }));
+      expect(result.current.updatedAt).toEqual(expect.any(Number));
+      const firstUpdatedAt = result.current.updatedAt!;
+
+      vi.setSystemTime(firstUpdatedAt + 5_000);
+      result.current.reload();
+
+      await vi.waitFor(() => expect(result.current.data).toEqual({ n: 2 }));
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(result.current.updatedAt).toBeGreaterThan(firstUpdatedAt);
+      expect(result.current.error).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps prior error visible while a poll retry is in flight', async () => {
+    vi.useFakeTimers();
+    try {
+      type PollPayload = { ok: boolean; done: boolean };
+      let resolveRetry!: (value: PollPayload) => void;
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, done: false })
+        .mockRejectedValueOnce(new Error('network'))
+        .mockImplementationOnce(
+          () =>
+            new Promise<PollPayload>((resolve) => {
+              resolveRetry = resolve;
+            }),
+        );
+
+      const { result } = renderHook(() =>
+        useAsyncResource<PollPayload>(
+          {
+            fetch,
+            initialPending: false,
+            poll: {
+              intervalMs: 1_000,
+              maxIntervalMs: 10_000,
+              while: (data) => !data.done,
+            },
+          },
+          [],
+        ),
+      );
+
+      await vi.waitFor(() => expect(result.current.data?.ok).toBe(true));
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      await vi.waitFor(() => expect(result.current.error?.message).toBe('network'));
+      expect(result.current.data?.ok).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(2_000);
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
+      expect(result.current.error?.message).toBe('network');
+      expect(result.current.data?.ok).toBe(true);
+
+      resolveRetry({ ok: true, done: true });
+      await vi.waitFor(() => expect(result.current.error).toBeNull());
+      expect(result.current.data?.done).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('still polls when hidden if pauseWhenHidden is false', async () => {
     vi.useFakeTimers();
     let visibility: 'visible' | 'hidden' | 'prerender' = 'visible';
