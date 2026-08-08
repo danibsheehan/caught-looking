@@ -77,6 +77,9 @@ func TestMetrics(t *testing.T) {
 		"caught_looking_cache_requests_total",
 		"caught_looking_cache_coalesce_total",
 		"caught_looking_upstream_http_total",
+		"caught_looking_http_request_duration_seconds",
+		"caught_looking_cache_load_duration_seconds",
+		"caught_looking_upstream_http_duration_seconds",
 	} {
 		if !strings.Contains(string(body), name) {
 			t.Fatalf("expected custom metric %q in /metrics, got %q", name, truncateForTest(string(body), 400))

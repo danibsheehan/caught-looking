@@ -16,7 +16,7 @@ Most latency and reliability risk is **outbound MLB/Savant**, not React render. 
 
 ## Backend cache
 
-- Use **`services.TTLCache`** on **`Handlers`** (`h.cache`). Prefer **`GetOrLoad(ctx, key, ttl, load)`** so concurrent misses share one upstream call (**singleflight**). The load runs with a context **detached from request cancel** so one aborted client does not fail peers. Outcomes increment low-cardinality Prometheus counters (`caught_looking_cache_requests_total{result}`, `caught_looking_cache_coalesce_total`) scraped at **`GET /metrics`**.
+- Use **`services.TTLCache`** on **`Handlers`** (`h.cache`). Prefer **`GetOrLoad(ctx, key, ttl, load)`** so concurrent misses share one upstream call (**singleflight**). The load runs with a context **detached from request cancel** so one aborted client does not fail peers. Outcomes increment low-cardinality Prometheus counters (`caught_looking_cache_requests_total{result}`, `caught_looking_cache_coalesce_total`); miss `load()` duration is observed on `caught_looking_cache_load_duration_seconds{result}` — scraped at **`GET /metrics`** (see **`docs/slo.md`**).
 - Adaptive TTLs (e.g. date scoreboard settled vs live): use **`GetOrLoadWithTTL`** so the load returns `(body, ttl, err)`.
 - **`GetOrLoad` / `GetOrLoadWithTTL`** return `(body, ttl, err)` — on hit, `ttl` is remaining time until expiry; on miss, the TTL used for `Set`. Pass that duration to **`writeJSONBytes(w, body, ttl)`** so responses get `Cache-Control: public, max-age=…` aligned with settle state (see ADR 0001).
 - Map failures with **`respondGetOrLoadError`**. Do **not** use naked `Get`+`Set` for response bodies — that races under concurrent misses.
@@ -49,7 +49,7 @@ Most latency and reliability risk is **outbound MLB/Savant**, not React render. 
 ## Upstream clients
 
 - **Always** go through **`h.mlb`** / Savant client helpers — never `http.Get` to statsapi from handlers.
-- **QPS**: `MLBMaxQPS` (default 20), `SavantMaxQPS` (default 5); per-attempt timeouts `MLBHTTPTimeout` / `SavantHTTPTimeout`. Tests use `NewMLBClient(url, 0, …)` (unlimited). Each upstream HTTP 429 or 5xx (per attempt, including retries) increments `caught_looking_upstream_http_total{upstream,class}`.
+- **QPS**: `MLBMaxQPS` (default 20), `SavantMaxQPS` (default 5); per-attempt timeouts `MLBHTTPTimeout` / `SavantHTTPTimeout`. Tests use `NewMLBClient(url, 0, …)` (unlimited). Each upstream HTTP 429 or 5xx (per attempt, including retries) increments `caught_looking_upstream_http_total{upstream,class}`; each attempt observes `caught_looking_upstream_http_duration_seconds{upstream}`.
 - **Avoid N+1**: batch when a batch route exists (e.g. record-timelines batch, current-teams). Inside `GetOrLoad`, fan-out carefully; reuse nested cache keys for shared pieces (see league baseline helpers, `fetchGameBoxscoreRaw`, `fetchSavantGameCSV`).
 - **Cap parallel upstream work**: year-by-year league baselines use a semaphore (`yearByYearLeagueConcurrency`); record-timeline batch uses `batchTimelineConcurrency`.
 

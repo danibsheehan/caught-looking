@@ -1,10 +1,10 @@
 # Threat model — Caught Looking API
 
 - **Scope:** Public Go API (`backend/`) that proxies and caches MLB Stats API and Baseball Savant for the React SPA.
-- **Last updated:** 2026-08-06
-- **Related:** [docs/adr/](adr/) (cache TTLs, QPS), [backend HTTP security skill](../.cursor/skills/backend-http-security/SKILL.md)
+- **Last updated:** 2026-08-07
+- **Related:** [docs/adr/](adr/) (cache TTLs, QPS), [docs/slo.md](slo.md) (informal latency targets), [backend HTTP security skill](../.cursor/skills/backend-http-security/SKILL.md)
 
-Structured request/upstream logs use **`log/slog`** (JSON from `main`). Prometheus text exposition is at **`GET /metrics`** (Go defaults plus low-cardinality custom counters: cache hit/miss, singleflight coalesce, upstream 429/5xx).
+Structured request/upstream logs use **`log/slog`** (JSON from `main`). Prometheus text exposition is at **`GET /metrics`** (Go defaults plus low-cardinality custom counters and latency histograms: cache hit/miss, singleflight coalesce, cache-load / HTTP / upstream durations, upstream 429/5xx).
 
 ## Assets
 
@@ -38,7 +38,7 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 | Anonymous scraper / bot | High request volume to API | Per-IP sliding window (`RATE_LIMIT_*`) on the API group; keyed by `Request.RemoteAddr` (forwarded IP headers **not** trusted unless a proxy rewrites `RemoteAddr`) |
 | Anonymous client | Force expensive upstream fan-out | TTL cache + singleflight; outbound `MLB_MAX_QPS` / `SAVANT_MAX_QPS`; Cloud Run `max-instances` capped (default 2) |
 | Anonymous client | Probe for error leakage / internals | Generic 502/504 JSON to clients; detail logged with `request_id` only |
-| Anonymous client | Scrape process metrics | `GET /metrics` (Go defaults + custom `caught_looking_*` counters) is **outside** the rate-limit group like `/health`. Prefer network/IAM restriction on Cloud Run for production scrapes; keep custom labels low-cardinality (`result`, `upstream`, `class` — never cache keys or full paths) |
+| Anonymous client | Scrape process metrics | `GET /metrics` (Go defaults + custom `caught_looking_*` counters/histograms) is **outside** the rate-limit group like `/health`. Prefer network/IAM restriction on Cloud Run for production scrapes; keep custom labels low-cardinality (`result`, `upstream`, `class`, chi `route` patterns, status `code` class — never cache keys or raw paths with ids) |
 | Anonymous client | Oversized inbound body (misuse / future POST) | Global `middleware.MaxBodyBytes` via `HTTP_MAX_BODY_BYTES` (default 64 KiB; `0` disables); early 413 when `Content-Length` exceeds the cap, plus `http.MaxBytesReader` on `Body`. Outbound bodies capped separately (`maxUpstreamBodyBytes`, 32 MiB) |
 | Misconfigured CORS | Cross-origin browser calls from unexpected sites | Explicit `ALLOWED_ORIGINS` / deploy `CORS_ALLOWED_ORIGINS` allowlist |
 | Compromised dependency | RCE / supply chain | CI `govulncheck` (Go) and `npm audit --audit-level=high` (frontend); optional Syft SBOM artifact on CI; Dependabot |

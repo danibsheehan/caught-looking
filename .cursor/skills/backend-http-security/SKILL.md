@@ -44,7 +44,7 @@ Extend behavior in **`backend/middleware/`** and **`backend/config/`** — do no
 
 5. **Logging**
    - Prefer **`log/slog`** with `request_id`, method, path, event. Avoid logging secrets or full PII; upstream body snippets already truncated in client errors — still do not echo them to HTTP responses.
-   - Process metrics: **`GET /metrics`** (Go defaults + `caught_looking_*` cache/upstream counters) sits outside the rate-limited API group; update **`docs/threat-model.md`** if scrape exposure or collectors change.
+   - Process metrics: **`GET /metrics`** (Go defaults + `caught_looking_*` counters/histograms) sits outside the rate-limited API group; informal targets in **`docs/slo.md`**; update **`docs/threat-model.md`** if scrape exposure or collectors change.
 
 ## Config / middleware changes
 

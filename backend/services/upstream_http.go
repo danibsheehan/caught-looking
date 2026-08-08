@@ -134,8 +134,10 @@ func (u upstreamGET) do(ctx context.Context, path string) ([]byte, error) {
 		req.Header.Set("Accept", u.accept)
 		req.Header.Set("User-Agent", u.userAgent)
 
+		attemptStart := time.Now()
 		res, err := u.client.Do(req)
 		if err != nil {
+			recordUpstreamHTTPDuration(u.name, time.Since(attemptStart))
 			lastErr = err
 			if attempt+1 < maxAttempts && upstreamRetryable(err) {
 				if err := sleepContext(ctx, time.Duration(100*(attempt+1))*time.Millisecond); err != nil {
@@ -148,6 +150,7 @@ func (u upstreamGET) do(ctx context.Context, path string) ([]byte, error) {
 
 		body, readErr := readBodyLimited(res.Body, maxUpstreamBodyBytes)
 		_ = res.Body.Close()
+		recordUpstreamHTTPDuration(u.name, time.Since(attemptStart))
 		if readErr != nil {
 			lastErr = readErr
 			if attempt+1 < maxAttempts && upstreamRetryable(readErr) {

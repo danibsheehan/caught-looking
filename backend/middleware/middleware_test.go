@@ -9,6 +9,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"caught-looking/backend/services"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func TestCORS_allowedOriginGET(t *testing.T) {
@@ -91,6 +95,33 @@ func TestLogger_logsMethodPathStatusAndDuration(t *testing.T) {
 	line := buf.String()
 	if !strings.Contains(line, "method=POST") || !strings.Contains(line, "path=/v1/standings") || !strings.Contains(line, "status=418") || !strings.Contains(line, "request_id=") {
 		t.Fatalf("log line missing structured fields: %q", strings.TrimSpace(line))
+	}
+}
+
+func TestLogger_recordsHTTPDurationHistogram(t *testing.T) {
+	r := chi.NewRouter()
+	r.Use(Logger)
+	r.Get("/standings", func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(5 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	before, err := services.HTTPRequestDurationSampleCount("/standings", "2xx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/standings", nil)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d", rec.Code)
+	}
+	after, err := services.HTTPRequestDurationSampleCount("/standings", "2xx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after-before != 1 {
+		t.Fatalf("http duration samples for /standings 2xx: got %d want 1", after-before)
 	}
 }
 
