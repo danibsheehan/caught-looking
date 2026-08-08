@@ -121,7 +121,7 @@ describe('MultiTeamWinPctChart', () => {
     expect(legendText).toEqual(expect.arrayContaining(['NYM', 'ATL']));
   });
 
-  it('toggles Season, Race, and Form modes', async () => {
+  it('toggles Season, Race, and Recent modes', async () => {
     const user = userEvent.setup();
     render(<MultiTeamWinPctChart teamIds={[121, 144]} season={2026} getLabel={getLabel} />);
 
@@ -131,8 +131,8 @@ describe('MultiTeamWinPctChart', () => {
     expect(screen.getByRole('button', { name: 'Race' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText(/Games behind the division pace leader/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Form' }));
-    expect(screen.getByRole('button', { name: 'Form' })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: 'Recent' }));
+    expect(screen.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText(/Trailing win % over the last 10 games/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Season' }));

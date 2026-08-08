@@ -17,7 +17,7 @@ import { obsidianTeamChartPairsRegistryPrimary } from '../../utils/mlbTeamColors
 import { chartCartesianTick } from '../../utils/rechartsAxis';
 import {
   buildDivisionRaceChartRows,
-  DIVISION_RACE_FORM_WINDOW,
+  DIVISION_RACE_RECENT_WINDOW,
   divisionRaceValueKey,
   maxGamesBehind,
   type DivisionRaceChartMode,
@@ -35,13 +35,13 @@ type MultiTeamWinPctChartProps = {
 const MODES: Array<{ id: DivisionRaceChartMode; label: string }> = [
   { id: 'season', label: 'Season' },
   { id: 'race', label: 'Race' },
-  { id: 'form', label: 'Form' },
+  { id: 'recent', label: 'Recent' },
 ];
 
 const MODE_HINT: Record<DivisionRaceChartMode, string> = {
   season: 'Cumulative win % by games completed (pace), not calendar date.',
   race: 'Games behind the division pace leader. Separation stays readable late in the year.',
-  form: `Trailing win % over the last ${DIVISION_RACE_FORM_WINDOW} games (shorter early on).`,
+  recent: `Trailing win % over the last ${DIVISION_RACE_RECENT_WINDOW} games (shorter early on).`,
 };
 
 function WinPctYAxisTick(

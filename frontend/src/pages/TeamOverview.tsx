@@ -322,7 +322,7 @@ export default function TeamOverview() {
                 <h2>Division race</h2>
                 <p className="text text--muted text--small">
                   Every team in this division on the same pace axis. Your club is emphasized —
-                  switch Season, Race, or Form below.
+                  switch Season, Race, or Recent below.
                 </p>
                 <ChartSuspense height={400} label="Loading win % chart">
                   {divisionTeamIds.length > 1 ? (

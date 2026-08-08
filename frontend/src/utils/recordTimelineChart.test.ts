@@ -95,6 +95,8 @@ describe('buildDivisionRaceChartRows', () => {
   it('dispatches by mode', () => {
     expect(buildDivisionRaceChartRows('season', twoTeams)[0]?.[divisionRaceValueKey(1)]).toBe(100);
     expect(buildDivisionRaceChartRows('race', twoTeams)[0]?.[divisionRaceValueKey(2)]).toBe(1);
-    expect(buildDivisionRaceChartRows('form', twoTeams, 2)[3]?.[divisionRaceValueKey(1)]).toBe(50);
+    expect(buildDivisionRaceChartRows('recent', twoTeams, 2)[3]?.[divisionRaceValueKey(1)]).toBe(
+      50,
+    );
   });
 });

@@ -1,10 +1,10 @@
 import type { RecordPoint, RecordTimelineResponse } from '../types/api.compat';
 
 /** Chart modes for division race timelines. */
-export type DivisionRaceChartMode = 'season' | 'race' | 'form';
+export type DivisionRaceChartMode = 'season' | 'race' | 'recent';
 
-/** Trailing window for Form mode (last N decided games). */
-export const DIVISION_RACE_FORM_WINDOW = 10;
+/** Trailing window for Recent mode (last N decided games). */
+export const DIVISION_RACE_RECENT_WINDOW = 10;
 
 export type DivisionRaceChartRow = Record<string, number | undefined> & {
   gameIndex: number;
@@ -104,7 +104,7 @@ function rollingWinPct(
 /** Trailing win % over the last `window` games (shorter early in the season). */
 export function buildRollingWinPctRows(
   timelines: readonly RecordTimelineResponse[],
-  window: number = DIVISION_RACE_FORM_WINDOW,
+  window: number = DIVISION_RACE_RECENT_WINDOW,
 ): DivisionRaceChartRow[] {
   const maxGames = maxGameCount(timelines);
   const rows: DivisionRaceChartRow[] = [];
@@ -124,13 +124,13 @@ export function buildRollingWinPctRows(
 export function buildDivisionRaceChartRows(
   mode: DivisionRaceChartMode,
   timelines: readonly RecordTimelineResponse[],
-  formWindow: number = DIVISION_RACE_FORM_WINDOW,
+  recentWindow: number = DIVISION_RACE_RECENT_WINDOW,
 ): DivisionRaceChartRow[] {
   switch (mode) {
     case 'race':
       return buildGamesBehindRows(timelines);
-    case 'form':
-      return buildRollingWinPctRows(timelines, formWindow);
+    case 'recent':
+      return buildRollingWinPctRows(timelines, recentWindow);
     case 'season':
     default:
       return buildSeasonWinPctRows(timelines);

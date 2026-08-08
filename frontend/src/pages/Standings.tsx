@@ -199,7 +199,7 @@ export default function Standings() {
           <div className="standings-page__panel standings-page__panel--chart">
             <h2>Division race</h2>
             <p className="text text--muted text--small">
-              All clubs in this division load together. Switch Season, Race, or Form to read the
+              All clubs in this division load together. Switch Season, Race, or Recent to read the
               year differently.
             </p>
             <ChartSuspense height={360} label="Loading win % chart">
