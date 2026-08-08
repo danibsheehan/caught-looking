@@ -1,0 +1,9 @@
+# Cloudflare Pages security headers for the SPA (copied into dist/ by Vite).
+# CSP connect-src allows Cloud Run's default *.a.run.app hosts (VITE_API_BASE).
+# If the API moves to a custom origin, add that host to connect-src.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.a.run.app; upgrade-insecure-requests

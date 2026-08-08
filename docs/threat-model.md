@@ -14,6 +14,7 @@ Structured request/upstream logs use **`log/slog`** (JSON from `main`) with **`r
 | Upstream goodwill | MLB / Savant rate limits and ToS — not owned by us |
 | In-process cache | Cached JSON/CSV bytes; no user PII by design |
 | SPA origins | CORS allowlist; production apex + `www` + Pages previews |
+| SPA static assets | Cloudflare Pages; browser XSS / clickjacking surface |
 | Deploy credentials | GitHub Actions → WIF → GCP; Cloudflare token — never in the app |
 
 ## Trust boundaries
@@ -21,6 +22,7 @@ Structured request/upstream logs use **`log/slog`** (JSON from `main`) with **`r
 ```text
 Browser (untrusted)
     │  HTTPS GET (credential-free)
+    │  SPA from Cloudflare Pages (+ security headers)
     ▼
 Cloud Run API (trusted process)
     │  server-built paths only
@@ -30,6 +32,7 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 
 - Clients are **unauthenticated**. There are no accounts, cookies, or API keys for end users.
 - Upstream base URLs come from **config/env**, not from request parameters (no open SSRF via caller-controlled URLs).
+- The SPA is served from **Cloudflare Pages**. Response headers (CSP, nosniff, frame denial, referrer, Permissions-Policy) come from **`frontend/public/_headers`** (Vite copies into `dist/`).
 
 ## Actors and threats
 
@@ -40,6 +43,8 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 | Anonymous client | Probe for error leakage / internals | Generic 502/504 JSON to clients; detail logged with `request_id` only |
 | Anonymous client | Scrape process metrics | `GET /metrics` (Go defaults + custom `caught_looking_*` counters/histograms) is **outside** the rate-limit group like `/health`. Prefer network/IAM restriction on Cloud Run for production scrapes; keep custom labels low-cardinality (`result`, `upstream`, `class`, chi `route` patterns, status `code` class — never cache keys or raw paths with ids) |
 | Anonymous client | Oversized inbound body (misuse / future POST) | Global `middleware.MaxBodyBytes` via `HTTP_MAX_BODY_BYTES` (default 64 KiB; `0` disables); early 413 when `Content-Length` exceeds the cap, plus `http.MaxBytesReader` on `Body`. Outbound bodies capped separately (`maxUpstreamBodyBytes`, 32 MiB) |
+| Browser attacker | XSS / script injection against SPA | Pages CSP (`script-src 'self'`; no inline scripts). Google Fonts allowlisted for `style-src` / `font-src`. `connect-src` limited to `'self'` + Cloud Run `https://*.a.run.app` (matches `VITE_API_BASE`) |
+| Browser attacker | Clickjacking / MIME sniffing / referrer leak | `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` |
 | Misconfigured CORS | Cross-origin browser calls from unexpected sites | Explicit `ALLOWED_ORIGINS` / deploy `CORS_ALLOWED_ORIGINS` allowlist |
 | Compromised dependency | RCE / supply chain | CI `govulncheck` (Go) and `npm audit --audit-level=high` (frontend); optional Syft SBOM artifact on CI; Dependabot |
 | Operator / deploy | Accidental spend | Scale-to-zero Cloud Run, low max instances, Artifact Registry cleanup; GCP billing budget recommended (ops, not code) |
@@ -57,11 +62,15 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 2. **Unauthenticated read API** — anyone can call Cloud Run URL directly; rate limits and QPS are the primary brakes.
 3. **In-memory cache only** — stampede risk on cold start / new instance; singleflight helps within one process only.
 4. **Upstream outages** — reflected as generic gateway errors; no paid APM required for this model. Contract Playwright proves the happy path; **chaos contract** (`make test-e2e-chaos`) injects fixture 429/5xx/slow via `e2e-upstream` `PUT /_chaos` so degradation stays demoable without live MLB.
+5. **SPA CSP `style-src 'unsafe-inline'`** — React/Recharts inline styles require it; script injection is still blocked by `script-src 'self'`. Tighten later with nonces/hashes if the style surface shrinks.
+6. **API host in CSP** — `connect-src` allowlists Cloud Run `https://*.a.run.app`. A custom API domain must be added to `frontend/public/_headers` in the same change as `VITE_API_BASE`.
 
 ## Verification expectations
 
-When changing CORS, rate limits, inbound body caps, upstream clients, or cache keys, update this document if the threat or control changes, and run:
+When changing CORS, rate limits, inbound body caps, upstream clients, cache keys, or SPA Pages security headers (`frontend/public/_headers`), update this document if the threat or control changes, and run:
 
 ```bash
 make test-backend   # includes govulncheck
+# After SPA header changes:
+cd frontend && npm run build && test -f dist/_headers
 ```

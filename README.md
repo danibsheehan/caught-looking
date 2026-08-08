@@ -319,11 +319,12 @@ Also enable **Dependabot alerts** and **Dependabot security updates** under GitH
 | Design decisions | [`docs/adr/`](docs/adr/) — cache TTLs, upstream QPS, OpenAPI contract |
 | SLOs (informal) | [`docs/slo.md`](docs/slo.md) — latency / hit-ratio targets from `GET /metrics` |
 | Load / coalesce proof | [`scripts/load-smoke.sh`](scripts/load-smoke.sh) — `make load-smoke` (fixture upstream, no live MLB) |
-| Pages | `frontend/src/pages/` |
+| Pages (routes) | `frontend/src/pages/` |
+| Pages (Cloudflare) | [`frontend/public/_redirects`](frontend/public/_redirects) (SPA fallback), [`frontend/public/_headers`](frontend/public/_headers) (CSP / nosniff / frame / referrer) |
 | API client | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev |
 | Types | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts` |
 | Backend | `backend/` — chi, MLB + Savant clients, `backend/apidocs/openapi.yaml` |
-| Threat model | [`docs/threat-model.md`](docs/threat-model.md) — assets, controls, residual risks |
+| Threat model | [`docs/threat-model.md`](docs/threat-model.md) — assets, controls, residual risks (API + SPA headers) |
 
 ---
 
@@ -496,6 +497,7 @@ Without **`VITE_API_BASE`**, the client falls back to same-origin **`/api`**, Pa
 | :--- | :--- |
 | Prefer | **Direct Upload** from Actions (empty Pages project is fine) |
 | If Git-connected build also runs | Disable that build **or** set **`VITE_API_BASE`** in Cloudflare Pages **Preview** to the Cloud Run origin so native builds do not overwrite Actions previews |
+| Security headers | Vite copies [`frontend/public/_headers`](frontend/public/_headers) into `dist/` (CSP, nosniff, `X-Frame-Options`, referrer, Permissions-Policy). Keep `connect-src` aligned with `VITE_API_BASE` (default Cloud Run `*.a.run.app`) |
 
 <details>
 <summary><strong>One-time Google Cloud setup</strong> (expand)</summary>
@@ -576,4 +578,4 @@ Makefile    # install, dev, backend, frontend, ci-local, test-*, cover-*
 | API changes | Keep **Go JSON / OpenAPI** ↔ `frontend/src/types/api.generated.ts` + `frontend/src/api/client.ts` in sync |
 | Agents | [`.cursor/skills/pr-ready/SKILL.md`](.cursor/skills/pr-ready/SKILL.md) |
 
-**Security:** unauthenticated read proxy — [threat model](docs/threat-model.md). Handler conventions: [`.cursor/skills/backend-http-security/SKILL.md`](.cursor/skills/backend-http-security/SKILL.md).
+**Security:** unauthenticated read proxy + SPA Pages headers — [threat model](docs/threat-model.md). Handler conventions: [`.cursor/skills/backend-http-security/SKILL.md`](.cursor/skills/backend-http-security/SKILL.md).
