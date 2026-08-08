@@ -56,7 +56,7 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 1. **Per-process QPS × instance count** — two warm Cloud Run instances can approach 2× outbound budget. Keep max instances low or add a shared limiter only if traffic requires it.
 2. **Unauthenticated read API** — anyone can call Cloud Run URL directly; rate limits and QPS are the primary brakes.
 3. **In-memory cache only** — stampede risk on cold start / new instance; singleflight helps within one process only.
-4. **Upstream outages** — reflected as generic gateway errors; no paid APM required for this model.
+4. **Upstream outages** — reflected as generic gateway errors; no paid APM required for this model. Contract Playwright proves the happy path; **chaos contract** (`make test-e2e-chaos`) injects fixture 429/5xx/slow via `e2e-upstream` `PUT /_chaos` so degradation stays demoable without live MLB.
 
 ## Verification expectations
 

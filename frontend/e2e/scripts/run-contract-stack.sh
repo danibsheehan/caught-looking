@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Boots fixture MLB/Savant → Go API → Vite preview for contract Playwright.
 # Playwright webServer runs this script and waits for the preview URL.
+# Chaos suites use alternate ports (see playwright.chaos.config.ts) and PUT /_chaos
+# on the fixture upstream to inject 429/5xx/slow without live MLB.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"

@@ -19,6 +19,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:contract": "playwright test -c playwright.contract.config.ts",
+    "test:e2e:chaos": "playwright test -c playwright.chaos.config.ts",
     "preview": "vite preview"
   },
   "dependencies": {

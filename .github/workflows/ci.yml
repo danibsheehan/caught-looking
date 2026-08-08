@@ -262,6 +262,9 @@ jobs:
             - name: Playwright contract (Go API + fixtures)
               run: npm run test:e2e:contract
 
+            - name: Playwright chaos contract (upstream 429/5xx/slow)
+              run: npm run test:e2e:chaos
+
     # Optional (not a required status check): SPDX SBOM via Syft for supply-chain visibility.
     sbom:
         name: SBOM (Syft)
