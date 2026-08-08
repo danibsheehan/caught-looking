@@ -198,11 +198,7 @@ describe('TeamOverview', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Club' }), '121');
 
     expect(
-      await screen.findByRole(
-        'heading',
-        { level: 2, name: /Division race — cumulative win %/i },
-        asyncWait,
-      ),
+      await screen.findByRole('heading', { level: 2, name: /^Division race$/i }, asyncWait),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('heading', {
@@ -221,7 +217,7 @@ describe('TeamOverview', () => {
     expect(
       screen.queryByRole('heading', {
         level: 2,
-        name: /Division race — cumulative win %/i,
+        name: /^Division race$/i,
       }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 3, name: 'Home and road' })).toBeInTheDocument();
