@@ -25,7 +25,7 @@ export function useRecordTimelinesBatch(
   }, [teamIds]);
 
   const enabled = orderedIds.length > 0 && season != null;
-  const { data, error, loading } = useAsyncResource<RecordTimelinesBatchResponse>(
+  const resource = useAsyncResource<RecordTimelinesBatchResponse>(
     {
       enabled,
       initialPending: false,
@@ -42,5 +42,5 @@ export function useRecordTimelinesBatch(
     [orderedIds, season],
   );
 
-  return { data, error, loading, orderedIds };
+  return { ...resource, orderedIds };
 }

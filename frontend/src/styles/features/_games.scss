@@ -683,6 +683,44 @@
       text-underline-offset: 2px;
     }
   }
+
+  &__live-note {
+    margin: 0.5rem 0 0;
+  }
+
+  &__stale {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-top: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid color-mix(in srgb, #fca5a5 35%, var(--border));
+    border-radius: 0.4rem;
+    background: color-mix(in srgb, #fca5a5 10%, var(--surface));
+  }
+
+  &__stale-msg {
+    flex: 1 1 16rem;
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+
+  &__stale-retry {
+    font: inherit;
+    padding: 0.45rem 0.95rem;
+    min-height: 44px;
+    border-radius: 0.35rem;
+    border: 1px solid var(--accent-border);
+    background: var(--accent-bg);
+    color: var(--text-h);
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--accent);
+    }
+  }
 }
 
 .games-list-skeleton {

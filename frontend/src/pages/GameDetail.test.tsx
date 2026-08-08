@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
@@ -9,6 +10,15 @@ import type {
 import GameDetail from './GameDetail';
 
 const asyncWait = { timeout: 10_000 };
+
+vi.mock('../utils/gameStatus', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/gameStatus')>();
+  return {
+    ...actual,
+    LIVE_GAME_POLL_INTERVAL_MS: 40,
+    LIVE_GAME_POLL_MAX_INTERVAL_MS: 200,
+  };
+});
 
 const api = vi.hoisted(() => {
   const box: GameBoxscoreResponse = {
@@ -165,5 +175,36 @@ describe('GameDetail', () => {
     expect(
       screen.queryByText(/Live game — box score and timeline refresh about every 45 seconds/i),
     ).not.toBeInTheDocument();
+  });
+
+  it('keeps prior box score and offers Retry when a live poll fails', async () => {
+    const user = userEvent.setup();
+    const liveBox = { ...api.box, status: 'In Progress' };
+    api.fetchGameBoxscore
+      .mockResolvedValueOnce(liveBox)
+      .mockRejectedValueOnce(new Error('upstream timeout'))
+      .mockResolvedValue(liveBox);
+
+    renderGameDetail('/games/662000');
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Team totals' }, asyncWait),
+    ).toBeInTheDocument();
+
+    const alert = await screen.findByText(/Could not refresh the box score/i, {}, asyncWait);
+    expect(alert).toHaveTextContent(/upstream timeout/);
+    expect(alert).toHaveTextContent(/Reconnecting automatically/);
+    expect(alert.closest('[role="alert"]')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Team totals' })).toBeInTheDocument();
+
+    const beforeRetry = api.fetchGameBoxscore.mock.calls.length;
+    await user.click(screen.getByRole('button', { name: /Retry now/i }));
+
+    await waitFor(() => {
+      expect(api.fetchGameBoxscore.mock.calls.length).toBeGreaterThan(beforeRetry);
+    }, asyncWait);
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /Retry now/i })).not.toBeInTheDocument();
+    }, asyncWait);
   });
 });
