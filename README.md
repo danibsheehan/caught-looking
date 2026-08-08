@@ -67,7 +67,7 @@ Built for a **low/zero incremental cloud bill** (Cloud Run scale-to-zero + Cloud
 
 | Choice | Why it stays this way | Revisit when |
 | :--- | :--- | :--- |
-| **In-process TTL cache + singleflight** | No Redis/Memorystore cost; concurrent misses coalesce **per process**; hit/miss/coalesce + latency histograms show up on `GET /metrics` ([SLOs](docs/slo.md)) | Warm instance count or cold-start stampede forces a shared L2 |
+| **In-process TTL cache + singleflight** | No Redis/Memorystore cost; concurrent misses coalesce **per process**; hit/miss/coalesce + latency histograms show up on `GET /metrics` ([SLOs](docs/slo.md)). Prove locally with **`make load-smoke`**. | Warm instance count or cold-start stampede forces a shared L2 |
 | **Per-process MLB/Savant QPS caps** | Predictable outbound load without a global rate coordinator | Aggregate `max-instances × QPS` risks upstream 429s |
 | **`CLOUDRUN_MAX_INSTANCES` default `2`** | Caps spend **and** the outbound budget multiplier | Traffic needs more capacity *and* a shared cache/limiter story |
 | **`CLOUDRUN_MIN_INSTANCES` default `0`** | Idle ≈ $0; cold starts refill the in-memory cache | Latency SLOs require a warm process ([docs/slo.md](docs/slo.md)) |
@@ -318,6 +318,7 @@ Also enable **Dependabot alerts** and **Dependabot security updates** under GitH
 | README art | [`docs/readme-banner.svg`](docs/readme-banner.svg), [`docs/badge-live.svg`](docs/badge-live.svg) (linked as `./docs/…` from README root) |
 | Design decisions | [`docs/adr/`](docs/adr/) — cache TTLs, upstream QPS, OpenAPI contract |
 | SLOs (informal) | [`docs/slo.md`](docs/slo.md) — latency / hit-ratio targets from `GET /metrics` |
+| Load / coalesce proof | [`scripts/load-smoke.sh`](scripts/load-smoke.sh) — `make load-smoke` (fixture upstream, no live MLB) |
 | Pages | `frontend/src/pages/` |
 | API client | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev |
 | Types | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts` |
@@ -358,7 +359,7 @@ make install   # once: Go modules + frontend npm dependencies
 make dev       # API on :8080 + Vite dev server (with /api proxy)
 ```
 
-- **API**: [http://127.0.0.1:8080](http://127.0.0.1:8080) — `GET /health` returns `ok`; responses include `X-Request-ID` (SPA surfaces it on API errors); `GET /metrics` exposes Prometheus text (Go defaults plus cache/upstream counters and latency histograms — see [docs/slo.md](docs/slo.md)).
+- **API**: [http://127.0.0.1:8080](http://127.0.0.1:8080) — `GET /health` returns `ok`; responses include `X-Request-ID` (SPA surfaces it on API errors); `GET /metrics` exposes Prometheus text (Go defaults plus cache/upstream counters and latency histograms — see [docs/slo.md](docs/slo.md)). Prove singleflight under concurrency with **`make load-smoke`** (boots its own fixture stack).
 - **Frontend**: Vite (typically [http://localhost:5173](http://localhost:5173)) proxies `/api` to the backend so the browser uses same-origin `/api` in development.
 
 Run services separately if you prefer:
@@ -422,6 +423,7 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 | `make test-e2e`           | Playwright Chromium stub smoke (`frontend/e2e/`; stubbed `/api`)        |
 | `make test-e2e-contract`  | Playwright against Go API + fixture upstream (`cmd/e2e-upstream`)       |
 | `make test-e2e-chaos`     | Playwright upstream chaos (429/5xx/slow via `PUT /_chaos`)              |
+| `make load-smoke`         | Concurrent `/standings` burst; asserts coalesce + warm hits via `/metrics` |
 | `make cover-backend`      | Go coverage summary (`backend/coverage.out`)                            |
 | `make cover-backend-html` | Same + `backend/coverage.html`                                          |
 | `make cover-frontend`     | Vitest coverage report under `frontend/coverage/`                       |

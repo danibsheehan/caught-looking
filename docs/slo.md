@@ -1,7 +1,7 @@
 # Service level objectives (informal)
 
 - **Status:** Living document (not a paid SLA)
-- **Last updated:** 2026-08-07
+- **Last updated:** 2026-08-08
 - **Related:** [Cost and scale](../README.md#cost-and-scale-tradeoffs), [ADR 0001](adr/0001-cache-ttls.md), [ADR 0002](adr/0002-upstream-qps.md), [threat model](threat-model.md)
 
 Caught Looking is a **best-effort** public read proxy on Cloud Run scale-to-zero. These targets interpret **`GET /metrics`** so we can tell warm cache-hit latency from cold upstream work — without a paid APM.
@@ -45,6 +45,24 @@ Useful PromQL-shaped questions (any Prometheus-compatible scraper, including ad-
 - Miss cost: quantile on `cache_load_duration_seconds{result="ok"}`.
 - Hit ratio: `rate(caught_looking_cache_requests_total{result="hit"}[5m]) / rate(caught_looking_cache_requests_total[5m])`.
 
+## Coalesce proof (`make load-smoke`)
+
+Unit tests cover singleflight with a few goroutines; this script turns the **cost claim** into a measurement against fixture MLB (no live upstream, no paid load tool):
+
+```bash
+make load-smoke
+# optional: LOAD_SMOKE_N=80 make load-smoke
+```
+
+What it does:
+
+1. Boots `e2e-upstream` with a short **slow** chaos delay on `/standings` so concurrent cold misses overlap in flight.
+2. Boots the Go API pointed at that fixture (dedicated ports, rate limits off).
+3. **Cold burst** of N concurrent `GET /standings` — asserts miss delta is small (≈1) and `cache_coalesce_total` rises by at least N/2.
+4. **Warm burst** of N — asserts miss delta 0 and hit delta ≥ N.
+
+Script: [`scripts/load-smoke.sh`](../scripts/load-smoke.sh). This is a local demo / CI-optional check, not a production soak.
+
 ## When to revisit architecture
 
 Same triggers as the README cost table — not vanity metrics:
@@ -53,4 +71,4 @@ Same triggers as the README cost table — not vanity metrics:
 - Aggregate `max-instances × QPS` risks sustained upstream **429**s
 - Latency SLOs require **`CLOUDRUN_MIN_INSTANCES` > 0** (accept spend to keep the in-memory cache warm)
 
-Until then, defend in-process TTL cache + singleflight + QPS caps as the intentional `$0` design.
+Until then, defend in-process TTL cache + singleflight + QPS caps as the intentional `$0` design. Re-run **`make load-smoke`** after cache/coalesce changes.
