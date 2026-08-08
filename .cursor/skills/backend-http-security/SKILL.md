@@ -20,7 +20,8 @@ Project-specific hardening for the chi API. For a diff-wide security pass, also 
 - **CORS**: `middleware.CORS` — allowlist origins from config; methods GET/HEAD/OPTIONS; no credentials.
 - **Rate limit**: `middleware.HTTPRateLimit` on the API group — keyed by **`Request.RemoteAddr`** (forwarded IP headers intentionally ignored unless a trusted proxy rewrites RemoteAddr).
 - **Inbound body cap**: `middleware.MaxBodyBytes` globally — `HTTPMaxBodyBytes` / `HTTP_MAX_BODY_BYTES` (default 64 KiB; `0` disables). Oversize `Content-Length` → **413** `{"error":"request body too large"}`; `http.MaxBytesReader` still wraps `Body`.
-- **Recovery / request IDs**: chi `Recoverer` + `RequestID`.
+- **Recovery / request IDs**: chi `Recoverer` + `RequestID` (+ `X-Request-ID` response header).
+- **Probes**: `GET /health` (liveness), `GET /ready` (process-local wiring via `Handlers.Ready()` — **never** call MLB/Savant from readiness).
 - **Outbound**: `MLBClient` / Savant clients use configured base URLs + path starting with `/` (not caller-controlled absolute URLs). QPS limits and HTTP timeouts from **`config.Config`**.
 
 Extend behavior in **`backend/middleware/`** and **`backend/config/`** — do not scatter one-off middleware in handlers.

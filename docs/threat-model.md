@@ -25,6 +25,7 @@ Browser (untrusted)
     │  SPA from Cloudflare Pages (+ security headers)
     ▼
 Cloud Run API (trusted process)
+    │  /health (liveness) · /ready (process invariants only)
     │  server-built paths only
     ▼
 MLB Stats API / Baseball Savant (untrusted upstream)
@@ -33,6 +34,7 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 - Clients are **unauthenticated**. There are no accounts, cookies, or API keys for end users.
 - Upstream base URLs come from **config/env**, not from request parameters (no open SSRF via caller-controlled URLs).
 - The SPA is served from **Cloudflare Pages**. Response headers (CSP, nosniff, frame denial, referrer, Permissions-Policy) come from **`frontend/public/_headers`** (Vite copies into `dist/`).
+- **Probes:** `GET /health` = process alive; `GET /ready` = cache + MLB/Savant *clients* are constructed. Neither probe calls upstream — failing ready on MLB downtime would thrash Cloud Run scale-to-zero.
 
 ## Actors and threats
 
@@ -64,10 +66,11 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 4. **Upstream outages** — reflected as generic gateway errors; no paid APM required for this model. Contract Playwright proves the happy path; **chaos contract** (`make test-e2e-chaos`) injects fixture 429/5xx/slow via `e2e-upstream` `PUT /_chaos` so degradation stays demoable without live MLB.
 5. **SPA CSP `style-src 'unsafe-inline'`** — React/Recharts inline styles require it; script injection is still blocked by `script-src 'self'`. Tighten later with nonces/hashes if the style surface shrinks.
 6. **API host in CSP** — `connect-src` allowlists Cloud Run `https://*.a.run.app`. A custom API domain must be added to `frontend/public/_headers` in the same change as `VITE_API_BASE`.
+7. **Probe misuse** — wiring `/ready` to live MLB checks would invent outages and fight scale-to-zero; keep readiness process-local only.
 
 ## Verification expectations
 
-When changing CORS, rate limits, inbound body caps, upstream clients, cache keys, or SPA Pages security headers (`frontend/public/_headers`), update this document if the threat or control changes, and run:
+When changing CORS, rate limits, inbound body caps, upstream clients, cache keys, SPA Pages security headers (`frontend/public/_headers`), or probe semantics (`/health` / `/ready`), update this document if the threat or control changes, and run:
 
 ```bash
 make test-backend   # includes govulncheck

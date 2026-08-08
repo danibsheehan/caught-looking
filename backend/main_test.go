@@ -47,6 +47,65 @@ func TestHealth(t *testing.T) {
 	}
 }
 
+func TestReady(t *testing.T) {
+	cfg := config.Config{
+		AllowedOrigins: []string{"http://localhost:5173"},
+	}
+	h := handlers.New(
+		cfg,
+		services.NewTTLCache(),
+		services.NewMLBClient("http://127.0.0.1:9", 0, 0),
+		services.NewSavantClient("http://127.0.0.1:9", 0, 0),
+	)
+	srv := httptest.NewServer(newRouter(cfg, h))
+	t.Cleanup(srv.Close)
+
+	res, err := http.Get(srv.URL + "/ready")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = res.Body.Close() })
+
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status: got %d want %d", res.StatusCode, http.StatusOK)
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(body) != "ready" {
+		t.Fatalf("body: got %q want %q", body, "ready")
+	}
+	if got := res.Header.Get("X-Request-ID"); got == "" {
+		t.Fatal("expected X-Request-ID on /ready response")
+	}
+}
+
+func TestReady_notReadyWhenMiswired(t *testing.T) {
+	cfg := config.Config{
+		AllowedOrigins: []string{"http://localhost:5173"},
+	}
+	// Missing Savant client — process invariant failure, not an upstream call.
+	h := handlers.New(
+		cfg,
+		services.NewTTLCache(),
+		services.NewMLBClient("http://127.0.0.1:9", 0, 0),
+		nil,
+	)
+	srv := httptest.NewServer(newRouter(cfg, h))
+	t.Cleanup(srv.Close)
+
+	res, err := http.Get(srv.URL + "/ready")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = res.Body.Close() })
+
+	if res.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("status: got %d want %d", res.StatusCode, http.StatusServiceUnavailable)
+	}
+}
+
 func TestRequestIDHeaderOnAPIError(t *testing.T) {
 	cfg := config.Config{
 		AllowedOrigins:     []string{"http://localhost:5173"},

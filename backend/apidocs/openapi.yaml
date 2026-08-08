@@ -6,24 +6,133 @@ info:
     Read-only baseball analytics endpoints. Successful JSON responses set
     `Cache-Control` from the in-process TTL. Every response includes
     `X-Request-ID` (chi RequestID; matches slog `request_id`) for log
-    correlation — the SPA surfaces it on API errors. Errors use
+    correlation — the SPA surfaces it on API errors. Ops surfaces outside the
+    rate-limited JSON group: `GET /health` (liveness), `GET /ready` (process
+    invariants only — never MLB/Savant), `GET /metrics` (Prometheus text),
+    `GET /docs` (Swagger UI), `GET /openapi.yaml` (this contract). Errors use
     `{"error":"<message>"}` (see shared response components for
     400/429/500/502/504).
 servers:
   - url: /
+tags:
+  - name: Ops
+    description: >-
+      Liveness/readiness probes, Prometheus metrics, and in-process OpenAPI/Swagger
+      UI. Outside the JSON rate-limit group. Prefer network/IAM limits on `/metrics`
+      in production.
 paths:
   /health:
     get:
-      summary: Health check
+      summary: Liveness probe
+      description: >-
+        Process is up. Use for Cloud Run liveness/startup. Does not check
+        MLB/Savant or cache wiring (see `/ready`).
       operationId: getHealth
+      tags: [Ops]
       responses:
         "200":
-          description: Service is healthy
+          description: Process is alive
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
           content:
             text/plain:
               schema:
                 type: string
                 example: ok
+  /ready:
+    get:
+      summary: Readiness probe
+      description: >-
+        Process-local dependencies are wired (cache + MLB/Savant clients
+        constructed). Never calls upstream — an MLB outage must not fail this
+        probe or thrash Cloud Run scale-to-zero. Prefer for readiness probes.
+      operationId: getReady
+      tags: [Ops]
+      responses:
+        "200":
+          description: Process is ready to accept traffic
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ready
+        "503":
+          description: Process invariants not satisfied (miswired handlers)
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: not ready
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      description: >-
+        Prometheus text exposition (Go defaults plus low-cardinality
+        `caught_looking_*` counters/histograms). Outside the rate-limit group.
+        Prefer network/IAM restriction in production; see docs/slo.md and the
+        threat model.
+      operationId: getMetrics
+      tags: [Ops]
+      responses:
+        "200":
+          description: Prometheus text format
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  # HELP caught_looking_cache_requests_total TTLCache outcomes
+                  # TYPE caught_looking_cache_requests_total counter
+                  caught_looking_cache_requests_total{result="hit"} 0
+  /docs:
+    get:
+      summary: Swagger UI
+      description: >-
+        Embedded Swagger UI for this OpenAPI contract (also published as Redoc
+        at docs.caught-looking.com). Outside the rate-limit group.
+      operationId: getDocs
+      tags: [Ops]
+      responses:
+        "200":
+          description: HTML Swagger UI
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            text/html:
+              schema:
+                type: string
+  /openapi.yaml:
+    get:
+      summary: OpenAPI document
+      description: >-
+        Machine-readable OpenAPI 3 YAML (same file as backend/apidocs/openapi.yaml).
+        Outside the rate-limit group.
+      operationId: getOpenAPIYaml
+      tags: [Ops]
+      responses:
+        "200":
+          description: OpenAPI YAML
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/yaml:
+              schema:
+                type: string
+            text/yaml:
+              schema:
+                type: string
   /teams:
     get:
       summary: List teams
@@ -76,6 +185,8 @@ paths:
           headers:
             Cache-Control:
               $ref: "#/components/headers/CacheControl"
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
