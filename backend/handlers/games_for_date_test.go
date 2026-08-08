@@ -74,9 +74,10 @@ func TestGamesForDate_success(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
 	}
-	if cc := rec.Header().Get("Cache-Control"); cc != "public, max-age=3600" {
-		// Settled historical date board uses TTLStandings (1h) via cacheTTLForDateGames.
-		t.Fatalf("Cache-Control: got %q want public, max-age=3600", cc)
+	// Settled historical date board uses TTLStandings (1h) via cacheTTLForDateGames.
+	wantCC := "public, max-age=3600, stale-while-revalidate=3600, stale-if-error=7200"
+	if cc := rec.Header().Get("Cache-Control"); cc != wantCC {
+		t.Fatalf("Cache-Control: got %q want %q", cc, wantCC)
 	}
 	var out models.GamesForDateResponse
 	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
