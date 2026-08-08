@@ -20,12 +20,13 @@ wait_http() {
   local url="$1"
   local name="$2"
   local i
+  # Match e2e/scripts/run-contract-stack.sh: cold `go run` often needs ~45s to compile+listen.
   for i in $(seq 1 90); do
     if curl -sf "$url" >/dev/null; then
       echo "load-smoke: ${name} ready (${url})"
       return 0
     fi
-    sleep 0.25
+    sleep 0.5
   done
   echo "load-smoke: timed out waiting for ${name} at ${url}" >&2
   return 1
