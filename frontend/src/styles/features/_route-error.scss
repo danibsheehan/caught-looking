@@ -21,6 +21,22 @@
     word-break: break-word;
   }
 
+  &__request-id {
+    margin: 0 0 1rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  &__request-id-label {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  &__request-id-value {
+    font-family: var(--mono);
+    word-break: break-all;
+  }
+
   &__retry {
     font: inherit;
     padding: 0.55rem 1.1rem;

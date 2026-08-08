@@ -4,8 +4,11 @@ info:
   version: 0.1.0
   description: >-
     Read-only baseball analytics endpoints. Successful JSON responses set
-    `Cache-Control` from the in-process TTL. Errors use `{"error":"<message>"}`
-    (see shared response components for 400/429/500/502/504).
+    `Cache-Control` from the in-process TTL. Every response includes
+    `X-Request-ID` (chi RequestID; matches slog `request_id`) for log
+    correlation — the SPA surfaces it on API errors. Errors use
+    `{"error":"<message>"}` (see shared response components for
+    400/429/500/502/504).
 servers:
   - url: /
 paths:
@@ -697,33 +700,56 @@ components:
       schema:
         type: string
         example: public, max-age=60
+    RequestId:
+      description: >-
+        Correlation id from chi RequestID middleware. Same value as slog
+        `request_id`. Clients may send `X-Request-ID`; otherwise the server
+        generates one. Exposed to browsers via CORS `Access-Control-Expose-Headers`.
+      schema:
+        type: string
+        example: 1a2b3c4d5e6f
   responses:
     BadRequest:
       description: Invalid path or query parameters
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
     TooManyRequests:
       description: Per-IP rate limit exceeded
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
     InternalError:
       description: Local encode/decode or unexpected failure
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
     BadGateway:
       description: Upstream MLB/Savant failure or parse error
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
     GatewayTimeout:
       description: Request deadline exceeded
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:

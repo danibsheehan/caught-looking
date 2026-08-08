@@ -42,6 +42,51 @@ func TestHealth(t *testing.T) {
 	if string(body) != "ok" {
 		t.Fatalf("body: got %q want %q", body, "ok")
 	}
+	if got := res.Header.Get("X-Request-ID"); got == "" {
+		t.Fatal("expected X-Request-ID on /health response")
+	}
+}
+
+func TestRequestIDHeaderOnAPIError(t *testing.T) {
+	cfg := config.Config{
+		AllowedOrigins:     []string{"http://localhost:5173"},
+		RateLimitRequests:  1,
+		RateLimitWindow:    time.Minute,
+		HTTPMaxBodyBytes:   64 << 10,
+		TTLStandings:       time.Hour,
+		TTLScores:          5 * time.Minute,
+		TTLLiveScores:      45 * time.Second,
+		TTLStatcast:        6 * time.Hour,
+		TTLPlayerSearch:    3 * time.Minute,
+		CacheSweepInterval: time.Hour,
+		CacheMaxEntries:    100,
+	}
+	h := handlers.New(
+		cfg,
+		services.NewTTLCache(),
+		services.NewMLBClient("http://127.0.0.1:9", 0, 0),
+		services.NewSavantClient("http://127.0.0.1:9", 0, 0),
+	)
+	srv := httptest.NewServer(newRouter(cfg, h))
+	t.Cleanup(srv.Close)
+
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/standings?season=not-a-year", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("X-Request-ID", "client-corr-1")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = res.Body.Close() })
+
+	if res.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status: got %d want %d", res.StatusCode, http.StatusBadRequest)
+	}
+	if got := res.Header.Get("X-Request-ID"); got != "client-corr-1" {
+		t.Fatalf("X-Request-ID: got %q want client-corr-1 (chi should echo/accept inbound id)", got)
+	}
 }
 
 func TestMetrics(t *testing.T) {

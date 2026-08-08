@@ -33,7 +33,7 @@ Extend behavior in **`backend/middleware/`** and **`backend/config/`** — do no
 
 2. **Never leak upstream errors to clients**
    - Use **`respondUpstreamError`** / **`respondGetOrLoadError`** / **`respondUpstreamJSONParseError`**.
-   - Clients get generic messages (`bad gateway`, `gateway timeout`, `encode error`). Log detail server-side with **`request_id`**.
+   - Clients get generic messages (`bad gateway`, `gateway timeout`, `encode error`). Log detail server-side with **`request_id`**. The SPA reads **`X-Request-ID`** (CORS-exposed) into **`ApiError`** so users/support can correlate without leaking upstream bodies.
 
 3. **Do not trust client-supplied upstream URLs**
    - Only call **`h.mlb.Get(ctx, path)`** (or Savant equivalents) with **server-built** paths.

@@ -105,6 +105,49 @@ describe('api client', () => {
       await expect(apiGet('/x')).rejects.toThrow('invalid season');
     });
 
+    it('attaches X-Request-ID on ApiError and includes it in message', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: 'bad gateway' }), {
+          status: 502,
+          statusText: 'Bad Gateway',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Request-ID': 'req-abc-123',
+          },
+        }),
+      );
+      const { apiGet, ApiError } = await loadClient({ viteApiBase: '' });
+      try {
+        await apiGet('/x');
+        expect.unreachable('expected throw');
+      } catch (e) {
+        expect(e).toBeInstanceOf(ApiError);
+        const err = e as InstanceType<typeof ApiError>;
+        expect(err.status).toBe(502);
+        expect(err.requestId).toBe('req-abc-123');
+        expect(err.apiMessage).toBe('bad gateway');
+        expect(err.message).toBe('bad gateway (request req-abc-123)');
+      }
+    });
+
+    it('omits request id from ApiError when header is missing', async () => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: 'too many requests' }), {
+          status: 429,
+          statusText: 'Too Many Requests',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+      const { apiGet, ApiError } = await loadClient({ viteApiBase: '' });
+      await expect(apiGet('/x')).rejects.toSatisfy((e: unknown) => {
+        expect(e).toBeInstanceOf(ApiError);
+        const err = e as InstanceType<typeof ApiError>;
+        expect(err.requestId).toBeUndefined();
+        expect(err.message).toBe('too many requests');
+        return true;
+      });
+    });
+
     it('throws HTML error bodies as message text (non-JSON)', async () => {
       fetchMock.mockResolvedValueOnce(
         new Response('<html><body>Gateway timeout</body></html>', {
