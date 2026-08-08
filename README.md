@@ -34,7 +34,7 @@ Web app for exploring **MLB statistics** with charts and comparisons. A **Go** b
 > [!NOTE]
 > **Live app:** [caught-looking.com/standings](https://caught-looking.com/standings) · [www.caught-looking.com/standings](https://www.caught-looking.com/standings) · **API reference (Redoc):** [docs.caught-looking.com](https://docs.caught-looking.com/)
 
-**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Cost and scale](#cost-and-scale-tradeoffs) · [Design tokens](#design-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Prerequisites](#prerequisites) · [Editor setup](#editor-setup) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing) · [ADRs](docs/adr/)
+**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Cost and scale](#cost-and-scale-tradeoffs) · [Design tokens](#design-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Prerequisites](#prerequisites) · [Editor setup](#editor-setup) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing) · [ADRs](docs/adr/) · [SLOs](docs/slo.md)
 
 ---
 
@@ -67,12 +67,12 @@ Built for a **low/zero incremental cloud bill** (Cloud Run scale-to-zero + Cloud
 
 | Choice | Why it stays this way | Revisit when |
 | :--- | :--- | :--- |
-| **In-process TTL cache + singleflight** | No Redis/Memorystore cost; concurrent misses coalesce **per process**; hit/miss/coalesce show up on `GET /metrics` | Warm instance count or cold-start stampede forces a shared L2 |
+| **In-process TTL cache + singleflight** | No Redis/Memorystore cost; concurrent misses coalesce **per process**; hit/miss/coalesce + latency histograms show up on `GET /metrics` ([SLOs](docs/slo.md)) | Warm instance count or cold-start stampede forces a shared L2 |
 | **Per-process MLB/Savant QPS caps** | Predictable outbound load without a global rate coordinator | Aggregate `max-instances × QPS` risks upstream 429s |
 | **`CLOUDRUN_MAX_INSTANCES` default `2`** | Caps spend **and** the outbound budget multiplier | Traffic needs more capacity *and* a shared cache/limiter story |
-| **`CLOUDRUN_MIN_INSTANCES` default `0`** | Idle ≈ $0; cold starts refill the in-memory cache | Latency SLOs require a warm process |
+| **`CLOUDRUN_MIN_INSTANCES` default `0`** | Idle ≈ $0; cold starts refill the in-memory cache | Latency SLOs require a warm process ([docs/slo.md](docs/slo.md)) |
 
-Residual risks (per-process QPS × instances, in-memory-only stampede) are spelled out in **[docs/threat-model.md](docs/threat-model.md)**. Deploy knobs: [Deployment (CI)](#deployment-ci).
+Residual risks (per-process QPS × instances, in-memory-only stampede) are spelled out in **[docs/threat-model.md](docs/threat-model.md)**. Informal latency/hit-ratio targets: **[docs/slo.md](docs/slo.md)**. Deploy knobs: [Deployment (CI)](#deployment-ci).
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
@@ -317,6 +317,7 @@ Also enable **Dependabot alerts** and **Dependabot security updates** under GitH
 | Global theme | [`_base.scss`](frontend/src/styles/_base.scss); feature SCSS under `frontend/src/styles/features/` |
 | README art | [`docs/readme-banner.svg`](docs/readme-banner.svg), [`docs/badge-live.svg`](docs/badge-live.svg) (linked as `./docs/…` from README root) |
 | Design decisions | [`docs/adr/`](docs/adr/) — cache TTLs, upstream QPS, OpenAPI contract |
+| SLOs (informal) | [`docs/slo.md`](docs/slo.md) — latency / hit-ratio targets from `GET /metrics` |
 | Pages | `frontend/src/pages/` |
 | API client | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev |
 | Types | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts` |
@@ -357,7 +358,7 @@ make install   # once: Go modules + frontend npm dependencies
 make dev       # API on :8080 + Vite dev server (with /api proxy)
 ```
 
-- **API**: [http://127.0.0.1:8080](http://127.0.0.1:8080) — `GET /health` returns `ok`; `GET /metrics` exposes Prometheus text (Go defaults plus cache hit/miss, coalesce, and upstream 429/5xx counters).
+- **API**: [http://127.0.0.1:8080](http://127.0.0.1:8080) — `GET /health` returns `ok`; `GET /metrics` exposes Prometheus text (Go defaults plus cache/upstream counters and latency histograms — see [docs/slo.md](docs/slo.md)).
 - **Frontend**: Vite (typically [http://localhost:5173](http://localhost:5173)) proxies `/api` to the backend so the browser uses same-origin `/api` in development.
 
 Run services separately if you prefer:

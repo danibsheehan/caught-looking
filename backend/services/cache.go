@@ -77,7 +77,9 @@ func (c *TTLCache) GetOrLoadWithTTL(ctx context.Context, key string, load func(c
 		if body, rem, ok := c.getWithRemaining(key); ok {
 			return cacheLoadResult{body: body, ttl: rem, loaded: false}, nil
 		}
+		start := time.Now()
 		body, ttl, err := load(context.WithoutCancel(ctx))
+		recordCacheLoadDuration(time.Since(start), err == nil)
 		if err != nil {
 			recordCacheMiss()
 			return nil, err

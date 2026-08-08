@@ -8,24 +8,39 @@ import (
 	"net/http"
 	"time"
 
+	"caught-looking/backend/services"
+
+	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
 // Logger logs one structured line per request: method, path, status, duration, request_id.
+// It also observes caught_looking_http_request_duration_seconds (chi route pattern + status class).
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		ww := &wrapResponseWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(ww, r)
+		elapsed := time.Since(start)
 		reqID := chimiddleware.GetReqID(r.Context())
 		slog.Info("request",
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", ww.status,
-			"duration", time.Since(start).Round(time.Millisecond).String(),
+			"duration", elapsed.Round(time.Millisecond).String(),
 			"request_id", reqID,
 		)
+		services.RecordHTTPRequestDuration(chiRoutePattern(r), services.HTTPStatusClass(ww.status), elapsed)
 	})
+}
+
+func chiRoutePattern(r *http.Request) string {
+	if rctx := chi.RouteContext(r.Context()); rctx != nil {
+		if p := rctx.RoutePattern(); p != "" {
+			return p
+		}
+	}
+	return "unmatched"
 }
 
 type wrapResponseWriter struct {
