@@ -1,5 +1,8 @@
 // Package e2eupstream serves minimal MLB Stats API + Baseball Savant fixture
 // responses for contract-aware Playwright (Go API → fixtures, no live MLB).
+//
+// Optional chaos modes (429 / 5xx / slow) can be set via env at process start or
+// the /_chaos control API so full-stack tests prove degradation without live MLB.
 package e2eupstream
 
 import (
@@ -213,14 +216,45 @@ const statcastCSV = `launch_speed,launch_angle,batter,pitcher,player_name,events
 ,,,2001,,,,,0.4,3.0,Slider,SL,86.5,3.41,1.74,R
 `
 
-// Handler returns the fixture mux (MLB JSON paths + Savant CSV + /health).
+// Handler returns the fixture mux with chaos control (/_chaos) and optional env defaults.
 func Handler() http.Handler {
+	return NewServer(ChaosFromEnv()).Handler()
+}
+
+// NewServer builds a fixture upstream with an injectable chaos controller (tests).
+func NewServer(chaos *Chaos) *Server {
+	if chaos == nil {
+		chaos = NewChaos()
+	}
+	return &Server{chaos: chaos}
+}
+
+// Server is the fixture upstream + chaos control surface.
+type Server struct {
+	chaos *Chaos
+}
+
+// Chaos exposes the controller for tests.
+func (s *Server) Chaos() *Chaos {
+	return s.chaos
+}
+
+// Handler mounts /health, /_chaos, and fixture routes (chaos applies to fixtures only).
+func (s *Server) Handler() http.Handler {
+	fixtures := fixtureMux()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
+	mux.Handle("/_chaos", s.chaos.ControlHandler())
+	mux.Handle("/", s.chaos.Wrap(fixtures))
+	return mux
+}
+
+func fixtureMux() http.Handler {
+	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
