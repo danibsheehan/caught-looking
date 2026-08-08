@@ -360,7 +360,7 @@ make install   # once: Go modules + frontend npm dependencies
 make dev       # API on :8080 + Vite dev server (with /api proxy)
 ```
 
-- **API**: [http://127.0.0.1:8080](http://127.0.0.1:8080) — `GET /health` returns `ok`; responses include `X-Request-ID` (SPA surfaces it on API errors); `GET /metrics` exposes Prometheus text (Go defaults plus cache/upstream counters and latency histograms — see [docs/slo.md](docs/slo.md)). Prove singleflight under concurrency with **`make load-smoke`** (boots its own fixture stack).
+- **API**: [http://127.0.0.1:8080](http://127.0.0.1:8080) — `GET /health` (liveness → `ok`), `GET /ready` (process invariants → `ready`, never probes MLB); responses include `X-Request-ID` (SPA surfaces it on API errors); `GET /metrics` exposes Prometheus text (see [docs/slo.md](docs/slo.md)); `GET /docs` / `GET /openapi.yaml` serve the contract. Ops paths are documented in OpenAPI (tag **Ops**). Prove singleflight under concurrency with **`make load-smoke`**.
 - **Frontend**: Vite (typically [http://localhost:5173](http://localhost:5173)) proxies `/api` to the backend so the browser uses same-origin `/api` in development.
 
 Run services separately if you prefer:

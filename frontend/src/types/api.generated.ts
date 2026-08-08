@@ -11,8 +11,91 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health check */
+        /**
+         * Liveness probe
+         * @description Process is up. Use for Cloud Run liveness/startup. Does not check MLB/Savant or cache wiring (see `/ready`).
+         */
         get: operations["getHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Readiness probe
+         * @description Process-local dependencies are wired (cache + MLB/Savant clients constructed). Never calls upstream — an MLB outage must not fail this probe or thrash Cloud Run scale-to-zero. Prefer for readiness probes.
+         */
+        get: operations["getReady"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Prometheus metrics
+         * @description Prometheus text exposition (Go defaults plus low-cardinality `caught_looking_*` counters/histograms). Outside the rate-limit group. Prefer network/IAM restriction in production; see docs/slo.md and the threat model.
+         */
+        get: operations["getMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/docs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Swagger UI
+         * @description Embedded Swagger UI for this OpenAPI contract (also published as Redoc at docs.caught-looking.com). Outside the rate-limit group.
+         */
+        get: operations["getDocs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openapi.yaml": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * OpenAPI document
+         * @description Machine-readable OpenAPI 3 YAML (same file as backend/apidocs/openapi.yaml). Outside the rate-limit group.
+         */
+        get: operations["getOpenAPIYaml"];
         put?: never;
         post?: never;
         delete?: never;
@@ -772,13 +855,109 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Service is healthy */
+            /** @description Process is alive */
             200: {
                 headers: {
+                    "X-Request-ID": components["headers"]["RequestId"];
                     [name: string]: unknown;
                 };
                 content: {
                     "text/plain": string;
+                };
+            };
+        };
+    };
+    getReady: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Process is ready to accept traffic */
+            200: {
+                headers: {
+                    "X-Request-ID": components["headers"]["RequestId"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Process invariants not satisfied (miswired handlers) */
+            503: {
+                headers: {
+                    "X-Request-ID": components["headers"]["RequestId"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+        };
+    };
+    getMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Prometheus text format */
+            200: {
+                headers: {
+                    "X-Request-ID": components["headers"]["RequestId"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+        };
+    };
+    getDocs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description HTML Swagger UI */
+            200: {
+                headers: {
+                    "X-Request-ID": components["headers"]["RequestId"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+        };
+    };
+    getOpenAPIYaml: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OpenAPI YAML */
+            200: {
+                headers: {
+                    "X-Request-ID": components["headers"]["RequestId"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/yaml": string;
+                    "text/yaml": string;
                 };
             };
         };
@@ -828,6 +1007,7 @@ export interface operations {
             200: {
                 headers: {
                     "Cache-Control": components["headers"]["CacheControl"];
+                    "X-Request-ID": components["headers"]["RequestId"];
                     [name: string]: unknown;
                 };
                 content: {

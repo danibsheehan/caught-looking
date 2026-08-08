@@ -41,7 +41,7 @@ curl -s http://127.0.0.1:8080/metrics | grep '^caught_looking_'
 
 Useful PromQL-shaped questions (any Prometheus-compatible scraper, including ad-hoc):
 
-- Warm hit path: histogram quantile on `http_request_duration_seconds{code="2xx"}` excluding `/metrics` / `/health` if scrapes dominate.
+- Warm hit path: histogram quantile on `http_request_duration_seconds{code="2xx"}` excluding `/metrics` / `/health` / `/ready` if scrapes/probes dominate.
 - Miss cost: quantile on `cache_load_duration_seconds{result="ok"}`.
 - Hit ratio: `rate(caught_looking_cache_requests_total{result="hit"}[5m]) / rate(caught_looking_cache_requests_total[5m])`.
 

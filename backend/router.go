@@ -34,10 +34,21 @@ func newRouter(cfg config.Config, h *handlers.Handlers) http.Handler {
 		))
 	}
 
+	// Liveness: process is up. Prefer this for Cloud Run liveness/startup probes.
 	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
+	})
+	// Readiness: process-local wiring only — never probe MLB/Savant (would thrash scale-to-zero).
+	r.Get("/ready", func(w http.ResponseWriter, _ *http.Request) {
+		if !h.Ready() {
+			http.Error(w, "not ready", http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ready"))
 	})
 	// Prometheus scrape endpoint — outside the rate-limited API group (like /health).
 	r.Handle("/metrics", promhttp.Handler())
