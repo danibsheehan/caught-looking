@@ -754,7 +754,7 @@ export interface components {
     parameters: never;
     requestBodies: never;
     headers: {
-        /** @description Set on successful JSON responses. `public, max-age=<seconds>` when the entry is cacheable (TTL from in-process cache); `private, no-store` when TTL is non-positive. See docs/adr/0001-cache-ttls.md. */
+        /** @description Set on successful JSON responses from the in-process cache TTL (or remaining TTL on hit). Non-positive TTL → `private, no-store`. Live / near-live (TTL ≤ 60s) → `public, max-age=<seconds>`. Settled aggregates (TTL > 60s) → `public, max-age=<seconds>, stale-while-revalidate=<seconds>, stale-if-error=<min(2×seconds, 86400)>`. See docs/adr/0001-cache-ttls.md. */
         CacheControl: string;
         /** @description Correlation id from chi RequestID middleware. Same value as slog `request_id`. Clients may send `X-Request-ID`; otherwise the server generates one. Exposed to browsers via CORS `Access-Control-Expose-Headers`. */
         RequestId: string;
