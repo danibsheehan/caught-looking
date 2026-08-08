@@ -42,9 +42,30 @@ const envBase = import.meta.env.VITE_API_BASE;
 export const API_BASE =
   envBase != null && String(envBase).trim() !== '' ? String(envBase).replace(/\/$/, '') : '/api';
 
+/** Response / request header used for FE↔BE log correlation (chi RequestID). */
+export const REQUEST_ID_HEADER = 'X-Request-ID';
+
 export type ApiGetOptions = {
   signal?: AbortSignal;
 };
+
+/** Non-OK API response; `message` includes request id when the header was present. */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly requestId?: string;
+  /** Upstream/API error text without the request-id suffix. */
+  readonly apiMessage: string;
+
+  constructor(message: string, options: { status: number; requestId?: string }) {
+    const requestId = options.requestId?.trim() || undefined;
+    const display = requestId !== undefined ? `${message} (request ${requestId})` : message;
+    super(display);
+    this.name = 'ApiError';
+    this.status = options.status;
+    this.requestId = requestId;
+    this.apiMessage = message;
+  }
+}
 
 export async function apiGet<T>(path: string, options?: ApiGetOptions): Promise<T> {
   const p = path.startsWith('/') ? path : `/${path}`;
@@ -52,9 +73,18 @@ export async function apiGet<T>(path: string, options?: ApiGetOptions): Promise<
   const res =
     options?.signal !== undefined ? await fetch(url, { signal: options.signal }) : await fetch(url);
   if (!res.ok) {
-    throw new Error(await readErrorMessage(res));
+    throw new ApiError(await readErrorMessage(res), {
+      status: res.status,
+      requestId: readRequestId(res),
+    });
   }
   return (await res.json()) as T;
+}
+
+function readRequestId(res: Response): string | undefined {
+  const v = res.headers.get(REQUEST_ID_HEADER);
+  const trimmed = v?.trim();
+  return trimmed !== undefined && trimmed !== '' ? trimmed : undefined;
 }
 
 async function readErrorMessage(res: Response): Promise<string> {

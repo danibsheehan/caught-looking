@@ -13,11 +13,13 @@ import (
 	"caught-looking/backend/services"
 
 	"github.com/go-chi/chi/v5"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
 func TestCORS_allowedOriginGET(t *testing.T) {
 	allowed := []string{"http://localhost:5173"}
 	h := CORS(allowed)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Request-ID", "test-req-1")
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -31,6 +33,9 @@ func TestCORS_allowedOriginGET(t *testing.T) {
 	}
 	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:5173" {
 		t.Fatalf("Access-Control-Allow-Origin: got %q", got)
+	}
+	if got := rec.Header().Get("Access-Control-Expose-Headers"); !strings.Contains(strings.ToLower(got), "x-request-id") {
+		t.Fatalf("Access-Control-Expose-Headers missing X-Request-ID: %q", got)
 	}
 }
 
@@ -71,6 +76,27 @@ func TestCORS_disallowedOrigin(t *testing.T) {
 
 	if rec.Header().Get("Access-Control-Allow-Origin") != "" {
 		t.Fatalf("unexpected ACAO for disallowed origin: %q", rec.Header().Get("Access-Control-Allow-Origin"))
+	}
+}
+
+func TestRequestIDHeader_setsResponseHeader(t *testing.T) {
+	r := chi.NewRouter()
+	r.Use(chimiddleware.RequestID)
+	r.Use(RequestIDHeader)
+	r.Get("/ping", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	req.Header.Set("X-Request-ID", "echo-me")
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status: got %d", rec.Code)
+	}
+	if got := rec.Header().Get("X-Request-ID"); got != "echo-me" {
+		t.Fatalf("X-Request-ID: got %q want echo-me", got)
 	}
 }
 

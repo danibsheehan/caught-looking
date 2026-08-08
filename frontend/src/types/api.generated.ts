@@ -703,6 +703,7 @@ export interface components {
         /** @description Invalid path or query parameters */
         BadRequest: {
             headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
                 [name: string]: unknown;
             };
             content: {
@@ -712,6 +713,7 @@ export interface components {
         /** @description Per-IP rate limit exceeded */
         TooManyRequests: {
             headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
                 [name: string]: unknown;
             };
             content: {
@@ -721,6 +723,7 @@ export interface components {
         /** @description Local encode/decode or unexpected failure */
         InternalError: {
             headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
                 [name: string]: unknown;
             };
             content: {
@@ -730,6 +733,7 @@ export interface components {
         /** @description Upstream MLB/Savant failure or parse error */
         BadGateway: {
             headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
                 [name: string]: unknown;
             };
             content: {
@@ -739,6 +743,7 @@ export interface components {
         /** @description Request deadline exceeded */
         GatewayTimeout: {
             headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
                 [name: string]: unknown;
             };
             content: {
@@ -751,6 +756,8 @@ export interface components {
     headers: {
         /** @description Set on successful JSON responses. `public, max-age=<seconds>` when the entry is cacheable (TTL from in-process cache); `private, no-store` when TTL is non-positive. See docs/adr/0001-cache-ttls.md. */
         CacheControl: string;
+        /** @description Correlation id from chi RequestID middleware. Same value as slog `request_id`. Clients may send `X-Request-ID`; otherwise the server generates one. Exposed to browsers via CORS `Access-Control-Expose-Headers`. */
+        RequestId: string;
     };
     pathItems: never;
 }

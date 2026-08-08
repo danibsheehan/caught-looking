@@ -10,7 +10,7 @@ alwaysApply: false
 - **Core helper**: use **`apiGet<T>(path)`** for JSON GETs. Paths are relative to `API_BASE`, start with `/` (e.g. `/standings`, `/teams/42/season-stats`).
 - **New endpoints**: follow **`.cursor/skills/add-api-endpoint/SKILL.md`** (OpenAPI → `api:types` → `api.compat` → `fetch…` → tests). OpenAPI regen details: **`.cursor/skills/openapi-maintain/SKILL.md`**. Run **`make check-openapi`** before PR.
 - **Naming**: `fetchStandings`, `fetchTeams`, `fetchGameTimeline` — verb + resource; align path segments with **`backend`** route registration (`router.go`).
-- **Validation**: throw `Error` with a clear message for impossible client-side args (see `fetchRecordTimelinesBatch`). Let `apiGet` throw on non-OK HTTP.
+- **Validation**: throw `Error` with a clear message for impossible client-side args (see `fetchRecordTimelinesBatch`). Let `apiGet` throw **`ApiError`** on non-OK HTTP (includes `status` and optional `requestId` from `X-Request-ID`).
 
 ```typescript
 // Prefer

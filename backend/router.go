@@ -17,6 +17,7 @@ import (
 func newRouter(cfg config.Config, h *handlers.Handlers) http.Handler {
 	r := chi.NewRouter()
 	r.Use(chimiddleware.RequestID)
+	r.Use(middleware.RequestIDHeader)
 	r.Use(chimiddleware.Recoverer)
 	r.Use(middleware.Logger)
 	// CORS before MaxBodyBytes so 413 (and other early rejects) still get ACAO headers.
