@@ -6,6 +6,7 @@ import type {
   GameBoxscoreResponse,
   GameStatcastPitchesResponse,
   GameStatcastResponse,
+  GameTimelineResponse,
 } from '../types/api.compat';
 import GameDetail from './GameDetail';
 
@@ -50,13 +51,27 @@ const api = vi.hoisted(() => {
     pitches: [],
   };
 
+  const timeline: GameTimelineResponse = {
+    gamePk: 662000,
+    status: 'Final',
+    homeTeam: 'Home',
+    awayTeam: 'Away',
+    homeId: 144,
+    awayId: 121,
+    innings: [],
+    homeTotal: 0,
+    awayTotal: 1,
+  };
+
   return {
     box,
     statcast,
     pitches,
+    timeline,
     fetchGameBoxscore: vi.fn(() => Promise.resolve(box)),
     fetchGameStatcast: vi.fn(() => Promise.resolve(statcast)),
     fetchGameStatcastPitches: vi.fn(() => Promise.resolve(pitches)),
+    fetchGameTimeline: vi.fn(() => Promise.resolve(timeline)),
   };
 });
 
@@ -67,6 +82,7 @@ vi.mock('../api/client', async (importOriginal) => {
     fetchGameBoxscore: api.fetchGameBoxscore,
     fetchGameStatcast: api.fetchGameStatcast,
     fetchGameStatcastPitches: api.fetchGameStatcastPitches,
+    fetchGameTimeline: api.fetchGameTimeline,
   };
 });
 
@@ -87,6 +103,7 @@ describe('GameDetail', () => {
     api.fetchGameBoxscore.mockImplementation(() => Promise.resolve(api.box));
     api.fetchGameStatcast.mockImplementation(() => Promise.resolve(api.statcast));
     api.fetchGameStatcastPitches.mockImplementation(() => Promise.resolve(api.pitches));
+    api.fetchGameTimeline.mockImplementation(() => Promise.resolve(api.timeline));
   });
 
   it('redirects invalid gamePk to /games', async () => {
@@ -180,10 +197,11 @@ describe('GameDetail', () => {
   it('keeps prior box score and offers Retry when a live poll fails', async () => {
     const user = userEvent.setup();
     const liveBox = { ...api.box, status: 'In Progress' };
+    // Keep failing after the first success so automatic backoff cannot clear the
+    // stale banner before the test clicks Retry (CI race).
     api.fetchGameBoxscore
       .mockResolvedValueOnce(liveBox)
-      .mockRejectedValueOnce(new Error('upstream timeout'))
-      .mockResolvedValue(liveBox);
+      .mockRejectedValue(new Error('upstream timeout'));
 
     renderGameDetail('/games/662000');
 
@@ -191,14 +209,16 @@ describe('GameDetail', () => {
       await screen.findByRole('heading', { level: 2, name: 'Team totals' }, asyncWait),
     ).toBeInTheDocument();
 
-    const alert = await screen.findByText(/Could not refresh the box score/i, {}, asyncWait);
-    expect(alert).toHaveTextContent(/upstream timeout/);
-    expect(alert).toHaveTextContent(/Reconnecting automatically/);
-    expect(alert.closest('[role="alert"]')).toBeTruthy();
+    const retry = await screen.findByRole('button', { name: /Retry now/i }, asyncWait);
+    const staleMsg = screen.getByText(/Could not refresh the box score/i);
+    expect(staleMsg).toHaveTextContent(/upstream timeout/);
+    expect(staleMsg).toHaveTextContent(/Reconnecting automatically/);
+    expect(staleMsg.closest('[role="alert"]')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'Team totals' })).toBeInTheDocument();
 
+    api.fetchGameBoxscore.mockResolvedValue(liveBox);
     const beforeRetry = api.fetchGameBoxscore.mock.calls.length;
-    await user.click(screen.getByRole('button', { name: /Retry now/i }));
+    await user.click(retry);
 
     await waitFor(() => {
       expect(api.fetchGameBoxscore.mock.calls.length).toBeGreaterThan(beforeRetry);
