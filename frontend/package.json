@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && test -f dist/_headers && test -f dist/_redirects",
     "build:analyze": "ANALYZE=true vite build",
     "lint": "eslint .",
     "format": "prettier --write .",

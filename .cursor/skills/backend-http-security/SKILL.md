@@ -13,7 +13,7 @@ description: >-
 
 Project-specific hardening for the chi API. For a diff-wide security pass, also use Cursor’s **`/review-security`** (or ask for a security review).
 
-**Threat model:** **`docs/threat-model.md`** — assets, trust boundaries, controls, residual risks. Update it in the **same change** when CORS allowlisting, rate-limit trust (`RemoteAddr` vs forwarded headers), inbound body caps, outbound URL policy, generic upstream error responses, or QPS/instance abuse assumptions change. Do not duplicate the full threat table into this skill.
+**Threat model:** **`docs/threat-model.md`** — assets, trust boundaries, controls, residual risks. Update it in the **same change** when CORS allowlisting, rate-limit trust (`RemoteAddr` vs forwarded headers), inbound body caps, outbound URL policy, generic upstream error responses, QPS/instance abuse assumptions, or SPA Pages security headers (`frontend/public/_headers` CSP / nosniff / frame / referrer) change. Do not duplicate the full threat table into this skill.
 
 ## Defaults already in the stack
 
