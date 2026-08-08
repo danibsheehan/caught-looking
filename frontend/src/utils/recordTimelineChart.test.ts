@@ -5,8 +5,10 @@ import {
   buildGamesBehindRows,
   buildRollingWinPctRows,
   buildSeasonWinPctRows,
+  DIVISION_RACE_X_WINDOW,
   divisionRaceValueKey,
   maxGamesBehind,
+  sliceTrailingGameRows,
 } from './recordTimelineChart';
 
 function pt(
@@ -98,5 +100,33 @@ describe('buildDivisionRaceChartRows', () => {
     expect(buildDivisionRaceChartRows('recent', twoTeams, 2)[3]?.[divisionRaceValueKey(1)]).toBe(
       50,
     );
+  });
+
+  it('keeps Season on the full X-axis and windows Race/Recent', () => {
+    const long: RecordTimelineResponse[] = [
+      {
+        teamId: 1,
+        season: 2026,
+        finishedGames: 50,
+        points: Array.from({ length: 50 }, (_, i) => {
+          const n = i + 1;
+          return pt(n, 'W', n, 0, 1);
+        }),
+      },
+    ];
+    expect(buildDivisionRaceChartRows('season', long)).toHaveLength(50);
+    const race = buildDivisionRaceChartRows('race', long);
+    expect(race).toHaveLength(DIVISION_RACE_X_WINDOW);
+    expect(race[0]?.gameIndex).toBe(50 - DIVISION_RACE_X_WINDOW + 1);
+    expect(race[race.length - 1]?.gameIndex).toBe(50);
+  });
+});
+
+describe('sliceTrailingGameRows', () => {
+  it('returns a copy when at or under the window', () => {
+    const rows = buildSeasonWinPctRows(twoTeams);
+    const sliced = sliceTrailingGameRows(rows, 10);
+    expect(sliced).toEqual(rows);
+    expect(sliced).not.toBe(rows);
   });
 });

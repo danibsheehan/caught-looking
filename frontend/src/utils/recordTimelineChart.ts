@@ -3,8 +3,14 @@ import type { RecordPoint, RecordTimelineResponse } from '../types/api.compat';
 /** Chart modes for division race timelines. */
 export type DivisionRaceChartMode = 'season' | 'race' | 'recent';
 
-/** Trailing window for Recent mode (last N decided games). */
+/** Trailing window for Recent mode Y values (last N decided games). */
 export const DIVISION_RACE_RECENT_WINDOW = 10;
+
+/**
+ * How many completed games Race / Recent show on the X-axis.
+ * Keeps late-season charts readable instead of stretching across ~162 games.
+ */
+export const DIVISION_RACE_X_WINDOW = 40;
 
 export type DivisionRaceChartRow = Record<string, number | undefined> & {
   gameIndex: number;
@@ -125,16 +131,31 @@ export function buildDivisionRaceChartRows(
   mode: DivisionRaceChartMode,
   timelines: readonly RecordTimelineResponse[],
   recentWindow: number = DIVISION_RACE_RECENT_WINDOW,
+  xWindow: number = DIVISION_RACE_X_WINDOW,
 ): DivisionRaceChartRow[] {
+  let rows: DivisionRaceChartRow[];
   switch (mode) {
     case 'race':
-      return buildGamesBehindRows(timelines);
+      rows = buildGamesBehindRows(timelines);
+      break;
     case 'recent':
-      return buildRollingWinPctRows(timelines, recentWindow);
+      rows = buildRollingWinPctRows(timelines, recentWindow);
+      break;
     case 'season':
     default:
       return buildSeasonWinPctRows(timelines);
   }
+  return sliceTrailingGameRows(rows, xWindow);
+}
+
+/** Keep the last `window` rows (by game index order). No-op when shorter. */
+export function sliceTrailingGameRows(
+  rows: readonly DivisionRaceChartRow[],
+  window: number = DIVISION_RACE_X_WINDOW,
+): DivisionRaceChartRow[] {
+  const w = Math.max(1, Math.floor(window));
+  if (rows.length <= w) return [...rows];
+  return rows.slice(rows.length - w);
 }
 
 export function divisionRaceValueKey(teamId: number): string {

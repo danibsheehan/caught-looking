@@ -129,15 +129,15 @@ describe('MultiTeamWinPctChart', () => {
 
     await user.click(screen.getByRole('button', { name: 'Race' }));
     expect(screen.getByRole('button', { name: 'Race' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText(/Games behind the division pace leader/i)).toBeInTheDocument();
+    expect(screen.getByText(/last 40 games on the axis/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Recent' }));
     expect(screen.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText(/Trailing win % over the last 10 games/i)).toBeInTheDocument();
+    expect(screen.getByText(/L10 win %/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Season' }));
     expect(screen.getByRole('button', { name: 'Season' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText(/Cumulative win %/i)).toBeInTheDocument();
+    expect(screen.getByText(/Full season cumulative win %/i)).toBeInTheDocument();
   });
 
   it('surfaces fetch errors', { timeout: 15_000 }, async () => {

@@ -18,6 +18,7 @@ import { chartCartesianTick } from '../../utils/rechartsAxis';
 import {
   buildDivisionRaceChartRows,
   DIVISION_RACE_RECENT_WINDOW,
+  DIVISION_RACE_X_WINDOW,
   divisionRaceValueKey,
   maxGamesBehind,
   type DivisionRaceChartMode,
@@ -39,9 +40,9 @@ const MODES: Array<{ id: DivisionRaceChartMode; label: string }> = [
 ];
 
 const MODE_HINT: Record<DivisionRaceChartMode, string> = {
-  season: 'Cumulative win % by games completed (pace), not calendar date.',
-  race: 'Games behind the division pace leader. Separation stays readable late in the year.',
-  recent: `Trailing win % over the last ${DIVISION_RACE_RECENT_WINDOW} games (shorter early on).`,
+  season: 'Full season cumulative win % by games completed (pace), not calendar date.',
+  race: `Games behind the pace leader — last ${DIVISION_RACE_X_WINDOW} games on the axis.`,
+  recent: `L${DIVISION_RACE_RECENT_WINDOW} win % — last ${DIVISION_RACE_X_WINDOW} games on the axis.`,
 };
 
 function WinPctYAxisTick(
