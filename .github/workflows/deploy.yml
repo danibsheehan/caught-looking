@@ -171,6 +171,36 @@ jobs:
                   URL=$(gcloud run services describe "$CLOUDRUN_SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format 'value(status.url)')
                   echo "url=$URL" >> "$GITHUB_OUTPUT"
 
+            # Fail before Pages publish if the new revision is not serving probes.
+            # Retries cover brief Cloud Run URL / revision propagation after deploy.
+            - name: Smoke check API probes
+              env:
+                  API_URL: ${{ steps.cloudrun-url.outputs.url }}
+              run: |
+                  if [ -z "$API_URL" ]; then
+                    echo "::error::Cloud Run URL is empty; cannot smoke-check probes"
+                    exit 1
+                  fi
+                  for path in /health /ready; do
+                    echo "Checking ${API_URL}${path}…"
+                    ok=0
+                    for i in $(seq 1 10); do
+                      code=$(curl -sS -o /tmp/probe-body -w '%{http_code}' --max-time 10 "${API_URL}${path}" || true)
+                      body=$(tr -d '\r' </tmp/probe-body 2>/dev/null || true)
+                      if [ "$code" = "200" ]; then
+                        echo "OK ${path} (attempt ${i}): ${body}"
+                        ok=1
+                        break
+                      fi
+                      echo "attempt ${i}: HTTP ${code} body=${body}"
+                      sleep 3
+                    done
+                    if [ "$ok" != "1" ]; then
+                      echo "::error::Probe ${path} did not return HTTP 200 after retries"
+                      exit 1
+                    fi
+                  done
+
     deploy-frontend:
         if: ${{ github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
         name: Deploy frontend (Cloudflare Pages)
