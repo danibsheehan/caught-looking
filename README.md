@@ -487,7 +487,7 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 
 | Trigger | Workflow | What happens |
 | --- | --- | --- |
-| Push to **`main`** (or manual **Run workflow**) | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) | Build/push API image → **Artifact Registry** → **Cloud Run** (HTTP startup probe **`GET /health`**); smoke **`GET /health`** + **`GET /ready`** on the new service URL (retries; fails the job before Pages); build SPA with **`VITE_API_BASE`** → **`frontend/dist`** to **Cloudflare Pages** ([`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)) |
+| Push to **`main`** (or manual **Run workflow**) | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) | Build/push API image → **Artifact Registry** → **Cloud Run** (HTTP startup probe **`GET /health`**); smoke **`GET /health`** + **`GET /ready`** on the new service URL (retries; fails the job before Pages); write Actions **job summaries** (SHA, image/API/Pages URLs, probe result); build SPA with **`VITE_API_BASE`** → **`frontend/dist`** to **Cloudflare Pages** ([`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)) |
 | Same-repo PR | [`.github/workflows/pages-preview.yml`](.github/workflows/pages-preview.yml) | Same SPA build; **`VITE_API_BASE`** = live Cloud Run URL (`API_PUBLIC_URL`, or `gcloud` lookup) → branch preview (`https://<branch>.<project>.pages.dev`) |
 | PR closed/merged | [`.github/workflows/pages-preview-cleanup.yml`](.github/workflows/pages-preview-cleanup.yml) | Deletes that branch’s preview deployments (Cloudflare keeps them otherwise) |
 
