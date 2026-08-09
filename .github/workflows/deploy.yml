@@ -202,6 +202,22 @@ jobs:
                     fi
                   done
 
+            - name: Deploy summary (API)
+              env:
+                  API_URL: ${{ steps.cloudrun-url.outputs.url }}
+              run: |
+                  IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/api:${GITHUB_SHA}"
+                  {
+                    echo "## Deploy summary (API)"
+                    echo ""
+                    echo "| | |"
+                    echo "| --- | --- |"
+                    echo "| **git SHA** | \`${GITHUB_SHA}\` |"
+                    echo "| **image** | \`${IMAGE}\` |"
+                    echo "| **Cloud Run** | ${API_URL} |"
+                    echo "| **probes** | \`GET /health\` + \`GET /ready\` → 200 |"
+                  } >> "$GITHUB_STEP_SUMMARY"
+
     deploy-frontend:
         if: ${{ github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
         name: Deploy frontend (Cloudflare Pages)
@@ -238,7 +254,8 @@ jobs:
                   npm ci
                   npm run build
 
-            - name: Publish to Cloudflare Pages
+            - id: pages
+              name: Publish to Cloudflare Pages
               uses: cloudflare/pages-action@f0a1cd58cd66095dee69bfa18fa5efd1dde93bca # v1
               with:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -248,3 +265,20 @@ jobs:
                   branch: main
                   gitHubToken: ${{ secrets.GITHUB_TOKEN }}
                   workingDirectory: frontend
+
+            - name: Deploy summary (frontend)
+              env:
+                  API_URL: ${{ needs.deploy-backend.outputs.api_url }}
+                  PAGES_URL: ${{ steps.pages.outputs.url }}
+                  CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
+              run: |
+                  PAGES="${PAGES_URL:-https://${CF_PROJECT}.pages.dev}"
+                  {
+                    echo "## Deploy summary (frontend)"
+                    echo ""
+                    echo "| | |"
+                    echo "| --- | --- |"
+                    echo "| **git SHA** | \`${GITHUB_SHA}\` |"
+                    echo "| **VITE_API_BASE** | ${API_URL} |"
+                    echo "| **Pages** | ${PAGES} |"
+                  } >> "$GITHUB_STEP_SUMMARY"
