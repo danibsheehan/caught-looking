@@ -163,7 +163,7 @@ jobs:
                     --allow-unauthenticated \
                     --min-instances="$CLOUDRUN_MIN_INSTANCES" \
                     --max-instances="$CLOUDRUN_MAX_INSTANCES" \
-                    --startup-probe=httpGetPath=/health,initialDelaySeconds=0,timeoutSeconds=3,periodSeconds=5,failureThreshold=12 \
+                    --startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=0,timeoutSeconds=3,periodSeconds=5,failureThreshold=12 \
                     --env-vars-file=/tmp/cr-env.json
 
             - id: cloudrun-url
@@ -201,6 +201,22 @@ jobs:
                       exit 1
                     fi
                   done
+
+            - name: Deploy summary (API)
+              env:
+                  API_URL: ${{ steps.cloudrun-url.outputs.url }}
+              run: |
+                  IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/api:${GITHUB_SHA}"
+                  {
+                    echo "## Deploy summary (API)"
+                    echo ""
+                    echo "| | |"
+                    echo "| --- | --- |"
+                    echo "| **git SHA** | \`${GITHUB_SHA}\` |"
+                    echo "| **image** | \`${IMAGE}\` |"
+                    echo "| **Cloud Run** | ${API_URL} |"
+                    echo "| **probes** | \`GET /health\` + \`GET /ready\` → 200 |"
+                  } >> "$GITHUB_STEP_SUMMARY"
 
     deploy-frontend:
         if: ${{ github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
@@ -280,3 +296,22 @@ jobs:
                     echo "::error::Pages smoke ${URL}/ did not return HTTP 200 after retries"
                     exit 1
                   fi
+
+            - name: Deploy summary (frontend)
+              env:
+                  API_URL: ${{ needs.deploy-backend.outputs.api_url }}
+                  PAGES_URL: ${{ steps.pages.outputs.url }}
+                  CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
+                  SITE_PUBLIC_URL: ${{ vars.SITE_PUBLIC_URL }}
+              run: |
+                  PAGES="${SITE_PUBLIC_URL:-${PAGES_URL:-https://${CF_PROJECT}.pages.dev}}"
+                  {
+                    echo "## Deploy summary (frontend)"
+                    echo ""
+                    echo "| | |"
+                    echo "| --- | --- |"
+                    echo "| **git SHA** | \`${GITHUB_SHA}\` |"
+                    echo "| **VITE_API_BASE** | ${API_URL} |"
+                    echo "| **Pages** | ${PAGES} |"
+                    echo "| **SPA smoke** | \`GET /\` → 200 |"
+                  } >> "$GITHUB_STEP_SUMMARY"
