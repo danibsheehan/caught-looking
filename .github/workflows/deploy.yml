@@ -238,7 +238,8 @@ jobs:
                   npm ci
                   npm run build
 
-            - name: Publish to Cloudflare Pages
+            - id: pages
+              name: Publish to Cloudflare Pages
               uses: cloudflare/pages-action@f0a1cd58cd66095dee69bfa18fa5efd1dde93bca # v1
               with:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -248,3 +249,34 @@ jobs:
                   branch: main
                   gitHubToken: ${{ secrets.GITHUB_TOKEN }}
                   workingDirectory: frontend
+
+            # Catch a bad SPA upload the API probes cannot see. Prefer SITE_PUBLIC_URL
+            # (custom domain), then the Pages action URL, then the project pages.dev alias.
+            - name: Smoke check Pages
+              env:
+                  PAGES_URL: ${{ steps.pages.outputs.url }}
+                  CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
+                  SITE_PUBLIC_URL: ${{ vars.SITE_PUBLIC_URL }}
+              run: |
+                  URL="${SITE_PUBLIC_URL:-${PAGES_URL:-https://${CF_PROJECT}.pages.dev}}"
+                  URL="${URL%/}"
+                  if [ -z "$URL" ]; then
+                    echo "::error::Pages URL is empty; set SITE_PUBLIC_URL or CLOUDFLARE_PAGES_PROJECT_NAME"
+                    exit 1
+                  fi
+                  echo "Checking ${URL}/…"
+                  ok=0
+                  for i in $(seq 1 10); do
+                    code=$(curl -sS -o /tmp/pages-body -w '%{http_code}' --max-time 15 "${URL}/" || true)
+                    if [ "$code" = "200" ]; then
+                      echo "OK / (attempt ${i})"
+                      ok=1
+                      break
+                    fi
+                    echo "attempt ${i}: HTTP ${code}"
+                    sleep 3
+                  done
+                  if [ "$ok" != "1" ]; then
+                    echo "::error::Pages smoke ${URL}/ did not return HTTP 200 after retries"
+                    exit 1
+                  fi
