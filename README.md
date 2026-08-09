@@ -487,12 +487,35 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 
 | Trigger | Workflow | What happens |
 | --- | --- | --- |
-| Push to **`main`** (or manual **Run workflow**) | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) | Build/push API image → **Artifact Registry** → **Cloud Run** (HTTP startup probe **`GET /health`**); smoke **`GET /health`** + **`GET /ready`** on the new service URL (retries; fails the job before Pages); build SPA with **`VITE_API_BASE`** → **`frontend/dist`** to **Cloudflare Pages** ([`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)) |
+| Push to **`main`** (or manual **Run workflow**) | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) | Build/push API image → **Artifact Registry** → **Cloud Run** (HTTP startup probe **`GET /health`**); smoke **`GET /health`** + **`GET /ready`** on the new service URL (retries; fails the job before Pages); write Actions **job summaries** (SHA, image/API/Pages URLs, probe result); build SPA with **`VITE_API_BASE`** → **`frontend/dist`** to **Cloudflare Pages** ([`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)); smoke **`GET /`** on the Pages deploy URL (retries; custom domain soft-check only) |
 | Schedule (weekly) or manual | [`.github/workflows/weekly-probe-smoke.yml`](.github/workflows/weekly-probe-smoke.yml) | Smoke **`GET /health`** + **`GET /ready`** against **`API_PUBLIC_URL`** (rare drift check; not a continuous uptime pinger) |
 | Same-repo PR | [`.github/workflows/pages-preview.yml`](.github/workflows/pages-preview.yml) | Same SPA build; **`VITE_API_BASE`** = live Cloud Run URL (`API_PUBLIC_URL`, or `gcloud` lookup) → branch preview (`https://<branch>.<project>.pages.dev`) |
 | PR closed/merged | [`.github/workflows/pages-preview-cleanup.yml`](.github/workflows/pages-preview-cleanup.yml) | Deletes that branch’s preview deployments (Cloudflare keeps them otherwise) |
 
 Without **`VITE_API_BASE`**, the client falls back to same-origin **`/api`**, Pages serves `index.html`, and the UI shows a JSON parse error. Forks skip deploy jobs.
+
+<details>
+<summary><strong>Rollback (Cloud Run)</strong> (expand)</summary>
+
+Images are tagged `api:<git-sha>`. To send **100%** traffic to a previous revision without rebuilding:
+
+```bash
+# List recent revisions (newest first)
+gcloud run revisions list \
+  --service "$CLOUDRUN_SERVICE_NAME" \
+  --region "$GCP_REGION" \
+  --project "$GCP_PROJECT_ID"
+
+# Route all traffic to a known-good revision
+gcloud run services update-traffic "$CLOUDRUN_SERVICE_NAME" \
+  --to-revisions=REVISION_NAME=100 \
+  --region "$GCP_REGION" \
+  --project "$GCP_PROJECT_ID"
+```
+
+SPA rollback: re-run **Deploy** on an older `main` commit, or upload a prior `frontend/dist` via Cloudflare Pages (Direct Upload). Prefer fixing forward on `main` when the bad change is small.
+
+</details>
 
 | Pages setup tip | |
 | :--- | :--- |
@@ -540,6 +563,7 @@ Without **`VITE_API_BASE`**, the client falls back to same-origin **`/api`**, Pa
 | `GCP_ARTIFACT_KEEP_COUNT`       | `5`                              | Optional. Artifact Registry versions to keep per package (default **`5`**); older images are deleted by the cleanup policy. |
 | `CORS_ALLOWED_ORIGINS` | `https://caught-looking.com,https://www.caught-looking.com` | API `ALLOWED_ORIGINS` (apex + `www`). Deploy also appends `https://<project>.pages.dev` and `https://*.<project>.pages.dev` when `CLOUDFLARE_PAGES_PROJECT_NAME` is set. |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | `your-project` | If **unset**, only the API deploy runs |
+| `SITE_PUBLIC_URL` | `https://caught-looking.com` | Optional. Soft-checked after Pages publish (warn-only). Hard smoke uses the Pages action URL / `*.pages.dev` because custom domains often return **403** from Actions (`cf-mitigated: challenge`). Safe to leave set for docs; unset if you do not want the soft check |
 | `API_PUBLIC_URL` | `https://….run.app` | Cloud Run origin (no trailing slash). Used for PR preview builds when set (else preview looks it up via `gcloud`), and required by [weekly probe smoke](.github/workflows/weekly-probe-smoke.yml) |
 
 **GitHub repository secrets**
