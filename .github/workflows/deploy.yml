@@ -163,7 +163,7 @@ jobs:
                     --allow-unauthenticated \
                     --min-instances="$CLOUDRUN_MIN_INSTANCES" \
                     --max-instances="$CLOUDRUN_MAX_INSTANCES" \
-                    --startup-probe=httpGetPath=/health,initialDelaySeconds=0,timeoutSeconds=3,periodSeconds=5,failureThreshold=12 \
+                    --startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=0,timeoutSeconds=3,periodSeconds=5,failureThreshold=12 \
                     --env-vars-file=/tmp/cr-env.json
 
             - id: cloudrun-url
