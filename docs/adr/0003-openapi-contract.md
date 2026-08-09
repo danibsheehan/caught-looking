@@ -3,6 +3,8 @@
 - **Status:** Accepted
 - **Date:** 2026-08-04
 
+**In plain English:** The website and the Go API share one written menu of paths and response shapes (**OpenAPI**). From that menu we generate TypeScript types and publish human-readable API docs (Redoc), so the UI, the server, and the docs don’t quietly drift apart.
+
 ## Context
 
 The SPA and Go API evolve together. Hand-written TypeScript types drift from handler JSON; docs drift from reality. Reviewers and agents need a single place that defines paths, query params, status codes, and schemas.
