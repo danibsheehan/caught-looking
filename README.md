@@ -539,7 +539,7 @@ Without **`VITE_API_BASE`**, the client falls back to same-origin **`/api`**, Pa
 | `GCP_ARTIFACT_KEEP_COUNT`       | `5`                              | Optional. Artifact Registry versions to keep per package (default **`5`**); older images are deleted by the cleanup policy. |
 | `CORS_ALLOWED_ORIGINS` | `https://caught-looking.com,https://www.caught-looking.com` | API `ALLOWED_ORIGINS` (apex + `www`). Deploy also appends `https://<project>.pages.dev` and `https://*.<project>.pages.dev` when `CLOUDFLARE_PAGES_PROJECT_NAME` is set. |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | `your-project` | If **unset**, only the API deploy runs |
-| `SITE_PUBLIC_URL` | `https://caught-looking.com` | Optional. Origin for post-Pages **`GET /`** smoke (no trailing slash). If unset, deploy uses the Pages action URL or `https://<CLOUDFLARE_PAGES_PROJECT_NAME>.pages.dev` |
+| `SITE_PUBLIC_URL` | `https://caught-looking.com` | Optional. Soft-checked after Pages publish (warn-only). Hard smoke uses the Pages action URL / `*.pages.dev` because custom domains often return **403** from Actions (`cf-mitigated: challenge`). Safe to leave set for docs; unset if you do not want the soft check |
 | `API_PUBLIC_URL` | `https://….run.app` | Optional Cloud Run origin for PR preview builds (no trailing slash). If unset, preview looks it up via `gcloud`. |
 
 **GitHub repository secrets**

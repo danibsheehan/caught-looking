@@ -266,18 +266,19 @@ jobs:
                   gitHubToken: ${{ secrets.GITHUB_TOKEN }}
                   workingDirectory: frontend
 
-            # Catch a bad SPA upload the API probes cannot see. Prefer SITE_PUBLIC_URL
-            # (custom domain), then the Pages action URL, then the project pages.dev alias.
+            # Catch a bad SPA upload the API probes cannot see.
+            # Hard-check the Pages deployment URL (*.pages.dev) — custom domains often
+            # hit Cloudflare bot challenges (403 + cf-mitigated: challenge) from Actions curl.
             - name: Smoke check Pages
               env:
                   PAGES_URL: ${{ steps.pages.outputs.url }}
                   CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
                   SITE_PUBLIC_URL: ${{ vars.SITE_PUBLIC_URL }}
               run: |
-                  URL="${SITE_PUBLIC_URL:-${PAGES_URL:-https://${CF_PROJECT}.pages.dev}}"
+                  URL="${PAGES_URL:-https://${CF_PROJECT}.pages.dev}"
                   URL="${URL%/}"
                   if [ -z "$URL" ]; then
-                    echo "::error::Pages URL is empty; set SITE_PUBLIC_URL or CLOUDFLARE_PAGES_PROJECT_NAME"
+                    echo "::error::Pages URL is empty; set CLOUDFLARE_PAGES_PROJECT_NAME"
                     exit 1
                   fi
                   echo "Checking ${URL}/…"
@@ -296,6 +297,16 @@ jobs:
                     echo "::error::Pages smoke ${URL}/ did not return HTTP 200 after retries"
                     exit 1
                   fi
+                  # Optional soft check: custom domains may challenge bots; never fail deploy.
+                  if [ -n "$SITE_PUBLIC_URL" ]; then
+                    SITE="${SITE_PUBLIC_URL%/}"
+                    site_code=$(curl -sS -o /tmp/site-body -w '%{http_code}' --max-time 15 "${SITE}/" || true)
+                    if [ "$site_code" = "200" ]; then
+                      echo "OK soft check ${SITE}/ → 200"
+                    else
+                      echo "::warning::SITE_PUBLIC_URL ${SITE}/ returned HTTP ${site_code} (often Cloudflare bot challenge). Upload smoke used ${URL}/ instead."
+                    fi
+                  fi
 
             - name: Deploy summary (frontend)
               env:
@@ -304,7 +315,7 @@ jobs:
                   CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
                   SITE_PUBLIC_URL: ${{ vars.SITE_PUBLIC_URL }}
               run: |
-                  PAGES="${SITE_PUBLIC_URL:-${PAGES_URL:-https://${CF_PROJECT}.pages.dev}}"
+                  PAGES="${PAGES_URL:-https://${CF_PROJECT}.pages.dev}"
                   {
                     echo "## Deploy summary (frontend)"
                     echo ""
@@ -312,6 +323,9 @@ jobs:
                     echo "| --- | --- |"
                     echo "| **git SHA** | \`${GITHUB_SHA}\` |"
                     echo "| **VITE_API_BASE** | ${API_URL} |"
-                    echo "| **Pages** | ${PAGES} |"
-                    echo "| **SPA smoke** | \`GET /\` → 200 |"
+                    echo "| **Pages (smoke)** | ${PAGES} |"
+                    if [ -n "$SITE_PUBLIC_URL" ]; then
+                      echo "| **SITE_PUBLIC_URL** | ${SITE_PUBLIC_URL} (soft check only) |"
+                    fi
+                    echo "| **SPA smoke** | \`GET /\` on Pages URL → 200 |"
                   } >> "$GITHUB_STEP_SUMMARY"
