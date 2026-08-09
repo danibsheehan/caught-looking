@@ -526,7 +526,7 @@ SPA rollback: re-run **Deploy** on an older `main` commit, or upload a prior `fr
 <details>
 <summary><strong>One-time Google Cloud setup</strong> (expand)</summary>
 
-1. Enable billing, **Cloud Run**, **Artifact Registry**, and optionally **Cloud Build** (not required for this workflow’s Docker build in Actions).
+1. Enable billing, **Cloud Run**, **Artifact Registry**, and optionally **Cloud Build** (not required for this workflow’s Docker build in Actions). Create a **billing budget + email alert** (notify-only is enough) so spend surprises are visible while staying on scale-to-zero defaults.
 2. Create a **Docker** Artifact Registry repository (name matching `GCP_ARTIFACT_REPOSITORY`).
 3. Create a **deploy service account** with at least:
    - **Artifact Registry Repository Administrator** (push images + cleanup policies)
@@ -578,7 +578,7 @@ After the first successful deploy:
 | Check | Detail |
 | :--- | :--- |
 | **CORS** | `CORS_ALLOWED_ORIGINS` must include real SPA origins (`https://caught-looking.com`, `https://www.caught-looking.com`). Pages + branch-preview origins are appended from `CLOUDFLARE_PAGES_PROJECT_NAME`. Custom domains → update the variable and push to `main` (or patch Cloud Run env). |
-| **Cost / abuse** | Deploy uses `--min-instances=0`, `--max-instances=2` (override via vars above). Artifact Registry cleanup keeps `GCP_ARTIFACT_KEEP_COUNT` newest versions (~daily). API still has per-IP limits + outbound QPS caps. See [Cost and scale tradeoffs](#cost-and-scale-tradeoffs). Pair with a GCP **billing budget + alert** (notify-only unless you add an automatic action). |
+| **Cost / abuse** | Deploy uses `--min-instances=0`, `--max-instances=2` (override via vars above). Artifact Registry cleanup keeps `GCP_ARTIFACT_KEEP_COUNT` newest versions (~daily). API still has per-IP limits + outbound QPS caps. See [Cost and scale tradeoffs](#cost-and-scale-tradeoffs). **Confirm** a GCP [billing budget + alert](https://cloud.google.com/billing/docs/how-to/budgets) is configured (email notify-only is fine — no auto-shutdown required for `$0` intent). |
 
 ---
 
