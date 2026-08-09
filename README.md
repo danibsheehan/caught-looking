@@ -487,7 +487,7 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 
 | Trigger | Workflow | What happens |
 | --- | --- | --- |
-| Push to **`main`** (or manual **Run workflow**) | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) | Build/push API image → **Artifact Registry** → **Cloud Run** (HTTP startup probe **`GET /health`**); smoke **`GET /health`** + **`GET /ready`** on the new service URL (retries; fails the job before Pages); write Actions **job summaries** (SHA, image/API/Pages URLs, probe result); build SPA with **`VITE_API_BASE`** → **`frontend/dist`** to **Cloudflare Pages** ([`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)) |
+| Push to **`main`** (or manual **Run workflow**) | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) | Build/push API image → **Artifact Registry** → **Cloud Run** (HTTP startup probe **`GET /health`**); smoke **`GET /health`** + **`GET /ready`** on the new service URL (retries; fails the job before Pages); write Actions **job summaries** (SHA, image/API/Pages URLs, probe result); build SPA with **`VITE_API_BASE`** → **`frontend/dist`** to **Cloudflare Pages** ([`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)); smoke **`GET /`** on the SPA origin (retries) |
 | Same-repo PR | [`.github/workflows/pages-preview.yml`](.github/workflows/pages-preview.yml) | Same SPA build; **`VITE_API_BASE`** = live Cloud Run URL (`API_PUBLIC_URL`, or `gcloud` lookup) → branch preview (`https://<branch>.<project>.pages.dev`) |
 | PR closed/merged | [`.github/workflows/pages-preview-cleanup.yml`](.github/workflows/pages-preview-cleanup.yml) | Deletes that branch’s preview deployments (Cloudflare keeps them otherwise) |
 
@@ -539,6 +539,7 @@ Without **`VITE_API_BASE`**, the client falls back to same-origin **`/api`**, Pa
 | `GCP_ARTIFACT_KEEP_COUNT`       | `5`                              | Optional. Artifact Registry versions to keep per package (default **`5`**); older images are deleted by the cleanup policy. |
 | `CORS_ALLOWED_ORIGINS` | `https://caught-looking.com,https://www.caught-looking.com` | API `ALLOWED_ORIGINS` (apex + `www`). Deploy also appends `https://<project>.pages.dev` and `https://*.<project>.pages.dev` when `CLOUDFLARE_PAGES_PROJECT_NAME` is set. |
 | `CLOUDFLARE_PAGES_PROJECT_NAME` | `your-project` | If **unset**, only the API deploy runs |
+| `SITE_PUBLIC_URL` | `https://caught-looking.com` | Optional. Origin for post-Pages **`GET /`** smoke (no trailing slash). If unset, deploy uses the Pages action URL or `https://<CLOUDFLARE_PAGES_PROJECT_NAME>.pages.dev` |
 | `API_PUBLIC_URL` | `https://….run.app` | Optional Cloud Run origin for PR preview builds (no trailing slash). If unset, preview looks it up via `gcloud`. |
 
 **GitHub repository secrets**
