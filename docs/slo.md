@@ -1,8 +1,12 @@
 # Service level objectives (informal)
 
 - **Status:** Living document (not a paid SLA)
-- **Last updated:** 2026-08-08
-- **Related:** [Cost and scale](../README.md#cost-and-scale-tradeoffs), [ADR 0001](adr/0001-cache-ttls.md), [ADR 0002](adr/0002-upstream-qps.md), [threat model](threat-model.md)
+- **Last updated:** 2026-08-09
+- **Related:** [docs home](README.md), [Cost and scale](../README.md#cost-and-scale-tradeoffs), [ADR 0001](adr/0001-cache-ttls.md), [ADR 0002](adr/0002-upstream-qps.md), [threat model](threat-model.md)
+
+**Who this is for:** Contributors and operators who want a shared sense of “fast enough” — and anyone curious how we talk about performance without a paid monitoring product.
+
+**In plain English:** When the answer is already in memory on a warm server, we aim for a snappy response. When we have to ask MLB or Savant, speed depends on them. We also watch that we aren’t getting rate-limited by upstream. None of this is a contractual SLA; it’s a living checklist tied to numbers we can scrape from **`GET /metrics`**.
 
 Caught Looking is a **best-effort** public read proxy on Cloud Run scale-to-zero. These targets interpret **`GET /metrics`** so we can tell warm cache-hit latency from cold upstream work — without a paid APM.
 

@@ -3,6 +3,8 @@
 - **Status:** Accepted
 - **Date:** 2026-08-04
 
+**In plain English:** Even with caching, we sometimes still need to call MLB or Baseball Savant. We cap how many of those outbound requests each server process may make per second (**QPS**) so a busy moment — or a cold start — doesn’t look like a flood to the league APIs.
+
 ## Context
 
 Caught Looking fans out to third-party public APIs that are not under our control. Unbounded concurrency (cold cache, multi-instance Cloud Run, or a noisy client) can trigger upstream 429/503s or get the deployment blocked. Inbound HTTP rate limiting (`RATE_LIMIT_*`, keyed by `RemoteAddr`) protects the process from browser abuse but does not cap **outbound** fan-out after cache misses.

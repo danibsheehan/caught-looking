@@ -3,6 +3,8 @@
 - **Status:** Accepted
 - **Date:** 2026-08-04
 
+**In plain English:** We remember answers for a set time so we don’t ask MLB or Baseball Savant the same question every second. Live games stay fresher; finished games and season tables can sit longer. If many people ask at once for something we don’t have yet, we fetch once and share the result (**singleflight**).
+
 ## Context
 
 The API is a public read proxy in front of MLB Stats API and Baseball Savant. Upstream latency and rate limits dominate reliability. Responses are cached in-process (`services.TTLCache` with `GetOrLoad` / `GetOrLoadWithTTL` and singleflight). Live game data must refresh often; settled history and season aggregates should not.

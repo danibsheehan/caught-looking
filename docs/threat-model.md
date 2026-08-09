@@ -1,8 +1,12 @@
 # Threat model — Caught Looking API
 
 - **Scope:** Public Go API (`backend/`) that proxies and caches MLB Stats API and Baseball Savant for the React SPA.
-- **Last updated:** 2026-08-08
-- **Related:** [docs/adr/](adr/) (cache TTLs, QPS), [docs/slo.md](slo.md) (informal latency targets), [backend HTTP security skill](../.cursor/skills/backend-http-security/SKILL.md)
+- **Last updated:** 2026-08-09
+- **Related:** [docs home](README.md), [docs/adr/](adr/) (cache TTLs, QPS), [docs/slo.md](slo.md) (informal latency targets), [backend HTTP security skill](../.cursor/skills/backend-http-security/SKILL.md)
+
+**Who this is for:** Anyone who wants to understand what we protect and what we deliberately leave out — not only security specialists.
+
+**In plain English:** Caught Looking is a **public, unauthenticated read proxy**. Anyone can call the API; there are no user accounts. We focus on staying available, treating MLB/Savant as good neighbors (rate limits and caches), and hardening the website against common browser attacks (XSS, clickjacking). We do **not** try to keep public baseball stats “secret.”
 
 Structured request/upstream logs use **`log/slog`** (JSON from `main`) with **`request_id`**. Every response includes **`X-Request-ID`** (chi RequestID; CORS-exposed for cross-origin SPA). The SPA attaches that header to **`ApiError`** so user-visible alerts can be matched to server logs. Prometheus text exposition is at **`GET /metrics`** (Go defaults plus low-cardinality custom counters and latency histograms: cache hit/miss, singleflight coalesce, cache-load / HTTP / upstream durations, upstream 429/5xx).
 
