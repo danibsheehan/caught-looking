@@ -13,7 +13,48 @@
 
 > League tables, spray geometry, and Statcast-backed panels—**built for a dark dugout**, not a bright dashboard template.
 
-Web app for exploring **MLB statistics** with charts and comparisons. A **Go** backend proxies and caches the public **MLB Stats API** (`statsapi.mlb.com`) and, for some game views, **Baseball Savant** (Statcast CSV over HTTPS).
+**Caught Looking** is a web app for exploring **MLB statistics** with charts and comparisons. Browse standings, season leaders, team and player views, and game-day boards — including Statcast spray and pitch location when the data is there. Under the hood, a **Go** API proxies and caches the public **MLB Stats API** and, for some game views, **Baseball Savant**.
+
+> [!TIP]
+> **Try it live:** [caught-looking.com/standings](https://caught-looking.com/standings) · **API reference:** [docs.caught-looking.com](https://docs.caught-looking.com/)
+>
+> **Run it locally:** `make install` then `make dev` — API on **`:8080`**, site on **`:5173`**, browser calls **`/api`** through the Vite proxy.
+
+## Start here
+
+| I want to… | Go here |
+| :--- | :--- |
+| **Explore the live app** | [caught-looking.com/standings](https://caught-looking.com/standings) — no install |
+| **Run it on my machine** | [Prerequisites](#prerequisites) → [Run locally](#run-locally) |
+| **Understand the product** | [What you can explore](#what-you-can-explore) |
+| **Contribute a change** | [Contributing](#contributing) |
+| **Tune env vars or ship to the cloud** | [Configuration](docs/configuration.md) · [Deployment](docs/deploy.md) |
+| **Read the “why” docs** | [docs/](docs/) — ADRs, SLOs, threat model, glossary |
+
+**Jump:** [What you can explore](#what-you-can-explore) · [Architecture](#architecture) · [Design tokens](#design-tokens) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Run locally](#run-locally) · [Contributing](#contributing) · [Docs home](docs/)
+
+---
+
+## What you can explore
+
+A natural path through the app: **Standings → Leaders → Teams → Players → Games** (slate, then a single game’s timeline, box score, and Statcast).
+
+| Area | What it’s for | Shareable URL |
+| :--- | :--- | :--- |
+| **Standings** | League tables for the configured season — where every club sits | — |
+| **Leaders** | Season hitting and pitching leaders, with a top-10 bar above the table | Filters in the URL |
+| **Teams** | Season stats and record timelines for a club | Team, season, panel tab |
+| **Players** | Side-by-side compare (radar, trends, game log); hitting or pitching | `ids`, season, scope, group |
+| **Games** | Day slate plus per-game timeline, box score, and Statcast (spray / pitch dots or zone density); live games refresh while you’re watching | Slate `date` / optional `team` |
+| **API docs** | Human-readable OpenAPI (Redoc) from the same contract the app uses | [docs.caught-looking.com](https://docs.caught-looking.com/) |
+
+Routes: `/standings` (default), `/leaders`, `/teams`, `/players`, `/games`, `/games/:gamePk` — see [`App.tsx`](frontend/src/App.tsx).
+
+### Live games
+
+On a **game detail** page, the box score and inning timeline refresh while the game is still unsettled (about every **45 seconds**, matching the live cache TTL). Statcast loads once. Polling **pauses** when the browser tab is hidden, refreshes immediately when you come back, and **stops** when the game is final, postponed, or cancelled — so the board stays fresh without hammering league APIs when nobody is watching.
+
+**Try it:** open a live (or unsettled) game → watch Network for boxscore/timeline on a ~45s cadence → switch tabs (polls stop) → return (one immediate refresh). Hook: `useAsyncResource` `poll` + `pauseWhenHidden`. See [ADR 0001](docs/adr/0001-cache-ttls.md).
 
 | ◆ | Theme |
 | :---: | :--- |
@@ -22,30 +63,11 @@ Web app for exploring **MLB statistics** with charts and comparisons. A **Go** b
 | **Type** | **DM Sans** for prose; **Space Mono** for numerals and axes |
 | **Charts** | Team ink via registry + brand palette; [`neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) is a non-team series helper (not extra `html` CSS variables) |
 
-| ◆ | What stands out |
+| ◆ | What stands out (for builders) |
 | :---: | :--- |
 | **Contract** | Handlers and the SPA share one **OpenAPI** spec → generated TypeScript types + Redoc |
 | **Color** | **Shell** tokens in SCSS; **team ink** from registry + MLB brand picks, contrast-adjusted per chart surface |
 | **Ops** | Per-IP limits, outbound **QPS caps**, and TTL caches so public upstreams stay friendly at scale |
-
-> [!TIP]
-> Ship shape in one command: **`make install`** then **`make dev`** — API on **`:8080`**, Vite on **`:5173`**, browser hits **`/api`** through the proxy.
-
-> [!NOTE]
-> **Live app:** [caught-looking.com/standings](https://caught-looking.com/standings) · [www.caught-looking.com/standings](https://www.caught-looking.com/standings) · **API reference (Redoc):** [docs.caught-looking.com](https://docs.caught-looking.com/)
-
-**Jump:** [Overview](#overview) · [Architecture](#architecture) · [Cost and scale](#cost-and-scale-tradeoffs) · [Design tokens](#design-tokens) · [Features](#features) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Prerequisites](#prerequisites) · [Editor setup](#editor-setup) · [Run locally](#run-locally) · [Configuration](#configuration) · [Deployment (CI)](#deployment-ci) · [Contributing](#contributing) · [ADRs](docs/adr/) · [SLOs](docs/slo.md)
-
----
-
-## Overview
-
-| | |
-| :--- | :--- |
-| **Live app** | [caught-looking.com/standings](https://caught-looking.com/standings) · [www](https://www.caught-looking.com/standings) — Cloudflare Pages + Cloud Run ([Deployment](#deployment-ci)) |
-| **API docs** | [docs.caught-looking.com](https://docs.caught-looking.com/) (OpenAPI / Redoc) |
-| **Flow** | Standings → Leaders → Teams → Players → Games (slate + **per-game** timeline / boxscore / Statcast) |
-| **Routes** | `/standings` (default), `/leaders`, `/teams`, `/players`, `/games`, `/games/:gamePk` — [`App.tsx`](frontend/src/App.tsx) |
 
 ---
 
@@ -57,9 +79,11 @@ Web app for exploring **MLB statistics** with charts and comparisons. A **Go** b
 | **Go API** | Cache TTLs, per-IP limits, outbound QPS caps |
 | **Upstream** | **MLB** Stats API (JSON) for most routes; **Savant** (CSV) for Statcast game views only |
 
+Hosted as Cloudflare Pages (site) + Cloud Run (API). See [Deployment](docs/deploy.md).
+
 ### Design decisions
 
-Rationale for cache TTLs, outbound QPS, and the OpenAPI contract: **[docs/adr/](docs/adr/)** (ADRs 0001–0003). Skills under `.cursor/skills/` are the how-to; ADRs record the tradeoffs.
+Rationale for cache TTLs, outbound QPS, and the OpenAPI contract: **[docs/adr/](docs/adr/)** (ADRs 0001–0003). Skills under `.cursor/skills/` are the how-to; ADRs record the tradeoffs. Start with the friendly [docs home](docs/).
 
 ### Cost and scale tradeoffs
 
@@ -72,7 +96,7 @@ Built for a **low/zero incremental cloud bill** (Cloud Run scale-to-zero + Cloud
 | **`CLOUDRUN_MAX_INSTANCES` default `2`** | Caps spend **and** the outbound budget multiplier | Traffic needs more capacity *and* a shared cache/limiter story |
 | **`CLOUDRUN_MIN_INSTANCES` default `0`** | Idle ≈ $0; cold starts refill the in-memory cache | Latency SLOs require a warm process ([docs/slo.md](docs/slo.md)) |
 
-Residual risks (per-process QPS × instances, in-memory-only stampede) are spelled out in **[docs/threat-model.md](docs/threat-model.md)**. Informal latency/hit-ratio targets: **[docs/slo.md](docs/slo.md)**. Deploy knobs: [Deployment (CI)](#deployment-ci).
+Residual risks (per-process QPS × instances, in-memory-only stampede) are spelled out in **[docs/threat-model.md](docs/threat-model.md)**. Informal latency/hit-ratio targets: **[docs/slo.md](docs/slo.md)**. Deploy knobs: [Deployment](docs/deploy.md).
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
@@ -220,33 +244,6 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 
 ---
 
-## Features
-
-| Area | What you get | Shareable URL |
-| :--- | :--- | :--- |
-| **Standings** | League standings for the configured season | — |
-| **Leaders** | Season leaders (hitting / pitching from MLB Stats API) with a top-10 bar above the table | Filters in the URL |
-| **Teams** | Season stats + record timelines | Team, season, panel tab |
-| **Players** | Side-by-side compare (radar, trends, game log); hitting / pitching | `ids`, season, scope, group |
-| **Games** | Date slate + per-game timeline / boxscore / Statcast; live poll (paused when tab hidden); pitch dots or zone density | Slate `date` / optional `team` |
-| **Docs** | [OpenAPI/Redoc](https://docs.caught-looking.com/) from `backend/apidocs/openapi.yaml` | — |
-
-### Live game polling (demo notes)
-
-On **Game Detail**, box score and inning timeline refresh while the game is unsettled. Interval matches live cache TTL (**45s** / `CACHE_TTL_LIVE_SCORES`); Statcast stays one-shot.
-
-| Behavior | Why it matters in an interview |
-| :--- | :--- |
-| Poll only while status is unsettled | Aligns SPA refresh with adaptive API TTLs — polling faster mostly hits the in-process cache |
-| Pause when the tab is hidden | Avoids burning Cloud Run / upstream QPS when nobody is watching |
-| Immediate refresh on tab visible | Board is not stale after switching back |
-| Stop on Final / postponed / cancelled | Same settle idea as backend TTLs (`gameStatusSettled`) |
-| Error backoff (capped) | Transient upstream blips do not stampede retries |
-
-**Demo script:** open a live (or fixture-unsettled) game → Network shows boxscore/timeline on ~45s cadence → switch to another tab → polls stop → return → one immediate refresh. Hook: `useAsyncResource` `poll` + `pauseWhenHidden` (default on). See [ADR 0001](docs/adr/0001-cache-ttls.md).
-
----
-
 ## Tech stack
 
 | Layer | Technology |
@@ -280,8 +277,9 @@ Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull req
 | --- | --- |
 | **Draft PR** | CI skipped until Ready for review |
 | **PR (ready)** | Path filters skip heavy frontend and/or backend steps when that side’s paths are unchanged (jobs still report green for required checks). Optional **e2e** / **sbom** are skipped entirely when their paths are unchanged (via **Detect optional CI paths**; not a green no-op) |
-| **Push to `main`** | Required frontend/backend gates always run fully. Optional **e2e** / **sbom** skip entirely when paths are unchanged. **Deploy** may also run when vars/secrets are set — see [Deployment (CI)](#deployment-ci) |
+| **Push to `main`** | Required frontend/backend gates always run fully. Optional **e2e** / **sbom** skip entirely when paths are unchanged. **Deploy** may also run when vars/secrets are set — see [Deployment](docs/deploy.md) |
 | **Cloudflare PR preview** | Workflow starts only when `frontend/**`, `.nvmrc`, or the preview workflow change; job still skips drafts, Dependabot, and forks |
+
 #### Same-repo PR helpers
 
 | Workflow / job | Role |
@@ -315,23 +313,31 @@ Also enable **Dependabot alerts** and **Dependabot security updates** under GitH
 | :--- | :--- |
 | Shell / routes | [`frontend/src/App.tsx`](frontend/src/App.tsx), [`_shell.scss`](frontend/src/styles/_shell.scss) |
 | Global theme | [`_base.scss`](frontend/src/styles/_base.scss); feature SCSS under `frontend/src/styles/features/` |
-| README art | [`docs/readme-banner.svg`](docs/readme-banner.svg), [`docs/badge-live.svg`](docs/badge-live.svg) (linked as `./docs/…` from README root) |
-| Design decisions | [`docs/adr/`](docs/adr/) — cache TTLs, upstream QPS, OpenAPI contract |
-| SLOs (informal) | [`docs/slo.md`](docs/slo.md) — latency / hit-ratio targets from `GET /metrics` |
-| Load / coalesce proof | [`scripts/load-smoke.sh`](scripts/load-smoke.sh) — `make load-smoke` (fixture upstream, no live MLB) |
 | Pages (routes) | `frontend/src/pages/` |
 | Pages (Cloudflare) | [`frontend/public/_redirects`](frontend/public/_redirects) (SPA fallback), [`frontend/public/_headers`](frontend/public/_headers) (CSP / nosniff / frame / referrer) |
 | API client | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev |
 | Types | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts` |
 | Backend | `backend/` — chi, MLB + Savant clients, `backend/apidocs/openapi.yaml` |
-| Threat model | [`docs/threat-model.md`](docs/threat-model.md) — assets, controls, residual risks (API + SPA headers) |
+| Docs home | [`docs/`](docs/) — map, glossary, ADRs, SLOs, threat model, [configuration](docs/configuration.md), [deploy](docs/deploy.md) |
+| README art | [`docs/readme-banner.svg`](docs/readme-banner.svg), [`docs/badge-live.svg`](docs/badge-live.svg) |
+| Load / coalesce proof | [`scripts/load-smoke.sh`](scripts/load-smoke.sh) — `make load-smoke` (fixture upstream, no live MLB) |
+
+```
+backend/    # Go HTTP API, MLB + Savant clients, handlers, models
+frontend/   # React SPA (src/, Vite, Vitest, Playwright e2e/)
+docs/       # ADRs, SLOs, threat model, configuration, deploy
+.vscode/    # Editor: format on save (Prettier), recommended extensions
+Makefile    # install, dev, backend, frontend, ci-local, test-*, cover-*
+```
 
 ---
 
 ## Prerequisites
 
-- **Go** 1.26+
-- **Node.js** 22+ and **npm** (CI uses Node 22; pin with [`.nvmrc`](.nvmrc) / `nvm use`)
+- **Go** 1.26+ — builds the API
+- **Node.js** 22+ and **npm** — builds the site (CI uses Node 22; pin with [`.nvmrc`](.nvmrc) / `nvm use`)
+
+You do not need cloud accounts to explore locally.
 
 ---
 
@@ -438,169 +444,28 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 
 ## Configuration
 
-### Backend (environment variables)
-
-#### Listen & upstreams
-
-| Variable | Purpose |
-| --- | --- |
-| `PORT` or `HTTP_ADDR` | Listen address (default `:8080`; `PORT` is prefixed with `:` if set) |
-| `MLB_BASE_URL` | MLB Stats API base (default `https://statsapi.mlb.com/api/v1`) |
-| `SAVANT_BASE_URL` | Baseball Savant base (default `https://baseballsavant.mlb.com`; trailing slashes stripped) |
-| `ALLOWED_ORIGINS` | Comma-separated CORS origins (defaults include Vite on `5173`) |
-| `MLB_SEASON` | Default season (current calendar year; override e.g. `2025`) |
-| `MLB_LEAGUE_IDS` | Default league ids for standings (default `103,104`) |
-
-#### Cache
-
-| Variable | Purpose |
-| --- | --- |
-| `CACHE_TTL_STANDINGS` | Standings TTL (Go duration; default `1h`) |
-| `CACHE_TTL_SCORES` | Scores-related TTL (default `5m`) |
-| `CACHE_TTL_LIVE_SCORES` | Today/live scoreboards + in-game boxscore/timeline (default `45s`) |
-| `CACHE_TTL_STATCAST` | Statcast / Savant CSV per game (default `6h`) |
-| `CACHE_TTL_PLAYER_SEARCH` | Player-search name query keys (default `3m`) |
-| `CACHE_SWEEP_INTERVAL` | Expired-entry sweep + `CACHE_MAX_ENTRIES` enforcement (default `2m`; `0` disables) |
-| `CACHE_MAX_ENTRIES` | Max entries before sweeps trim to ~90% (default `2000`; `0` = unlimited) |
-
-#### Limits & outbound QPS
-
-| Variable | Purpose |
-| --- | --- |
-| `RATE_LIMIT_REQUESTS` | Max requests per client IP per window (default `120`; `0` disables) |
-| `RATE_LIMIT_WINDOW` | Sliding window for that limit (default `1m`) |
-| `HTTP_MAX_BODY_BYTES` | Max inbound body bytes (default `65536`; `0` disables). Oversize → 413 |
-| `MLB_MAX_QPS` | Outbound MLB GETs/sec **per process** (token bucket, default `20`; `0` = unlimited) |
-| `MLB_HTTP_TIMEOUT` | Per-attempt MLB timeout (default `15s`; `0s`/negative → client default `15s`) |
-| `SAVANT_MAX_QPS` | Outbound Savant GETs/sec **per process** (default `5`; `0` = unlimited) |
-| `SAVANT_HTTP_TIMEOUT` | Per-attempt Savant timeout (default `30s`; `0s`/negative → client default `30s`) |
-
-### Frontend (Vite)
-
-| Variable | Purpose |
-| --- | --- |
-| `VITE_API_BASE` | API origin **without** trailing slash. Omit in dev (`/api` + Vite proxy). Production builds for [caught-looking.com](https://caught-looking.com/standings) / [www](https://www.caught-looking.com/standings) set this to the Cloud Run API URL. |
+Env vars for the API and SPA (listen address, cache TTLs, rate limits, `VITE_API_BASE`, and more) live in **[docs/configuration.md](docs/configuration.md)**. Defaults work for local `make dev`; change them when deploying or practicing limits. Cache/QPS *rationale* stays in the [ADRs](docs/adr/).
 
 ---
 
-## Deployment (CI)
+## Deployment
 
-| Trigger | Workflow | What happens |
-| --- | --- | --- |
-| Push to **`main`** (or manual **Run workflow**) | [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) | Build/push API image → **Artifact Registry** → **Cloud Run** (HTTP startup probe **`GET /health`**); smoke **`GET /health`** + **`GET /ready`** on the new service URL (retries; fails the job before Pages); write Actions **job summaries** (SHA, image/API/Pages URLs, probe result); build SPA with **`VITE_API_BASE`** → **`frontend/dist`** to **Cloudflare Pages** ([`cloudflare/pages-action`](https://github.com/cloudflare/pages-action)); smoke **`GET /`** on the Pages deploy URL (retries; custom domain soft-check only) |
-| Schedule (weekly) or manual | [`.github/workflows/weekly-probe-smoke.yml`](.github/workflows/weekly-probe-smoke.yml) | Smoke **`GET /health`** + **`GET /ready`** against **`API_PUBLIC_URL`** (rare drift check; not a continuous uptime pinger) |
-| Same-repo PR | [`.github/workflows/pages-preview.yml`](.github/workflows/pages-preview.yml) | Same SPA build; **`VITE_API_BASE`** = live Cloud Run URL (`API_PUBLIC_URL`, or `gcloud` lookup) → branch preview (`https://<branch>.<project>.pages.dev`) |
-| PR closed/merged | [`.github/workflows/pages-preview-cleanup.yml`](.github/workflows/pages-preview-cleanup.yml) | Deletes that branch’s preview deployments (Cloudflare keeps them otherwise) |
-
-Without **`VITE_API_BASE`**, the client falls back to same-origin **`/api`**, Pages serves `index.html`, and the UI shows a JSON parse error. Forks skip deploy jobs.
-
-<details>
-<summary><strong>Rollback (Cloud Run)</strong> (expand)</summary>
-
-Images are tagged `api:<git-sha>`. To send **100%** traffic to a previous revision without rebuilding:
-
-```bash
-# List recent revisions (newest first)
-gcloud run revisions list \
-  --service "$CLOUDRUN_SERVICE_NAME" \
-  --region "$GCP_REGION" \
-  --project "$GCP_PROJECT_ID"
-
-# Route all traffic to a known-good revision
-gcloud run services update-traffic "$CLOUDRUN_SERVICE_NAME" \
-  --to-revisions=REVISION_NAME=100 \
-  --region "$GCP_REGION" \
-  --project "$GCP_PROJECT_ID"
-```
-
-SPA rollback: re-run **Deploy** on an older `main` commit, or upload a prior `frontend/dist` via Cloudflare Pages (Direct Upload). Prefer fixing forward on `main` when the bad change is small.
-
-</details>
-
-| Pages setup tip | |
-| :--- | :--- |
-| Prefer | **Direct Upload** from Actions (empty Pages project is fine) |
-| If Git-connected build also runs | Disable that build **or** set **`VITE_API_BASE`** in Cloudflare Pages **Preview** to the Cloud Run origin so native builds do not overwrite Actions previews |
-| Security headers | Vite copies [`frontend/public/_headers`](frontend/public/_headers) into `dist/` (CSP, nosniff, `X-Frame-Options`, referrer, Permissions-Policy). Keep `connect-src` aligned with `VITE_API_BASE` (default Cloud Run `*.a.run.app`) |
-
-<details>
-<summary><strong>One-time Google Cloud setup</strong> (expand)</summary>
-
-1. Enable billing, **Cloud Run**, **Artifact Registry**, and optionally **Cloud Build** (not required for this workflow’s Docker build in Actions). Create a **billing budget + email alert** (notify-only is enough) so spend surprises are visible while staying on scale-to-zero defaults.
-2. Create a **Docker** Artifact Registry repository (name matching `GCP_ARTIFACT_REPOSITORY`).
-3. Create a **deploy service account** with at least:
-   - **Artifact Registry Repository Administrator** (push images + cleanup policies)
-   - **Cloud Run Admin**
-   - **Service Account User** (on the Cloud Run runtime SA if prompted)
-4. Do **not** create a JSON key for CI. If the SA only has **Artifact Registry Writer**, upgrade to **Repository Administrator** (or grant `artifactregistry.repositories.update`) so cleanup-policy can run.
-5. Configure **Workload Identity Federation** so this repo’s GitHub Actions principal can impersonate the deploy SA. Store:
-   - Provider → `GCP_WORKLOAD_IDENTITY_PROVIDER`
-   - SA email → `GCP_DEPLOY_SERVICE_ACCOUNT`
-
-</details>
-
-<details>
-<summary><strong>One-time Cloudflare setup</strong> (expand)</summary>
-
-1. Create a **Pages** project whose name matches **`CLOUDFLARE_PAGES_PROJECT_NAME`** (can be empty; Actions uploads the build).
-2. Create a least-privilege **API token**: **Account → Cloudflare Pages → Edit** (and **Account → Read** if required). Rotate periodically.
-3. Store **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`** as repository secrets.
-
-</details>
-
-**GitHub repository variables**
-
-| Variable                        | Example                          | Purpose                                                                                        |
-| ------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `GCP_PROJECT_ID`                | `my-gcp-project`                 | GCP project id                                                                                 |
-| `GCP_REGION`                    | `us-central1`                    | Cloud Run and Artifact Registry region                                                         |
-| `GCP_ARTIFACT_REPOSITORY`       | `caught-looking`                 | Artifact Registry repo name (image: `…/api:<git-sha>`)                                         |
-| `CLOUDRUN_SERVICE_NAME`         | `caught-looking-api`             | Cloud Run service name                                                                         |
-| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/123/locations/global/workloadIdentityPools/github/providers/caught-looking` | Workload Identity Federation provider resource name for GitHub Actions |
-| `GCP_DEPLOY_SERVICE_ACCOUNT`    | `gha-deploy@my-gcp-project.iam.gserviceaccount.com` | Deploy service account email impersonated by GitHub Actions                                    |
-| `CLOUDRUN_MAX_INSTANCES`        | `2`                              | Optional. Cloud Run max instances (default **`2`**). Caps worst-case request spend.            |
-| `CLOUDRUN_MIN_INSTANCES`        | `0`                              | Optional. Cloud Run min instances (default **`0`**, scale-to-zero when idle).                  |
-| `GCP_ARTIFACT_KEEP_COUNT`       | `5`                              | Optional. Artifact Registry versions to keep per package (default **`5`**); older images are deleted by the cleanup policy. |
-| `CORS_ALLOWED_ORIGINS` | `https://caught-looking.com,https://www.caught-looking.com` | API `ALLOWED_ORIGINS` (apex + `www`). Deploy also appends `https://<project>.pages.dev` and `https://*.<project>.pages.dev` when `CLOUDFLARE_PAGES_PROJECT_NAME` is set. |
-| `CLOUDFLARE_PAGES_PROJECT_NAME` | `your-project` | If **unset**, only the API deploy runs |
-| `SITE_PUBLIC_URL` | `https://caught-looking.com` | Optional. Soft-checked after Pages publish (warn-only). Hard smoke uses the Pages action URL / `*.pages.dev` because custom domains often return **403** from Actions (`cf-mitigated: challenge`). Safe to leave set for docs; unset if you do not want the soft check |
-| `API_PUBLIC_URL` | `https://….run.app` | Cloud Run origin (no trailing slash). Used for PR preview builds when set (else preview looks it up via `gcloud`), and required by [weekly probe smoke](.github/workflows/weekly-probe-smoke.yml) |
-
-**GitHub repository secrets**
-
-| Secret                  | Purpose                      |
-| ----------------------- | ---------------------------- |
-| `CLOUDFLARE_API_TOKEN`  | Cloudflare API token         |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account id        |
-
-After the first successful deploy:
-
-| Check | Detail |
-| :--- | :--- |
-| **CORS** | `CORS_ALLOWED_ORIGINS` must include real SPA origins (`https://caught-looking.com`, `https://www.caught-looking.com`). Pages + branch-preview origins are appended from `CLOUDFLARE_PAGES_PROJECT_NAME`. Custom domains → update the variable and push to `main` (or patch Cloud Run env). |
-| **Cost / abuse** | Deploy uses `--min-instances=0`, `--max-instances=2` (override via vars above). Artifact Registry cleanup keeps `GCP_ARTIFACT_KEEP_COUNT` newest versions (~daily). API still has per-IP limits + outbound QPS caps. See [Cost and scale tradeoffs](#cost-and-scale-tradeoffs). **Confirm** a GCP [billing budget + alert](https://cloud.google.com/billing/docs/how-to/budgets) is configured (email notify-only is fine — no auto-shutdown required for `$0` intent). |
-
----
-
-## Repository layout
-
-```
-backend/    # Go HTTP API, MLB + Savant clients, handlers, models
-frontend/   # React SPA (src/, Vite, Vitest, Playwright e2e/)
-.vscode/    # Editor: format on save (Prettier), recommended extensions
-Makefile    # install, dev, backend, frontend, ci-local, test-*, cover-*
-```
+Production ship path (Cloud Run + Cloudflare Pages), GitHub variables/secrets, one-time cloud setup, and rollback notes: **[docs/deploy.md](docs/deploy.md)**.
 
 ---
 
 ## Contributing
 
+Glad you’re here. Small, well-described changes are welcome.
+
 | Step | Action |
 | :--- | :--- |
 | Template | [PR template](.github/pull_request_template.md) — **Summary** (why + what) + **How to verify** |
-| Scaffold | [PR guide](.github/workflows/pr-guide.yml) fills empty/default descriptions (verify commands, **Touches**) and posts a sticky checklist; agents should still lead Summary with why |
+| Scaffold | [PR guide](.github/workflows/pr-guide.yml) fills empty/default descriptions (verify commands, **Touches**) and posts a sticky checklist; still lead Summary with why |
 | Before open | `make ci-local` from repo root (same gates as CI: stack-docs, `npm audit`, coverage ≥50%, OpenAPI type drift) |
 | API changes | Keep **Go JSON / OpenAPI** ↔ `frontend/src/types/api.generated.ts` + `frontend/src/api/client.ts` in sync |
 | Agents | [`.cursor/skills/pr-ready/SKILL.md`](.cursor/skills/pr-ready/SKILL.md) |
 
 **Security:** unauthenticated read proxy + SPA Pages headers — [threat model](docs/threat-model.md). Handler conventions: [`.cursor/skills/backend-http-security/SKILL.md`](.cursor/skills/backend-http-security/SKILL.md).
+
+Deeper reading: **[docs/](docs/)**.
