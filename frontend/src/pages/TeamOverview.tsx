@@ -319,10 +319,10 @@ export default function TeamOverview() {
 
             {panelTab === 'trend' ? (
               <div className="teams-page__chart-area">
-                <h2>Division race — cumulative win %</h2>
+                <h2>Division race</h2>
                 <p className="text text--muted text--small">
-                  Every team in this division on the same pace axis (games completed). Your club is
-                  emphasized.
+                  Every team in this division on the same pace axis. Your club is emphasized —
+                  switch Season, Race, or Recent below.
                 </p>
                 <ChartSuspense height={400} label="Loading win % chart">
                   {divisionTeamIds.length > 1 ? (

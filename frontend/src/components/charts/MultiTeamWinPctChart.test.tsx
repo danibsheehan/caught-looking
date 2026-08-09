@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RecordTimelinesBatchResponse } from '../../types/api.compat';
 import MultiTeamWinPctChart from './MultiTeamWinPctChart';
@@ -118,6 +119,25 @@ describe('MultiTeamWinPctChart', () => {
     const legendItems = document.querySelectorAll('.recharts-legend-item-text');
     const legendText = [...legendItems].map((el) => el.textContent?.trim()).filter(Boolean);
     expect(legendText).toEqual(expect.arrayContaining(['NYM', 'ATL']));
+  });
+
+  it('toggles Season, Race, and Recent modes', async () => {
+    const user = userEvent.setup();
+    render(<MultiTeamWinPctChart teamIds={[121, 144]} season={2026} getLabel={getLabel} />);
+
+    expect(await screen.findByText(/Cumulative win %/i, undefined, asyncWait)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Race' }));
+    expect(screen.getByRole('button', { name: 'Race' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/last 40 games on the axis/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Recent' }));
+    expect(screen.getByRole('button', { name: 'Recent' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/L10 win %/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Season' }));
+    expect(screen.getByRole('button', { name: 'Season' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/Full season cumulative win %/i)).toBeInTheDocument();
   });
 
   it('surfaces fetch errors', { timeout: 15_000 }, async () => {

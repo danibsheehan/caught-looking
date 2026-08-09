@@ -134,7 +134,7 @@ describe('Standings', () => {
     expect(
       screen.getByRole('heading', {
         level: 2,
-        name: 'Cumulative win % vs games played',
+        name: 'Division race',
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'NL East' })).toBeInTheDocument();
