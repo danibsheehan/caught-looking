@@ -493,6 +493,29 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 
 Without **`VITE_API_BASE`**, the client falls back to same-origin **`/api`**, Pages serves `index.html`, and the UI shows a JSON parse error. Forks skip deploy jobs.
 
+<details>
+<summary><strong>Rollback (Cloud Run)</strong> (expand)</summary>
+
+Images are tagged `api:<git-sha>`. To send **100%** traffic to a previous revision without rebuilding:
+
+```bash
+# List recent revisions (newest first)
+gcloud run revisions list \
+  --service "$CLOUDRUN_SERVICE_NAME" \
+  --region "$GCP_REGION" \
+  --project "$GCP_PROJECT_ID"
+
+# Route all traffic to a known-good revision
+gcloud run services update-traffic "$CLOUDRUN_SERVICE_NAME" \
+  --to-revisions=REVISION_NAME=100 \
+  --region "$GCP_REGION" \
+  --project "$GCP_PROJECT_ID"
+```
+
+SPA rollback: re-run **Deploy** on an older `main` commit, or upload a prior `frontend/dist` via Cloudflare Pages (Direct Upload). Prefer fixing forward on `main` when the bad change is small.
+
+</details>
+
 | Pages setup tip | |
 | :--- | :--- |
 | Prefer | **Direct Upload** from Actions (empty Pages project is fine) |
