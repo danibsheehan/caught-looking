@@ -13,6 +13,8 @@ If you just want to **use the app**, open [caught-looking.com](https://caught-lo
 | How do the website and API stay in sync? | [ADR 0003 — OpenAPI contract](adr/0003-openapi-contract.md) |
 | What “fast enough” means for us | [Service level objectives](slo.md) |
 | What we protect, and what we deliberately don’t | [Threat model](threat-model.md) |
+| Which environment variables can I set? | [Configuration](configuration.md) |
+| How does production deploy work? | [Deployment](deploy.md) |
 | How to contribute or ship a change | [Contributing](../README.md#contributing) in the root README |
 
 Design decisions live as short **Architecture Decision Records (ADRs)** under [`adr/`](adr/). Day-to-day how-to for contributors and agents lives in [`.cursor/skills/`](../.cursor/skills/).
@@ -35,5 +37,7 @@ Design decisions live as short **Architecture Decision Records (ADRs)** under [`
 | [`adr/`](adr/) | Why we chose cache TTLs, outbound rate caps, and an OpenAPI contract |
 | [`slo.md`](slo.md) | Informal latency and cache-hit targets (not a paid SLA) |
 | [`threat-model.md`](threat-model.md) | Assets, threats, controls, and residual risks |
+| [`configuration.md`](configuration.md) | Backend and frontend environment variables |
+| [`deploy.md`](deploy.md) | Cloud Run + Cloudflare Pages ship path, secrets, rollback |
 
 The root [README](../README.md) is the front door: product tour, local setup, stack, and contribution path.
