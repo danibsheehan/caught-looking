@@ -47,7 +47,7 @@ behavior** (not a comment, rename, or test-only change), confirm the matching do
 | `backend/middleware/cors.go`, `ratelimit.go`, `max_body_bytes.go` | CORS allowlist logic, rate-limit trust (`RemoteAddr` vs. forwarded headers), body-cap enforcement | `docs/threat-model.md` |
 | `backend/router.go` | A route joining/leaving the rate-limited group, or a new route mounted outside it (e.g. `/metrics`, `/health`, `/ready`) | `docs/threat-model.md` |
 | `frontend/public/_headers` | CSP / nosniff / frame / referrer directives | `docs/threat-model.md` |
-| `backend/apidocs/openapi.yaml` | **Workflow-level** only: source-of-truth model, typegen pipeline, CI gate structure — not adding/editing an endpoint's schema | `docs/adr/0003-openapi-contract.md` |
+| `Makefile` (`check-openapi` target), `frontend/package.json` (`api:validate`/`api:types`/`api:types:check` scripts), `redocly.yaml`, `.github/workflows/ci.yml` (`api:validate`/`api:types:check` steps) | The typegen pipeline, lint config, or CI gate structure itself changing — **not** `backend/apidocs/openapi.yaml`, which only changes for routine per-endpoint schema edits | `docs/adr/0003-openapi-contract.md` |
 
 ### 3. Report
 
@@ -62,8 +62,9 @@ if asked.
 
 - Flagging cosmetic changes (renames, comments, formatting) in a trigger file as needing a doc
   update.
-- Treating every `openapi.yaml` diff as workflow-level — most changes are a single endpoint's
-  schema and need no ADR 0003 update; only flag source-of-truth/typegen/CI-gate changes.
+- Watching `backend/apidocs/openapi.yaml` itself for the ADR 0003 trigger — it only changes for
+  routine per-endpoint schema edits, which need no ADR update. The typegen/lint/CI-gate files
+  listed in the table are the real trigger.
 - Editing the ADR or threat-model content unprompted — flag and stop, unless asked to draft it.
 
 ## Reference
