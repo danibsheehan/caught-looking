@@ -48,14 +48,22 @@ If there are none open, say so and stop — nothing to triage.
 
 ### 3. Classify each PR
 
-| Tier | Criteria |
-|---|---|
-| **Security** | Changelog/advisory references a CVE/GHSA or explicit security fix. Flag first; recommend merging promptly once required CI is green. |
-| **Low risk** | Any **patch or minor** bump (Go, npm, or grouped npm minor/patch alike — ungrouped Go minors count too, including `golang.org/x/*` 0.x minors, which that ecosystem bumps routinely), required CI green, no breaking/minimum-version changelog entries. |
-| **Needs a look** | A **major** version bump (or a 0.x → 1.x jump), a GitHub Actions SHA/tag bump (these are deliberately ungrouped in `dependabot.yml` so each is reviewed individually — they move a trusted pinned SHA), a breaking/minimum-version changelog entry, or required CI red. |
+Evaluate in this order — first match wins, so a PR never lands in two tiers:
 
-Every PR should land in exactly one tier — if a bump doesn't obviously match "patch or minor" vs.
-"major," read the actual version numbers in the title rather than guessing from the diff size.
+1. **Security** — changelog/advisory references a CVE/GHSA or explicit security fix. Flag first,
+   regardless of ecosystem or bump size; recommend merging promptly once required CI is green.
+2. **Needs a look** — any of:
+   - **GitHub Actions ecosystem**, any bump size. These are deliberately ungrouped in
+     `dependabot.yml` so each is reviewed individually — they move a trusted pinned SHA/tag, which
+     matters more than the version delta.
+   - A **major** version bump (or a 0.x → 1.x jump) in Go or npm.
+   - A breaking/minimum-version changelog entry (see step 2).
+   - Required CI red.
+3. **Low risk** — everything else: a Go or npm **patch or minor** bump (ungrouped Go minors count
+   too, including `golang.org/x/*` 0.x minors, which that ecosystem bumps routinely, and grouped
+   npm minor/patch), required CI green, no breaking/minimum-version changelog entries.
+
+GitHub Actions bumps never reach tier 3, no matter how small the version delta looks.
 
 ### 4. Report — do not merge yet
 
