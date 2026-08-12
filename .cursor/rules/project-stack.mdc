@@ -5,6 +5,7 @@ alwaysApply: true
 
 # caught-looking
 
+- **Start here**: **`AGENTS.md`** — install/configure/run/test commands, constraints (paths to avoid), and definition of done, shared with Claude Code and any other agent. This rule stays as the Cursor-native always-apply entry point; keep the two in sync in spirit, don't duplicate long content here.
 - **Stack**: Go 1.26 API (`backend/`, chi), React 19 + Vite + TypeScript 6 (`frontend/`).
 - **Local dev**: from repo root, `make dev` runs the API (:8080) and Vite; the frontend proxies `/api` to the backend (see `Makefile`).
 - **Scoped rules**: follow the matching `.cursor/rules/*.mdc` when editing frontend TSX/hooks, API client/types, OpenAPI, tests, backend Go, **`README.md`**, or stack manifests (`frontend/package.json`, `backend/go.mod`, CI workflow — see **`readme`** rule). Frontend Prettier: **`frontend-prettier`** (run Prettier on changed files). Editor format-on-save: **`.vscode/settings.json`**.
