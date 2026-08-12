@@ -5,13 +5,14 @@ description: >-
   generic upstream error responses, CORS and rate-limit middleware, safe logging,
   and govulncheck. Use when changing backend handlers, middleware, config, outbound
   MLB/Savant clients, auth/CORS/rate limits, or when the user mentions API security,
-  SSRF, or hardening the Go API. Complements Cursor’s security-review subagent with
-  project-specific patterns.
+  SSRF, or hardening the Go API. Complements editor-level security review (Cursor's
+  security-review subagent, Claude Code's security-review skill) with project-specific
+  patterns.
 ---
 
 # Backend HTTP security (caught-looking)
 
-Project-specific hardening for the chi API. For a diff-wide security pass, also use Cursor’s **`/review-security`** (or ask for a security review).
+Project-specific hardening for the chi API. For a diff-wide security pass, also run a security review (Cursor's **`/review-security`**, or Claude Code's **`security-review`** skill).
 
 **Threat model:** **`docs/threat-model.md`** — assets, trust boundaries, controls, residual risks. Update it in the **same change** when CORS allowlisting, rate-limit trust (`RemoteAddr` vs forwarded headers), inbound body caps, outbound URL policy, generic upstream error responses, QPS/instance abuse assumptions, or SPA Pages security headers (`frontend/public/_headers` CSP / nosniff / frame / referrer) change. Do not duplicate the full threat table into this skill.
 
