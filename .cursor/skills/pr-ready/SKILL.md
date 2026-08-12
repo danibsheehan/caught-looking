@@ -46,6 +46,9 @@ Faster subsets when iterating (not a substitute before PR):
 
 If OpenAPI fails, follow **`.cursor/skills/openapi-maintain/SKILL.md`**.
 
+If the diff touches cache/QPS defaults, CORS/rate-limit/body-cap/security-header behavior, or the
+OpenAPI workflow, also run **`adr-doc-sync-check`** — no automated check catches that drift.
+
 Also: **`npx prettier --write`** on any frontend files you changed before `format:check` (see **`.cursor/rules/frontend-prettier.mdc`**).
 
 ### 2. PR description

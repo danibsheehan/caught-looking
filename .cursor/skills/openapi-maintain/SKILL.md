@@ -10,7 +10,7 @@ description: >-
 
 # OpenAPI maintenance (caught-looking)
 
-**Why (ADR):** contract-first workflow — **`docs/adr/0003-openapi-contract.md`**. Update that ADR only when the **workflow itself** changes (source of truth, typegen, CI gates)—not for every new endpoint. This skill is the day-to-day how-to.
+**Why (ADR):** contract-first workflow — **`docs/adr/0003-openapi-contract.md`**. Update that ADR only when the **workflow itself** changes (source of truth, typegen, CI gates)—not for every new endpoint. This skill is the day-to-day how-to. Workflow-level changes (not a single endpoint): check with **`adr-doc-sync-check`**.
 
 ## When this applies
 

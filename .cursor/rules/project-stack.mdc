@@ -17,6 +17,7 @@ alwaysApply: true
   - **`pr-summary-draft`** — why-first PR Summary from the real diff (complements path-based PR guide scaffolding)
   - **`doc-sync-patch`** — patch README/project-stack.mdc/AGENTS.md version drift after a dependency bump
   - **`dependabot-triage`** — classify open Dependabot PR risk from changelog + required CI; merge only PRs the user names
+  - **`adr-doc-sync-check`** — flag TTL/QPS/CORS/security-header/OpenAPI-workflow changes missing a matching ADR or threat-model update
 - **Durable rationale** (update with matching skills when decisions change): **`docs/adr/`** (cache TTLs, QPS, OpenAPI), **`docs/threat-model.md`**
 - **Agent definition of done**:
   - **Task done**: follow scoped rules/skills for files you touched; ensure frontend edits are Prettier-clean (`.cursor/hooks/prettier-frontend.sh` on `afterFileEdit`, plus **`frontend-prettier`**); run the **smallest** relevant check (focused package tests, `make check-openapi` if the API contract changed). Do **not** require full CI for every small edit.
