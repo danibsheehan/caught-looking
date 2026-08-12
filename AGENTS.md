@@ -91,6 +91,8 @@ symlinked, auto-invoked by either tool based on the task):
 - `doc-sync-patch` — patches README/`project-stack.mdc`/`AGENTS.md` version drift after a
   dependency bump; run when `make check-stack-docs` fails or after bumping React, Vite,
   TypeScript, Go, or CI Node/Go.
+- `dependabot-triage` — reads each open Dependabot PR's changelog and required CI to classify
+  risk (security / low risk / needs a look); merges only PRs the user explicitly names.
 
 ## Constraints — do not
 
