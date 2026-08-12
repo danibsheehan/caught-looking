@@ -93,6 +93,9 @@ symlinked, auto-invoked by either tool based on the task):
   TypeScript, Go, or CI Node/Go.
 - `dependabot-triage` — reads each open Dependabot PR's changelog and required CI to classify
   risk (security / low risk / needs a look); merges only PRs the user explicitly names.
+- `adr-doc-sync-check` — flags when a diff changes cache TTL/QPS defaults, CORS/rate-limit/
+  body-cap/security-header behavior, or the OpenAPI workflow without a matching update to
+  `docs/adr/0001`/`0002`/`0003` or `docs/threat-model.md`.
 
 ## Constraints — do not
 
