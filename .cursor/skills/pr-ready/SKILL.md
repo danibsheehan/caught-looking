@@ -32,12 +32,14 @@ Runs stack-docs drift, then frontend then backend checks aligned with **`.github
 | Side | Includes |
 |------|----------|
 | Stack docs (`check-stack-docs`) | README badges / Prerequisites / Tech stack + `project-stack.mdc` vs `package.json`, `go.mod`, CI Node/Go |
+| Skills docs (`check-skills-docs`) | `.cursor/skills/*/SKILL.md` vs `project-stack.mdc` Workflow skills + `AGENTS.md` playbooks |
 | Frontend (`ci-local-frontend`) | `npm audit --audit-level=high`, `make check-openapi`, lint, `format:check`, typecheck, `test:coverage` + ≥50% line-rate gate, build |
 | Backend (`ci-local-backend`) | `go vet`, `govulncheck`, `go test -race`, tests with coverage + ≥50% Cobertura gate, build |
 
 Faster subsets when iterating (not a substitute before PR):
 
 - `make check-stack-docs` — README / project-stack version drift only
+- `make check-skills-docs` — skill directory vs routing-doc drift only
 - `make check-openapi` — contract only
 - `make test-backend` / `make test-frontend` — tests without full audit/coverage/build gate
 - `make ci-local-frontend` / `make ci-local-backend` — one CI job
