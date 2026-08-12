@@ -98,6 +98,9 @@ symlinked, auto-invoked by either tool based on the task):
   `docs/adr/0001`/`0002`/`0003` or `docs/threat-model.md`.
 - `coverage-gap-diagnosis` — reads local coverage output for files changed on this branch and
   names the specific untested branches/error paths, rather than a bare percentage.
+- `venue-data-sync` — checks `mlbVenueFieldDimensions.ts`'s venue-id table against the live MLB
+  Stats API and drafts entries for new/changed venues from a published source. Reactive, not
+  scheduled — a franchise relocation or new ballpark is roughly once-a-decade.
 
 ## Constraints — do not
 
