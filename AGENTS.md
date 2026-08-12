@@ -96,6 +96,8 @@ symlinked, auto-invoked by either tool based on the task):
 - `adr-doc-sync-check` — flags when a diff changes cache TTL/QPS defaults, CORS/rate-limit/
   body-cap/security-header behavior, or the OpenAPI workflow without a matching update to
   `docs/adr/0001`/`0002`/`0003` or `docs/threat-model.md`.
+- `coverage-gap-diagnosis` — reads local coverage output for files changed on this branch and
+  names the specific untested branches/error paths, rather than a bare percentage.
 
 ## Constraints — do not
 

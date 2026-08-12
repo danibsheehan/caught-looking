@@ -36,6 +36,8 @@ Runs stack-docs drift, then frontend then backend checks aligned with **`.github
 | Frontend (`ci-local-frontend`) | `npm audit --audit-level=high`, `make check-openapi`, lint, `format:check`, typecheck, `test:coverage` + ≥50% line-rate gate, build |
 | Backend (`ci-local-backend`) | `go vet`, `govulncheck`, `go test -race`, tests with coverage + ≥50% Cobertura gate, build |
 
+If coverage is close to the gate or drops, diagnose with **`coverage-gap-diagnosis`** instead of guessing which test to add.
+
 Faster subsets when iterating (not a substitute before PR):
 
 - `make check-stack-docs` — README / project-stack version drift only
