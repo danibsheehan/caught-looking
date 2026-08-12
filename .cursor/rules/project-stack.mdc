@@ -14,6 +14,7 @@ alwaysApply: true
   - **`backend-go-tests`** / **`frontend-vitest-tests`** — tests
   - **`backend-http-security`** / **`caching-and-upstream-perf`** — hardening and upstream/cache performance
   - **`pr-ready`** — local CI-parity checks before a PR
+  - **`pr-summary-draft`** — why-first PR Summary from the real diff (complements path-based PR guide scaffolding)
   - **`doc-sync-patch`** — patch README/project-stack.mdc/AGENTS.md version drift after a dependency bump
 - **Durable rationale** (update with matching skills when decisions change): **`docs/adr/`** (cache TTLs, QPS, OpenAPI), **`docs/threat-model.md`**
 - **Agent definition of done**:

@@ -86,6 +86,8 @@ symlinked, auto-invoked by either tool based on the task):
 - `caching-and-upstream-perf` — `TTLCache`, `GetOrLoad`, MLB/Savant QPS limits.
 - `openapi-maintain` — keeping the spec, generated types, and compat layer in sync.
 - `pr-ready` — local CI-parity checks and PR template before opening a PR.
+- `pr-summary-draft` — drafts a why-first PR Summary/How-to-verify from the actual diff and
+  commits, complementing the path-based PR guide scaffolding (which only knows file paths).
 - `doc-sync-patch` — patches README/`project-stack.mdc`/`AGENTS.md` version drift after a
   dependency bump; run when `make check-stack-docs` fails or after bumping React, Vite,
   TypeScript, Go, or CI Node/Go.
