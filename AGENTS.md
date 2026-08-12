@@ -54,7 +54,7 @@ fault injection). Coverage gate is ≥50% line rate on both sides, enforced in C
 Before opening or updating a PR, run full local CI parity:
 
 ```bash
-make ci-local   # stack-docs drift, then ci-local-frontend + ci-local-backend
+make ci-local   # stack-docs + skills-docs drift, then ci-local-frontend + ci-local-backend
 ```
 
 ## Conventions
@@ -112,6 +112,9 @@ symlinked, auto-invoked by either tool based on the task):
 - **Bump React, Vite, TypeScript, Go, or CI Node/Go versions without updating the docs in the
   same change** — `make check-stack-docs` checks README/`project-stack.mdc`/`AGENTS.md` drift
   but does not fix it (the `doc-sync-patch` skill does).
+- **Add or remove a `.cursor/skills/*/SKILL.md` directory without updating both
+  `project-stack.mdc`'s Workflow skills bullet and this file's Step-by-step playbooks list in
+  the same change** — `make check-skills-docs` checks this drift.
 - **Commit secrets** (`.env`, credentials) or amend/force-push without being explicitly asked.
 - **Open, push, or merge a PR unless the user asks.**
 
