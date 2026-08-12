@@ -10,6 +10,7 @@ Sources of truth:
 Checked docs:
   - README.md badges, Tech stack table, Prerequisites
   - .cursor/rules/project-stack.mdc Stack line
+  - AGENTS.md Stack line
 """
 
 from __future__ import annotations
@@ -180,17 +181,18 @@ def check_readme(
         )
 
 
-def check_project_stack(
+def check_stack_line(
     text: str,
     *,
+    label: str,
     react_major: str,
     go_mm: str,
     errors: list[str],
 ) -> None:
     if not re.search(rf"\bGo {re.escape(go_mm)}\b", text):
-        errors.append(f"project-stack.mdc missing Go {go_mm}")
+        errors.append(f"{label} missing Go {go_mm}")
     if not re.search(rf"\bReact {re.escape(react_major)}\b", text):
-        errors.append(f"project-stack.mdc missing React {react_major}")
+        errors.append(f"{label} missing React {react_major}")
 
 
 def main() -> int:
@@ -199,6 +201,7 @@ def main() -> int:
     ci_yml = ROOT / ".github" / "workflows" / "ci.yml"
     readme_path = ROOT / "README.md"
     stack_rule = ROOT / ".cursor" / "rules" / "project-stack.mdc"
+    agents_md = ROOT / "AGENTS.md"
 
     try:
         pkg = read_package_versions(package_json)
@@ -206,6 +209,7 @@ def main() -> int:
         ci = read_ci_versions(ROOT, ci_yml)
         readme = readme_path.read_text(encoding="utf-8")
         stack_text = stack_rule.read_text(encoding="utf-8")
+        agents_text = agents_md.read_text(encoding="utf-8")
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"check_stack_docs: {exc}", file=sys.stderr)
         return 1
@@ -231,8 +235,16 @@ def main() -> int:
         node_major=ci["node_major"],
         errors=errors,
     )
-    check_project_stack(
+    check_stack_line(
         stack_text,
+        label="project-stack.mdc",
+        react_major=pkg["react_major"],
+        go_mm=go["go_mm"],
+        errors=errors,
+    )
+    check_stack_line(
+        agents_text,
+        label="AGENTS.md",
         react_major=pkg["react_major"],
         go_mm=go["go_mm"],
         errors=errors,
@@ -243,7 +255,7 @@ def main() -> int:
         for err in errors:
             print(f"  - {err}", file=sys.stderr)
         print(
-            "Update README badges/Prerequisites/Tech stack (and project-stack.mdc) "
+            "Update README badges/Prerequisites/Tech stack (and project-stack.mdc, AGENTS.md) "
             "to match frontend/package.json, backend/go.mod, .nvmrc, and .github/workflows/ci.yml.",
             file=sys.stderr,
         )

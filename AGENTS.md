@@ -86,6 +86,9 @@ symlinked, auto-invoked by either tool based on the task):
 - `caching-and-upstream-perf` — `TTLCache`, `GetOrLoad`, MLB/Savant QPS limits.
 - `openapi-maintain` — keeping the spec, generated types, and compat layer in sync.
 - `pr-ready` — local CI-parity checks and PR template before opening a PR.
+- `doc-sync-patch` — patches README/`project-stack.mdc`/`AGENTS.md` version drift after a
+  dependency bump; run when `make check-stack-docs` fails or after bumping React, Vite,
+  TypeScript, Go, or CI Node/Go.
 
 ## Constraints — do not
 
@@ -103,8 +106,8 @@ symlinked, auto-invoked by either tool based on the task):
   without updating the matching ADR (`docs/adr/`) or `docs/threat-model.md`** in the same
   change.
 - **Bump React, Vite, TypeScript, Go, or CI Node/Go versions without updating the docs in the
-  same change** — `make check-stack-docs` checks README/`project-stack.mdc` drift but does not
-  fix it.
+  same change** — `make check-stack-docs` checks README/`project-stack.mdc`/`AGENTS.md` drift
+  but does not fix it (the `doc-sync-patch` skill does).
 - **Commit secrets** (`.env`, credentials) or amend/force-push without being explicitly asked.
 - **Open, push, or merge a PR unless the user asks.**
 
