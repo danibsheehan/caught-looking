@@ -21,8 +21,12 @@ classification; merging still requires the user to name which PRs.
 ### 1. List open Dependabot PRs
 
 ```bash
-gh pr list --author "app/dependabot" --json number,title,labels,createdAt,statusCheckRollup
+gh pr list --author "app/dependabot" --limit 100 --json number,title,labels,createdAt,statusCheckRollup
 ```
+
+`gh pr list` defaults to 30 results — the three ecosystems' combined cap (10 each) already sits
+at that boundary, and Dependabot **security updates** open outside the configured cap, so an
+unset `--limit` can silently truncate the backlog with no warning. Always pass `--limit`.
 
 If there are none open, say so and stop — nothing to triage.
 
@@ -47,8 +51,11 @@ If there are none open, say so and stop — nothing to triage.
 | Tier | Criteria |
 |---|---|
 | **Security** | Changelog/advisory references a CVE/GHSA or explicit security fix. Flag first; recommend merging promptly once required CI is green. |
-| **Low risk** | Patch or grouped npm minor/patch bump, required CI green, no breaking/minimum-version changelog entries. |
-| **Needs a look** | Major version bump, a GitHub Actions SHA/tag bump (these are deliberately ungrouped in `dependabot.yml` so each is reviewed individually — they move a trusted pinned SHA), a breaking/minimum-version changelog entry, or required CI red. |
+| **Low risk** | Any **patch or minor** bump (Go, npm, or grouped npm minor/patch alike — ungrouped Go minors count too, including `golang.org/x/*` 0.x minors, which that ecosystem bumps routinely), required CI green, no breaking/minimum-version changelog entries. |
+| **Needs a look** | A **major** version bump (or a 0.x → 1.x jump), a GitHub Actions SHA/tag bump (these are deliberately ungrouped in `dependabot.yml` so each is reviewed individually — they move a trusted pinned SHA), a breaking/minimum-version changelog entry, or required CI red. |
+
+Every PR should land in exactly one tier — if a bump doesn't obviously match "patch or minor" vs.
+"major," read the actual version numbers in the title rather than guessing from the diff size.
 
 ### 4. Report — do not merge yet
 
