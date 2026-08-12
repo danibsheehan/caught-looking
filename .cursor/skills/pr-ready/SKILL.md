@@ -49,15 +49,8 @@ Also: **`npx prettier --write`** on any frontend files you changed before `forma
 ### 2. PR description
 
 When opening a PR, fill **`.github/pull_request_template.md`**. Path-based scaffolding
-(Touches, suggested verify) from **PR guide** is helpful — still write **Summary** yourself:
-
-- **Summary** — lead with **why** (motivation / problem this solves), then what changed for
-  users / API / data. Prefer 1–3 short bullets. Do **not** stop at a file list or commit subjects.
-  - Weak: `Update chart-frame CSS and TeamWinsBarChart className.`
-  - Stronger: `Charts nested under panels needed long descendant selectors for width/margin;
-    make chart-frame own that spacing so wins/scatter/leaders shells stay consistent.`
-- **How to verify** — user-facing steps (routes/pages, expected behavior), or `N/A` for
-  tooling-only. Keep or edit any auto-suggested commands as needed.
+(Touches, suggested verify) from **PR guide** is helpful but mechanical — it cannot know *why*.
+Draft **Summary** and **How to verify** by reading the actual diff: see **`pr-summary-draft`**.
 
 Do not push or create the PR unless the user asked.
 
