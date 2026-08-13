@@ -46,7 +46,7 @@ test-backend:
 test-backend-race:
 	cd "$(PROJECT_ROOT)/backend" && go test ./... -race -count=1
 
-## lint-backend: run golangci-lint (optional -- not yet a required CI gate)
+## lint-backend: run golangci-lint (required CI gate on backend/** changes)
 lint-backend:
 	cd "$(PROJECT_ROOT)/backend" && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run ./...
 
@@ -97,6 +97,7 @@ ci-local-frontend:
 ## ci-local-backend: backend job parity (vet, govulncheck, race, coverage gate, build)
 ci-local-backend:
 	cd "$(PROJECT_ROOT)/backend" && go vet ./...
+	cd "$(PROJECT_ROOT)/backend" && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run ./...
 	cd "$(PROJECT_ROOT)/backend" && go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 	cd "$(PROJECT_ROOT)/backend" && go test ./... -race -count=1
 	cd "$(PROJECT_ROOT)/backend" && go test ./... -count=1 -coverprofile=coverage.out -covermode=atomic

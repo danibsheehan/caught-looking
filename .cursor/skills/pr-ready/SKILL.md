@@ -34,7 +34,7 @@ Runs stack-docs drift, then frontend then backend checks aligned with **`.github
 | Stack docs (`check-stack-docs`) | README badges / Prerequisites / Tech stack + `project-stack.mdc` vs `package.json`, `go.mod`, CI Node/Go |
 | Skills docs (`check-skills-docs`) | `.cursor/skills/*/SKILL.md` vs `project-stack.mdc` Workflow skills + `AGENTS.md` playbooks |
 | Frontend (`ci-local-frontend`) | `npm audit --audit-level=high`, `make check-openapi`, lint, `format:check`, typecheck, `test:coverage` + ≥50% line-rate gate, build |
-| Backend (`ci-local-backend`) | `go vet`, `govulncheck`, `go test -race`, tests with coverage + ≥50% Cobertura gate, build |
+| Backend (`ci-local-backend`) | `go vet`, `golangci-lint`, `govulncheck`, `go test -race`, tests with coverage + ≥50% Cobertura gate, build |
 
 If coverage is close to the gate or drops, diagnose with **`coverage-gap-diagnosis`** instead of guessing which test to add.
 
@@ -44,7 +44,7 @@ Faster subsets when iterating (not a substitute before PR):
 - `make check-skills-docs` — skill directory vs routing-doc drift only
 - `make check-openapi` — contract only
 - `make test-backend` / `make test-frontend` — tests without full audit/coverage/build gate
-- `make lint-backend` — `golangci-lint`; optional, not a required CI gate yet, but worth running on backend changes
+- `make lint-backend` — `golangci-lint` only; required check on `backend/**` PRs, useful standalone while iterating
 - `make ci-local-frontend` / `make ci-local-backend` — one CI job
 
 If OpenAPI fails, follow **`.cursor/skills/openapi-maintain/SKILL.md`**.
