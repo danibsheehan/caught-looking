@@ -40,7 +40,7 @@ make frontend   # Vite only (proxies /api -> 127.0.0.1:8080)
 ```bash
 make test-backend        # go vet, govulncheck, go test, build
 make test-backend-race   # go test -race
-make lint-backend        # golangci-lint (optional, not yet a required CI gate)
+make lint-backend        # golangci-lint (required CI gate on backend/** changes)
 make test-frontend       # vitest run
 make cover-backend       # coverage.out + per-func %
 make cover-frontend      # vitest coverage -> frontend/coverage/

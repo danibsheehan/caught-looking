@@ -211,7 +211,6 @@ jobs:
         outputs:
             e2e: ${{ steps.filter.outputs.e2e }}
             sbom: ${{ steps.filter.outputs.sbom }}
-            lint: ${{ steps.filter.outputs.lint }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
@@ -228,8 +227,6 @@ jobs:
                         - 'backend/go.sum'
                         - 'frontend/package.json'
                         - 'frontend/package-lock.json'
-                      lint:
-                        - 'backend/**'
 
     # Optional (not a required status check yet): Playwright stub smoke + contract path.
     e2e:
@@ -298,13 +295,14 @@ jobs:
                   upload-release-assets: false
                   dependency-snapshot: false
 
-    # Optional (not a required status check yet): golangci-lint (errcheck, staticcheck, etc.).
+    # Required status check "Lint (golangci-lint)" -- must match branch protection exactly.
+    # Keeps its own in-job path filter (like Frontend/Backend) rather than the "changes" job's
+    # gating: a job skipped entirely via job-level `if` never posts a check run, which leaves a
+    # required check pending forever on PRs that don't touch backend/**. Skipping per-step
+    # instead (job always runs) reports green quickly on unrelated PRs.
     lint-backend:
         name: Lint (golangci-lint)
-        needs: changes
-        if: >
-            (github.event_name != 'pull_request' || github.event.pull_request.draft == false) &&
-            needs.changes.outputs.lint == 'true'
+        if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
         runs-on: ubuntu-latest
         timeout-minutes: 10
         permissions:
@@ -315,12 +313,29 @@ jobs:
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
+            - name: Detect backend-relevant changes
+              if: github.event_name == 'pull_request'
+              id: filter
+              uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+              with:
+                  filters: |
+                      backend:
+                        - 'backend/**'
+                        - '.github/workflows/ci.yml'
+
+            - name: Skip lint (path filter)
+              if: github.event_name == 'pull_request' && steps.filter.outputs.backend != 'true'
+              run: echo 'No backend-relevant paths changed; skipping golangci-lint.'
+              working-directory: ${{ github.workspace }}
+
             - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
               with:
                   go-version: '1.26.6'
                   cache-dependency-path: backend/go.sum
 
-            - run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run ./...
+            - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+              run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run ./...
 
     # Same-repo non-draft PRs only. Lives in CI (not workflow_run) so main pushes
     # do not spawn a skipped Coverage comments workflow run.
