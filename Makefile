@@ -3,7 +3,7 @@ PROJECT_ROOT := $(CURDIR)
 COVERAGE_MIN ?= 0.50
 CHECK_COVERAGE := python3 "$(PROJECT_ROOT)/.github/scripts/check_cobertura_line_rate.py"
 
-.PHONY: dev backend frontend install check-openapi check-stack-docs check-skills-docs test-backend test-backend-race test-frontend test-e2e test-e2e-contract test-e2e-chaos load-smoke cover-backend cover-backend-html cover-frontend ci-local ci-local-frontend ci-local-backend
+.PHONY: dev backend frontend install check-openapi check-stack-docs check-skills-docs test-backend test-backend-race lint-backend test-frontend test-e2e test-e2e-contract test-e2e-chaos load-smoke cover-backend cover-backend-html cover-frontend ci-local ci-local-frontend ci-local-backend
 
 ## dev: run API (:8080) and Vite dev server together (one terminal)
 dev:
@@ -45,6 +45,10 @@ test-backend:
 ## test-backend-race: run backend tests with the race detector
 test-backend-race:
 	cd "$(PROJECT_ROOT)/backend" && go test ./... -race -count=1
+
+## lint-backend: run golangci-lint (optional -- not yet a required CI gate)
+lint-backend:
+	cd "$(PROJECT_ROOT)/backend" && go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run ./...
 
 ## test-frontend: run Vitest once (frontend/)
 test-frontend:

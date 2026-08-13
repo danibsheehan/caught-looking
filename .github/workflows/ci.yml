@@ -211,6 +211,7 @@ jobs:
         outputs:
             e2e: ${{ steps.filter.outputs.e2e }}
             sbom: ${{ steps.filter.outputs.sbom }}
+            lint: ${{ steps.filter.outputs.lint }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
@@ -227,6 +228,8 @@ jobs:
                         - 'backend/go.sum'
                         - 'frontend/package.json'
                         - 'frontend/package-lock.json'
+                      lint:
+                        - 'backend/**'
 
     # Optional (not a required status check yet): Playwright stub smoke + contract path.
     e2e:
@@ -294,6 +297,30 @@ jobs:
                   upload-artifact-retention: 14
                   upload-release-assets: false
                   dependency-snapshot: false
+
+    # Optional (not a required status check yet): golangci-lint (errcheck, staticcheck, etc.).
+    lint-backend:
+        name: Lint (golangci-lint)
+        needs: changes
+        if: >
+            (github.event_name != 'pull_request' || github.event.pull_request.draft == false) &&
+            needs.changes.outputs.lint == 'true'
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: read
+        defaults:
+            run:
+                working-directory: backend
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+            - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              with:
+                  go-version: '1.26.6'
+                  cache-dependency-path: backend/go.sum
+
+            - run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run ./...
 
     # Same-repo non-draft PRs only. Lives in CI (not workflow_run) so main pushes
     # do not spawn a skipped Coverage comments workflow run.

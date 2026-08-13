@@ -21,7 +21,7 @@ func TestChaos_5xxOnMatchedPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res.Body.Close()
+	t.Cleanup(func() { _ = res.Body.Close() })
 	if res.StatusCode != http.StatusBadGateway {
 		t.Fatalf("statcast status: got %d want 502", res.StatusCode)
 	}
@@ -31,7 +31,7 @@ func TestChaos_5xxOnMatchedPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res2.Body.Close()
+	t.Cleanup(func() { _ = res2.Body.Close() })
 	if res2.StatusCode != http.StatusOK {
 		t.Fatalf("boxscore status: got %d want 200", res2.StatusCode)
 	}
@@ -47,7 +47,7 @@ func TestChaos_429(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res.Body.Close()
+	t.Cleanup(func() { _ = res.Body.Close() })
 	if res.StatusCode != http.StatusTooManyRequests {
 		t.Fatalf("status: got %d want 429", res.StatusCode)
 	}
@@ -67,7 +67,7 @@ func TestChaos_slowThenOK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res.Body.Close()
+	t.Cleanup(func() { _ = res.Body.Close() })
 	elapsed := time.Since(start)
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("status: got %d want 200", res.StatusCode)
@@ -86,7 +86,7 @@ func TestChaos_controlAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res.Body.Close()
+	t.Cleanup(func() { _ = res.Body.Close() })
 	var got ChaosConfig
 	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
 		t.Fatal(err)
@@ -105,7 +105,7 @@ func TestChaos_controlAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res2.Body.Close()
+	t.Cleanup(func() { _ = res2.Body.Close() })
 	if res2.StatusCode != http.StatusOK {
 		t.Fatalf("PUT status %d", res2.StatusCode)
 	}
@@ -114,7 +114,7 @@ func TestChaos_controlAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res3.Body.Close()
+	t.Cleanup(func() { _ = res3.Body.Close() })
 	if res3.StatusCode != http.StatusBadGateway {
 		t.Fatalf("teams under chaos: got %d want 502", res3.StatusCode)
 	}
@@ -125,7 +125,7 @@ func TestChaos_controlAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res4.Body.Close()
+	t.Cleanup(func() { _ = res4.Body.Close() })
 	body4, _ := io.ReadAll(res4.Body)
 	if res4.StatusCode != http.StatusOK || string(body4) != "ok" {
 		t.Fatalf("health under global chaos: status %d body %q", res4.StatusCode, body4)
@@ -142,7 +142,7 @@ func TestChaos_healthAndControlExemptFromEmptyPathMatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res.Body.Close()
+	t.Cleanup(func() { _ = res.Body.Close() })
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("/_chaos status %d", res.StatusCode)
 	}

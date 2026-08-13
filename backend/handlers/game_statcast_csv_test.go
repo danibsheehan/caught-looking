@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math"
 	"testing"
-
-	"caught-looking/backend/models"
 )
 
 func Test_normalizeInningTopBot(t *testing.T) {
@@ -237,5 +235,4 @@ func Test_parseStatcastBattedBallsCSV_preservesPointerFields(t *testing.T) {
 	if got[0].LaunchSpeed == nil || *got[0].LaunchSpeed != -1 {
 		t.Fatalf("ls: %+v", got[0].LaunchSpeed)
 	}
-	var _ models.StatcastBattedBall = got[0]
 }

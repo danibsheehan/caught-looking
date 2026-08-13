@@ -44,6 +44,7 @@ Faster subsets when iterating (not a substitute before PR):
 - `make check-skills-docs` — skill directory vs routing-doc drift only
 - `make check-openapi` — contract only
 - `make test-backend` / `make test-frontend` — tests without full audit/coverage/build gate
+- `make lint-backend` — `golangci-lint`; optional, not a required CI gate yet, but worth running on backend changes
 - `make ci-local-frontend` / `make ci-local-backend` — one CI job
 
 If OpenAPI fails, follow **`.cursor/skills/openapi-maintain/SKILL.md`**.
