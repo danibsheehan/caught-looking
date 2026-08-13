@@ -151,10 +151,16 @@ func TestLogger_recordsHTTPDurationHistogram(t *testing.T) {
 	}
 }
 
+// httpRateLimitChain wraps h the same way router.go does: ClientIPFromRemoteAddr must run
+// before HTTPRateLimit so its key function can read the resolved client IP from context.
+func httpRateLimitChain(h http.Handler) http.Handler {
+	return chimiddleware.ClientIPFromRemoteAddr(h)
+}
+
 func TestHTTPRateLimit_exceedsReturns429(t *testing.T) {
-	h := HTTPRateLimit(2, time.Minute)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := httpRateLimitChain(HTTPRateLimit(2, time.Minute)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}))
+	})))
 	const addr = "192.0.2.1:1234"
 	for range 2 {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -177,12 +183,41 @@ func TestHTTPRateLimit_exceedsReturns429(t *testing.T) {
 	}
 }
 
+// TestHTTPRateLimit_keyedByClientIP is the load-bearing check for the httprate.LimitBy
+// migration: two distinct RemoteAddrs must land in independent buckets, not one shared
+// bucket. Both prior tests use a single address per test, so they'd still pass even against
+// a broken always-same-key implementation; this one would not.
+func TestHTTPRateLimit_keyedByClientIP(t *testing.T) {
+	h := httpRateLimitChain(HTTPRateLimit(1, time.Minute)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})))
+
+	get := func(addr string) int {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.RemoteAddr = addr
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec.Code
+	}
+
+	if code := get("192.0.2.10:1"); code != http.StatusOK {
+		t.Fatalf("client A first request: got %d want 200", code)
+	}
+	if code := get("192.0.2.10:1"); code != http.StatusTooManyRequests {
+		t.Fatalf("client A second request: got %d want 429 (limit is 1)", code)
+	}
+	// Different client, same limiter: must not be affected by client A's bucket.
+	if code := get("192.0.2.20:1"); code != http.StatusOK {
+		t.Fatalf("client B first request: got %d want 200 (independent bucket)", code)
+	}
+}
+
 func TestHTTPRateLimit_disabledNoops(t *testing.T) {
 	var n int
-	h := HTTPRateLimit(0, time.Minute)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := httpRateLimitChain(HTTPRateLimit(0, time.Minute)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		n++
 		w.WriteHeader(http.StatusOK)
-	}))
+	})))
 	for range 10 {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.RemoteAddr = "192.0.2.2:1"
