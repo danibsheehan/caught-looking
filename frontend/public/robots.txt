@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://caught-looking.com/sitemap.xml
