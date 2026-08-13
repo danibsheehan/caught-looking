@@ -22,7 +22,7 @@ jobs:
         if: github.event.pull_request.head.repo.full_name == github.repository
         runs-on: ubuntu-latest
         env:
-            GITHUB_REPO_URL: ${{ github.serverUrl }}/${{ github.repository }}
+            GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
             PYTHONPATH: ${{ github.workspace }}/trusted-base/.github/scripts
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
