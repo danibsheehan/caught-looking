@@ -59,6 +59,8 @@ func newRouter(cfg config.Config, h *handlers.Handlers) http.Handler {
 	r.Get("/docs", apidocs.SwaggerUI().ServeHTTP)
 
 	r.Group(func(r chi.Router) {
+		// Resolves the client IP for HTTPRateLimit's key (RemoteAddr — see its doc comment).
+		r.Use(chimiddleware.ClientIPFromRemoteAddr)
 		r.Use(middleware.HTTPRateLimit(cfg.RateLimitRequests, cfg.RateLimitWindow))
 		r.Get("/teams/{teamID}/record-timeline", h.RecordTimeline)
 		r.Get("/teams/{teamID}/season-stats", h.TeamSeasonStats)
