@@ -14,8 +14,12 @@ func HTTPRateLimit(maxRequests int, window time.Duration) func(http.Handler) htt
 	if maxRequests <= 0 || window <= 0 {
 		return func(next http.Handler) http.Handler { return next }
 	}
-	return httprate.Limit(maxRequests, window,
-		httprate.WithKeyFuncs(httprate.KeyByIP),
+	// TODO: httprate.Limit/KeyByIP are deprecated in favor of LimitBy(requestLimit,
+	// windowLength, keyFn, ...). Deferred to a focused follow-up PR rather than fixed here --
+	// it's an API migration on the RemoteAddr/forwarded-header trust model documented in
+	// docs/threat-model.md, not a mechanical cleanup, and deserves its own review.
+	return httprate.Limit(maxRequests, window, //nolint:staticcheck // see TODO above
+		httprate.WithKeyFuncs(httprate.KeyByIP), //nolint:staticcheck // see TODO above
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusTooManyRequests)
