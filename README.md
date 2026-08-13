@@ -315,6 +315,7 @@ Also enable **Dependabot alerts** and **Dependabot security updates** under GitH
 | Global theme | [`_base.scss`](frontend/src/styles/_base.scss); feature SCSS under `frontend/src/styles/features/` |
 | Pages (routes) | `frontend/src/pages/` |
 | Pages (Cloudflare) | [`frontend/public/_redirects`](frontend/public/_redirects) (SPA fallback), [`frontend/public/_headers`](frontend/public/_headers) (CSP / nosniff / frame / referrer) |
+| SEO | [`frontend/public/robots.txt`](frontend/public/robots.txt), [`frontend/public/sitemap.xml`](frontend/public/sitemap.xml) (static top-level routes only); description / Open Graph / Twitter card meta in [`frontend/index.html`](frontend/index.html) |
 | API client | [`frontend/src/api/client.ts`](frontend/src/api/client.ts) — `VITE_API_BASE` or `/api` in dev |
 | Types | `frontend/src/types/api.generated.ts`, `frontend/src/types/api.compat.ts` |
 | Backend | `backend/` — chi, MLB + Savant clients, `backend/apidocs/openapi.yaml` |
