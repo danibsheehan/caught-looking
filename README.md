@@ -1,6 +1,7 @@
 # Caught looking
 
 [![CI](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml/badge.svg)](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![OpenAPI docs](https://img.shields.io/badge/docs-Redoc-f472b6?style=flat-square&labelColor=070b10)](https://docs.caught-looking.com/)
 [![Live app — caught-looking.com](./docs/badge-live.svg)](https://caught-looking.com/standings)
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
@@ -470,3 +471,9 @@ Glad you’re here. Small, well-described changes are welcome.
 **Security:** unauthenticated read proxy + SPA Pages headers — [threat model](docs/threat-model.md). Handler conventions: [`.cursor/skills/backend-http-security/SKILL.md`](.cursor/skills/backend-http-security/SKILL.md).
 
 Deeper reading: **[docs/](docs/)**.
+
+---
+
+## License
+
+[MIT](LICENSE) — use it, fork it, learn from it.
