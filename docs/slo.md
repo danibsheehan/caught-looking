@@ -1,8 +1,8 @@
 # Service level objectives (informal)
 
 - **Status:** Living document (not a paid SLA)
-- **Last updated:** 2026-08-09
-- **Related:** [docs home](README.md), [Cost and scale](../README.md#cost-and-scale-tradeoffs), [ADR 0001](adr/0001-cache-ttls.md), [ADR 0002](adr/0002-upstream-qps.md), [threat model](threat-model.md)
+- **Last updated:** 2026-08-13
+- **Related:** [docs home](README.md), [Cost and scale](../README.md#cost-and-scale-tradeoffs), [ADR 0001](adr/0001-cache-ttls.md), [ADR 0002](adr/0002-upstream-qps.md), [threat model](threat-model.md), [deploy](deploy.md)
 
 **Who this is for:** Contributors and operators who want a shared sense of “fast enough” — and anyone curious how we talk about performance without a paid monitoring product.
 
@@ -48,6 +48,33 @@ Useful PromQL-shaped questions (any Prometheus-compatible scraper, including ad-
 - Warm hit path: histogram quantile on `http_request_duration_seconds{code="2xx"}` excluding `/metrics` / `/health` / `/ready` if scrapes/probes dominate.
 - Miss cost: quantile on `cache_load_duration_seconds{result="ok"}`.
 - Hit ratio: `rate(caught_looking_cache_requests_total{result="hit"}[5m]) / rate(caught_looking_cache_requests_total[5m])`.
+
+## Production alerting (free tier)
+
+Everything above is ad-hoc — someone has to think to look. Cloud Run and Cloud Monitoring cover
+the "is it actually down" question automatically, at **`$0`** for this app's traffic, without a
+paid APM or exporting `caught_looking_*` metrics anywhere:
+
+1. **Uptime check** — Cloud Monitoring → *Uptime checks* → HTTPS GET against the deployed API's
+   `/health` (liveness) or `/ready` (dependency wiring; still never calls MLB/Savant — see
+   [threat model](threat-model.md)). A single check on a several-minute interval sits well inside
+   Cloud Monitoring's free tier; see [current limits](https://cloud.google.com/stackdriver/pricing)
+   rather than trusting a number here to stay accurate.
+2. **Alert policy on that check** — *Alerting* → *Create policy* → condition: the uptime check's
+   failure count → notification channel: **email** (free; no SMS/Slack integration needed).
+   Same "notify-only" spirit as the [billing budget alert](deploy.md#one-time-google-cloud-setup) —
+   this tells a human, it doesn't try to auto-remediate.
+3. **Optional — Cloud Run's built-in metrics** (request count, latency, 5xx rate, instance count)
+   are collected automatically with no setup and no additional cost, since they come from the
+   platform, not the app. An alert policy on 5xx rate or on instance count sitting at
+   `CLOUDRUN_MAX_INSTANCES` (traffic spike / possible abuse — see
+   [Cost and scale tradeoffs](../README.md#cost-and-scale-tradeoffs)) is a reasonable second
+   policy once the uptime check is in place.
+
+Deliberately **not** doing: exporting `caught_looking_*` histograms to Cloud Monitoring (would
+need a sidecar/exporter — real infra, not a checkbox) or log-based alerting on individual error
+lines (more setup than this app's traffic currently justifies). Revisit if traffic or incident
+history says otherwise.
 
 ## Coalesce proof (`make load-smoke`)
 
