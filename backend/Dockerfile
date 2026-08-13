@@ -1,7 +1,7 @@
 # Build: from repo root — docker build -t caught-looking-api -f backend/Dockerfile backend
 # Cloud Run sets PORT; config already maps PORT → HTTP listen address.
 
-FROM golang:1.26.5-bookworm AS build
+FROM golang:1.26.6-bookworm AS build
 WORKDIR /src
 
 COPY go.mod go.sum ./
