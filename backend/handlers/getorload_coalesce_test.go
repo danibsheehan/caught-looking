@@ -194,12 +194,12 @@ func TestGameTimeline_concurrentMissCoalesces(t *testing.T) {
 		time.Sleep(40 * time.Millisecond)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		switch {
-		case r.URL.Path == "/game/555/linescore":
+		switch r.URL.Path {
+		case "/game/555/linescore":
 			_, _ = w.Write([]byte(`{"innings":[{"num":1,"home":{"runs":1},"away":{"runs":0}}],"teams":{"home":{"runs":1},"away":{"runs":0}},"status":{"detailedState":"Final"}}`))
-		case r.URL.Path == "/game/555/boxscore":
+		case "/game/555/boxscore":
 			_, _ = w.Write([]byte(`{"teams":{"home":{"team":{"id":2,"name":"H"}},"away":{"team":{"id":1,"name":"A"}}}}`))
-		case r.URL.Path == "/schedule":
+		case "/schedule":
 			_, _ = w.Write([]byte(`{"dates":[{"games":[{"status":{"detailedState":"Final"}}]}]}`))
 		default:
 			http.NotFound(w, r)
@@ -239,13 +239,13 @@ func TestGameTimeline_reusesNestedBoxscoreRaw(t *testing.T) {
 	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		switch {
-		case r.URL.Path == "/game/555/boxscore":
+		switch r.URL.Path {
+		case "/game/555/boxscore":
 			boxscoreHits.Add(1)
 			_, _ = w.Write([]byte(`{"teams":{"away":{"team":{"id":1,"name":"A"},"teamStats":{"batting":{},"pitching":{},"fielding":{}},"batters":[],"pitchers":[],"players":{}},"home":{"team":{"id":2,"name":"H"},"teamStats":{"batting":{},"pitching":{},"fielding":{}},"batters":[],"pitchers":[],"players":{}}}}`))
-		case r.URL.Path == "/game/555/linescore":
+		case "/game/555/linescore":
 			_, _ = w.Write([]byte(`{"innings":[{"num":1,"home":{"runs":1},"away":{"runs":0}}],"teams":{"home":{"runs":1},"away":{"runs":0}},"status":{"detailedState":"Final"}}`))
-		case r.URL.Path == "/schedule":
+		case "/schedule":
 			_, _ = w.Write([]byte(`{"dates":[{"games":[{"status":{"detailedState":"Final"}}]}]}`))
 		default:
 			http.NotFound(w, r)

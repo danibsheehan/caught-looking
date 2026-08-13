@@ -261,20 +261,20 @@ func fixtureMux() http.Handler {
 			return
 		}
 		path := r.URL.Path
-		switch {
-		case path == "/standings":
+		switch path {
+		case "/standings":
 			writeJSON(w, standingsJSON)
-		case path == "/divisions":
+		case "/divisions":
 			writeJSON(w, divisionsJSON)
-		case path == "/teams":
+		case "/teams":
 			writeJSON(w, teamsJSON)
-		case path == "/schedule":
+		case "/schedule":
 			serveSchedule(w, r)
-		case path == "/game/"+ContractGamePk+"/boxscore":
+		case "/game/" + ContractGamePk + "/boxscore":
 			writeJSON(w, boxscoreJSON)
-		case path == "/game/"+ContractGamePk+"/linescore":
+		case "/game/" + ContractGamePk + "/linescore":
 			writeJSON(w, linescoreJSON)
-		case path == "/statcast_search/csv":
+		case "/statcast_search/csv":
 			if !strings.Contains(r.URL.RawQuery, "game_pk="+ContractGamePk) {
 				http.NotFound(w, r)
 				return

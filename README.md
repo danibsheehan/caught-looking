@@ -271,14 +271,15 @@ Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull req
 | --- | --- |
 | **e2e** | Playwright: stub smoke + deep-link/density matrix (`vite preview` + stubbed `/api`), contract path (real Go API + fixture MLB/Savant), and chaos path (fixture `PUT /_chaos` → 429/5xx/slow) |
 | **sbom** | Syft SPDX SBOM of the repo — uploaded as a workflow artifact |
+| **lint-backend** | `golangci-lint` (errcheck, staticcheck, govet, and more) on `backend/**`; reports findings, does not block merge yet — see `make lint-backend` |
 
 #### When jobs run
 
 | Trigger | Behavior |
 | --- | --- |
 | **Draft PR** | CI skipped until Ready for review |
-| **PR (ready)** | Path filters skip heavy frontend and/or backend steps when that side’s paths are unchanged (jobs still report green for required checks). Optional **e2e** / **sbom** are skipped entirely when their paths are unchanged (via **Detect optional CI paths**; not a green no-op) |
-| **Push to `main`** | Required frontend/backend gates always run fully. Optional **e2e** / **sbom** skip entirely when paths are unchanged. **Deploy** may also run when vars/secrets are set — see [Deployment](docs/deploy.md) |
+| **PR (ready)** | Path filters skip heavy frontend and/or backend steps when that side’s paths are unchanged (jobs still report green for required checks). Optional **e2e** / **sbom** / **lint-backend** are skipped entirely when their paths are unchanged (via **Detect optional CI paths**; not a green no-op) |
+| **Push to `main`** | Required frontend/backend gates always run fully. Optional **e2e** / **sbom** / **lint-backend** skip entirely when paths are unchanged. **Deploy** may also run when vars/secrets are set — see [Deployment](docs/deploy.md) |
 | **Cloudflare PR preview** | Workflow starts only when `frontend/**`, `.nvmrc`, or the preview workflow change; job still skips drafts, Dependabot, and forks |
 
 #### Same-repo PR helpers

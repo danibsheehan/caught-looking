@@ -32,7 +32,7 @@ func TestCompressMiddleware_gzipLargeJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res.Body.Close()
+	t.Cleanup(func() { _ = res.Body.Close() })
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("status: %d", res.StatusCode)
 	}
@@ -43,7 +43,7 @@ func TestCompressMiddleware_gzipLargeJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer gr.Close()
+	t.Cleanup(func() { _ = gr.Close() })
 	b, err := io.ReadAll(gr)
 	if err != nil {
 		t.Fatal(err)
