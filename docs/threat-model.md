@@ -1,7 +1,7 @@
 # Threat model — Caught Looking API
 
 - **Scope:** Public Go API (`backend/`) that proxies and caches MLB Stats API and Baseball Savant for the React SPA.
-- **Last updated:** 2026-08-09
+- **Last updated:** 2026-08-14
 - **Related:** [docs home](README.md), [docs/adr/](adr/) (cache TTLs, QPS), [docs/slo.md](slo.md) (informal latency targets), [backend HTTP security skill](../.cursor/skills/backend-http-security/SKILL.md)
 
 **Who this is for:** Anyone who wants to understand what we protect and what we deliberately leave out — not only security specialists.
@@ -49,7 +49,7 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 | Anonymous client | Probe for error leakage / internals | Generic 502/504 JSON to clients; detail logged with `request_id` only |
 | Anonymous client | Scrape process metrics | `GET /metrics` (Go defaults + custom `caught_looking_*` counters/histograms) is **outside** the rate-limit group like `/health`. Prefer network/IAM restriction on Cloud Run for production scrapes; keep custom labels low-cardinality (`result`, `upstream`, `class`, chi `route` patterns, status `code` class — never cache keys or raw paths with ids) |
 | Anonymous client | Oversized inbound body (misuse / future POST) | Global `middleware.MaxBodyBytes` via `HTTP_MAX_BODY_BYTES` (default 64 KiB; `0` disables); early 413 when `Content-Length` exceeds the cap, plus `http.MaxBytesReader` on `Body`. Outbound bodies capped separately (`maxUpstreamBodyBytes`, 32 MiB) |
-| Browser attacker | XSS / script injection against SPA | Pages CSP (`script-src 'self'`; no inline scripts). Google Fonts allowlisted for `style-src` / `font-src`. `connect-src` limited to `'self'` + Cloud Run `https://*.a.run.app` (matches `VITE_API_BASE`) |
+| Browser attacker | XSS / script injection against SPA | Pages CSP (`script-src 'self'`; no inline scripts). Google Fonts allowlisted for `style-src` / `font-src`. `connect-src` limited to `'self'` + the exact Cloud Run API hostname (matches `VITE_API_BASE`) — not a `*.run.app` wildcard, which would also permit connections to any other Cloud Run service |
 | Browser attacker | Clickjacking / MIME sniffing / referrer leak | `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` |
 | Misconfigured CORS | Cross-origin browser calls from unexpected sites | Explicit `ALLOWED_ORIGINS` / deploy `CORS_ALLOWED_ORIGINS` allowlist |
 | Compromised dependency | RCE / supply chain | CI `govulncheck` (Go) and `npm audit --audit-level=high` (frontend); optional Syft SBOM artifact on CI; Dependabot |
@@ -69,7 +69,7 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 3. **In-memory cache only** — stampede risk on cold start / new instance; singleflight helps within one process only.
 4. **Upstream outages** — reflected as generic gateway errors; no paid APM required for this model. Contract Playwright proves the happy path; **chaos contract** (`make test-e2e-chaos`) injects fixture 429/5xx/slow via `e2e-upstream` `PUT /_chaos` so degradation stays demoable without live MLB.
 5. **SPA CSP `style-src 'unsafe-inline'`** — React/Recharts inline styles require it; script injection is still blocked by `script-src 'self'`. Tighten later with nonces/hashes if the style surface shrinks.
-6. **API host in CSP** — `connect-src` allowlists Cloud Run `https://*.a.run.app`. A custom API domain must be added to `frontend/public/_headers` in the same change as `VITE_API_BASE`.
+6. **API host in CSP** — `connect-src` allowlists the exact Cloud Run hostname, not a `*.run.app` wildcard (which would permit connecting to any Cloud Run service on the internet). If the API's Cloud Run URL, region, or a custom domain changes, update `frontend/public/_headers` in the same change as `VITE_API_BASE`.
 7. **Probe misuse** — wiring `/ready` to live MLB checks would invent outages and fight scale-to-zero; keep readiness process-local only.
 
 ## Verification expectations
