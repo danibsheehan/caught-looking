@@ -46,13 +46,20 @@ jobs:
                     exit 0
                   fi
 
+                  # Listing failures (expired token, 429, API outage) must abort loudly, not
+                  # look like "nothing to clean up". Process/command substitution swallows a
+                  # subshell's internal set -e, so this reports failure via an explicit
+                  # `return 1` that the caller checks -- not by relying on -e to propagate.
                   list_deployments() {
                     local page=1 total_pages resp
                     local -a lines=() page_lines=()
                     while true; do
-                      resp=$(curl -sS -f \
+                      if ! resp=$(curl -sS -f \
                         -H "Authorization: Bearer $CF_TOKEN" \
-                        "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/${CF_PROJECT}/deployments?env=preview&page=${page}&per_page=25")
+                        "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/${CF_PROJECT}/deployments?env=preview&page=${page}&per_page=25"); then
+                        echo "::error::Failed to list Cloudflare Pages preview deployments (page $page)." >&2
+                        return 1
+                      fi
 
                       mapfile -t page_lines < <(echo "$resp" | jq -r --arg branch "$BRANCH" '
                         .result[]
@@ -70,7 +77,11 @@ jobs:
                       fi
                       page=$((page + 1))
                     done
-                    printf '%s\n' "${lines[@]}"
+                    # printf still runs its format once against a genuinely empty array,
+                    # emitting a phantom blank line -- guard it so "no matches" prints nothing.
+                    if [ "${#lines[@]}" -gt 0 ]; then
+                      printf '%s\n' "${lines[@]}"
+                    fi
                   }
 
                   echo "Looking for preview deployments on branch '$BRANCH'…"
@@ -85,7 +96,14 @@ jobs:
                   declare -A seen_urls=()
 
                   for attempt in 1 2 3; do
-                    mapfile -t lines < <(list_deployments)
+                    if ! raw=$(list_deployments); then
+                      echo "::error::Could not list preview deployments for branch '$BRANCH'; aborting instead of risking a false 'nothing to clean up'."
+                      exit 1
+                    fi
+                    lines=()
+                    if [ -n "$raw" ]; then
+                      mapfile -t lines <<< "$raw"
+                    fi
                     if [ "${#lines[@]}" -gt 0 ]; then
                       echo "Deleting ${#lines[@]} preview deployment(s) (attempt $attempt)…"
                       for line in "${lines[@]}"; do
