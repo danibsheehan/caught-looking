@@ -5,37 +5,11 @@ import { DEFAULT_FIELD_DIMS } from './mlbVenueFieldDimensions';
  * Reference fair-territory template in field feet (same space as `statcastHcToFieldFeet`), matched to ~DEFAULT_FIELD_DIMS.
  */
 export const SPRAY_HOME: [number, number] = [125, 4];
-export const SPRAY_LF: [number, number] = [14, 72];
-export const SPRAY_RF: [number, number] = [236, 72];
 export const SPRAY_OF_CONTROL: [number, number] = [125, 402];
 
-/** Standard 90 ft base paths (square diamond), plus shallow cuts toward home for dirt shape. */
+/** Standard 90 ft base paths; used directly in buildSprayFenceGeometry's 1B/2B/3B math. */
 const BASE_PATH_FT = 90;
 const SQRT2 = Math.SQRT2;
-const _h = SPRAY_HOME;
-const _first: [number, number] = [_h[0] + BASE_PATH_FT / SQRT2, _h[1] + BASE_PATH_FT / SQRT2];
-const _second: [number, number] = [_h[0], _h[1] + BASE_PATH_FT * SQRT2];
-const _third: [number, number] = [_h[0] - BASE_PATH_FT / SQRT2, _h[1] + BASE_PATH_FT / SQRT2];
-const _cut3: [number, number] = [
-  _h[0] + (_third[0] - _h[0]) * 0.14,
-  _h[1] + (_third[1] - _h[1]) * 0.14,
-];
-const _cut1: [number, number] = [
-  _h[0] + (_first[0] - _h[0]) * 0.14,
-  _h[1] + (_first[1] - _h[1]) * 0.14,
-];
-
-export const SPRAY_INFIELD: [number, number][] = [_first, _second, _third, _cut3, _cut1, _first];
-
-/** Legacy template (feet); prefer `buildSprayFenceGeometry().plate` for aligned pentagon. */
-export const SPRAY_PLATE: [number, number][] = [
-  [125, -2],
-  [118, 4],
-  [120, 9],
-  [130, 9],
-  [132, 4],
-  [125, -2],
-];
 
 /** Regulation home plate (ft): 17" front edge, 8.5" sides from point, 12" slants (point → -u_cf). */
 const PLATE_HALF_WIDTH_FT = 17 / 24;
@@ -61,13 +35,6 @@ export function scaleSprayOutlinePoint(
   const w = 1 + (widthScale - 1) * t * 0.92;
   const d = 1 + (depthScale - 1) * t * 0.92;
   return [HOME[0] + (x - HOME[0]) * w, HOME[1] + (y - HOME[1]) * d];
-}
-
-export function scaleSprayOutlinePoints(
-  pts: [number, number][],
-  dims: FieldDimensionsFt,
-): [number, number][] {
-  return pts.map((p) => scaleSprayOutlinePoint(p, dims));
 }
 
 /** Interpolates LCF/RCF depth from LF/CF/RF when only three fence distances are known. */

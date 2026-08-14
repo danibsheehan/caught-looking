@@ -80,11 +80,6 @@ export function svgPointString(xN: number, zN: number): string {
   return `${x},${y}`;
 }
 
-export function svgPointStringCatcherView(xN: number, zN: number): string {
-  const { x, y } = projNormToSvgCatcherPerspective(xN, zN);
-  return `${x},${y}`;
-}
-
 const SPAN_X = NORM_X_MAX - NORM_X_MIN;
 const SPAN_Z = NORM_Z_MAX - NORM_Z_MIN;
 
