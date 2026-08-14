@@ -1,12 +1,16 @@
 # Cloudflare Pages security headers for the SPA (copied into dist/ by Vite).
-# CSP connect-src allows the current Cloud Run API host (VITE_API_BASE) by exact hostname,
-# not a wildcard -- Cloud Run's modern URL format is <service>-<hash>.<region>.run.app (no
-# ".a." label), and a broad https://*.run.app would let the page connect to ANY Cloud Run
-# service on the internet, not just ours. If the API's Cloud Run URL or region changes (or it
-# moves to a custom origin), update this hostname in the same change as VITE_API_BASE.
+# CSP connect-src allowlists the Cloud Run API host (VITE_API_BASE) by exact hostname, not a
+# wildcard -- https://*.run.app would let the page connect to ANY Cloud Run service on the
+# internet, not just ours. Two exact hosts are listed because this one Cloud Run service
+# currently resolves under both its legacy alias (<service>-<hash>-<region-code>.a.run.app,
+# what `gcloud run services describe` reports as status.url, and what deploy.yml's production
+# build actually uses) and the modern format (<service>-<hash>.<region>.run.app, what PR
+# previews build with via the API_PUBLIC_URL repo variable). If the API's Cloud Run URL,
+# region, or either alias changes (or it moves to a custom origin), update this list in the
+# same change as VITE_API_BASE.
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://caught-looking-436925086053.us-central1.run.app; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://caught-looking-oskfsj2ila-uc.a.run.app https://caught-looking-436925086053.us-central1.run.app; upgrade-insecure-requests
