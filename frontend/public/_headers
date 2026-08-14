@@ -8,9 +8,17 @@
 # previews build with via the API_PUBLIC_URL repo variable). If the API's Cloud Run URL,
 # region, or either alias changes (or it moves to a custom origin), update this list in the
 # same change as VITE_API_BASE.
+# script-src allows static.cloudflareinsights.com to load the Cloudflare Web Analytics beacon,
+# added manually in index.html (external <script src>, no inline body) rather than relying on
+# Cloudflare's dashboard "automatic" injection -- that mode wraps the beacon in an inline
+# script whose content (and therefore CSP hash) varies per page load, which a static
+# allowlist can never match. The beacon then reports collected data to a DIFFERENT host,
+# cloudflareinsights.com (no "static." prefix), hence the separate connect-src entry -- see
+# https://developers.cloudflare.com/web-analytics/faq/. Keep both hosts in sync with the
+# manual snippet in index.html if it's ever regenerated.
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://caught-looking-oskfsj2ila-uc.a.run.app https://caught-looking-436925086053.us-central1.run.app; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://caught-looking-oskfsj2ila-uc.a.run.app https://caught-looking-436925086053.us-central1.run.app https://cloudflareinsights.com; upgrade-insecure-requests
