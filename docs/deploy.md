@@ -43,7 +43,7 @@ SPA rollback: re-run **Deploy** on an older `main` commit, or upload a prior `fr
 | :--- | :--- |
 | Prefer | **Direct Upload** from Actions (empty Pages project is fine) |
 | If Git-connected build also runs | Disable that build **or** set **`VITE_API_BASE`** in Cloudflare Pages **Preview** to the Cloud Run origin so native builds do not overwrite Actions previews |
-| Security headers | Vite copies [`frontend/public/_headers`](../frontend/public/_headers) into `dist/` (CSP, nosniff, `X-Frame-Options`, referrer, Permissions-Policy). Keep `connect-src` aligned with `VITE_API_BASE` (default Cloud Run `*.a.run.app`) |
+| Security headers | Vite copies [`frontend/public/_headers`](../frontend/public/_headers) into `dist/` (CSP, nosniff, `X-Frame-Options`, referrer, Permissions-Policy). Keep `connect-src` aligned with `VITE_API_BASE` by **exact** Cloud Run hostname, not a `*.run.app` wildcard (that would allow connecting to any Cloud Run service, not just ours). Production and PR previews currently resolve to two different valid hostname aliases for the same service — legacy `<service>-<hash>-<region-code>.a.run.app` (production, `status.url` per `gcloud run services describe`) and modern `<service>-<hash>.<region>.run.app` (previews, via `API_PUBLIC_URL`) — both must stay listed until that's consolidated |
 
 ## One-time Google Cloud setup
 
