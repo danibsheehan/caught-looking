@@ -5,3 +5,7 @@ __pycache__/
 
 # CI Cobertura snapshots written at repo root for Actions artifacts
 gha-cobertura*.xml
+
+# Local secrets (e.g. CLOUDFLARE_API_TOKEN for manual API calls)
+.env*
+!.env.example

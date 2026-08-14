@@ -46,52 +46,101 @@ jobs:
                     exit 0
                   fi
 
+                  # Listing failures (expired token, 429, API outage) must abort loudly, not
+                  # look like "nothing to clean up". Process/command substitution swallows a
+                  # subshell's internal set -e, so this reports failure via an explicit
+                  # `return 1` that the caller checks -- not by relying on -e to propagate.
+                  list_deployments() {
+                    local page=1 total_pages resp
+                    local -a lines=() page_lines=()
+                    while true; do
+                      if ! resp=$(curl -sS -f \
+                        -H "Authorization: Bearer $CF_TOKEN" \
+                        "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/${CF_PROJECT}/deployments?env=preview&page=${page}&per_page=25"); then
+                        echo "::error::Failed to list Cloudflare Pages preview deployments (page $page)." >&2
+                        return 1
+                      fi
+
+                      mapfile -t page_lines < <(echo "$resp" | jq -r --arg branch "$BRANCH" '
+                        .result[]
+                        | select(.environment == "preview")
+                        | select(.deployment_trigger.metadata.branch == $branch)
+                        | "\(.id)\t\(.url)"
+                      ')
+                      if [ "${#page_lines[@]}" -gt 0 ]; then
+                        lines+=("${page_lines[@]}")
+                      fi
+
+                      total_pages=$(echo "$resp" | jq -r '.result_info.total_pages // 1')
+                      if [ "$page" -ge "$total_pages" ]; then
+                        break
+                      fi
+                      page=$((page + 1))
+                    done
+                    # printf still runs its format once against a genuinely empty array,
+                    # emitting a phantom blank line -- guard it so "no matches" prints nothing.
+                    if [ "${#lines[@]}" -gt 0 ]; then
+                      printf '%s\n' "${lines[@]}"
+                    fi
+                  }
+
                   echo "Looking for preview deployments on branch '$BRANCH'…"
 
-                  page=1
-                  ids=()
-                  while true; do
-                    resp=$(curl -sS -f \
-                      -H "Authorization: Bearer $CF_TOKEN" \
-                      "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/${CF_PROJECT}/deployments?env=preview&page=${page}&per_page=25")
+                  # Cloudflare's own deployment-list bookkeeping has been observed to say a
+                  # preview is fully deleted (gone by ID, gone by branch filter) while the
+                  # *.pages.dev URL itself keeps serving traffic (seen 2026-08-14: PR #224's
+                  # preview vanished entirely from the API's deployment list yet still
+                  # returned HTTP 200 30+ minutes after deletion). So neither the DELETE
+                  # response nor a re-list is proof of anything -- track every URL we've ever
+                  # seen for this branch and keep probing the real URL until it 404s.
+                  declare -A seen_urls=()
 
-                    page_ids=()
-                    mapfile -t page_ids < <(echo "$resp" | jq -r --arg branch "$BRANCH" '
-                      .result[]
-                      | select(.environment == "preview")
-                      | select(.deployment_trigger.metadata.branch == $branch)
-                      | .id
-                    ')
-                    if [ "${#page_ids[@]}" -gt 0 ]; then
-                      ids+=("${page_ids[@]}")
+                  for attempt in 1 2 3; do
+                    if ! raw=$(list_deployments); then
+                      echo "::error::Could not list preview deployments for branch '$BRANCH'; aborting instead of risking a false 'nothing to clean up'."
+                      exit 1
+                    fi
+                    lines=()
+                    if [ -n "$raw" ]; then
+                      mapfile -t lines <<< "$raw"
+                    fi
+                    if [ "${#lines[@]}" -gt 0 ]; then
+                      echo "Deleting ${#lines[@]} preview deployment(s) (attempt $attempt)…"
+                      for line in "${lines[@]}"; do
+                        id="${line%%$'\t'*}"
+                        url="${line#*$'\t'}"
+                        seen_urls["$url"]=1
+                        echo "Deleting $id ($url)"
+                        curl -sS -X DELETE \
+                          -H "Authorization: Bearer $CF_TOKEN" \
+                          "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/${CF_PROJECT}/deployments/${id}?force=true" \
+                          >/dev/null || echo "::warning::Delete request for $id failed; will re-check by URL."
+                      done
                     fi
 
-                    total_pages=$(echo "$resp" | jq -r '.result_info.total_pages // 1')
-                    if [ "$page" -ge "$total_pages" ]; then
-                      break
+                    if [ "${#seen_urls[@]}" -eq 0 ]; then
+                      echo "No preview deployments found for branch '$BRANCH'."
+                      exit 0
                     fi
-                    page=$((page + 1))
+
+                    still_live=()
+                    for url in "${!seen_urls[@]}"; do
+                      code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$url" || echo "000")
+                      if [ "$code" = "200" ]; then
+                        still_live+=("$url")
+                      fi
+                    done
+
+                    if [ "${#still_live[@]}" -eq 0 ]; then
+                      echo "Confirmed no preview URLs still respond for branch '$BRANCH'."
+                      exit 0
+                    fi
+
+                    echo "${#still_live[@]} preview URL(s) still responding after attempt $attempt: ${still_live[*]}"
+                    if [ "$attempt" -lt 3 ]; then
+                      sleep 15
+                    fi
                   done
 
-                  if [ "${#ids[@]}" -eq 0 ]; then
-                    echo "No preview deployments found for branch '$BRANCH'."
-                    exit 0
-                  fi
-
-                  echo "Deleting ${#ids[@]} preview deployment(s)…"
-                  failed=0
-                  for id in "${ids[@]}"; do
-                    echo "Deleting $id"
-                    if ! curl -sS -f -X DELETE \
-                      -H "Authorization: Bearer $CF_TOKEN" \
-                      "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/${CF_PROJECT}/deployments/${id}?force=true" \
-                      >/dev/null; then
-                      echo "::error::Failed to delete deployment $id"
-                      failed=1
-                    fi
-                  done
-
-                  if [ "$failed" -ne 0 ]; then
-                    exit 1
-                  fi
-                  echo "Deleted ${#ids[@]} preview deployment(s) for branch '$BRANCH'."
+                  echo "::error::${#still_live[@]} preview URL(s) for branch '$BRANCH' still live after cleanup and retries: ${still_live[*]}"
+                  exit 1
