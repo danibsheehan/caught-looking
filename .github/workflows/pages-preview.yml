@@ -31,6 +31,9 @@ jobs:
             deployments: write
             pull-requests: write
             id-token: write
+        outputs:
+            url: ${{ steps.pages.outputs.url }}
+            alias: ${{ steps.pages.outputs.alias }}
         env:
             GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
             GCP_REGION: ${{ vars.GCP_REGION }}
@@ -139,3 +142,50 @@ jobs:
                       - Branch alias (stable): ${{ steps.pages.outputs.alias }}
                       - This commit: ${{ steps.pages.outputs.url }}
                       - Commit: `${{ github.event.pull_request.head.sha }}`
+
+    lighthouse:
+        # Runs only when `preview` actually deployed (needs.*.result defaults dependents to
+        # skipped if the dependency was skipped or failed, but this is kept explicit to match
+        # the rest of this file). Audits the real deployed preview -- live Cloud Run API behind
+        # it -- rather than a standalone static build with a fake API base.
+        needs: preview
+        if: ${{ needs.preview.result == 'success' }}
+        name: Lighthouse (PR preview)
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            pull-requests: write
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+            - name: Run Lighthouse CI
+              id: lhci
+              uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # v12
+              with:
+                  urls: ${{ needs.preview.outputs.url }}
+                  configPath: ./.lighthouserc.json
+                  runs: 3
+                  temporaryPublicStorage: true
+
+            - name: Extract report link
+              id: report
+              env:
+                  LINKS: ${{ steps.lhci.outputs.links }}
+              run: |
+                  set -euo pipefail
+                  URL=$(echo "$LINKS" | jq -r 'to_entries[0].value // empty')
+                  echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+            # Sticky so each push updates one comment instead of spamming the PR.
+            - name: Comment Lighthouse results on PR
+              uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v2 branch
+              with:
+                  header: lighthouse-preview
+                  message: |
+                      ### Lighthouse report
+
+                      ${{ steps.report.outputs.url && format('**[Open report]({0})**', steps.report.outputs.url) || 'Report link unavailable -- see job logs.' }}
+
+                      Audited: ${{ needs.preview.outputs.url }}
+                      Thresholds are informational (warn-level) for now; see `.lighthouserc.json`.
+                      Commit: `${{ github.event.pull_request.head.sha }}`
