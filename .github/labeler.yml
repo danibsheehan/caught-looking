@@ -23,3 +23,10 @@
           - any-glob-to-any-file:
                 - 'README.md'
                 - 'docs/**'
+
+'area: agent-tooling':
+    - changed-files:
+          - any-glob-to-any-file:
+                - '.cursor/**'
+                - 'AGENTS.md'
+                - 'CLAUDE.md'
