@@ -102,6 +102,8 @@ symlinked, auto-invoked by either tool based on the task):
 - `venue-data-sync` — checks `mlbVenueFieldDimensions.ts`'s venue-id table against the live MLB
   Stats API and drafts entries for new/changed venues from a published source. Reactive, not
   scheduled — a franchise relocation or new ballpark is roughly once-a-decade.
+- `bugbot-fix-verify` — verifies a Bugbot finding against actual code/docs/live behavior before
+  fixing it, and re-verifies the fix resolves it without opening a new regression.
 
 ## Constraints — do not
 
