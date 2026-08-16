@@ -28,5 +28,6 @@
     - changed-files:
           - any-glob-to-any-file:
                 - '.cursor/**'
+                - '.claude/**'
                 - 'AGENTS.md'
                 - 'CLAUDE.md'
