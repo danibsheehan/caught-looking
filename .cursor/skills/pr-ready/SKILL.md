@@ -62,7 +62,12 @@ Draft **Summary** and **How to verify** by reading the actual diff: see **`pr-su
 
 Do not push or create the PR unless the user asked.
 
-### 3. After merge (local cleanup)
+### 3. Bugbot findings
+
+If Cursor Bugbot leaves review comments on the PR, don't apply them at face value — see
+**`bugbot-fix-verify`**.
+
+### 4. After merge (local cleanup)
 
 When the PR is merged and the user is done with the branch (or asks to clean up):
 
