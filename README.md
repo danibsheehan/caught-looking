@@ -289,6 +289,7 @@ Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull req
 | [**PR guide**](.github/workflows/pr-guide.yml) | On open / reopen / ready-for-review: scaffolds empty/default PR description (verify commands, **Touches**), sticky checklist comment, `area:*` labels from changed paths (does not re-run on every push). Authors/agents should still write a why-first **Summary**. |
 | **Coverage comments** (CI job) | After frontend/backend succeed, posts or updates Cobertura coverage comments from uploaded artifacts (same-repo PRs only; does not run on `main`) |
 | [**Pages preview**](.github/workflows/pages-preview.yml) | Builds SPA with `VITE_API_BASE` → Cloudflare branch preview; does not run at all for non-SPA path PRs |
+| **Lighthouse** (job in [pages preview](.github/workflows/pages-preview.yml)) | After the preview deploys, audits that live URL with Lighthouse CI and comments the report link; warn-level thresholds in [`.lighthouserc.json`](.lighthouserc.json), non-blocking |
 | [**Preview cleanup**](.github/workflows/pages-preview-cleanup.yml) | Deletes preview deployments when the PR is closed or merged |
 
 Fork PRs may skip guide, coverage comments, or previews (`GITHUB_TOKEN` / secrets limits); those steps are non-blocking or skipped.
