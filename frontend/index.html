@@ -6,10 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Non-blocking font load: media="print" means the browser fetches this in the background
+      without blocking first paint. main.tsx flips it to "all" once the app boots, at which
+      point the CSS applies (immediately if already fetched, or as soon as it arrives). No
+      inline onload handler here -- the CSP script-src has no 'unsafe-inline', so an inline
+      event-handler attribute would be silently dropped by the browser. noscript covers
+      clients that don't run main.tsx at all.
+    -->
     <link
+      id="gfonts-stylesheet"
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Space+Mono:wght@400;500&display=swap"
       rel="stylesheet"
+      media="print"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Space+Mono:wght@400;500&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <title>Caught looking</title>
     <meta name="color-scheme" content="dark" />
     <meta
