@@ -2,9 +2,10 @@ name: CodeQL
 
 # GitHub's default (automatic) CodeQL setup narrowed itself to the "actions" language only
 # on 2026-07-27, silently dropping javascript-typescript (which had run exactly once, in
-# April) and never covering go at all. This advanced-setup workflow restores CodeQL for the
-# repo's two real code languages; default setup stays enabled for "actions" (GitHub Actions
-# workflow linting) since that category doesn't overlap with what's analyzed here.
+# April) and never covering go at all. Default and advanced (workflow-based) setup cannot
+# coexist on the same repo -- GitHub rejects every SARIF upload from an advanced workflow
+# while default setup is enabled, even for non-overlapping languages -- so this workflow
+# also takes over "actions" and default setup must be disabled (see PR discussion).
 
 on:
     push:
@@ -38,6 +39,8 @@ jobs:
                     - language: go
                       build-mode: autobuild
                     - language: javascript-typescript
+                      build-mode: none
+                    - language: actions
                       build-mode: none
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
