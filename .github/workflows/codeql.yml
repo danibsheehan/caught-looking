@@ -1,0 +1,72 @@
+name: CodeQL
+
+# GitHub's default (automatic) CodeQL setup narrowed itself to the "actions" language only
+# on 2026-07-27, silently dropping javascript-typescript (which had run exactly once, in
+# April) and never covering go at all. Default and advanced (workflow-based) setup cannot
+# coexist on the same repo -- GitHub rejects every SARIF upload from an advanced workflow
+# while default setup is enabled, even for non-overlapping languages -- so this workflow
+# also takes over "actions" and default setup must be disabled (see PR discussion).
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+    schedule:
+        - cron: '17 3 * * 1' # weekly, matches prior default-setup cadence
+
+concurrency:
+    group: codeql-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    analyze:
+        name: Analyze (${{ matrix.language }})
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        permissions:
+            contents: read
+            security-events: write
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - language: go
+                      build-mode: manual
+                    - language: javascript-typescript
+                      build-mode: none
+                    - language: actions
+                      build-mode: none
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+            - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              if: matrix.language == 'go'
+              with:
+                  go-version: '1.26.6'
+                  cache-dependency-path: backend/go.sum
+
+            - uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
+              with:
+                  languages: ${{ matrix.language }}
+                  build-mode: ${{ matrix.build-mode }}
+
+            - name: Build Go module
+              # go.mod lives in backend/, not the repo root; CodeQL's autobuild heuristic
+              # searches the whole checkout for a build entry point in that layout and was
+              # observed hanging for 15+ minutes without reaching the analyze step, so build
+              # explicitly here instead (mirrors ci.yml's backend build).
+              if: matrix.language == 'go'
+              working-directory: backend
+              run: |
+                  go mod download
+                  go build ./...
+
+            - uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
+              with:
+                  category: /language:${{ matrix.language }}
