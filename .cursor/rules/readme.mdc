@@ -12,6 +12,11 @@ When editing **README.md**, global tokens in **`frontend/src/styles/_base.scss`*
 
 - Lead with **who the reader is** and what they can do (try live, run locally, explore, contribute) before deep architecture.
 - Prefer plain language in product sections; define jargon or link to **[`docs/`](docs/README.md)** (glossary + ADRs).
+- **First use of jargon** (TTL, QPS, singleflight, CORS, CSP, XSS, RCE, SBOM, ADR, etc.) in any file this rule covers gets a link to **[`docs/README.md#a-few-terms-in-plain-words`](docs/README.md#a-few-terms-in-plain-words)** — inline (`[TTL](docs/README.md#a-few-terms-in-plain-words)` from README.md; `[TTL](README.md#a-few-terms-in-plain-words)` from a file already inside `docs/`). A term used only once doesn't need its own paragraph of explanation if it's one click from a plain-language definition.
+- **New acronym or term with no existing glossary row** → add one to the glossary table in `docs/README.md` in the same change, don't just gloss it inline once and let the glossary go stale.
+- **Dense/technical sections** (cost tradeoffs, architecture, threat model actors/threats, SLO signals, etc.) open with a bolded **"In plain English:"** one-line summary before the technical table/prose — this is the existing pattern in `docs/configuration.md`, `docs/deploy.md`, `docs/threat-model.md`, and `docs/slo.md`; apply it to new dense sections anywhere this rule covers, including README.md.
+- **Diagrams** (mermaid or otherwise) get one plain-language sentence directly above them saying what they show, not just a heading.
+- Avoid decorative or ambiguous table/column headers (glyphs, single symbols) — use a real word so the table reads sensibly out of context and for screen readers.
 - Keep the dugout / neon-on-obsidian personality; avoid interview-only framing in the main product narrative (portfolio notes belong under Contributing or deeper docs).
 - **Link out** for ops detail: env tables → **`docs/configuration.md`**; Cloud Run / Pages / GitHub vars → **`docs/deploy.md`**. Do not re-dump those tables into the README.
 
