@@ -6,7 +6,7 @@
 
 **Who this is for:** Anyone who wants to understand what we protect and what we deliberately leave out — not only security specialists.
 
-**In plain English:** Caught Looking is a **public, unauthenticated read proxy**. Anyone can call the API; there are no user accounts. We focus on staying available, treating MLB/Savant as good neighbors (rate limits and caches), and hardening the website against common browser attacks (XSS, clickjacking). We do **not** try to keep public baseball stats “secret.”
+**In plain English:** Caught Looking is a **public, unauthenticated read proxy**. Anyone can call the API; there are no user accounts. We focus on staying available, treating MLB/Savant as good neighbors (rate limits and caches), and hardening the website against common browser attacks ([XSS](README.md#a-few-terms-in-plain-words), clickjacking). We do **not** try to keep public baseball stats “secret.”
 
 Structured request/upstream logs use **`log/slog`** (JSON from `main`) with **`request_id`**. Every response includes **`X-Request-ID`** (chi RequestID; CORS-exposed for cross-origin SPA). The SPA attaches that header to **`ApiError`** so user-visible alerts can be matched to server logs. Prometheus text exposition is at **`GET /metrics`** (Go defaults plus low-cardinality custom counters and latency histograms: cache hit/miss, singleflight coalesce, cache-load / HTTP / upstream durations, upstream 429/5xx).
 
@@ -37,7 +37,7 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 
 - Clients are **unauthenticated**. There are no accounts, cookies, or API keys for end users.
 - Upstream base URLs come from **config/env**, not from request parameters (no open SSRF via caller-controlled URLs).
-- The SPA is served from **Cloudflare Pages**. Response headers (CSP, nosniff, frame denial, referrer, Permissions-Policy) come from **`frontend/public/_headers`** (Vite copies into `dist/`).
+- The SPA is served from **Cloudflare Pages**. Response headers ([CSP](README.md#a-few-terms-in-plain-words), nosniff, frame denial, referrer, Permissions-Policy) come from **`frontend/public/_headers`** (Vite copies into `dist/`).
 - **Probes:** `GET /health` = process alive; `GET /ready` = cache + MLB/Savant *clients* are constructed. Neither probe calls upstream — failing ready on MLB downtime would thrash Cloud Run scale-to-zero.
 
 ## Actors and threats
@@ -51,8 +51,8 @@ MLB Stats API / Baseball Savant (untrusted upstream)
 | Anonymous client | Oversized inbound body (misuse / future POST) | Global `middleware.MaxBodyBytes` via `HTTP_MAX_BODY_BYTES` (default 64 KiB; `0` disables); early 413 when `Content-Length` exceeds the cap, plus `http.MaxBytesReader` on `Body`. Outbound bodies capped separately (`maxUpstreamBodyBytes`, 32 MiB) |
 | Browser attacker | XSS / script injection against SPA | Pages CSP (`script-src 'self' https://static.cloudflareinsights.com`; no inline scripts — Cloudflare Web Analytics is loaded as a manual external `<script src>` in `index.html`, not Cloudflare's "automatic" dashboard injection, which wraps the beacon in an inline script CSP can't reliably allowlist since its content varies per load). Google Fonts allowlisted for `style-src` / `font-src`. `connect-src` limited to `'self'` + the exact Cloud Run API hostname(s) (matches `VITE_API_BASE` — production and PR previews currently resolve to two different valid aliases for the same service, both listed) + `https://cloudflareinsights.com` (where the Web Analytics beacon reports collected data) — no `*.run.app` wildcard, which would also permit connections to any other Cloud Run service |
 | Browser attacker | Clickjacking / MIME sniffing / referrer leak | `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` |
-| Misconfigured CORS | Cross-origin browser calls from unexpected sites | Explicit `ALLOWED_ORIGINS` / deploy `CORS_ALLOWED_ORIGINS` allowlist |
-| Compromised dependency | RCE / supply chain | CI `govulncheck` (Go) and `npm audit --audit-level=high` (frontend); optional Syft SBOM artifact on CI; Dependabot |
+| Misconfigured [CORS](README.md#a-few-terms-in-plain-words) | Cross-origin browser calls from unexpected sites | Explicit `ALLOWED_ORIGINS` / deploy `CORS_ALLOWED_ORIGINS` allowlist |
+| Compromised dependency | [RCE](README.md#a-few-terms-in-plain-words) / supply chain | CI `govulncheck` (Go) and `npm audit --audit-level=high` (frontend); optional Syft SBOM artifact on CI; Dependabot |
 | Operator / deploy | Accidental spend | Scale-to-zero Cloud Run, low max instances, Artifact Registry cleanup; GCP billing budget recommended (ops, not code) |
 
 ## Explicit non-goals

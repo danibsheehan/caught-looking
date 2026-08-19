@@ -32,6 +32,9 @@
 | **Tune env vars or ship to the cloud** | [Configuration](docs/configuration.md) · [Deployment](docs/deploy.md) |
 | **Read the “why” docs** | [docs/](docs/) — ADRs, SLOs, threat model, glossary |
 
+New to terms like **TTL**, **QPS**, or **singleflight**? Plain-language
+definitions: [glossary](docs/README.md#a-few-terms-in-plain-words).
+
 **Jump:** [What you can explore](#what-you-can-explore) · [Architecture](#architecture) · [Design tokens](#design-tokens) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Run locally](#run-locally) · [Contributing](#contributing) · [Docs home](docs/)
 
 ---
@@ -53,26 +56,32 @@ Routes: `/standings` (default), `/leaders`, `/teams`, `/players`, `/games`, `/ga
 
 ### Live games
 
-On a **game detail** page, the box score and inning timeline refresh while the game is still unsettled (about every **45 seconds**, matching the live cache TTL). Statcast loads once. Polling **pauses** when the browser tab is hidden, refreshes immediately when you come back, and **stops** when the game is final, postponed, or cancelled — so the board stays fresh without hammering league APIs when nobody is watching.
+On a **game detail** page, the box score and inning timeline refresh while the game is still unsettled (about every **45 seconds**, matching the live cache [TTL](docs/README.md#a-few-terms-in-plain-words)). Statcast loads once. Polling **pauses** when the browser tab is hidden, refreshes immediately when you come back, and **stops** when the game is final, postponed, or cancelled — so the board stays fresh without hammering league APIs when nobody is watching.
 
 **Try it:** open a live (or unsettled) game → watch Network for boxscore/timeline on a ~45s cadence → switch tabs (polls stop) → return (one immediate refresh). Hook: `useAsyncResource` `poll` + `pauseWhenHidden`. See [ADR 0001](docs/adr/0001-cache-ttls.md).
 
-| ◆ | Theme |
+| Aspect | Theme |
 | :---: | :--- |
 | **Surfaces** | Near-black fields (`#070b10`, `#0a1018`) with cool gray body type |
 | **Accent** | Teal `--accent` (`#00f5c4`) for links, focus, and primary chart chrome |
 | **Type** | **DM Sans** for prose; **Space Mono** for numerals and axes |
 | **Charts** | Team ink via registry + brand palette; [`neonChartPalette.ts`](frontend/src/utils/neonChartPalette.ts) is a non-team series helper (not extra `html` CSS variables) |
 
-| ◆ | What stands out (for builders) |
+| Aspect | What stands out (for builders) |
 | :---: | :--- |
 | **Contract** | Handlers and the SPA share one **OpenAPI** spec → generated TypeScript types + Redoc |
 | **Color** | **Shell** tokens in SCSS; **team ink** from registry + MLB brand picks, contrast-adjusted per chart surface |
-| **Ops** | Per-IP limits, outbound **QPS caps**, and TTL caches so public upstreams stay friendly at scale |
+| **Ops** | Per-IP limits, outbound **[QPS](docs/README.md#a-few-terms-in-plain-words) caps**, and TTL caches so public upstreams stay friendly at scale |
 
 ---
 
 ## Architecture
+
+**In plain English:** the browser only ever talks to our own Go API, never
+directly to MLB or Savant. The API remembers recent answers for a while
+(caching) and paces how often it asks the league for fresh ones — that's
+the whole story behind most of the jargon below. Unfamiliar term? Check the
+[glossary](docs/README.md#a-few-terms-in-plain-words).
 
 | Layer | Role |
 | :--- | :--- |
@@ -88,16 +97,22 @@ Rationale for cache TTLs, outbound QPS, and the OpenAPI contract: **[docs/adr/](
 
 ### Cost and scale tradeoffs
 
+**In plain English:** every choice below trades a little bit of "not
+infinitely scalable" for keeping the cloud bill near $0. That's a deliberate
+tradeoff for a hobby-scale public app, not an oversight.
+
 Built for a **low/zero incremental cloud bill** (Cloud Run scale-to-zero + Cloudflare Pages) without treating public MLB/Savant as free bandwidth. Conscious limits — not missing infrastructure:
 
 | Choice | Why it stays this way | Revisit when |
 | :--- | :--- | :--- |
-| **In-process TTL cache + singleflight** | No Redis/Memorystore cost; concurrent misses coalesce **per process**; hit/miss/coalesce + latency histograms show up on `GET /metrics` ([SLOs](docs/slo.md)). Prove locally with **`make load-smoke`**. | Warm instance count or cold-start stampede forces a shared L2 |
+| **In-process TTL cache + [singleflight](docs/README.md#a-few-terms-in-plain-words)** | No Redis/Memorystore cost; concurrent misses coalesce **per process**; hit/miss/coalesce + latency histograms show up on `GET /metrics` ([SLOs](docs/slo.md)). Prove locally with **`make load-smoke`**. | Warm instance count or cold-start stampede forces a shared L2 |
 | **Per-process MLB/Savant QPS caps** | Predictable outbound load without a global rate coordinator | Aggregate `max-instances × QPS` risks upstream 429s |
 | **`CLOUDRUN_MAX_INSTANCES` default `2`** | Caps spend **and** the outbound budget multiplier | Traffic needs more capacity *and* a shared cache/limiter story |
 | **`CLOUDRUN_MIN_INSTANCES` default `0`** | Idle ≈ $0; cold starts refill the in-memory cache | Latency SLOs require a warm process ([docs/slo.md](docs/slo.md)) |
 
 Residual risks (per-process QPS × instances, in-memory-only stampede) are spelled out in **[docs/threat-model.md](docs/threat-model.md)**. Informal latency/hit-ratio targets: **[docs/slo.md](docs/slo.md)**. Deploy knobs: [Deployment](docs/deploy.md).
+
+The same picture as the table above, drawn out: the browser only ever calls our API, and only the API talks to MLB or Savant.
 
 ```mermaid
 %%{init: {'theme':'dark'}}%%
@@ -256,6 +271,9 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 <details>
 <summary><strong>CI & quality gates</strong> (expand)</summary>
 
+Skip this if you're just trying the app or reading code — it's reference detail
+for anyone opening a PR who wants to know exactly what has to pass.
+
 Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull requests. Draft PRs skip CI until **Ready for review**. Local parity: **`make ci-local`**.
 
 #### Required gates
@@ -271,7 +289,7 @@ Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull req
 | Job | What it does |
 | --- | --- |
 | **e2e** | Playwright: stub smoke + deep-link/density matrix (`vite preview` + stubbed `/api`), contract path (real Go API + fixture MLB/Savant), and chaos path (fixture `PUT /_chaos` → 429/5xx/slow) |
-| **sbom** | Syft SPDX SBOM of the repo — uploaded as a workflow artifact |
+| **sbom** | Syft SPDX [SBOM](docs/README.md#a-few-terms-in-plain-words) of the repo — uploaded as a workflow artifact |
 
 #### When jobs run
 

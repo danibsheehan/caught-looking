@@ -1,6 +1,6 @@
 # Configuration
 
-Environment knobs for the Go API and the Vite SPA. Defaults match `backend/config/config.go` and local `make dev`. **Why** the cache and QPS defaults look the way they do lives in the [ADRs](adr/), not here.
+Environment knobs for the Go API and the Vite SPA. Defaults match `backend/config/config.go` and local `make dev`. **Why** the cache and QPS defaults look the way they do lives in the [ADRs](adr/), not here. Unfamiliar with terms like TTL, QPS, or CORS? See the [glossary](README.md#a-few-terms-in-plain-words).
 
 **In plain English:** Most people never need to change these. Local `make dev` works with the defaults. Tune them when you deploy, point at a different upstream, or practice load/abuse limits.
 

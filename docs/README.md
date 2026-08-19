@@ -29,6 +29,11 @@ Design decisions live as short **Architecture Decision Records (ADRs)** under [`
 | **OpenAPI** | The shared menu of API paths and response shapes. The website’s TypeScript types and the public Redoc docs come from it. |
 | **Statcast** | Pitch- and hit-tracking data (speed, launch angle, spray) from Baseball Savant. |
 | **Cloud Run / Pages** | Where the API and the website live in production (Google Cloud Run and Cloudflare Pages). |
+| **CORS** | A browser rule that decides which websites are allowed to call our API. We keep an explicit allowlist. |
+| **CSP (Content Security Policy)** | A header that tells the browser which scripts/styles/connections the site is allowed to load, to blunt injected-script attacks. |
+| **XSS (cross-site scripting)** | An attack where malicious script sneaks into a page and runs in a visitor’s browser. CSP and React’s escaping are our main defenses. |
+| **RCE (remote code execution)** | An attack that lets someone run arbitrary code on our server, typically via a compromised dependency. `govulncheck` and `npm audit` guard against known cases. |
+| **SBOM (software bill of materials)** | A generated inventory of every package the app depends on, so a new vulnerability can be checked against what we actually ship. |
 
 ## What’s in this folder
 
