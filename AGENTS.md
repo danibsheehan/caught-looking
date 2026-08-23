@@ -104,6 +104,9 @@ symlinked, auto-invoked by either tool based on the task):
   scheduled — a franchise relocation or new ballpark is roughly once-a-decade.
 - `bugbot-fix-verify` — verifies a Bugbot finding against actual code/docs/live behavior before
   fixing it, and re-verifies the fix resolves it without opening a new regression.
+- `weekly-project-update` — summarizes the week's people-relevant caught-looking changes in
+  plain language and opens (never merges) a PR in `danibsheehan.github.io` updating the "Caught
+  Looking" portfolio section.
 
 ## Constraints — do not
 
@@ -127,7 +130,9 @@ symlinked, auto-invoked by either tool based on the task):
   `project-stack.mdc`'s Workflow skills bullet and this file's Step-by-step playbooks list in
   the same change** — `make check-skills-docs` checks this drift.
 - **Commit secrets** (`.env`, credentials) or amend/force-push without being explicitly asked.
-- **Open, push, or merge a PR unless the user asks.**
+- **Open, push, or merge a PR unless the user asks.** (The one standing exception: the scheduled
+  `weekly-project-update` routine may open — never merge — a PR in `danibsheehan.github.io`; see
+  `docs/automation.md`.)
 
 ## Definition of done
 
