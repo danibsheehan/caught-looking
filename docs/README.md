@@ -15,6 +15,7 @@ If you just want to **use the app**, open [caught-looking.com](https://caught-lo
 | What we protect, and what we deliberately don’t | [Threat model](threat-model.md) |
 | Which environment variables can I set? | [Configuration](configuration.md) |
 | How does production deploy work? | [Deployment](deploy.md) |
+| Where does AI actually act on its own here, versus just assist? | [AI-assisted development & automation](automation.md) |
 | How to contribute or ship a change | [Contributing](../README.md#contributing) in the root README |
 
 Design decisions live as short **Architecture Decision Records (ADRs)** under [`adr/`](adr/). Day-to-day how-to for contributors and agents lives in [`.cursor/skills/`](../.cursor/skills/).
@@ -34,6 +35,7 @@ Design decisions live as short **Architecture Decision Records (ADRs)** under [`
 | **XSS (cross-site scripting)** | An attack where malicious script sneaks into a page and runs in a visitor’s browser. CSP and React’s escaping are our main defenses. |
 | **RCE (remote code execution)** | An attack that lets someone run arbitrary code on our server, typically via a compromised dependency. `govulncheck` and `npm audit` guard against known cases. |
 | **SBOM (software bill of materials)** | A generated inventory of every package the app depends on, so a new vulnerability can be checked against what we actually ship. |
+| **Routine** | A Claude Code cloud agent that runs on a cron schedule instead of being triggered by a person — see [AI-assisted development & automation](automation.md). |
 
 ## What’s in this folder
 
@@ -44,5 +46,6 @@ Design decisions live as short **Architecture Decision Records (ADRs)** under [`
 | [`threat-model.md`](threat-model.md) | Assets, threats, controls, and residual risks |
 | [`configuration.md`](configuration.md) | Backend and frontend environment variables |
 | [`deploy.md`](deploy.md) | Cloud Run + Cloudflare Pages ship path, secrets, rollback |
+| [`automation.md`](automation.md) | What runs unattended vs. what an AI assistant only does on request |
 
 The root [README](../README.md) is the front door: product tour, local setup, stack, and contribution path.

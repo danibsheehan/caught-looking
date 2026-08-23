@@ -320,7 +320,7 @@ Fork PRs may skip guide, coverage comments, or previews (`GITHUB_TOKEN` / secret
 - **npm** (`frontend/` — minor/patch **grouped**)
 - **GitHub Actions** (ungrouped)
 
-The grouped npm minor/patch PR auto-merges on its own once required CI passes ([`dependabot-auto-merge.yml`](.github/workflows/dependabot-auto-merge.yml)). Everything else — Go modules, GitHub Actions, and any ungrouped npm major bump — still needs a human merge; the **`dependabot-triage`** skill reads each one's changelog and required CI to classify risk, but only merges PRs you name explicitly.
+The grouped npm minor/patch PR auto-merges on its own once required CI passes ([`dependabot-auto-merge.yml`](.github/workflows/dependabot-auto-merge.yml)). Everything else — Go modules, GitHub Actions, and any ungrouped npm major bump — still needs a human merge; a weekly scheduled Claude Code routine reads each one's changelog and required CI to classify risk and post a report, but only merges PRs a person names explicitly (see [`dependabot-triage`](.cursor/skills/dependabot-triage/SKILL.md) for the logic it follows, and [AI-assisted development & automation](docs/automation.md) for the full picture of what runs unattended here vs. on request).
 
 It does **not** update README badges or Prerequisites. When a bump changes React / Vite / TypeScript / Go / CI Node majors (or TypeScript major.minor), update those docs in the same PR — CI’s `make check-stack-docs` catches drift. Review Dependabot PRs like any other change (`govulncheck` and `npm audit` still gate merges).
 

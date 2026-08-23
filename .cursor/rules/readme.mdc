@@ -1,6 +1,6 @@
 ---
 description: Keep README.md accurate (features, tokens, theme narrative, assets, run, stack, CI, config/deploy links, ADR/threat-model links); warm, audience-first tone
-globs: README.md,frontend/src/styles/_base.scss,frontend/package.json,backend/go.mod,.github/workflows/ci.yml,.cursor/rules/project-stack.mdc,AGENTS.md,docs/adr/**/*.md,docs/threat-model.md,docs/configuration.md,docs/deploy.md,docs/README.md,docs/slo.md
+globs: README.md,frontend/src/styles/_base.scss,frontend/package.json,backend/go.mod,.github/workflows/ci.yml,.cursor/rules/project-stack.mdc,AGENTS.md,docs/adr/**/*.md,docs/threat-model.md,docs/configuration.md,docs/deploy.md,docs/README.md,docs/slo.md,docs/automation.md
 alwaysApply: false
 ---
 
@@ -32,5 +32,6 @@ When editing **README.md**, global tokens in **`frontend/src/styles/_base.scss`*
 - **Configuration**: env vars in **`docs/configuration.md`** must match **`backend/config/config.go`** and **`VITE_API_BASE`** usage in **`frontend/src/api/client.ts`**. Default TTL/QPS meaning lives in **ADRs**; keep env tables factual, not a second rationale essay. README keeps a short pointer only.
 - **Deployment**: GitHub vars/secrets, one-time cloud setup, and rollback live in **`docs/deploy.md`**. Update that file (and the README pointer) when deploy workflows or required vars change.
 - **CI**: if check commands, jobs, or coverage-comment behavior change, update the README (including the **CI & quality gates** summary and Makefile tables where relevant), **`.github/workflows/ci.yml`**, and the PR template in the same spirit.
+- **AI automation**: **`docs/automation.md`**'s "runs on its own" vs. "on demand" split must match what's actually unattended — currently just `.github/workflows/dependabot-auto-merge.yml`'s scope and the weekly `dependabot-triage` routine. If either changes (new autonomous workflow, scope widens/narrows, a new scheduled routine), update `docs/automation.md` and the README **Dependabot** pointer in the same change. The underlying rule it describes — no AI-initiated merge/push/PR without a person asking — lives in `AGENTS.md`; don't let this page imply broader autonomy than that rule actually allows.
 
 Prefer short tables and copy-pasteable commands. Link to **`.github/pull_request_template.md`** for contribution expectations rather than duplicating long policy text.
