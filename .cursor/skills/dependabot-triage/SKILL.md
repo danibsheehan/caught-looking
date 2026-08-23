@@ -1,20 +1,23 @@
 ---
 name: dependabot-triage
 description: >-
-  Reviews open Dependabot PRs (Go modules, npm minor/patch group, GitHub
-  Actions), reads each one's embedded changelog and required CI status to
-  classify risk, and merges only the PRs the user explicitly names. Use when
-  asked to review or triage Dependabot PRs, do the weekly dependency review,
-  or check the Dependabot backlog.
+  Reviews open Dependabot PRs (Go modules, npm — grouped minor/patch plus
+  ungrouped majors, GitHub Actions), reads each one's embedded changelog and
+  required CI status to classify risk, and merges only the PRs the user
+  explicitly names. Use when asked to review or triage Dependabot PRs, do the
+  weekly dependency review, or check the Dependabot backlog.
 ---
 
 # Dependabot triage (caught-looking)
 
 `.github/dependabot.yml` opens weekly PRs across three ecosystems (Go modules, npm — minor/patch
-grouped, GitHub Actions — ungrouped, capped at 10 open each) with **no auto-merge configured**.
-Today that means a human reads and merges every one by hand, every week — README already asks
-for this ("Review Dependabot PRs like any other change"). This skill does the reading and risk
-classification; merging still requires the user to name which PRs.
+grouped, GitHub Actions — ungrouped, capped at 10 open each). The grouped npm-minor-and-patch PR
+auto-merges on its own once required CI passes (`.github/workflows/dependabot-auto-merge.yml`) —
+it may not even reach this triage, or only briefly. Everything else (Go modules, GitHub Actions,
+and any ungrouped npm **major** bump) still has no auto-merge configured, so a human reads and
+merges those by hand — README already asks for this ("Review Dependabot PRs like any other
+change"). This skill does the reading and risk classification for that remaining traffic; merging
+still requires the user to name which PRs.
 
 ## Order of work
 
@@ -59,11 +62,14 @@ Evaluate in this order — first match wins, so a PR never lands in two tiers:
    - A **major** version bump (or a 0.x → 1.x jump) in Go or npm.
    - A breaking/minimum-version changelog entry (see step 2).
    - Required CI red.
-3. **Low risk** — everything else: a Go or npm **patch or minor** bump (ungrouped Go minors count
-   too, including `golang.org/x/*` 0.x minors, which that ecosystem bumps routinely, and grouped
-   npm minor/patch), required CI green, no breaking/minimum-version changelog entries.
+3. **Low risk** — everything else: a Go **patch or minor** bump (ungrouped Go minors count too,
+   including `golang.org/x/*` 0.x minors, which that ecosystem bumps routinely), required CI
+   green, no breaking/minimum-version changelog entries.
 
-GitHub Actions bumps never reach tier 3, no matter how small the version delta looks.
+GitHub Actions bumps never reach tier 3, no matter how small the version delta looks. The grouped
+npm minor/patch PR auto-merges before it needs a tier — if it does show up here, required CI is
+still running (transient, ignore) or failed (treat as **Needs a look**, since auto-merge won't
+fire).
 
 ### 4. Report — do not merge yet
 
