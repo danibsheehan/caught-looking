@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - backend/apidocs/openapi.yaml
+      - docs/openapi/index.html
+      - .github/workflows/openapi-pages.yml
   workflow_dispatch:
 
 permissions:
