@@ -7,7 +7,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # LOAD_SMOKE_N (single level, back-compat) takes priority over LOAD_SMOKE_LEVELS (sweep).
-LEVELS="${LOAD_SMOKE_N:-${LOAD_SMOKE_LEVELS:-10 40 100}}"
+LEVELS="${LOAD_SMOKE_N:-${LOAD_SMOKE_LEVELS:-10 40 100 500}}"
 UP_ADDR="${LOAD_SMOKE_UPSTREAM_ADDR:-:18181}"
 API_ADDR="${LOAD_SMOKE_API_ADDR:-:18180}"
 SLOW_MS="${LOAD_SMOKE_SLOW_MS:-400}"
