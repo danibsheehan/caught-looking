@@ -113,6 +113,10 @@ Cold latency is dominated by the fixture's injected 400ms delay (by design, to f
 
 Script: [`scripts/load-smoke.sh`](../scripts/load-smoke.sh). This is a local demo / CI-optional check, not a production soak.
 
+A scheduled GitHub Actions workflow ([`perf-metrics.yml`](../.github/workflows/perf-metrics.yml))
+runs this same sweep weekly (and on demand) and keeps [`docs/perf-results.md`](perf-results.md)
+up to date, so the latest numbers are visible without needing to run anything locally.
+
 ## When to revisit architecture
 
 Same triggers as the README cost table — not vanity metrics:

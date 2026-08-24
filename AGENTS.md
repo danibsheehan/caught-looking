@@ -130,9 +130,15 @@ symlinked, auto-invoked by either tool based on the task):
   `project-stack.mdc`'s Workflow skills bullet and this file's Step-by-step playbooks list in
   the same change** — `make check-skills-docs` checks this drift.
 - **Commit secrets** (`.env`, credentials) or amend/force-push without being explicitly asked.
-- **Open, push, or merge a PR unless the user asks.** (The one standing exception: the scheduled
-  `weekly-project-update` routine may open — never merge — a PR in `danibsheehan.github.io`; see
-  `docs/automation.md`.)
+- **Merge a PR autonomously.** Merging is the step that ships — to production here, or to a live
+  site for the portfolio routine — so it always needs a person, with exactly one standing
+  exception: Dependabot auto-merge for the grouped npm minor/patch PR once required checks pass.
+  See `docs/automation.md`.
+- **Open or push a PR in an interactive session unless the user asks.** This is separate from the
+  merge rule above: a scheduled, non-interactive workflow opening a PR on its own is fine when
+  scoped to generated/mechanical content (see `docs/automation.md` for the two that do) — the
+  restriction here is about an interactive agent session acting without being asked, not about
+  PR creation being inherently risky.
 
 ## Definition of done
 
