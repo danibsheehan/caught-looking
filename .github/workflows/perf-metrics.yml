@@ -28,7 +28,14 @@ jobs:
                   cache-dependency-path: backend/go.sum
 
             - name: Run load-smoke
-              run: make load-smoke | tee /tmp/load-smoke.log
+              env:
+                  # Shared/CPU-constrained runners take longer to launch 500 concurrent Python
+                  # threads than a local machine; widen the fixture's injected delay so they
+                  # reliably land in the same singleflight window regardless of runner jitter.
+                  LOAD_SMOKE_SLOW_MS: '800'
+              run: |
+                  set -o pipefail
+                  make load-smoke | tee /tmp/load-smoke.log
 
             - name: Publish to job summary
               run: |
@@ -100,8 +107,12 @@ jobs:
                   # owned by this workflow — nothing else ever pushes to it.
                   git push --force origin "$branch"
 
-                  if gh pr view "$branch" --json number >/dev/null 2>&1; then
-                    echo "PR already open for $branch; pushed an updated commit to it."
+                  # `gh pr view` matches a PR for this branch regardless of state, so a closed
+                  # (not merged) prior PR would be found here too and wrongly skip opening a
+                  # fresh one. Filter to state=open explicitly.
+                  open_pr="$(gh pr list --head "$branch" --state open --json number -q '.[0].number // empty')"
+                  if [[ -n "$open_pr" ]]; then
+                    echo "PR #$open_pr already open for $branch; pushed an updated commit to it."
                   else
                     gh pr create \
                       --head "$branch" \
