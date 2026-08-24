@@ -28,7 +28,14 @@ jobs:
                   cache-dependency-path: backend/go.sum
 
             - name: Run load-smoke
-              run: make load-smoke | tee /tmp/load-smoke.log
+              env:
+                  # Shared/CPU-constrained runners take longer to launch 500 concurrent Python
+                  # threads than a local machine; widen the fixture's injected delay so they
+                  # reliably land in the same singleflight window regardless of runner jitter.
+                  LOAD_SMOKE_SLOW_MS: '800'
+              run: |
+                  set -o pipefail
+                  make load-smoke | tee /tmp/load-smoke.log
 
             - name: Publish to job summary
               run: |
