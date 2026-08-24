@@ -85,12 +85,38 @@ jobs:
                   a hit delta ≥ N. See [\`scripts/load-smoke.sh\`](../scripts/load-smoke.sh) for the exact assertions.
                   EOF
 
+            - name: Update README performance snapshot
+              run: |
+                  table="$(awk '/^N +cold-p50/,/^load-smoke: metrics at/' /tmp/load-smoke.log | grep -v '^load-smoke: metrics at')"
+                  updated="$(date -u '+%Y-%m-%d')"
+                  last_row="$(echo "$table" | tail -n +2 | tail -n 1)"
+                  max_n="$(echo "$last_row" | awk '{print $1}')"
+                  cold_p95="$(echo "$last_row" | awk '{print $3}')"
+                  warm_p95="$(echo "$last_row" | awk '{print $5}')"
+                  python3 - "$updated" "$max_n" "$cold_p95" "$warm_p95" <<'PY'
+                  import re, sys
+                  updated, max_n, cold_p95, warm_p95 = sys.argv[1:5]
+                  path = "README.md"
+                  text = open(path, encoding="utf-8").read()
+                  summary = (
+                      f"Warm cache-hit p95: **{warm_p95}ms** · Cold cache-miss p95: **{cold_p95}ms** · "
+                      f"Measured {updated} at up to {max_n} concurrent clients — "
+                      "[full sweep and methodology](docs/perf-results.md)."
+                  )
+                  block = f"<!-- perf-metrics:start -->\n{summary}\n<!-- perf-metrics:end -->"
+                  pattern = re.compile(r"<!-- perf-metrics:start -->.*?<!-- perf-metrics:end -->", re.DOTALL)
+                  new_text, n = pattern.subn(block, text, count=1)
+                  if n != 1:
+                      raise SystemExit("perf-metrics markers not found in README.md")
+                  open(path, "w", encoding="utf-8").write(new_text)
+                  PY
+
             - name: Open results PR if the snapshot changed
               env:
                   GH_TOKEN: ${{ github.token }}
               run: |
-                  if git diff --quiet -- docs/perf-results.md; then
-                    echo "No change in docs/perf-results.md; nothing to open a PR for."
+                  if git diff --quiet -- docs/perf-results.md README.md; then
+                    echo "No change in docs/perf-results.md or README.md; nothing to open a PR for."
                     exit 0
                   fi
 
@@ -99,7 +125,7 @@ jobs:
 
                   branch="automated/perf-results"
                   git checkout -B "$branch"
-                  git add docs/perf-results.md
+                  git add docs/perf-results.md README.md
                   git commit -m "Update load-smoke perf results snapshot"
                   # Plain --force, not --force-with-lease: each run is a fresh checkout with no
                   # remote-tracking knowledge of this branch's prior state, so --force-with-lease

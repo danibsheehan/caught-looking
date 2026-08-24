@@ -132,6 +132,14 @@ flowchart LR
   SRV -->|"Statcast only"| SAV
 ```
 
+### Performance snapshot
+
+**In plain English:** cache hits answer in single-digit milliseconds; concurrent cache misses share one upstream call instead of each triggering its own, so latency stays flat as concurrent traffic grows rather than degrading.
+
+<!-- perf-metrics:start -->
+Warm cache-hit p95: **4.8ms** · Cold cache-miss p95: **487.5ms** · Measured 2026-08-24 at up to 500 concurrent clients — [full sweep and methodology](docs/perf-results.md).
+<!-- perf-metrics:end -->
+
 ### Upstream by feature
 
 | SPA area | Primary upstream | Notes |
