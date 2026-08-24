@@ -38,7 +38,15 @@ jobs:
         run: |
           mkdir -p openapi-pages
           cp docs/openapi/index.html openapi-pages/index.html
-          cp backend/apidocs/openapi.yaml openapi-pages/openapi.yaml
+          # backend/apidocs/openapi.yaml intentionally keeps a relative `servers: - url: /`
+          # so the in-process Swagger UI at <api-host>/docs resolves same-origin (and its
+          # "Try it out" console works) in every environment -- localhost, Cloud Run, etc.
+          # This static copy is served from a different origin (docs.caught-looking.com), so
+          # a relative "/" resolves to the docs site itself and 404s. Rewrite it to the real
+          # API origin for this copy only. Keep in sync with the production alias in
+          # frontend/public/_headers (`connect-src`) if the API's Cloud Run URL changes.
+          sed 's#^  - url: /$#  - url: https://caught-looking-oskfsj2ila-uc.a.run.app#' \
+            backend/apidocs/openapi.yaml > openapi-pages/openapi.yaml
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
