@@ -19,6 +19,15 @@ jobs:
         if: ${{ github.event.repository.fork == false }}
         name: Run load-smoke and open a results PR
         runs-on: ubuntu-latest
+        env:
+            # Shared/CPU-constrained runners are slower on both sides of the burst: the client
+            # takes longer to launch concurrent threads (mitigated by the barrier in burst()),
+            # and the Go server itself takes longer to accept/schedule that many simultaneous
+            # connections on 2 shared vCPUs. Widen the fixture's injected delay well past
+            # local's 400ms default so stragglers on either side still land inside the
+            # singleflight window. Job-level (not step-level) so the later doc-regeneration
+            # step can reference the same value it actually ran with.
+            LOAD_SMOKE_SLOW_MS: '2000'
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
@@ -28,11 +37,6 @@ jobs:
                   cache-dependency-path: backend/go.sum
 
             - name: Run load-smoke
-              env:
-                  # Shared/CPU-constrained runners take longer to launch 500 concurrent Python
-                  # threads than a local machine; widen the fixture's injected delay so they
-                  # reliably land in the same singleflight window regardless of runner jitter.
-                  LOAD_SMOKE_SLOW_MS: '800'
               run: |
                   set -o pipefail
                   make load-smoke | tee /tmp/load-smoke.log
@@ -51,6 +55,7 @@ jobs:
               run: |
                   table="$(awk '/^N +cold-p50/,/^load-smoke: metrics at/' /tmp/load-smoke.log | grep -v '^load-smoke: metrics at')"
                   updated="$(date -u '+%Y-%m-%d')"
+                  slow_ms="${LOAD_SMOKE_SLOW_MS:-400}"
                   cat > docs/perf-results.md <<EOF
                   # Load-smoke perf results
 
@@ -71,12 +76,14 @@ jobs:
                   ${table}
                   \`\`\`
 
-                  **Reading it:** cold latency clusters on the fixture's injected ~400ms delay regardless of N —
-                  that flatness under increasing concurrency is the point: coalesced followers wait on the same
-                  in-flight load as the singleflight leader instead of each triggering a separate upstream call,
-                  so latency doesn't degrade as concurrent traffic grows. Warm latency (served entirely from the
-                  in-process cache) stays flat at single-digit milliseconds — comfortably inside the [SLO](slo.md)
-                  target of p95 < 100ms for warm cache hits.
+                  **Reading it:** cold latency clusters on the fixture's injected ~${slow_ms}ms delay regardless of N
+                  (wider than local's 400ms default — this run added headroom for CI-runner scheduling jitter; the
+                  absolute number is an artifact of that test delay, not a real-world figure) — the flatness under
+                  increasing concurrency is the point: coalesced followers wait on the same in-flight load as the
+                  singleflight leader instead of each triggering a separate upstream call, so latency doesn't
+                  degrade as concurrent traffic grows. Warm latency (served entirely from the in-process cache)
+                  stays flat at single-digit milliseconds — comfortably inside the [SLO](slo.md) target of
+                  p95 < 100ms for warm cache hits.
 
                   ## Coalescing proof
 
@@ -85,12 +92,43 @@ jobs:
                   a hit delta ≥ N. See [\`scripts/load-smoke.sh\`](../scripts/load-smoke.sh) for the exact assertions.
                   EOF
 
+            - name: Update README performance snapshot
+              run: |
+                  table="$(awk '/^N +cold-p50/,/^load-smoke: metrics at/' /tmp/load-smoke.log | grep -v '^load-smoke: metrics at')"
+                  updated="$(date -u '+%Y-%m-%d')"
+                  last_row="$(echo "$table" | tail -n +2 | tail -n 1)"
+                  max_n="$(echo "$last_row" | awk '{print $1}')"
+                  warm_p95="$(echo "$last_row" | awk '{print $5}')"
+                  python3 - "$updated" "$max_n" "$warm_p95" <<'PY'
+                  import re, sys
+                  updated, max_n, warm_p95 = sys.argv[1:4]
+                  path = "README.md"
+                  text = open(path, encoding="utf-8").read()
+                  # Cold-path latency is dominated by an injected fixture-only test delay (widened
+                  # further for CI-runner headroom), so its absolute value doesn't mean what it
+                  # looks like it means out of context -- don't headline it here. Warm p95 is the
+                  # real, comparable-across-runs number.
+                  summary = (
+                      f"Warm cache-hit p95: **{warm_p95}ms** (target < 100ms) · cold-miss latency "
+                      f"stays flat as concurrency scales to {max_n} clients, proving singleflight "
+                      f"coalescing rather than serialized upstream calls — measured {updated}. Cold "
+                      "numbers reflect a fixture-only injected test delay, not real-world timing — "
+                      "see [the full sweep and methodology](docs/perf-results.md)."
+                  )
+                  block = f"<!-- perf-metrics:start -->\n{summary}\n<!-- perf-metrics:end -->"
+                  pattern = re.compile(r"<!-- perf-metrics:start -->.*?<!-- perf-metrics:end -->", re.DOTALL)
+                  new_text, n = pattern.subn(block, text, count=1)
+                  if n != 1:
+                      raise SystemExit("perf-metrics markers not found in README.md")
+                  open(path, "w", encoding="utf-8").write(new_text)
+                  PY
+
             - name: Open results PR if the snapshot changed
               env:
                   GH_TOKEN: ${{ github.token }}
               run: |
-                  if git diff --quiet -- docs/perf-results.md; then
-                    echo "No change in docs/perf-results.md; nothing to open a PR for."
+                  if git diff --quiet -- docs/perf-results.md README.md; then
+                    echo "No change in docs/perf-results.md or README.md; nothing to open a PR for."
                     exit 0
                   fi
 
@@ -99,7 +137,7 @@ jobs:
 
                   branch="automated/perf-results"
                   git checkout -B "$branch"
-                  git add docs/perf-results.md
+                  git add docs/perf-results.md README.md
                   git commit -m "Update load-smoke perf results snapshot"
                   # Plain --force, not --force-with-lease: each run is a fresh checkout with no
                   # remote-tracking knowledge of this branch's prior state, so --force-with-lease
