@@ -147,9 +147,21 @@ API_PID=""
 BEFORE=""
 AFTER_COLD=""
 AFTER_WARM=""
+# `go run` forks the actual compiled binary as a child; killing just $! leaves that binary
+# running (orphaned, still bound to its port) if the parent go tool process exits first. Kill
+# the whole descendant tree so a re-run right after doesn't fail with "address already in use".
+kill_tree() {
+  local pid="$1"
+  [[ -z "$pid" ]] && return 0
+  local child
+  for child in $(pgrep -P "$pid" 2>/dev/null || true); do
+    kill_tree "$child"
+  done
+  kill "$pid" 2>/dev/null || true
+}
 cleanup() {
-  if [[ -n "${API_PID}" ]]; then kill "${API_PID}" 2>/dev/null || true; fi
-  if [[ -n "${UP_PID}" ]]; then kill "${UP_PID}" 2>/dev/null || true; fi
+  kill_tree "${API_PID}"
+  kill_tree "${UP_PID}"
   rm -f "${BEFORE:-}" "${AFTER_COLD:-}" "${AFTER_WARM:-}"
 }
 trap cleanup EXIT INT TERM

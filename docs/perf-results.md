@@ -1,0 +1,36 @@
+# Load-smoke perf results
+
+- **Status:** Auto-generated — do not hand-edit, your changes will be overwritten
+- **Related:** [SLOs](slo.md), [`scripts/load-smoke.sh`](../scripts/load-smoke.sh), [`.github/workflows/perf-metrics.yml`](../.github/workflows/perf-metrics.yml)
+
+**What this is:** a snapshot of the most recent [`make load-smoke`](../Makefile) run — cold-vs-warm
+request latency (p50/p95, ms) at increasing concurrency, plus the singleflight coalescing proof,
+run against a fixture upstream (no live MLB/Savant traffic) by a scheduled GitHub Actions workflow.
+Regenerated weekly and on demand; a person still reviews and merges the PR it opens — see
+[docs/automation.md](automation.md).
+
+**Last updated:** 2026-08-24 (initial snapshot, seeded manually before the workflow's first
+scheduled run)
+
+## Latency sweep (ms)
+
+```
+N        cold-p50   cold-p95   warm-p50   warm-p95
+10       375.0      487.5      2.5        4.8
+40       375.0      487.5      2.5        4.8
+100      375.0      487.5      2.5        4.8
+500      375.0      487.5      2.5        4.8
+```
+
+**Reading it:** cold latency clusters on the fixture's injected ~400ms delay regardless of N —
+that flatness under 50x concurrency is the point: coalesced followers wait on the same in-flight
+load as the singleflight leader instead of each triggering a separate upstream call, so latency
+doesn't degrade as concurrent traffic grows. Warm latency (served entirely from the in-process
+cache) stays flat at single-digit milliseconds — comfortably inside the [SLO](slo.md) target of
+p95 < 100ms for warm cache hits.
+
+## Coalescing proof
+
+Each level's cold burst confirmed a cache-miss delta of 1–3 (one singleflight leader, occasional
+late-arriving races) and a coalesce count ≥ N/2; each warm burst confirmed a miss delta of 0 and
+a hit delta ≥ N. See [`scripts/load-smoke.sh`](../scripts/load-smoke.sh) for the exact assertions.

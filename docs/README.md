@@ -43,6 +43,7 @@ Design decisions live as short **Architecture Decision Records (ADRs)** under [`
 | :--- | :--- |
 | [`adr/`](adr/) | Why we chose cache TTLs, outbound rate caps, and an OpenAPI contract |
 | [`slo.md`](slo.md) | Informal latency and cache-hit targets (not a paid SLA) |
+| [`perf-results.md`](perf-results.md) | Auto-generated snapshot of the latest `load-smoke` latency sweep |
 | [`threat-model.md`](threat-model.md) | Assets, threats, controls, and residual risks |
 | [`configuration.md`](configuration.md) | Backend and frontend environment variables |
 | [`deploy.md`](deploy.md) | Cloud Run + Cloudflare Pages ship path, secrets, rollback |
