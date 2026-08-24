@@ -82,13 +82,13 @@ Unit tests cover singleflight with a few goroutines; this script turns the **cos
 
 ```bash
 make load-smoke
-# optional: sweep specific concurrency levels instead of the 10/40/100 default
+# optional: sweep specific concurrency levels instead of the 10/40/100/500 default
 LOAD_SMOKE_LEVELS="10 40 100 200" make load-smoke
 # optional: single level (back-compat)
 LOAD_SMOKE_N=80 make load-smoke
 ```
 
-What it does, per concurrency level N in the sweep (default **10, 40, 100**, each against its own cache key so every level's cold burst is a genuine miss):
+What it does, per concurrency level N in the sweep (default **10, 40, 100, 500**, each against its own cache key so every level's cold burst is a genuine miss):
 
 1. Boots `e2e-upstream` with a short **slow** chaos delay on `/standings` so concurrent cold misses overlap in flight (booted once, reused across all levels).
 2. Boots the Go API pointed at that fixture (dedicated ports, rate limits off).
@@ -99,10 +99,15 @@ Ends with a summary table across levels, e.g.:
 
 ```
 N        cold-p50   cold-p95   warm-p50   warm-p95
-10       412.3      418.9      1.2        3.8
-40       405.1      430.2      1.4        4.6
-100      398.7      452.0      1.9        6.1
+10       375.0      487.5      2.5        4.8
+40       375.0      487.5      2.5        4.8
+100      375.0      487.5      2.5        4.8
+500      375.0      487.5      2.5        4.8
 ```
+
+(measured locally; cold numbers cluster on the fixture's injected 400ms delay because coalesced
+followers wait on the same in-flight load as the leader, so their observed latency tracks the
+leader's regardless of N — the histogram's fixed bucket boundaries round nearby values together)
 
 Cold latency is dominated by the fixture's injected 400ms delay (by design, to force overlap) — the number to watch there is that it stays roughly flat as N grows, evidence that singleflight is sharing one upstream call rather than N. Warm p95 is the number to compare against the `docs/slo.md` warm-cache-hit target (<100ms) above.
 

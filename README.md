@@ -454,7 +454,7 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 | `make test-e2e`           | Playwright Chromium stub smoke (`frontend/e2e/`; stubbed `/api`)        |
 | `make test-e2e-contract`  | Playwright against Go API + fixture upstream (`cmd/e2e-upstream`)       |
 | `make test-e2e-chaos`     | Playwright upstream chaos (429/5xx/slow via `PUT /_chaos`)              |
-| `make load-smoke`         | Concurrent `/standings` burst across a 10/40/100 sweep; asserts coalesce + warm hits and reports cold/warm p50/p95 latency via `/metrics` |
+| `make load-smoke`         | Concurrent `/standings` burst across a 10/40/100/500 sweep; asserts coalesce + warm hits and reports cold/warm p50/p95 latency via `/metrics` |
 | `make cover-backend`      | Go coverage summary (`backend/coverage.out`)                            |
 | `make cover-backend-html` | Same + `backend/coverage.html`                                          |
 | `make cover-frontend`     | Vitest coverage report under `frontend/coverage/`                       |
