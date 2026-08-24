@@ -115,13 +115,21 @@ burst() {
   local path="$1"
   local n="$2"
   python3 - "$API_URL" "$path" "$n" <<'PY'
-import sys, urllib.request, concurrent.futures
+import sys, threading, urllib.request, concurrent.futures
 base, path, n = sys.argv[1], sys.argv[2], int(sys.argv[3])
 url = base.rstrip("/") + path
 ok = 0
 errors = []
+# Thread creation/dispatch itself takes time, and that skew grows with N and with runner
+# load (slower/shared CI runners especially) -- without a barrier, ThreadPoolExecutor can
+# still be spinning up late threads well after the first ones already fired, so "concurrent"
+# clients arrive staggered rather than together. Block every thread here until all N are
+# ready, then release them at once, so the burst is actually simultaneous regardless of how
+# long setup took.
+start = threading.Barrier(n)
 
 def one(_):
+    start.wait(timeout=30)
     try:
         with urllib.request.urlopen(url, timeout=30) as res:
             if 200 <= res.status < 300:
