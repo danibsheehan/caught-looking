@@ -76,21 +76,35 @@ need a sidecar/exporter — real infra, not a checkbox) or log-based alerting on
 lines (more setup than this app's traffic currently justifies). Revisit if traffic or incident
 history says otherwise.
 
-## Coalesce proof (`make load-smoke`)
+## Coalesce proof + latency sweep (`make load-smoke`)
 
-Unit tests cover singleflight with a few goroutines; this script turns the **cost claim** into a measurement against fixture MLB (no live upstream, no paid load tool):
+Unit tests cover singleflight with a few goroutines; this script turns the **cost claim** into a measurement against fixture MLB (no live upstream, no paid load tool) — both a pass/fail coalescing proof and cold-vs-warm request latency read off the `http_request_duration_seconds` histogram:
 
 ```bash
 make load-smoke
-# optional: LOAD_SMOKE_N=80 make load-smoke
+# optional: sweep specific concurrency levels instead of the 10/40/100 default
+LOAD_SMOKE_LEVELS="10 40 100 200" make load-smoke
+# optional: single level (back-compat)
+LOAD_SMOKE_N=80 make load-smoke
 ```
 
-What it does:
+What it does, per concurrency level N in the sweep (default **10, 40, 100**, each against its own cache key so every level's cold burst is a genuine miss):
 
-1. Boots `e2e-upstream` with a short **slow** chaos delay on `/standings` so concurrent cold misses overlap in flight.
+1. Boots `e2e-upstream` with a short **slow** chaos delay on `/standings` so concurrent cold misses overlap in flight (booted once, reused across all levels).
 2. Boots the Go API pointed at that fixture (dedicated ports, rate limits off).
-3. **Cold burst** of N concurrent `GET /standings` — asserts miss delta is small (≈1) and `cache_coalesce_total` rises by at least N/2.
-4. **Warm burst** of N — asserts miss delta 0 and hit delta ≥ N.
+3. **Cold burst** of N concurrent `GET /standings` — asserts miss delta is small (≈1) and `cache_coalesce_total` rises by at least N/2; also computes cold p50/p95 latency (ms) from the `/metrics` delta.
+4. **Warm burst** of N — asserts miss delta 0 and hit delta ≥ N; also computes warm p50/p95 latency.
+
+Ends with a summary table across levels, e.g.:
+
+```
+N        cold-p50   cold-p95   warm-p50   warm-p95
+10       412.3      418.9      1.2        3.8
+40       405.1      430.2      1.4        4.6
+100      398.7      452.0      1.9        6.1
+```
+
+Cold latency is dominated by the fixture's injected 400ms delay (by design, to force overlap) — the number to watch there is that it stays roughly flat as N grows, evidence that singleflight is sharing one upstream call rather than N. Warm p95 is the number to compare against the `docs/slo.md` warm-cache-hit target (<100ms) above.
 
 Script: [`scripts/load-smoke.sh`](../scripts/load-smoke.sh). This is a local demo / CI-optional check, not a production soak.
 

@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
-# Prove in-process TTLCache + singleflight under concurrency against fixture upstream.
-# Cold burst: N clients → ~1 cache miss and coalesce ≫ 0. Warm burst: hits rise, miss ≈ 0.
+# Prove in-process TTLCache + singleflight under concurrency against fixture upstream,
+# and report cold-vs-warm p50/p95 request latency (from the http_request_duration_seconds
+# histogram on /metrics) at a sweep of concurrency levels.
 # No hey/k6/Locust — bash + python3 + curl only. See docs/slo.md and README cost table.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-N="${LOAD_SMOKE_N:-40}"
+# LOAD_SMOKE_N (single level, back-compat) takes priority over LOAD_SMOKE_LEVELS (sweep).
+LEVELS="${LOAD_SMOKE_N:-${LOAD_SMOKE_LEVELS:-10 40 100}}"
 UP_ADDR="${LOAD_SMOKE_UPSTREAM_ADDR:-:18181}"
 API_ADDR="${LOAD_SMOKE_API_ADDR:-:18180}"
 SLOW_MS="${LOAD_SMOKE_SLOW_MS:-400}"
 PATH_Q="${LOAD_SMOKE_PATH:-/standings}"
+ROUTE_LABEL="${PATH_Q%%\?*}"
 
 UP_PORT="${UP_ADDR#:}"
 API_PORT="${API_ADDR#:}"
@@ -53,13 +56,65 @@ else:
 PY
 }
 
+# Interpolated quantile (ms) of caught_looking_http_request_duration_seconds{route,code="2xx"}
+# over the window between two /metrics snapshots. Prints "n/a" if the window has no samples.
+histogram_quantile_ms() {
+  local before="$1" after="$2" route="$3" quantile="$4"
+  python3 - "$before" "$after" "$route" "$quantile" <<'PY'
+import re, sys
+before_path, after_path, route, q = sys.argv[1], sys.argv[2], sys.argv[3], float(sys.argv[4])
+name = "caught_looking_http_request_duration_seconds"
+
+def parse_buckets(path):
+    text = open(path, encoding="utf-8").read()
+    pat = re.compile(rf'^{re.escape(name)}_bucket\{{([^}}]*)\}}\s+([0-9.eE+-]+)\s*$', re.M)
+    out = []
+    for m in pat.finditer(text):
+        labels, val = m.group(1), float(m.group(2))
+        if f'route="{route}"' not in labels or 'code="2xx"' not in labels:
+            continue
+        le_raw = re.search(r'le="([^"]+)"', labels).group(1)
+        le = float("inf") if le_raw == "+Inf" else float(le_raw)
+        out.append((le, val))
+    out.sort(key=lambda x: x[0])
+    return out
+
+before = parse_buckets(before_path)
+after = parse_buckets(after_path)
+if not before or not after or len(before) != len(after):
+    print("n/a")
+    sys.exit(0)
+
+deltas = [(le, ca - cb) for (le, ca), (_, cb) in zip(after, before)]
+total = deltas[-1][1]
+if total <= 0:
+    print("n/a")
+    sys.exit(0)
+
+target = q * total
+prev_le, prev_cum = 0.0, 0.0
+for le, cum in deltas:
+    if cum >= target:
+        if le == float("inf"):
+            print(f"{prev_le * 1000:.1f}")
+        else:
+            span = cum - prev_cum
+            frac = 0.0 if span <= 0 else (target - prev_cum) / span
+            print(f"{(prev_le + frac * (le - prev_le)) * 1000:.1f}")
+        sys.exit(0)
+    prev_le, prev_cum = le, cum
+print(f"{deltas[-1][0] * 1000:.1f}")
+PY
+}
+
 scrape_metrics() {
   curl -sf "${API_URL}/metrics" >"$1"
 }
 
 burst() {
-  local n="$1"
-  python3 - "$API_URL" "$PATH_Q" "$n" <<'PY'
+  local path="$1"
+  local n="$2"
+  python3 - "$API_URL" "$path" "$n" <<'PY'
 import sys, urllib.request, concurrent.futures
 base, path, n = sys.argv[1], sys.argv[2], int(sys.argv[3])
 url = base.rstrip("/") + path
@@ -83,7 +138,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=n) as ex:
 if ok != n:
     print(f"load-smoke: burst got {ok}/{n} OK responses; sample errors: {errors[:3]}", file=sys.stderr)
     sys.exit(1)
-print(f"load-smoke: burst {n} OK → {url}")
+print(f"load-smoke: burst {n} OK -> {url}")
 PY
 }
 
@@ -125,57 +180,88 @@ go run . &
 API_PID=$!
 wait_http "${API_URL}/health" "api"
 
-scrape_metrics "$BEFORE"
-miss0="$(metric_value "$BEFORE" caught_looking_cache_requests_total 'result="miss"')"
-hit0="$(metric_value "$BEFORE" caught_looking_cache_requests_total 'result="hit"')"
-coal0="$(metric_value "$BEFORE" caught_looking_cache_coalesce_total)"
+# One throwaway request so the http_request_duration_seconds{route,code="2xx"} series exists
+# with all buckets before the first snapshot — otherwise the first level's "before" scrape has
+# no samples for this route at all (Prometheus only exposes observed label combos), the bucket
+# arrays don't line up, and the quantile calc reports n/a instead of a real percentile.
+curl -sf "${API_URL}${PATH_Q}" >/dev/null || true
 
-echo "load-smoke: cold burst N=${N} (expect ~1 miss, coalesce ≥ N/2)"
-burst "$N"
-scrape_metrics "$AFTER_COLD"
+# Each concurrency level gets its own cache key (distinct ?season=) so every level's cold
+# burst is a genuine cache miss, even though the API process stays up across the sweep.
+declare -a SUMMARY=()
+level_idx=0
+for n in ${LEVELS}; do
+  if [[ "${ROUTE_LABEL}" == "/standings" ]]; then
+    level_path="/standings?season=$((2001 + level_idx))"
+  else
+    level_path="${PATH_Q}"
+  fi
+  level_idx=$((level_idx + 1))
 
-miss1="$(metric_value "$AFTER_COLD" caught_looking_cache_requests_total 'result="miss"')"
-hit1="$(metric_value "$AFTER_COLD" caught_looking_cache_requests_total 'result="hit"')"
-coal1="$(metric_value "$AFTER_COLD" caught_looking_cache_coalesce_total)"
+  scrape_metrics "$BEFORE"
+  miss0="$(metric_value "$BEFORE" caught_looking_cache_requests_total 'result="miss"')"
+  hit0="$(metric_value "$BEFORE" caught_looking_cache_requests_total 'result="hit"')"
+  coal0="$(metric_value "$BEFORE" caught_looking_cache_coalesce_total)"
 
-miss_d="$(python3 -c "print(float('${miss1}')-float('${miss0}'))")"
-hit_d="$(python3 -c "print(float('${hit1}')-float('${hit0}'))")"
-coal_d="$(python3 -c "print(float('${coal1}')-float('${coal0}'))")"
+  echo "load-smoke: N=${n} cold burst (expect ~1 miss, coalesce >= N/2)"
+  burst "$level_path" "$n"
+  scrape_metrics "$AFTER_COLD"
 
-echo "load-smoke: cold deltas  miss=${miss_d}  coalesce=${coal_d}  hit=${hit_d}"
+  miss1="$(metric_value "$AFTER_COLD" caught_looking_cache_requests_total 'result="miss"')"
+  hit1="$(metric_value "$AFTER_COLD" caught_looking_cache_requests_total 'result="hit"')"
+  coal1="$(metric_value "$AFTER_COLD" caught_looking_cache_coalesce_total)"
 
-python3 - "$miss_d" "$coal_d" "$N" <<'PY'
+  miss_d="$(python3 -c "print(float('${miss1}')-float('${miss0}'))")"
+  hit_d="$(python3 -c "print(float('${hit1}')-float('${hit0}'))")"
+  coal_d="$(python3 -c "print(float('${coal1}')-float('${coal0}'))")"
+  cold_p50="$(histogram_quantile_ms "$BEFORE" "$AFTER_COLD" "$ROUTE_LABEL" 0.50)"
+  cold_p95="$(histogram_quantile_ms "$BEFORE" "$AFTER_COLD" "$ROUTE_LABEL" 0.95)"
+
+  echo "load-smoke: N=${n} cold deltas  miss=${miss_d}  coalesce=${coal_d}  hit=${hit_d}  p50=${cold_p50}ms  p95=${cold_p95}ms"
+
+  python3 - "$miss_d" "$coal_d" "$n" <<'PY'
 import sys
 miss_d, coal_d, n = float(sys.argv[1]), float(sys.argv[2]), int(sys.argv[3])
 # Allow a couple of races if the leader finishes before late joiners arrive.
 if miss_d < 1 or miss_d > 3:
-    raise SystemExit(f"cold miss delta {miss_d}: want 1–3 (singleflight leader + rare late misses)")
+    raise SystemExit(f"cold miss delta {miss_d}: want 1-3 (singleflight leader + rare late misses)")
 if coal_d < n / 2:
-    raise SystemExit(f"cold coalesce delta {coal_d}: want ≥ {n/2} (most of {n} clients shared one load)")
-print(f"load-smoke: cold OK (miss={miss_d}, coalesce={coal_d})")
+    raise SystemExit(f"cold coalesce delta {coal_d}: want >= {n/2} (most of {n} clients shared one load)")
 PY
+  echo "load-smoke: N=${n} cold OK (miss=${miss_d}, coalesce=${coal_d})"
 
-echo "load-smoke: warm burst N=${N} (expect hits ≥ N, miss ≈ 0)"
-burst "$N"
-scrape_metrics "$AFTER_WARM"
+  echo "load-smoke: N=${n} warm burst (expect hits >= N, miss ~= 0)"
+  burst "$level_path" "$n"
+  scrape_metrics "$AFTER_WARM"
 
-miss2="$(metric_value "$AFTER_WARM" caught_looking_cache_requests_total 'result="miss"')"
-hit2="$(metric_value "$AFTER_WARM" caught_looking_cache_requests_total 'result="hit"')"
+  miss2="$(metric_value "$AFTER_WARM" caught_looking_cache_requests_total 'result="miss"')"
+  hit2="$(metric_value "$AFTER_WARM" caught_looking_cache_requests_total 'result="hit"')"
 
-miss_w="$(python3 -c "print(float('${miss2}')-float('${miss1}'))")"
-hit_w="$(python3 -c "print(float('${hit2}')-float('${hit1}'))")"
+  miss_w="$(python3 -c "print(float('${miss2}')-float('${miss1}'))")"
+  hit_w="$(python3 -c "print(float('${hit2}')-float('${hit1}'))")"
+  warm_p50="$(histogram_quantile_ms "$AFTER_COLD" "$AFTER_WARM" "$ROUTE_LABEL" 0.50)"
+  warm_p95="$(histogram_quantile_ms "$AFTER_COLD" "$AFTER_WARM" "$ROUTE_LABEL" 0.95)"
 
-echo "load-smoke: warm deltas  miss=${miss_w}  hit=${hit_w}"
+  echo "load-smoke: N=${n} warm deltas  miss=${miss_w}  hit=${hit_w}  p50=${warm_p50}ms  p95=${warm_p95}ms"
 
-python3 - "$miss_w" "$hit_w" "$N" <<'PY'
+  python3 - "$miss_w" "$hit_w" "$n" <<'PY'
 import sys
 miss_w, hit_w, n = float(sys.argv[1]), float(sys.argv[2]), int(sys.argv[3])
 if miss_w > 0:
     raise SystemExit(f"warm miss delta {miss_w}: want 0 (served from in-process cache)")
 if hit_w < n:
-    raise SystemExit(f"warm hit delta {hit_w}: want ≥ {n}")
-print(f"load-smoke: warm OK (miss={miss_w}, hit={hit_w})")
+    raise SystemExit(f"warm hit delta {hit_w}: want >= {n}")
 PY
+  echo "load-smoke: N=${n} warm OK (miss=${miss_w}, hit=${hit_w})"
 
-echo "load-smoke: PASS — N=${N} clients coalesced on cold miss; warm path was cache hits only."
-echo "load-smoke: metrics at ${API_URL}/metrics (caught_looking_cache_*)."
+  SUMMARY+=("${n}|${cold_p50}|${cold_p95}|${warm_p50}|${warm_p95}")
+done
+
+echo ""
+echo "load-smoke: PASS -- latency summary (route=${ROUTE_LABEL}, ms, singleflight leader included in cold)"
+printf "%-8s %-10s %-10s %-10s %-10s\n" "N" "cold-p50" "cold-p95" "warm-p50" "warm-p95"
+for row in "${SUMMARY[@]}"; do
+  IFS='|' read -r n cp50 cp95 wp50 wp95 <<<"$row"
+  printf "%-8s %-10s %-10s %-10s %-10s\n" "$n" "$cp50" "$cp95" "$wp50" "$wp95"
+done
+echo "load-smoke: metrics at ${API_URL}/metrics (caught_looking_cache_*, caught_looking_http_request_duration_seconds)."

@@ -66,7 +66,7 @@ test-e2e-contract:
 test-e2e-chaos:
 	cd "$(PROJECT_ROOT)/frontend" && npm run test:e2e:chaos
 
-## load-smoke: prove cache singleflight under concurrency (fixture upstream + /metrics asserts)
+## load-smoke: prove cache singleflight + cold/warm p50/p95 latency across a concurrency sweep (fixture upstream + /metrics)
 load-smoke:
 	bash "$(PROJECT_ROOT)/scripts/load-smoke.sh"
 
