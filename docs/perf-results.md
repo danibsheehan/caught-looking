@@ -9,24 +9,25 @@ run against a fixture upstream (no live MLB/Savant traffic) by a scheduled GitHu
 Regenerated weekly and on demand; a person still reviews and merges the PR it opens — see
 [docs/automation.md](automation.md).
 
-**Last updated:** 2026-08-24 (initial snapshot, seeded manually before the workflow's first
-scheduled run)
+**Last updated:** 2026-08-24 · commit `087b474` · [workflow run](https://github.com/danibsheehan/caught-looking/actions/runs/32770391518)
 
 ## Latency sweep (ms)
 
 ```
-N        cold-p50   cold-p95   warm-p50   warm-p95
-10       375.0      487.5      2.5        4.8
-40       375.0      487.5      2.5        4.8
-100      375.0      487.5      2.5        4.8
-500      375.0      487.5      2.5        4.8
+N        cold-p50   cold-p95   warm-p50   warm-p95  
+10       1750.0     2425.0     2.5        4.8       
+40       1750.0     2425.0     2.5        4.8       
+100      1750.0     2425.0     2.5        4.8       
+500      1750.0     2425.0     2.5        4.8       
 ```
 
-**Reading it:** cold latency clusters on the fixture's injected ~400ms delay regardless of N —
-that flatness under 50x concurrency is the point: coalesced followers wait on the same in-flight
-load as the singleflight leader instead of each triggering a separate upstream call, so latency
-doesn't degrade as concurrent traffic grows. Warm latency (served entirely from the in-process
-cache) stays flat at single-digit milliseconds — comfortably inside the [SLO](slo.md) target of
+**Reading it:** cold latency clusters on the fixture's injected ~2000ms delay regardless of N
+(wider than local's 400ms default — this run added headroom for CI-runner scheduling jitter; the
+absolute number is an artifact of that test delay, not a real-world figure) — the flatness under
+increasing concurrency is the point: coalesced followers wait on the same in-flight load as the
+singleflight leader instead of each triggering a separate upstream call, so latency doesn't
+degrade as concurrent traffic grows. Warm latency (served entirely from the in-process cache)
+stays flat at single-digit milliseconds — comfortably inside the [SLO](slo.md) target of
 p95 < 100ms for warm cache hits.
 
 ## Coalescing proof
