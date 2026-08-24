@@ -29,10 +29,13 @@ jobs:
 
             - name: Run load-smoke
               env:
-                  # Shared/CPU-constrained runners take longer to launch 500 concurrent Python
-                  # threads than a local machine; widen the fixture's injected delay so they
-                  # reliably land in the same singleflight window regardless of runner jitter.
-                  LOAD_SMOKE_SLOW_MS: '800'
+                  # Shared/CPU-constrained runners are slower on both sides of the burst: the
+                  # client takes longer to launch concurrent threads (mitigated by the barrier
+                  # in burst()), and the Go server itself takes longer to accept/schedule that
+                  # many simultaneous connections on 2 shared vCPUs. Widen the fixture's
+                  # injected delay well past local's 400ms default so stragglers on either side
+                  # still land inside the singleflight window.
+                  LOAD_SMOKE_SLOW_MS: '2000'
               run: |
                   set -o pipefail
                   make load-smoke | tee /tmp/load-smoke.log
