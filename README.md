@@ -344,7 +344,7 @@ Also enable **Dependabot alerts** and **Dependabot security updates** under GitH
 | Backend | `backend/` — chi, MLB + Savant clients, `backend/apidocs/openapi.yaml` |
 | Docs home | [`docs/`](docs/) — map, glossary, ADRs, SLOs, threat model, [configuration](docs/configuration.md), [deploy](docs/deploy.md) |
 | README art | [`docs/readme-banner.svg`](docs/readme-banner.svg), [`docs/badge-live.svg`](docs/badge-live.svg) |
-| Load / coalesce proof | [`scripts/load-smoke.sh`](scripts/load-smoke.sh) — `make load-smoke` (fixture upstream, no live MLB) |
+| Load / coalesce proof + latency sweep | [`scripts/load-smoke.sh`](scripts/load-smoke.sh) — `make load-smoke` (fixture upstream, no live MLB) |
 
 ```
 backend/    # Go HTTP API, MLB + Savant clients, handlers, models
@@ -454,7 +454,7 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 | `make test-e2e`           | Playwright Chromium stub smoke (`frontend/e2e/`; stubbed `/api`)        |
 | `make test-e2e-contract`  | Playwright against Go API + fixture upstream (`cmd/e2e-upstream`)       |
 | `make test-e2e-chaos`     | Playwright upstream chaos (429/5xx/slow via `PUT /_chaos`)              |
-| `make load-smoke`         | Concurrent `/standings` burst; asserts coalesce + warm hits via `/metrics` |
+| `make load-smoke`         | Concurrent `/standings` burst across a 10/40/100 sweep; asserts coalesce + warm hits and reports cold/warm p50/p95 latency via `/metrics` |
 | `make cover-backend`      | Go coverage summary (`backend/coverage.out`)                            |
 | `make cover-backend-html` | Same + `backend/coverage.html`                                          |
 | `make cover-frontend`     | Vitest coverage report under `frontend/coverage/`                       |
