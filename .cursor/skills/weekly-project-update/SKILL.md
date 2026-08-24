@@ -1,8 +1,8 @@
 ---
 name: weekly-project-update
 description: >-
-  Summarizes the past week's changes to caught-looking in plain, people-friendly
-  language and opens (never merges) a PR against danibsheehan/danibsheehan.github.io
+  Summarizes the past week's changes to caught-looking in a warm, punchy, dual-audience
+  voice and opens (never merges) a PR against danibsheehan/danibsheehan.github.io
   updating the "Caught Looking" project section — a "Recent updates" blurb, and the
   "About this" prose when the week included something structurally notable. Use for
   the weekly portfolio-update routine, or when asked to summarize recent caught-looking
@@ -13,7 +13,7 @@ description: >-
 
 `danibsheehan/danibsheehan.github.io` has a static "Caught Looking" project section
 (`projects/index.html`, inside `#project-caught-looking`) that goes stale as this app evolves.
-This skill drafts a short, non-technical summary of what changed in `caught-looking` over the
+This skill drafts a short summary of what changed in `caught-looking` over the
 past week and opens a PR in the portfolio repo to keep that section current. It never touches
 `caught-looking` itself, and it never merges the PR it opens — see [`docs/automation.md`](../../../docs/automation.md)
 for the autonomy boundary this skill operates under.
@@ -44,10 +44,26 @@ a week with no people-relevant signal.
 
 ### 3. Draft the blurb
 
-2-4 sentences, plain language, no PR numbers, no commit hashes, no internal jargon (no "TTL",
-"QPS", "OpenAPI drift" — describe the outcome, not the mechanism). Match the tone already used in
-`projects/index.html`'s existing Caught Looking prose, e.g. "It's a work in progress, but already
-a solid sandbox for anyone who wants to know why a team is winning, not just that they are."
+2-4 sentences. Voice:
+
+- **Warm and friendly** — write like a person genuinely excited about the thing they built, not
+  a changelog bot. Match the tone already used in `projects/index.html`'s existing Caught Looking
+  prose, e.g. "It's a work in progress, but already a solid sandbox for anyone who wants to know
+  why a team is winning, not just that they are."
+- **Punchy** — short sentences land harder than a compound one padded with qualifiers. Cut hedges
+  ("essentially," "basically," "in order to"). One well-placed short sentence can be a full beat
+  on its own.
+- **Human, not AI-slop** — no PR numbers, no commit hashes, no listicle throat-clearing ("In this
+  update, we..."), no empty superlatives ("game-changing," "seamless," "robust"), no em-dash-heavy
+  triplets. Say the specific true thing that happened, not a generic shape a sentence like this
+  tends to take.
+- **Dual-audience, not lowest-common-denominator** — this portfolio is read by non-technical
+  visitors and by engineers sizing up the work. Don't strip out real technical detail; *translate*
+  it so both readers get something. Name the actual mechanism when it's the interesting part (a
+  caching layer, a race condition, a rate limit), then earn it with a plain-language reason a
+  non-engineer still follows — e.g. "fixed a bug where two people loading the same game at once
+  could get served stale data" beats both "fixed a caching bug" (too vague for an engineer) and
+  "fixed a singleflight race in the TTL cache" (opaque to everyone else).
 
 ### 4. Decide if "About this" needs a rewrite
 
@@ -89,8 +105,12 @@ skill's job ends at opening it.
 - Letting "Recent updates" accumulate more than the current week's entry.
 - Rewriting "About this" for a routine week (dependency bumps, minor fixes) — save that rewrite
   for genuinely structural changes.
-- Inventing or embellishing changes that didn't happen, or leaking internal implementation detail
-  (cache TTLs, rate limits, endpoint names) into a portfolio-facing blurb.
+- Inventing or embellishing changes that didn't happen.
+- Naming a mechanism (a cache, a rate limit, a race condition) without translating *why it
+  mattered* in the same breath — technical detail earns its place by serving the story, not by
+  demonstrating it exists.
+- Writing like a changelog bot: listicle openers, empty superlatives, hedging qualifiers, generic
+  AI-shaped sentences that could describe any project's commit history.
 - Opening a PR for a week with nothing people-relevant to report.
 
 ## Reference
