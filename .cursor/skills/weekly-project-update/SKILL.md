@@ -33,14 +33,22 @@ is read-only.
 
 ### 2. Filter for people-relevant signal
 
-Skip pure dependency bumps (Dependabot titles), CI/lint-only churn, and doc-only drift fixes
-unless nothing else happened that week — then a quieter week is fine to say plainly. Prioritize:
-user-facing features, real bug fixes, performance/hardening work, and any genuine "lesson
-learned" (a bug that revealed a wrong assumption, a fix that changed how something is cached or
-validated, etc).
+Skip pure dependency bumps (Dependabot version-bump titles with no accompanying story) and
+doc-only drift fixes (README/rule wording, stack-doc sync) unless nothing else happened that
+week — then a quieter week is fine to say plainly. Prioritize:
 
-If there's nothing worth reporting (a quiet week, only chores), stop here — do not open a PR for
-a week with no people-relevant signal.
+- **User-facing features** — new pages, new data on existing pages, UX changes.
+- **Real bug fixes and performance/hardening work**, and any genuine "lesson learned" (a bug that
+  revealed a wrong assumption, a fix that changed how something is cached or validated, etc).
+- **AI agent usage and improvements** — a new or changed Claude Code / Cursor skill, a new
+  autonomous or scheduled routine, a change to what an agent is trusted to do unattended (like
+  this skill's own auto-merge or read-only boundaries). This project's portfolio story is partly
+  about *how* it's built, so agent-workflow changes are people-relevant even when no app code
+  moved — don't fold them into "CI/automation tooling" and skip them as a chore.
+
+If there's nothing worth reporting under any of the above (a quiet week — only dependency bumps
+and doc wording fixes, no new or changed skills/routines), stop here — do not open a PR for a
+week with no people-relevant signal.
 
 ### 3. Draft the blurb
 
