@@ -52,8 +52,6 @@
 New to terms like **TTL**, **QPS**, or **singleflight**? Plain-language
 definitions: [glossary](docs/README.md#a-few-terms-in-plain-words).
 
-**Jump:** [What you can explore](#what-you-can-explore) · [Architecture](#architecture) · [Design tokens](#design-tokens) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Run locally](#run-locally) · [Contributing](#contributing) · [Docs home](docs/)
-
 ---
 
 ## What you can explore
