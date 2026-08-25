@@ -21,6 +21,23 @@
 >
 > **Run it locally:** `make install` then `make dev` — API on **`:8080`**, site on **`:5173`**, browser calls **`/api`** through the Vite proxy.
 
+## Contents
+
+- [Start here](#start-here)
+- [What you can explore](#what-you-can-explore)
+- [Architecture](#architecture)
+- [Design tokens](#design-tokens)
+- [Tech stack](#tech-stack)
+- [Automation](#automation)
+- [Project layout](#project-layout)
+- [Prerequisites](#prerequisites)
+- [Editor setup](#editor-setup)
+- [Run locally](#run-locally)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Start here
 
 | I want to… | Go here |
@@ -34,8 +51,6 @@
 
 New to terms like **TTL**, **QPS**, or **singleflight**? Plain-language
 definitions: [glossary](docs/README.md#a-few-terms-in-plain-words).
-
-**Jump:** [What you can explore](#what-you-can-explore) · [Architecture](#architecture) · [Design tokens](#design-tokens) · [Tech stack](#tech-stack) · [Project layout](#project-layout) · [Run locally](#run-locally) · [Contributing](#contributing) · [Docs home](docs/)
 
 ---
 
@@ -335,6 +350,12 @@ It does **not** update README badges or Prerequisites. When a bump changes React
 Also enable **Dependabot alerts** and **Dependabot security updates** under GitHub **Settings → Code security** for advisory fix PRs outside the weekly cadence.
 
 </details>
+
+## Automation
+
+**In plain English:** the grouped npm minor/patch Dependabot PR merges itself once CI is green (see [CI & quality gates → Dependabot](#dependabot) above); everything riskier — Go modules, GitHub Actions bumps, npm majors — still needs a person. The other piece runs outside this repo entirely and never writes to it: a scheduled Claude Code routine, defined in [`danibsheehan/portfolio-automation`](https://github.com/danibsheehan/portfolio-automation)'s [`weekly-project-update`](https://github.com/danibsheehan/portfolio-automation/blob/main/.cursor/skills/weekly-project-update/SKILL.md) skill, reads this repo once a week alongside three others and — only when there's something people-relevant to report — opens a PR against [danibsheehan.github.io](https://github.com/danibsheehan/danibsheehan.github.io) updating this project's page.
+
+See [AI-assisted development & automation](docs/automation.md) for the full table of what runs unattended here vs. on request, and [`portfolio-automation`'s README](https://github.com/danibsheehan/portfolio-automation#autonomy-boundary) for the cross-repo autonomy boundary.
 
 ---
 
