@@ -104,9 +104,10 @@ symlinked, auto-invoked by either tool based on the task):
   scheduled — a franchise relocation or new ballpark is roughly once-a-decade.
 - `bugbot-fix-verify` — verifies a Bugbot finding against actual code/docs/live behavior before
   fixing it, and re-verifies the fix resolves it without opening a new regression.
-- `weekly-project-update` — summarizes the week's people-relevant caught-looking changes in
-  plain language and opens (never merges) a PR in `danibsheehan.github.io` updating the "Caught
-  Looking" portfolio section.
+- `weekly-project-update` — summarizes the week's people-relevant changes across
+  caught-looking and Danielle's other portfolio-linked repos (musing, baseball-collection,
+  gotta-catch-em-all) in plain language, opening (never merging) one portfolio PR per repo with
+  real signal.
 
 ## Constraints — do not
 

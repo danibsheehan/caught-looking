@@ -21,7 +21,7 @@ alwaysApply: true
   - **`coverage-gap-diagnosis`** — name the specific untested branches in changed files, not just a coverage percentage
   - **`venue-data-sync`** — check `mlbVenueFieldDimensions.ts` against the live MLB API after a team relocation or new ballpark
   - **`bugbot-fix-verify`** — verify a Bugbot finding against ground truth before fixing, and re-verify the fix resolves it without a new regression
-  - **`weekly-project-update`** — summarize the week's people-relevant changes in plain language and open (never merge) a PR in `danibsheehan.github.io` updating the portfolio's Caught Looking section
+  - **`weekly-project-update`** — summarize the week's people-relevant changes across caught-looking and Danielle's other portfolio-linked repos in plain language, opening (never merging) one portfolio PR per repo with real signal
 - **Durable rationale** (update with matching skills when decisions change): **`docs/adr/`** (cache TTLs, QPS, OpenAPI), **`docs/threat-model.md`**
 - **Agent definition of done**:
   - **Task done**: follow scoped rules/skills for files you touched; ensure frontend edits are Prettier-clean (`.cursor/hooks/prettier-frontend.sh` on `afterFileEdit`, plus **`frontend-prettier`**); run the **smallest** relevant check (focused package tests, `make check-openapi` if the API contract changed). Do **not** require full CI for every small edit.

@@ -1,35 +1,51 @@
 ---
 name: weekly-project-update
 description: >-
-  Summarizes the past week's changes to caught-looking in a warm, punchy, dual-audience
-  voice and opens (never merges) a PR against danibsheehan/danibsheehan.github.io
-  updating the "Caught Looking" project section — a "Recent updates" blurb, and the
-  "About this" prose when the week included something structurally notable. Use for
-  the weekly portfolio-update routine, or when asked to summarize recent caught-looking
-  changes for the portfolio site.
+  Summarizes the past week's changes across Danielle's portfolio-linked repos
+  (caught-looking, musing, baseball-collection, gotta-catch-em-all) in a warm, punchy,
+  dual-audience voice and opens (never merges) one PR per repo with real signal
+  against danibsheehan/danibsheehan.github.io, updating that repo's project section —
+  a "Recent updates" blurb, and the "About this" prose when the week included
+  something structurally notable. Use for the weekly portfolio-update routine, or
+  when asked to summarize recent changes in any of these repos for the portfolio site.
 ---
 
-# Weekly project update (caught-looking → portfolio)
+# Weekly project update (portfolio-linked repos → portfolio)
 
-`danibsheehan/danibsheehan.github.io` has a static "Caught Looking" project section
-(`projects/index.html`, inside `#project-caught-looking`) that goes stale as this app evolves.
-This skill drafts a short summary of what changed in `caught-looking` over the
-past week and opens a PR in the portfolio repo to keep that section current. It never touches
-`caught-looking` itself, and it never merges the PR it opens — see [`docs/automation.md`](../../../docs/automation.md)
-for the autonomy boundary this skill operates under.
+`danibsheehan/danibsheehan.github.io` has a static project section per repo
+(`projects/index.html`) that goes stale as each app evolves. This skill drafts a short summary
+of what changed in each *source* repo over the past week and opens a PR per repo (only for repos
+with real signal that week) in the portfolio repo to keep those sections current. It never
+touches the source repos, and it never merges any PR it opens — see
+[`docs/automation.md`](../../../docs/automation.md) for the autonomy boundary this skill
+operates under.
+
+## Repos covered
+
+| Source repo | Portfolio section anchor | "About this" label id |
+| --- | --- | --- |
+| `danibsheehan/caught-looking` | `#project-caught-looking` | `caught-looking-build-label` |
+| `danibsheehan/musing` | `#project-musing` | `musing-build-label` |
+| `danibsheehan/baseball-collection` | `#project-baseball` | `baseball-build-label` |
+| `danibsheehan/gotta-catch-em-all` | `#project-pokemon-battle-royale` | `pokemon-build-label` |
+
+Run every step below **once per source repo**, independently — one repo's quiet week (skip) or
+loud week (About-this rewrite) never affects another's.
 
 ## Order of work
 
-### 1. Gather the week's changes (caught-looking, read-only)
+### 1. Gather the week's changes (source repo, read-only)
 
 ```bash
-gh pr list --repo danibsheehan/caught-looking --state merged --search "merged:>=<7-days-ago-date>" \
+gh pr list --repo <source-repo> --state merged --search "merged:>=<7-days-ago-date>" \
   --json number,title,body,mergedAt --limit 100
 ```
 
-Falls back to `git log --since="7 days ago" --oneline` on `main` if `gh` PR search comes up
-short (e.g. commits merged without a PR). Do not modify anything in `caught-looking` — this step
-is read-only.
+Falls back to `git log --since="7 days ago" --oneline` on that repo's default branch if `gh` PR
+search comes up short (e.g. commits merged without a PR). Do not modify anything in the source
+repo — this step is read-only. (A caller can widen the lookback window for a one-time backfill —
+e.g. 14 days for a repo that's never had a "Recent updates" section — but the standing weekly
+routine always uses 7 days.)
 
 ### 2. Filter for people-relevant signal
 
@@ -80,21 +96,28 @@ something structurally notable — a new major feature, a real architecture chan
 source, a new page). Routine fixes, perf tuning, and dependency work never trigger this; leave
 those paragraphs alone in an ordinary week.
 
-### 5. Edit the portfolio repo
+### 5. Edit the portfolio repo — one branch and PR per repo with signal
 
 ```bash
 gh repo clone danibsheehan/danibsheehan.github.io /tmp/danibsheehan-site -- --depth 1
 ```
 
-Branch off `master`. Edit `projects/index.html`:
+For each source repo that had people-relevant signal (step 2), branch off `master` fresh (a
+separate branch per source repo, e.g. `weekly-update/<source-repo-slug>`) and edit
+`projects/index.html`:
 
-- Add or replace a "Recent updates" block inside the `#project-caught-looking` article. It holds
-  **only the current week's blurb** — replace it in place each run, never append to a growing
-  list. Reuse the article's existing `trip-story__*` BEM-style class naming (e.g. the
-  `trip-story__grid-label` / `trip-story__prose` pair already used for "About this") rather than
-  inventing new markup or CSS; check `assets/css/` for the closest existing block before adding
-  any new rule.
-- If step 4 said yes, revise the `trip-story__prose` "About this" paragraphs in the same PR.
+- Add or replace a "Recent updates" block inside that repo's project article (see the table
+  above for its anchor). It holds **only the current week's blurb** — replace it in place each
+  run, never append to a growing list. Reuse that article's existing `trip-story__*` BEM-style
+  class naming (the `trip-story__grid-label` / `trip-story__prose` pair already used for "About
+  this" in the same article) rather than inventing new markup or CSS; check `assets/css/` for the
+  closest existing block before adding any new rule.
+- If step 4 said yes for that repo, revise its `trip-story__prose` "About this" paragraphs in the
+  same PR.
+
+Each PR touches only its own repo's article — sections for different repos live in
+non-overlapping parts of the same file, so independent PRs from independent branches merge
+cleanly regardless of order.
 
 ### 6. Open the PR — never merge it
 
@@ -102,15 +125,16 @@ Branch off `master`. Edit `projects/index.html`:
 gh pr create --repo danibsheehan/danibsheehan.github.io --title "..." --body "..."
 ```
 
-Why-first PR description: what changed in caught-looking this week, in the same plain language as
-the blurb itself. **Do not merge this PR.** Merging is always a manual, separate decision — this
-skill's job ends at opening it.
+One PR per source repo with signal (skip repos with nothing to report — see step 2). Why-first PR
+description: what changed in that source repo this week, in the same plain language as the blurb
+itself. **Do not merge any of these PRs.** Merging is always a manual, separate decision — this
+skill's job ends at opening them.
 
 ## Anti-patterns
 
-- Editing anything in `caught-looking` itself — this skill only reads that repo.
-- Merging the portfolio PR, or leaving it in a state that looks pre-approved.
-- Letting "Recent updates" accumulate more than the current week's entry.
+- Editing anything in a source repo itself — this skill only reads those repos.
+- Merging a portfolio PR, or leaving one in a state that looks pre-approved.
+- Letting a "Recent updates" block accumulate more than the current week's entry.
 - Rewriting "About this" for a routine week (dependency bumps, minor fixes) — save that rewrite
   for genuinely structural changes.
 - Inventing or embellishing changes that didn't happen.
@@ -119,12 +143,14 @@ skill's job ends at opening it.
   demonstrating it exists.
 - Writing like a changelog bot: listicle openers, empty superlatives, hedging qualifiers, generic
   AI-shaped sentences that could describe any project's commit history.
-- Opening a PR for a week with nothing people-relevant to report.
+- Opening a PR for a repo whose week had nothing people-relevant to report.
+- Blending signal from two source repos into one PR, or one repo's blurb leaking details from
+  another repo's week.
 
 ## Reference
 
-- Target section: `projects/index.html`, `#project-caught-looking` article, in
-  `danibsheehan/danibsheehan.github.io`.
+- Target sections: `projects/index.html` in `danibsheehan/danibsheehan.github.io` — see the
+  "Repos covered" table above for each source repo's anchor and label id.
 - Autonomy boundary: [`docs/automation.md`](../../../docs/automation.md) — "opens, never merges"
   is the guardrail for this specific routine, distinct from the read-only
   [`dependabot-triage`](../dependabot-triage/SKILL.md) routine.
