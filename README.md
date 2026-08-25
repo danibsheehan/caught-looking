@@ -21,6 +21,23 @@
 >
 > **Run it locally:** `make install` then `make dev` — API on **`:8080`**, site on **`:5173`**, browser calls **`/api`** through the Vite proxy.
 
+## Contents
+
+- [Start here](#start-here)
+- [What you can explore](#what-you-can-explore)
+- [Architecture](#architecture)
+- [Design tokens](#design-tokens)
+- [Tech stack](#tech-stack)
+- [Automation](#automation)
+- [Project layout](#project-layout)
+- [Prerequisites](#prerequisites)
+- [Editor setup](#editor-setup)
+- [Run locally](#run-locally)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Start here
 
 | I want to… | Go here |
