@@ -4,13 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"caught-looking/backend/models"
 
-	"github.com/go-chi/chi/v5"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -57,9 +54,8 @@ type mlbBoxscoreTeams struct {
 
 // GameTimeline returns inning-by-inning runs from the linescore feed.
 func (h *Handlers) GameTimeline(w http.ResponseWriter, r *http.Request) {
-	pkStr := strings.TrimSpace(chi.URLParam(r, "gamePk"))
-	gamePk, err := strconv.ParseInt(pkStr, 10, 64)
-	if err != nil || gamePk <= 0 {
+	gamePk, pkStr, err := parseGamePk(r)
+	if err != nil {
 		respondAPIError(w, http.StatusBadRequest, "invalid gamePk")
 		return
 	}

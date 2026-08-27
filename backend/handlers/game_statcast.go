@@ -12,7 +12,6 @@ import (
 
 	"caught-looking/backend/models"
 
-	"github.com/go-chi/chi/v5"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,9 +21,8 @@ const statcastSingleGamePath = "/statcast_search/csv?all=true&type=details&game_
 
 // GameStatcast returns Statcast batted-ball rows (launch speed / angle) for a single game from Baseball Savant CSV.
 func (h *Handlers) GameStatcast(w http.ResponseWriter, r *http.Request) {
-	pkStr := strings.TrimSpace(chi.URLParam(r, "gamePk"))
-	gamePk, err := strconv.ParseInt(pkStr, 10, 64)
-	if err != nil || gamePk <= 0 {
+	gamePk, pkStr, err := parseGamePk(r)
+	if err != nil {
 		respondAPIError(w, http.StatusBadRequest, "invalid gamePk")
 		return
 	}

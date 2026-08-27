@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 const (
@@ -19,6 +21,7 @@ var (
 	errInvalidLimit       = errors.New("invalid limit")
 	errTwoPlayerIDsFormat = errors.New("ids must be two comma-separated values")
 	errInvalidPlayerIDs   = errors.New("invalid player ids")
+	errInvalidGamePk      = errors.New("invalid gamePk")
 )
 
 // parseSeasonOrDefault returns defaultSeason when raw is empty; otherwise parses a year in [1900, 2100].
@@ -58,6 +61,16 @@ func parseTwoPlayerIDs(raw string) (id1, id2 int64, err error) {
 		return 0, 0, errInvalidPlayerIDs
 	}
 	return id1, id2, nil
+}
+
+// parseGamePk parses the "gamePk" chi URL param as a positive MLB game id.
+func parseGamePk(r *http.Request) (gamePk int64, pkStr string, err error) {
+	pkStr = strings.TrimSpace(chi.URLParam(r, "gamePk"))
+	gamePk, err = strconv.ParseInt(pkStr, 10, 64)
+	if err != nil || gamePk <= 0 {
+		return 0, "", errInvalidGamePk
+	}
+	return gamePk, pkStr, nil
 }
 
 // respondTwoPlayerIDsError writes the standard 400 for a parseTwoPlayerIDs error: a fixed

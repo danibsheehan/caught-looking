@@ -5,19 +5,15 @@ import (
 	"context"
 	"encoding/csv"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"caught-looking/backend/models"
-
-	"github.com/go-chi/chi/v5"
 )
 
 // GameStatcastPitches returns Statcast pitch-level rows (plate location, pitch type) for one game from Savant CSV.
 func (h *Handlers) GameStatcastPitches(w http.ResponseWriter, r *http.Request) {
-	pkStr := strings.TrimSpace(chi.URLParam(r, "gamePk"))
-	gamePk, err := strconv.ParseInt(pkStr, 10, 64)
-	if err != nil || gamePk <= 0 {
+	gamePk, pkStr, err := parseGamePk(r)
+	if err != nil {
 		respondAPIError(w, http.StatusBadRequest, "invalid gamePk")
 		return
 	}
