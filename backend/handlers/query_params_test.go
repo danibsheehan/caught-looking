@@ -1,9 +1,23 @@
 package handlers
 
 import (
+	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/go-chi/chi/v5"
 )
+
+// newGamePkRequest builds a request with a chi route context carrying the given "gamePk" URL param,
+// matching how parseGamePk reads it via chi.URLParam in the real router.
+func newGamePkRequest(gamePk string) *http.Request {
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("gamePk", gamePk)
+	req := httptest.NewRequest(http.MethodGet, "/games/"+gamePk+"/boxscore", nil)
+	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+}
 
 func TestParseSeasonOrDefault(t *testing.T) {
 	t.Parallel()
@@ -59,5 +73,25 @@ func TestParseTwoPlayerIDs(t *testing.T) {
 	}
 	if _, _, err := parseTwoPlayerIDs("x,1"); !errors.Is(err, errInvalidPlayerIDs) {
 		t.Fatalf("parse: %v", err)
+	}
+}
+
+func TestParseGamePk(t *testing.T) {
+	t.Parallel()
+	gamePk, pkStr, err := parseGamePk(newGamePkRequest("745444"))
+	if err != nil || gamePk != 745444 || pkStr != "745444" {
+		t.Fatalf("ok: %d %q %v", gamePk, pkStr, err)
+	}
+	if _, _, err := parseGamePk(newGamePkRequest("0")); !errors.Is(err, errInvalidGamePk) {
+		t.Fatalf("zero: %v", err)
+	}
+	if _, _, err := parseGamePk(newGamePkRequest("-1")); !errors.Is(err, errInvalidGamePk) {
+		t.Fatalf("negative: %v", err)
+	}
+	if _, _, err := parseGamePk(newGamePkRequest("abc")); !errors.Is(err, errInvalidGamePk) {
+		t.Fatalf("non-numeric: %v", err)
+	}
+	if _, _, err := parseGamePk(newGamePkRequest("")); !errors.Is(err, errInvalidGamePk) {
+		t.Fatalf("empty: %v", err)
 	}
 }
