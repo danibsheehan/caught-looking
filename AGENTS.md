@@ -141,6 +141,7 @@ symlinked, auto-invoked by either tool based on the task):
 
 - **Task done**: follow the scoped rule/skill for files touched; keep frontend edits
   Prettier-clean; run the smallest relevant check (focused package tests, `make check-openapi`
-  if the API contract changed). Full CI is not required for every small edit.
+  if the API contract changed). Full CI is not required for every small edit. For larger or
+  risky changes, run `/code-review` manually before committing to catch issues early.
 - **PR done**: `make ci-local` green, then follow the `pr-ready` skill (PR template filled,
   summary leads with *why*, no secrets).
