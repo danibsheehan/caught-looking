@@ -115,9 +115,6 @@ func upstreamRetryable(err error) bool {
 	return false
 }
 
-// mlbRetryable is kept for existing tests; prefer upstreamRetryable.
-func mlbRetryable(err error) bool { return upstreamRetryable(err) }
-
 func truncate(b []byte, n int) string {
 	s := string(b)
 	if len(s) <= n {

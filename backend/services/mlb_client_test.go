@@ -21,7 +21,7 @@ func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
 }
 
-// mlbTestNetTimeout implements net.Error with Timeout() == true for mlbRetryable tests.
+// mlbTestNetTimeout implements net.Error with Timeout() == true for upstreamRetryable tests.
 type mlbTestNetTimeout struct{}
 
 func (mlbTestNetTimeout) Error() string   { return "timeout" }
@@ -182,7 +182,7 @@ func TestMLBClient_Get_retriesAfterSlowHeaders(t *testing.T) {
 	}
 }
 
-func Test_mlbRetryable(t *testing.T) {
+func Test_upstreamRetryable(t *testing.T) {
 	tests := []struct {
 		name string
 		err  error
@@ -206,8 +206,8 @@ func Test_mlbRetryable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := mlbRetryable(tt.err); got != tt.want {
-				t.Fatalf("mlbRetryable(%v) = %v want %v", tt.err, got, tt.want)
+			if got := upstreamRetryable(tt.err); got != tt.want {
+				t.Fatalf("upstreamRetryable(%v) = %v want %v", tt.err, got, tt.want)
 			}
 		})
 	}
