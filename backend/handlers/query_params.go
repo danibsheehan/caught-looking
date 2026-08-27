@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -57,4 +58,14 @@ func parseTwoPlayerIDs(raw string) (id1, id2 int64, err error) {
 		return 0, 0, errInvalidPlayerIDs
 	}
 	return id1, id2, nil
+}
+
+// respondTwoPlayerIDsError writes the standard 400 for a parseTwoPlayerIDs error: a fixed
+// message for the two-comma-separated-values format error, or fallback for anything else.
+func respondTwoPlayerIDsError(w http.ResponseWriter, err error, fallback string) {
+	if errors.Is(err, errTwoPlayerIDsFormat) {
+		respondAPIError(w, http.StatusBadRequest, "query ids must be two comma-separated MLB person ids")
+		return
+	}
+	respondAPIError(w, http.StatusBadRequest, fallback)
 }
