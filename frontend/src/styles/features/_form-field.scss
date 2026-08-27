@@ -37,9 +37,13 @@
 }
 
 .form-field__input--wide,
-.players-compare__input--wide,
-.player-picker__input--wide {
+.players-compare__input--wide {
   width: min(100%, 11rem);
+}
+
+.player-picker__input--wide {
+  // Wide enough for the full "Type last name or full name…" placeholder.
+  width: min(100%, 16rem);
 }
 
 .form-field__input--date {
