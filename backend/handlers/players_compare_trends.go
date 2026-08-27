@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/url"
 	"sort"
@@ -53,11 +52,7 @@ type mlbPeopleGameLogPayload struct {
 func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Request) {
 	id1, id2, err := parseTwoPlayerIDs(r.URL.Query().Get("ids"))
 	if err != nil {
-		if errors.Is(err, errTwoPlayerIDsFormat) {
-			respondAPIError(w, http.StatusBadRequest, "query ids must be two comma-separated MLB person ids")
-			return
-		}
-		respondAPIError(w, http.StatusBadRequest, "invalid ids")
+		respondTwoPlayerIDsError(w, err, "invalid ids")
 		return
 	}
 
@@ -253,11 +248,7 @@ func (h *Handlers) fetchPlayerYearByYear(ctx context.Context, id int64, group, m
 func (h *Handlers) PlayersCompareGameLog(w http.ResponseWriter, r *http.Request) {
 	id1, id2, err := parseTwoPlayerIDs(r.URL.Query().Get("ids"))
 	if err != nil {
-		if errors.Is(err, errTwoPlayerIDsFormat) {
-			respondAPIError(w, http.StatusBadRequest, "query ids must be two comma-separated MLB person ids")
-			return
-		}
-		respondAPIError(w, http.StatusBadRequest, "invalid ids")
+		respondTwoPlayerIDsError(w, err, "invalid ids")
 		return
 	}
 

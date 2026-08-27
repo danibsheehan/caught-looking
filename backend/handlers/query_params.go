@@ -72,3 +72,13 @@ func parseGamePk(r *http.Request) (gamePk int64, pkStr string, err error) {
 	}
 	return gamePk, pkStr, nil
 }
+
+// respondTwoPlayerIDsError writes the standard 400 for a parseTwoPlayerIDs error: a fixed
+// message for the two-comma-separated-values format error, or fallback for anything else.
+func respondTwoPlayerIDsError(w http.ResponseWriter, err error, fallback string) {
+	if errors.Is(err, errTwoPlayerIDsFormat) {
+		respondAPIError(w, http.StatusBadRequest, "query ids must be two comma-separated MLB person ids")
+		return
+	}
+	respondAPIError(w, http.StatusBadRequest, fallback)
+}
