@@ -1,7 +1,8 @@
-import { useEffect, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import { fetchPlayersSearch } from '../../api/client';
-import { isAbortError } from '../../hooks/useAsyncResource';
-import type { PlayerSearchHit } from '../../types/api.compat';
+import { useAsyncResource } from '../../hooks/useAsyncResource';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import type { PlayerSearchHit, PlayersSearchResponse } from '../../types/api.compat';
 
 export type PlayerPick = { id: number; fullName: string };
 
@@ -19,52 +20,26 @@ export default function PlayerPicker({ label, selected, onChange, disabled }: Pl
   const listId = `${baseId}-list`;
 
   const [q, setQ] = useState('');
-  const [hits, setHits] = useState<PlayerSearchHit[]>([]);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [searching, setSearching] = useState(false);
+  const trimmed = q.trim();
+  const debouncedTrimmed = useDebouncedValue(q, 320).trim();
+  // `showResults` uses the raw (non-debounced) query so shrinking below 2 chars clears the
+  // list instantly; the fetch itself still waits on `debouncedTrimmed` to avoid spamming the API.
+  const showResults = trimmed.length >= 2;
+  const searchEnabled = showResults && debouncedTrimmed.length >= 2;
 
-  useEffect(() => {
-    const t = q.trim();
-    if (t.length < 2) {
-      let c = false;
-      const z = setTimeout(() => {
-        if (!c) {
-          setHits([]);
-          setSearchError(null);
-        }
-      }, 0);
-      return () => {
-        c = true;
-        clearTimeout(z);
-      };
-    }
+  const { data, error, loading } = useAsyncResource<PlayersSearchResponse>(
+    {
+      enabled: searchEnabled,
+      initialPending: false,
+      clearDataBeforeFetch: true,
+      fetch: (signal) => fetchPlayersSearch({ names: debouncedTrimmed }, signal),
+    },
+    [searchEnabled, debouncedTrimmed],
+  );
 
-    let cancelled = false;
-    let searchAbort: AbortController | null = null;
-    const timer = setTimeout(() => {
-      if (cancelled) return;
-      searchAbort = new AbortController();
-      setSearching(true);
-      setSearchError(null);
-      fetchPlayersSearch({ names: t }, searchAbort.signal)
-        .then((res) => {
-          if (!cancelled) setHits(res.people ?? []);
-        })
-        .catch((e) => {
-          if (cancelled || isAbortError(e)) return;
-          setSearchError(e instanceof Error ? e.message : String(e));
-        })
-        .finally(() => {
-          if (!cancelled) setSearching(false);
-        });
-    }, 320);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-      searchAbort?.abort();
-    };
-  }, [q]);
+  const hits: PlayerSearchHit[] = showResults ? (data?.people ?? []) : [];
+  const searchError = showResults ? (error?.message ?? null) : null;
+  const searching = showResults && loading;
 
   return (
     <div className="player-picker">
@@ -116,7 +91,6 @@ export default function PlayerPicker({ label, selected, onChange, disabled }: Pl
                     onClick={() => {
                       onChange({ id: p.id, fullName: p.fullName });
                       setQ('');
-                      setHits([]);
                     }}
                   >
                     <span className="player-picker__hit-name">{p.fullName}</span>

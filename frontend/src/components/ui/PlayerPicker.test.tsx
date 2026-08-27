@@ -133,4 +133,39 @@ describe('PlayerPicker', () => {
 
     expect(screen.getByRole('button', { name: 'Change' })).toBeDisabled();
   });
+
+  it('clears stale hits and shows Searching while a new query is in flight', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchPlayersSearch).mockResolvedValueOnce({
+      query: 'Oh',
+      people: [{ id: 660271, fullName: 'Shohei Ohtani', active: true }],
+    } satisfies PlayersSearchResponse);
+
+    let resolveSecond!: (res: PlayersSearchResponse) => void;
+    const second = new Promise<PlayersSearchResponse>((resolve) => {
+      resolveSecond = resolve;
+    });
+    vi.mocked(fetchPlayersSearch).mockImplementationOnce(() => second);
+
+    render(<PlayerPicker label="E" selected={null} onChange={vi.fn()} />);
+
+    await user.type(screen.getByRole('searchbox'), 'Oh');
+    await flushSearchDebounce();
+    await waitFor(() => {
+      expect(screen.getByText(/Shohei Ohtani/)).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByRole('searchbox'), 'tani');
+    await flushSearchDebounce();
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Shohei Ohtani/)).not.toBeInTheDocument();
+      expect(screen.getByText('Searching…')).toBeInTheDocument();
+    });
+
+    resolveSecond({ query: 'Ohtani', people: [] });
+    await waitFor(() => {
+      expect(screen.getByText('No matches.')).toBeInTheDocument();
+    });
+  });
 });
