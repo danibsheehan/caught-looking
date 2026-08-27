@@ -67,4 +67,31 @@ describe('usePlayerCurrentTeams', () => {
       expect(result.current.teamId2).toBeNull();
     });
   });
+
+  it('clears stale team ids when a later refetch fails (does not keep the prior pair)', async () => {
+    vi.mocked(fetchPlayersCurrentTeams).mockResolvedValueOnce({
+      players: [
+        { playerId: 1, teamId: 147 },
+        { playerId: 2, teamId: 121 },
+      ],
+    } as PlayersCurrentTeamsResponse);
+
+    const { result, rerender } = renderHook(
+      ({ id1, id2 }: { id1: number; id2: number }) => usePlayerCurrentTeams(id1, id2, true),
+      { initialProps: { id1: 1, id2: 2 } },
+    );
+
+    await waitFor(() => {
+      expect(result.current.teamId1).toBe(147);
+      expect(result.current.teamId2).toBe(121);
+    });
+
+    vi.mocked(fetchPlayersCurrentTeams).mockRejectedValueOnce(new Error('network'));
+    rerender({ id1: 3, id2: 4 });
+
+    await waitFor(() => {
+      expect(result.current.teamId1).toBeNull();
+      expect(result.current.teamId2).toBeNull();
+    });
+  });
 });

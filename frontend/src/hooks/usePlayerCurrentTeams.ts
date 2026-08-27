@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
 import { fetchPlayersCurrentTeams } from '../api/client';
-import { isAbortError } from './useAsyncResource';
+import type { PlayersCurrentTeamsResponse } from '../types/api.compat';
+import { useAsyncResource } from './useAsyncResource';
 
 /**
  * Resolves each player's current MLB team id (Stats API) for chart colors.
@@ -12,37 +12,25 @@ export function usePlayerCurrentTeams(
   playerId2: number | null | undefined,
   enabled: boolean,
 ): { teamId1: number | null; teamId2: number | null } {
-  const [teamId1, setTeamId1] = useState<number | null>(null);
-  const [teamId2, setTeamId2] = useState<number | null>(null);
-
   const invalid = !enabled || playerId1 == null || playerId2 == null || playerId1 === playerId2;
 
-  useEffect(() => {
-    if (invalid) return;
+  const { data, error } = useAsyncResource<PlayersCurrentTeamsResponse>(
+    {
+      enabled: !invalid,
+      initialPending: false,
+      fetch: (signal) => fetchPlayersCurrentTeams(playerId1 as number, playerId2 as number, signal),
+    },
+    [invalid, playerId1, playerId2],
+  );
 
-    let cancelled = false;
-    const ac = new AbortController();
-    fetchPlayersCurrentTeams(playerId1, playerId2, ac.signal)
-      .then((res) => {
-        if (cancelled) return;
-        const [a, b] = res.players;
-        setTeamId1(a && a.teamId > 0 ? a.teamId : null);
-        setTeamId2(b && b.teamId > 0 ? b.teamId : null);
-      })
-      .catch((e) => {
-        if (cancelled || isAbortError(e)) return;
-        setTeamId1(null);
-        setTeamId2(null);
-      });
-
-    return () => {
-      cancelled = true;
-      ac.abort();
-    };
-  }, [invalid, playerId1, playerId2]);
-
+  // useAsyncResource keeps stale `data` across a failed retry (for polling use cases); this
+  // hook has no polling, so any error should fall back to null ids rather than a stale pair.
+  if (invalid || !data || error) {
+    return { teamId1: null, teamId2: null };
+  }
+  const [a, b] = data.players;
   return {
-    teamId1: invalid ? null : teamId1,
-    teamId2: invalid ? null : teamId2,
+    teamId1: a && a.teamId > 0 ? a.teamId : null,
+    teamId2: b && b.teamId > 0 ? b.teamId : null,
   };
 }
