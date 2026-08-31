@@ -152,7 +152,7 @@ flowchart LR
 **In plain English:** cache hits answer in single-digit milliseconds; concurrent cache misses share one upstream call instead of each triggering its own, so latency stays flat as concurrent traffic grows rather than degrading.
 
 <!-- perf-metrics:start -->
-Warm cache-hit p95: **4.8ms** (target < 100ms) · cold-miss latency stays flat as concurrency scales to 500 clients, proving singleflight coalescing rather than serialized upstream calls — measured 2026-08-24. Cold numbers reflect a fixture-only injected test delay, not real-world timing — see [the full sweep and methodology](docs/perf-results.md).
+Warm cache-hit p95: **4.8ms** (target < 100ms) · cold-miss latency stays flat as concurrency scales to 500 clients, proving singleflight coalescing rather than serialized upstream calls — measured 2026-08-31. Cold numbers reflect a fixture-only injected test delay, not real-world timing — see [the full sweep and methodology](docs/perf-results.md).
 <!-- perf-metrics:end -->
 
 ### Upstream by feature
