@@ -1,9 +1,12 @@
 # AI-assisted development & automation
 
 Caught Looking is built and maintained with Cursor and Claude Code doing a lot of the day-to-day
-work — from scaffolding a new endpoint to triaging dependency bumps. This page is about the
-parts worth calling out specifically: what's allowed to act **on its own**, versus what an AI
-assistant only ever does **at a person's request**.
+work — from scaffolding a new endpoint to triaging dependency bumps. Both tools read the same
+conventions and skills: `AGENTS.md`/`CLAUDE.md` for conventions (no separate `.cursor/rules/*.mdc`
+files — that content lives directly in `AGENTS.md` now), and `.claude/skills/` as the canonical
+skills directory, with `.cursor/skills` kept as a symlink to it for Cursor compatibility. This
+page is about the parts worth calling out specifically: what's allowed to act **on its own**,
+versus what an AI assistant only ever does **at a person's request**.
 
 **In plain English:** one narrow, low-risk decision (merging a routine grouped dependency bump
 once tests pass) runs unattended. A couple of scheduled workflows are allowed to open — but
@@ -19,7 +22,7 @@ Back to the [docs home](README.md) · [root README](../README.md).
 | Automation | What it does | Guardrail |
 | :--- | :--- | :--- |
 | npm minor/patch auto-merge | [`dependabot-auto-merge.yml`](../.github/workflows/dependabot-auto-merge.yml) merges the grouped `npm-minor-and-patch` Dependabot PR the moment the required **Frontend** / **Backend** / **Lint** checks pass. Plain GitHub Actions + [`dependabot/fetch-metadata`](https://github.com/dependabot/fetch-metadata) — no LLM involved. | Scoped to that one grouped, lowest-risk PR only. Go modules, GitHub Actions bumps, and any ungrouped npm **major** version bump are excluded on purpose and still need a human. |
-| Weekly Dependabot triage | A scheduled Claude Code **routine** (a cloud agent on a cron schedule) clones the repo every Monday, follows [`dependabot-triage`](../.cursor/skills/dependabot-triage/SKILL.md) step by step — lists the remaining open Dependabot PRs, reads each changelog and required-CI result, classifies Security / Needs a look / Low risk — and sends a summary notification. | Read-only by instruction: it never merges, comments on, or closes a PR. It produces a report; a person still decides what to merge. |
+| Weekly Dependabot triage | A scheduled Claude Code **routine** (a cloud agent on a cron schedule) clones the repo every Monday, follows [`dependabot-triage`](../.claude/skills/dependabot-triage/SKILL.md) step by step — lists the remaining open Dependabot PRs, reads each changelog and required-CI result, classifies Security / Needs a look / Low risk — and sends a summary notification. | Read-only by instruction: it never merges, comments on, or closes a PR. It produces a report; a person still decides what to merge. |
 | Weekly portfolio update | A scheduled Claude Code **routine** clones this repo and three of Danielle's other portfolio-linked repos (`musing`, `baseball-collection`, `gotta-catch-em-all`) every Monday and follows [`portfolio-automation`](https://github.com/danibsheehan/portfolio-automation)'s `weekly-project-update` skill — summarizes each repo's people-relevant changes in plain language, then opens one PR per repo with real signal in a *different* repo, `danibsheehan/danibsheehan.github.io`, updating that repo's project section. The skill itself lives in `portfolio-automation`, not here — it's cross-repo by design (see that repo's README for why). | Opens PRs, but never merges them. Scoped to one portfolio repo, one project section per source repo, and only repos with something people-relevant to report that week; a person still reviews and merges each PR by hand. |
 | Weekly perf metrics snapshot | [`perf-metrics.yml`](../.github/workflows/perf-metrics.yml) runs `make load-smoke` every Monday (and on demand via `workflow_dispatch`) against the fixture upstream, then regenerates [`docs/perf-results.md`](perf-results.md) with the latest cold/warm latency sweep and opens a PR if the numbers changed. Plain GitHub Actions — no LLM involved. | Opens a PR, but never merges it. Only ever touches `docs/perf-results.md`; no live MLB/Savant traffic. |
 
@@ -30,15 +33,16 @@ task because someone asked, in an interactive session, with the person reviewing
 anything ships. That work is guided by:
 
 - **[`AGENTS.md`](../AGENTS.md)** — the tool-agnostic reference (install/run/test, conventions,
-  what not to do) that both Cursor and Claude Code read.
-- **[`.cursor/rules/*.mdc`](../.cursor/rules/)** — path-scoped conventions (backend Go, React,
-  OpenAPI contract discipline, README accuracy, and more) applied automatically when matching
-  files are touched.
-- **[`.cursor/skills/`](../.cursor/skills/)** — step-by-step playbooks for specific jobs:
+  what not to do) that both Cursor and Claude Code read. Its **Conventions** section (backend Go,
+  React, OpenAPI contract discipline, README accuracy, and more) used to live as separate
+  `.cursor/rules/*.mdc` files applied automatically when matching files were touched in Cursor;
+  that content now lives directly in `AGENTS.md` instead, read by both tools the same way.
+- **[`.claude/skills/`](../.claude/skills/)** — step-by-step playbooks for specific jobs:
   scaffolding a new API endpoint end-to-end, writing backend/frontend tests, verifying a Bugbot
   finding before fixing it, catching stack-version doc drift after a dependency bump, and more.
-  See `AGENTS.md`'s **Step-by-step playbooks** list for the full set. `.claude/skills` is a
-  symlink to the same directory, so Claude Code sees exactly what Cursor sees.
+  See `AGENTS.md`'s **Step-by-step playbooks** list for the full set. `.claude/skills/` is the
+  canonical directory; `.cursor/skills` is a symlink to it, kept for Cursor compatibility, so
+  Cursor sees exactly what Claude Code sees.
 
 ## Why the split
 

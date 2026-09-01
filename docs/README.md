@@ -18,7 +18,7 @@ If you just want to **use the app**, open [caught-looking.com](https://caught-lo
 | Where does AI actually act on its own here, versus just assist? | [AI-assisted development & automation](automation.md) |
 | How to contribute or ship a change | [Contributing](../README.md#contributing) in the root README |
 
-Design decisions live as short **Architecture Decision Records (ADRs)** under [`adr/`](adr/). Day-to-day how-to for contributors and agents lives in [`.cursor/skills/`](../.cursor/skills/).
+Design decisions live as short **Architecture Decision Records (ADRs)** under [`adr/`](adr/). Day-to-day how-to for contributors and agents lives in [`.claude/skills/`](../.claude/skills/).
 
 ## A few terms, in plain words
 

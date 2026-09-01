@@ -24,7 +24,7 @@ description: >-
 3. From **`frontend/`**: `npm run api:types` then commit **`frontend/src/types/api.generated.ts`** if it changed.
 4. **`frontend/src/types/api.compat.ts`** — add or adjust exports for new schemas or `QueryOf<operations['…']>` types the client uses.
 5. **`frontend/src/api/client.ts`** — paths and query params match the spec and router.
-6. **Done when**: **`make check-openapi`** passes (task-level). Before a PR, run **`make ci-local`** / **`.cursor/skills/pr-ready/SKILL.md`**.
+6. **Done when**: **`make check-openapi`** passes (task-level). Before a PR, run **`make ci-local`** / **`.claude/skills/pr-ready/SKILL.md`**.
 
 ## Spec conventions
 
@@ -32,7 +32,7 @@ description: >-
 - **Errors**: document the JSON envelope `{"error":"<message>"}` for 4xx/5xx the handler actually returns (`respondAPIError` / upstream helpers).
 - **Schemas**: property names must match Go `json` tags on **`models/`** types.
 
-For scaffolding a full route end-to-end, see **`.cursor/skills/add-api-endpoint/SKILL.md`** when that skill is present.
+For scaffolding a full route end-to-end, see **`.claude/skills/add-api-endpoint/SKILL.md`** when that skill is present.
 
 ## Commands
 

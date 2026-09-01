@@ -2,7 +2,7 @@
 
 - **Scope:** Public Go API (`backend/`) that proxies and caches MLB Stats API and Baseball Savant for the React SPA.
 - **Last updated:** 2026-08-14
-- **Related:** [docs home](README.md), [docs/adr/](adr/) (cache TTLs, QPS), [docs/slo.md](slo.md) (informal latency targets), [backend HTTP security skill](../.cursor/skills/backend-http-security/SKILL.md)
+- **Related:** [docs home](README.md), [docs/adr/](adr/) (cache TTLs, QPS), [docs/slo.md](slo.md) (informal latency targets), [backend HTTP security skill](../.claude/skills/backend-http-security/SKILL.md)
 
 **Who this is for:** Anyone who wants to understand what we protect and what we deliberately leave out — not only security specialists.
 

@@ -32,7 +32,7 @@ Runs stack-docs drift, then frontend then backend checks aligned with **`.github
 | Side | Includes |
 |------|----------|
 | Stack docs (`check-stack-docs`) | README badges / Prerequisites / Tech stack + `project-stack.mdc` vs `package.json`, `go.mod`, CI Node/Go |
-| Skills docs (`check-skills-docs`) | `.cursor/skills/*/SKILL.md` vs `project-stack.mdc` Workflow skills + `AGENTS.md` playbooks |
+| Skills docs (`check-skills-docs`) | `.claude/skills/*/SKILL.md` vs `AGENTS.md`'s Step-by-step playbooks list |
 | Frontend (`ci-local-frontend`) | `npm audit --audit-level=high`, `make check-openapi`, lint, `format:check`, typecheck, `test:coverage` + ≥50% line-rate gate, build |
 | Backend (`ci-local-backend`) | `go vet`, `golangci-lint`, `govulncheck`, `go test -race`, tests with coverage + ≥50% Cobertura gate, build |
 
@@ -47,12 +47,12 @@ Faster subsets when iterating (not a substitute before PR):
 - `make lint-backend` — `golangci-lint` only; required check on `backend/**` PRs, useful standalone while iterating
 - `make ci-local-frontend` / `make ci-local-backend` — one CI job
 
-If OpenAPI fails, follow **`.cursor/skills/openapi-maintain/SKILL.md`**.
+If OpenAPI fails, follow **`.claude/skills/openapi-maintain/SKILL.md`**.
 
 If the diff touches cache/QPS defaults, CORS/rate-limit/body-cap/security-header behavior, or the
 OpenAPI workflow, also run **`adr-doc-sync-check`** — no automated check catches that drift.
 
-Also: **`npx prettier --write`** on any frontend files you changed before `format:check` (see **`.cursor/rules/frontend-prettier.mdc`**).
+Also: **`npx prettier --write`** on any frontend files you changed before `format:check` (see `AGENTS.md`'s **Prettier formatting** conventions).
 
 ### 2. PR description
 

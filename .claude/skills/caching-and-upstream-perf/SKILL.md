@@ -61,7 +61,7 @@ Most latency and reliability risk is **outbound MLB/Savant**, not React render. 
 
 ## Verification
 
-- Handler/cache tests: **`.cursor/skills/backend-go-tests/SKILL.md`**
+- Handler/cache tests: **`.claude/skills/backend-go-tests/SKILL.md`**
 - Load-ish sanity: hit the new path twice locally and confirm the second response is fast / no duplicate upstream in logs when cached.
 - Concurrent coalesce proof: **`make load-smoke`** (`scripts/load-smoke.sh`) — N clients on fixture `/standings`, asserts `caught_looking_cache_*` deltas (cold coalesce, warm hits). Documented in **`docs/slo.md`**.
 

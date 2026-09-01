@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""Fail if .cursor/skills/*/SKILL.md drifts from the routing lists that point to them.
+"""Fail if .claude/skills/*/SKILL.md drifts from the routing list that points to them.
 
 A new (or removed) skill directory is easy to forget to wire up — this repo has no
 automated check for it today, unlike stack-docs versions.
 
-Source of truth: directories under .cursor/skills/ that contain a SKILL.md.
+Source of truth: directories under .claude/skills/ that contain a SKILL.md.
 
 Checked docs:
-  - .cursor/rules/project-stack.mdc — "Workflow skills" bullet list
   - AGENTS.md — "Step-by-step playbooks" bullet list
 """
 
@@ -33,9 +32,8 @@ def actual_skills(skills_dir: Path) -> set[str]:
 def _bullet_names(section: str) -> set[str]:
     """Backtick-wrapped names before the first em dash on each top-level bullet.
 
-    Skill bullets are always `- **\\`name\\`** ... — description` (project-stack.mdc)
-    or `- \\`name\\` ... — description` (AGENTS.md); names after the em dash are
-    prose references (e.g. `TTLCache`, `project-stack.mdc`), not skill names.
+    Skill bullets are always `- \\`name\\` ... — description` (AGENTS.md); names
+    after the em dash are prose references (e.g. `TTLCache`), not skill names.
     """
     names: set[str] = set()
     for line in section.splitlines():
@@ -44,13 +42,6 @@ def _bullet_names(section: str) -> set[str]:
         head = line.split("—", 1)[0]
         names.update(BACKTICK_NAME.findall(head))
     return names
-
-
-def project_stack_skills(text: str) -> set[str]:
-    match = re.search(r"-\s+\*\*Workflow skills\*\*.*?\n(.*?)(?=\n-\s+\*\*|\Z)", text, re.DOTALL)
-    if not match:
-        raise ValueError("project-stack.mdc: no 'Workflow skills' section found")
-    return _bullet_names(match.group(1))
 
 
 def agents_md_skills(text: str) -> set[str]:
@@ -62,39 +53,36 @@ def agents_md_skills(text: str) -> set[str]:
 
 def diff_errors(label: str, actual: set[str], listed: set[str]) -> list[str]:
     errors = [
-        f"{name}: has .cursor/skills/{name}/SKILL.md but missing from {label}"
+        f"{name}: has .claude/skills/{name}/SKILL.md but missing from {label}"
         for name in sorted(actual - listed)
     ]
     errors += [
-        f"{name}: listed in {label} but no .cursor/skills/{name}/SKILL.md"
+        f"{name}: listed in {label} but no .claude/skills/{name}/SKILL.md"
         for name in sorted(listed - actual)
     ]
     return errors
 
 
 def main() -> int:
-    skills_dir = ROOT / ".cursor" / "skills"
-    stack_rule = ROOT / ".cursor" / "rules" / "project-stack.mdc"
+    skills_dir = ROOT / ".claude" / "skills"
     agents_md = ROOT / "AGENTS.md"
 
     try:
         actual = actual_skills(skills_dir)
-        stack_listed = project_stack_skills(stack_rule.read_text(encoding="utf-8"))
         agents_listed = agents_md_skills(agents_md.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         print(f"check_skills_docs: {exc}", file=sys.stderr)
         return 1
 
-    errors = diff_errors("project-stack.mdc Workflow skills", actual, stack_listed)
-    errors += diff_errors("AGENTS.md Step-by-step playbooks", actual, agents_listed)
+    errors = diff_errors("AGENTS.md Step-by-step playbooks", actual, agents_listed)
 
     if errors:
         print("Skills docs out of sync:", file=sys.stderr)
         for err in errors:
             print(f"  - {err}", file=sys.stderr)
         print(
-            "Add or remove the skill in project-stack.mdc's Workflow skills bullet and "
-            "AGENTS.md's Step-by-step playbooks list to match .cursor/skills/.",
+            "Add or remove the skill in AGENTS.md's Step-by-step playbooks list to match "
+            ".claude/skills/.",
             file=sys.stderr,
         )
         return 1

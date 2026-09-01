@@ -10,4 +10,4 @@ Think of each ADR as a decision sticky note: what we chose, why, and what we acc
 | [0002](0002-upstream-qps.md) | Cap how hard we hit MLB and Savant so we stay good neighbors |
 | [0003](0003-openapi-contract.md) | One shared menu of API shapes for the website, the Go API, and public docs |
 
-When defaults in `backend/config/config.go` or adaptive helpers in `backend/handlers/cache_ttl.go` change materially, update the matching ADR in the same change. How-to for agents: `.cursor/skills/caching-and-upstream-perf/SKILL.md` and `.cursor/skills/openapi-maintain/SKILL.md` (they point back here for rationale).
+When defaults in `backend/config/config.go` or adaptive helpers in `backend/handlers/cache_ttl.go` change materially, update the matching ADR in the same change. How-to for agents: `.claude/skills/caching-and-upstream-perf/SKILL.md` and `.claude/skills/openapi-maintain/SKILL.md` (they point back here for rationale).

@@ -108,7 +108,7 @@ Hosted as Cloudflare Pages (site) + Cloud Run (API). See [Deployment](docs/deplo
 
 ### Design decisions
 
-Rationale for cache TTLs, outbound QPS, and the OpenAPI contract: **[docs/adr/](docs/adr/)** (ADRs 0001–0003). Skills under `.cursor/skills/` are the how-to; ADRs record the tradeoffs. Start with the friendly [docs home](docs/).
+Rationale for cache TTLs, outbound QPS, and the OpenAPI contract: **[docs/adr/](docs/adr/)** (ADRs 0001–0003). Skills under `.claude/skills/` are the how-to; ADRs record the tradeoffs. Start with the friendly [docs home](docs/).
 
 ### Cost and scale tradeoffs
 
@@ -343,7 +343,7 @@ Fork PRs may skip guide, coverage comments, or previews (`GITHUB_TOKEN` / secret
 - **npm** (`frontend/` — minor/patch **grouped**)
 - **GitHub Actions** (ungrouped)
 
-The grouped npm minor/patch PR auto-merges on its own once required CI passes ([`dependabot-auto-merge.yml`](.github/workflows/dependabot-auto-merge.yml)). Everything else — Go modules, GitHub Actions, and any ungrouped npm major bump — still needs a human merge; a weekly scheduled Claude Code routine reads each one's changelog and required CI to classify risk and post a report, but only merges PRs a person names explicitly (see [`dependabot-triage`](.cursor/skills/dependabot-triage/SKILL.md) for the logic it follows, and [AI-assisted development & automation](docs/automation.md) for the full picture of what runs unattended here vs. on request).
+The grouped npm minor/patch PR auto-merges on its own once required CI passes ([`dependabot-auto-merge.yml`](.github/workflows/dependabot-auto-merge.yml)). Everything else — Go modules, GitHub Actions, and any ungrouped npm major bump — still needs a human merge; a weekly scheduled Claude Code routine reads each one's changelog and required CI to classify risk and post a report, but only merges PRs a person names explicitly (see [`dependabot-triage`](.claude/skills/dependabot-triage/SKILL.md) for the logic it follows, and [AI-assisted development & automation](docs/automation.md) for the full picture of what runs unattended here vs. on request).
 
 It does **not** update README badges or Prerequisites. When a bump changes React / Vite / TypeScript / Go / CI Node majors (or TypeScript major.minor), update those docs in the same PR — CI’s `make check-stack-docs` catches drift. Review Dependabot PRs like any other change (`govulncheck` and `npm audit` still gate merges).
 
@@ -404,9 +404,16 @@ You do not need cloud accounts to explore locally.
 | Prettier config | `frontend/prettier.config.js` |
 | EditorConfig | [`.editorconfig`](.editorconfig) — indent, charset, newlines (Go 4-space; Makefile tabs) |
 | Node pin | [`.nvmrc`](.nvmrc) — Actions and local `nvm use` |
-| Cursor agents | [`.cursor/rules/frontend-prettier.mdc`](.cursor/rules/frontend-prettier.mdc) — `npx prettier --write` on changed files |
+| Agent conventions | [`AGENTS.md`](AGENTS.md)'s **Prettier formatting** subsection — `npx prettier --write` on changed files |
 
 CI still runs `npm run format:check`.
+
+**AI agent tooling**: this repo is worked in with both Claude Code and Cursor. Conventions
+(backend Go, React, OpenAPI contract, BEM naming, and more) live directly in
+[`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md), read by both tools — there are no separate
+`.cursor/rules/*.mdc` files. Skills live in [`.claude/skills/`](.claude/skills/), the canonical
+directory; `.cursor/skills` is kept only as a symlink to it, so Cursor sees the same playbooks
+Claude Code does.
 
 ---
 
@@ -490,8 +497,8 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 
 | Where tests live | Convention |
 | :--- | :--- |
-| Backend | `*_test.go` next to packages under `backend/` — [`.cursor/skills/backend-go-tests/SKILL.md`](.cursor/skills/backend-go-tests/SKILL.md) |
-| Frontend | `*.test.ts` / `*.test.tsx` next to sources — [`.cursor/skills/frontend-vitest-tests/SKILL.md`](.cursor/skills/frontend-vitest-tests/SKILL.md) |
+| Backend | `*_test.go` next to packages under `backend/` — [`.claude/skills/backend-go-tests/SKILL.md`](.claude/skills/backend-go-tests/SKILL.md) |
+| Frontend | `*.test.ts` / `*.test.tsx` next to sources — [`.claude/skills/frontend-vitest-tests/SKILL.md`](.claude/skills/frontend-vitest-tests/SKILL.md) |
 
 ---
 
@@ -517,9 +524,9 @@ Glad you’re here. Small, well-described changes are welcome.
 | Scaffold | [PR guide](.github/workflows/pr-guide.yml) fills empty/default descriptions (verify commands, **Touches**) and posts a sticky checklist; still lead Summary with why |
 | Before open | `make ci-local` from repo root (same gates as CI: stack-docs, `npm audit`, coverage ≥50%, OpenAPI type drift) |
 | API changes | Keep **Go JSON / OpenAPI** ↔ `frontend/src/types/api.generated.ts` + `frontend/src/api/client.ts` in sync |
-| Agents | [`.cursor/skills/pr-ready/SKILL.md`](.cursor/skills/pr-ready/SKILL.md) |
+| Agents | [`.claude/skills/pr-ready/SKILL.md`](.claude/skills/pr-ready/SKILL.md) |
 
-**Security:** unauthenticated read proxy + SPA Pages headers — [threat model](docs/threat-model.md). Handler conventions: [`.cursor/skills/backend-http-security/SKILL.md`](.cursor/skills/backend-http-security/SKILL.md).
+**Security:** unauthenticated read proxy + SPA Pages headers — [threat model](docs/threat-model.md). Handler conventions: [`.claude/skills/backend-http-security/SKILL.md`](.claude/skills/backend-http-security/SKILL.md).
 
 Deeper reading: **[docs/](docs/)**.
 
