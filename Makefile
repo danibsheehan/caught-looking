@@ -31,7 +31,7 @@ check-openapi:
 check-stack-docs:
 	python3 "$(PROJECT_ROOT)/.github/scripts/check_stack_docs.py"
 
-## check-skills-docs: verify .cursor/skills/*/SKILL.md matches project-stack.mdc + AGENTS.md listings
+## check-skills-docs: verify .claude/skills/*/SKILL.md matches AGENTS.md's playbooks listing
 check-skills-docs:
 	python3 "$(PROJECT_ROOT)/.github/scripts/check_skills_docs.py"
 

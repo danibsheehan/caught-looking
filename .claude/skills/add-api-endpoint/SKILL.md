@@ -32,9 +32,9 @@ Endpoint progress:
 - Add or extend structs in **`backend/models/`** with `json` tags that will match OpenAPI.
 - Implement the handler on **`handlers.Handlers`** in **`backend/handlers/`**.
 - Validate path/query params; use **`respondAPIError`** for 400s.
-- Prefer **`h.cache.GetOrLoad`** + **`h.mlb`** / Savant clients over ad-hoc HTTP (see **`.cursor/skills/caching-and-upstream-perf/SKILL.md`** when present).
+- Prefer **`h.cache.GetOrLoad`** + **`h.mlb`** / Savant clients over ad-hoc HTTP (see **`.claude/skills/caching-and-upstream-perf/SKILL.md`** when present).
 - Map upstream failures with **`respondUpstreamError`** / **`respondGetOrLoadError`** — never return raw upstream `err.Error()` to clients.
-- Follow **`.cursor/rules/backend-go.mdc`**.
+- Follow `AGENTS.md`'s **Backend (Go)** conventions.
 
 ### 2. Router
 
@@ -43,7 +43,7 @@ Endpoint progress:
 
 ### 3. OpenAPI + types
 
-- Follow **`.cursor/skills/openapi-maintain/SKILL.md`** exactly:
+- Follow **`.claude/skills/openapi-maintain/SKILL.md`** exactly:
   - Update **`backend/apidocs/openapi.yaml`**
   - `npm run api:types` → commit **`api.generated.ts`** if changed
   - Extend **`api.compat.ts`**
@@ -53,27 +53,27 @@ Endpoint progress:
 
 - Add **`fetch…`** in **`frontend/src/api/client.ts`** via **`apiGet<T>`**, types from **`api.compat`**.
 - Naming: `fetchResourceName` — align path segments with the router.
-- Follow **`.cursor/rules/frontend-api.mdc`**.
+- Follow `AGENTS.md`'s **API client** conventions.
 
 ### 5. Hook / UI (only if needed)
 
 - Wrap client calls in **`frontend/src/hooks/`** using existing async patterns (**`useAsyncResource`**: AbortController, loading/error).
 - Pages under **`frontend/src/pages/`**; reusable UI under **`components/`**. No raw `fetch` in components for app API data.
-- New class names: BEM per **`.cursor/rules/frontend-bem.mdc`**.
+- New class names: BEM per `AGENTS.md`'s **BEM naming** conventions.
 
 ### 6. Backend tests
 
-- Follow **`.cursor/skills/backend-go-tests/SKILL.md`**: `newTestHandlers`, chi for URL params, validation / success / upstream failure.
+- Follow **`.claude/skills/backend-go-tests/SKILL.md`**: `newTestHandlers`, chi for URL params, validation / success / upstream failure.
 
 ### 7. Frontend tests
 
-- Follow **`.cursor/skills/frontend-vitest-tests/SKILL.md`**: mock `api/client`, assert params; hook/UI tests as needed.
+- Follow **`.claude/skills/frontend-vitest-tests/SKILL.md`**: mock `api/client`, assert params; hook/UI tests as needed.
 - Run Prettier on changed frontend files.
 
 ## Done when
 
 - **Task done**: checklist above through tests + `make check-openapi` and focused backend/frontend tests for the change.
-- **PR done**: **`make ci-local`** and **`.cursor/skills/pr-ready/SKILL.md`**.
+- **PR done**: **`make ci-local`** and **`.claude/skills/pr-ready/SKILL.md`**.
 
 ## Anti-patterns
 

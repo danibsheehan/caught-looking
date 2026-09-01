@@ -33,7 +33,7 @@ description: >-
 2. **API and `fetch`**
    - **`vi.mock('../../api/client')`** (or correct relative path from the test file) and **`vi.mocked(fetchX)`** for `fetch…` helpers.
    - Do **not** call the real backend in unit tests; assert **URLs / params** via mock call args (see existing `client.test.ts`).
-   - Typed fixtures: prefer minimal payloads shaped like **`frontend/src/types/api.compat`** (OpenAPI-derived). If the contract is new, regenerate types first — see **`.cursor/skills/openapi-maintain/SKILL.md`**.
+   - Typed fixtures: prefer minimal payloads shaped like **`frontend/src/types/api.compat`** (OpenAPI-derived). If the contract is new, regenerate types first — see **`.claude/skills/openapi-maintain/SKILL.md`**.
 
 3. **Hooks (`renderHook`)**
    - Mock client functions; resolve with minimal typed payloads from **`api.compat`**.
@@ -52,9 +52,9 @@ description: >-
    - Stub **`console.error`** when testing `componentDidCatch` if you need a quiet log; **restore** after the suite.
 
 7. **Commands**
-   - **Task done**: **`cd frontend && npm run test:run`** (or **`npm run test`** in watch) for the suites you touched; run **`npx prettier --write`** on changed files if the Prettier hook did not cover them (see **`.cursor/rules/frontend-prettier.mdc`**).
+   - **Task done**: **`cd frontend && npm run test:run`** (or **`npm run test`** in watch) for the suites you touched; run **`npx prettier --write`** on changed files if the Prettier hook did not cover them (see `AGENTS.md`'s **Prettier formatting** conventions).
    - Coverage when investigating the gate: **`npm run test:coverage`** — HTML under **`frontend/coverage/`** (gitignored). From repo root: **`make test-frontend`**.
-   - **PR done**: **`make ci-local`** / **`.cursor/skills/pr-ready/SKILL.md`** — do not run full lint/typecheck/build/CI on every test edit.
+   - **PR done**: **`make ci-local`** / **`.claude/skills/pr-ready/SKILL.md`** — do not run full lint/typecheck/build/CI on every test edit.
 
 ## Anti-patterns
 

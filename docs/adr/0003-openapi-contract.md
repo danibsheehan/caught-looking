@@ -20,7 +20,7 @@ Treat **`backend/apidocs/openapi.yaml`** as the **source of truth** for HTTP sha
 5. CI enforces Redocly lint and generated-type drift: `make check-openapi` / `api:types:check`.
 6. Human-readable docs: Redoc at [docs.caught-looking.com](https://docs.caught-looking.com/) from the same YAML.
 
-How-to for agents: `.cursor/skills/openapi-maintain/SKILL.md` and `.cursor/skills/add-api-endpoint/SKILL.md`.
+How-to for agents: `.claude/skills/openapi-maintain/SKILL.md` and `.claude/skills/add-api-endpoint/SKILL.md`.
 
 ## Consequences
 

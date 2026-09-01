@@ -9,7 +9,6 @@ Sources of truth:
 
 Checked docs:
   - README.md badges, Tech stack table, Prerequisites
-  - .cursor/rules/project-stack.mdc Stack line
   - AGENTS.md Stack line
 """
 
@@ -200,7 +199,6 @@ def main() -> int:
     go_mod = ROOT / "backend" / "go.mod"
     ci_yml = ROOT / ".github" / "workflows" / "ci.yml"
     readme_path = ROOT / "README.md"
-    stack_rule = ROOT / ".cursor" / "rules" / "project-stack.mdc"
     agents_md = ROOT / "AGENTS.md"
 
     try:
@@ -208,7 +206,6 @@ def main() -> int:
         go = read_go_mod(go_mod)
         ci = read_ci_versions(ROOT, ci_yml)
         readme = readme_path.read_text(encoding="utf-8")
-        stack_text = stack_rule.read_text(encoding="utf-8")
         agents_text = agents_md.read_text(encoding="utf-8")
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"check_stack_docs: {exc}", file=sys.stderr)
@@ -236,13 +233,6 @@ def main() -> int:
         errors=errors,
     )
     check_stack_line(
-        stack_text,
-        label="project-stack.mdc",
-        react_major=pkg["react_major"],
-        go_mm=go["go_mm"],
-        errors=errors,
-    )
-    check_stack_line(
         agents_text,
         label="AGENTS.md",
         react_major=pkg["react_major"],
@@ -255,8 +245,8 @@ def main() -> int:
         for err in errors:
             print(f"  - {err}", file=sys.stderr)
         print(
-            "Update README badges/Prerequisites/Tech stack (and project-stack.mdc, AGENTS.md) "
-            "to match frontend/package.json, backend/go.mod, .nvmrc, and .github/workflows/ci.yml.",
+            "Update README badges/Prerequisites/Tech stack (and AGENTS.md) to match "
+            "frontend/package.json, backend/go.mod, .nvmrc, and .github/workflows/ci.yml.",
             file=sys.stderr,
         )
         return 1
