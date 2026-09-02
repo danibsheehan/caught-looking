@@ -71,7 +71,6 @@ CI also runs `npm audit --audit-level=high` on the frontend job.
 ## Anti-patterns
 
 - Returning `err.Error()` from MLB/Savant failures in JSON.
-- Disabling rate limit or CORS allow-all in production defaults without an explicit, reviewed reason.
 - Hitting real `statsapi.mlb.com` from unit tests.
 - Introducing cookie/credentialed CORS without a clear auth design (API is currently credential-free GETs).
 - Changing the security posture above without updating **`docs/threat-model.md`**.
