@@ -200,17 +200,21 @@ Playbooks live in `.claude/skills/*/SKILL.md` (canonical) — `.cursor/skills` i
 same directory, kept for Cursor compatibility. Both tools auto-invoke them by task. This repo
 also installs the `foundations` plugin from the `dani-foundations` marketplace (see
 `.claude/settings.json`), providing `dependabot-triage`, `coverage-gap-diagnosis`,
-`pr-summary-draft`, `bugbot-fix-verify`, `caching-and-upstream-perf`, `doc-sync-patch`, and
-`api-hardening` (namespaced `foundations:*`) — no local copies of these needed for the
-generic parts; each was verified before removing/trimming the local versions.
-`bugbot-fix-verify` was fully redundant (removed); `caching-and-upstream-perf`,
-`doc-sync-patch`, and `backend-http-security` keep their local copies for this repo's
-specific Go implementation (types, commands, exact patch locations), cross-referencing the
-generic principles instead of restating them.
+`pr-summary-draft`, `bugbot-fix-verify`, `caching-and-upstream-perf`, `doc-sync-patch`,
+`api-hardening`, `react-vitest-testing`, and `go-http-testing` (namespaced `foundations:*`)
+— no local copies of these needed for the generic parts; each was verified before
+removing/trimming the local versions. `bugbot-fix-verify` was fully redundant (removed);
+`caching-and-upstream-perf`, `doc-sync-patch`, `backend-http-security`,
+`frontend-vitest-tests`, and `backend-go-tests` keep their local copies for this repo's
+specific implementation (Go types, commands, exact patch locations, `api/client` mocking,
+shared test helpers), cross-referencing the generic principles/mechanics instead of
+restating them.
 
 - `add-api-endpoint` — full route end-to-end: models → handler → router → OpenAPI → types →
   client → hook/UI → tests.
-- `backend-go-tests` / `frontend-vitest-tests` — test conventions and fakes.
+- `backend-go-tests` / `frontend-vitest-tests` — this repo's shared test helpers and
+  mocking/fixture conventions; see `foundations:go-http-testing` /
+  `foundations:react-vitest-testing` for the framework mechanics.
 - `backend-http-security` — CORS, rate limits, body caps, error responses, threat model; see
   `foundations:api-hardening` for the general principles this implements.
 - `caching-and-upstream-perf` — `TTLCache`, `GetOrLoad`, MLB/Savant QPS limits.
