@@ -1,14 +1,19 @@
 ---
 name: frontend-vitest-tests
 description: >-
-  Writes or updates Vitest + Testing Library tests for caught-looking’s frontend:
-  mocked api/client, renderHook, jsdom, and coverage. Use when adding or changing
-  code under frontend/src, writing *.test.ts(x), fixing flaky UI/hook tests,
-  accessibility role queries, loading/error UI tests, or when the user mentions
-  frontend tests, Vitest, RTL, or test coverage.
+  Writes or updates Vitest + Testing Library tests for caught-looking's frontend:
+  mocked api/client, api.compat fixtures, and useAsyncResource hooks. Use when
+  adding or changing code under frontend/src, writing *.test.ts(x), fixing flaky
+  UI/hook tests, or when the user mentions frontend tests, Vitest, RTL, or test
+  coverage.
 ---
 
 # Frontend Vitest tests (caught-looking)
+
+For the React+Vitest+Testing Library mechanics this follows (mock the API client, the
+`renderHook` loading-race gotcha, roles/loading/error/empty checklist, mock-hoisting and
+double-`Response`-read anti-patterns), see the **`foundations:react-vitest-testing`** skill.
+This file is caught-looking's own mocking/fixture reference.
 
 ## When this applies
 
@@ -16,51 +21,22 @@ description: >-
 - Adding tests for **`api/client`**, **`hooks/`**, **`utils/`**, or **`components/`**.
 - Adjusting **`vite.config.ts`** `test` / `coverage` options.
 
-## Stack (must match repo)
+## Conventions
 
-- **Runner**: Vitest (`vitest/config` merged in `frontend/vite.config.ts`).
-- **DOM**: **jsdom** (`test.environment: 'jsdom'`).
-- **Assertions / matchers**: **`@testing-library/jest-dom/vitest`** via `frontend/src/test/setup.ts`.
-- **Components**: **`@testing-library/react`** (`render`, `screen`, `within`, `waitFor`, `renderHook`).
-- **Interactions**: **`@testing-library/user-event`** (prefer over firing raw DOM events).
+1. **API and `fetch`** — **`vi.mock('../../api/client')`** (or correct relative path from the test file) and **`vi.mocked(fetchX)`** for `fetch…` helpers. Do **not** call the real backend in unit tests; assert **URLs / params** via mock call args (see existing `client.test.ts`). Typed fixtures: prefer minimal payloads shaped like **`frontend/src/types/api.compat`** (OpenAPI-derived). If the contract is new, regenerate types first — see **`.claude/skills/openapi-maintain/SKILL.md`**.
 
-## Conventions (must follow)
+2. **Hooks (`renderHook`)** — mock client functions; resolve with minimal typed payloads from **`api.compat`**. Prefer patterns from **`useAsyncResource`** (`AbortController` cleanup, `startTransition` for loading/error resets).
 
-1. **File placement**
-   - Colocate tests: `Component.test.tsx` next to `Component.tsx`, or `*.test.ts` next to modules (e.g. `client.test.ts` under `api/`).
-   - Shared setup only in **`frontend/src/test/setup.ts`** (e.g. `cleanup()`, jest-dom).
+3. **Debounced search** (e.g. **320ms** in `PlayerPicker`): use **real timers** + **`setTimeout` flush** or `waitFor`.
 
-2. **API and `fetch`**
-   - **`vi.mock('../../api/client')`** (or correct relative path from the test file) and **`vi.mocked(fetchX)`** for `fetch…` helpers.
-   - Do **not** call the real backend in unit tests; assert **URLs / params** via mock call args (see existing `client.test.ts`).
-   - Typed fixtures: prefer minimal payloads shaped like **`frontend/src/types/api.compat`** (OpenAPI-derived). If the contract is new, regenerate types first — see **`.claude/skills/openapi-maintain/SKILL.md`**.
-
-3. **Hooks (`renderHook`)**
-   - Mock client functions; resolve with minimal typed payloads from **`api.compat`**.
-   - Prefer patterns from **`useAsyncResource`** (AbortController cleanup, `startTransition` for loading/error resets). Assert with **`waitFor` on `result.current.data` / `error` / mock calls**, not only `loading === false`, because some hooks start with `loading: false` and race.
-
-4. **UI components**
-   - Prefer **roles and accessible names** (`getByRole('button', { name: /…/ })`, `getByRole('combobox', { name: '…' })`).
-   - Cover **loading**, **error**, and **empty** states when the component surfaces them (visible message or empty UI — not silent failure).
-   - Controlled props: if the parent must update after `onChange`, use a small **stateful harness** in the test (see `PlayerPicker.test.tsx`).
-   - Debounced search (e.g. **320ms** in `PlayerPicker`): use **real timers** + **`setTimeout` flush** or `waitFor`; **`userEvent` + fake timers** often deadlocks—avoid unless you wire `advanceTimers` correctly.
-
-5. **DOM cleanup**
-   - Global **`cleanup()`** runs in **`setup.ts`** `afterEach`. If you ever disable it, unmount between tests to avoid **multiple comboboxes / duplicate roles**.
-
-6. **Error boundaries / `console`**
-   - Stub **`console.error`** when testing `componentDidCatch` if you need a quiet log; **restore** after the suite.
-
-7. **Commands**
+4. **Commands**
    - **Task done**: **`cd frontend && npm run test:run`** (or **`npm run test`** in watch) for the suites you touched; run **`npx prettier --write`** on changed files if the Prettier hook did not cover them (see `AGENTS.md`'s **Prettier formatting** conventions).
    - Coverage when investigating the gate: **`npm run test:coverage`** — HTML under **`frontend/coverage/`** (gitignored). From repo root: **`make test-frontend`**.
    - **PR done**: **`make ci-local`** / **`.claude/skills/pr-ready/SKILL.md`** — do not run full lint/typecheck/build/CI on every test edit.
 
 ## Anti-patterns
 
-- Importing production modules before `vi.mock` factories in a way that prevents mocking (keep mocks at top level; use **`vi.resetModules()` + dynamic `import()`** when testing `import.meta.env` / `API_BASE`, as in `client.test.ts`).
 - Asserting **pixel** layout or Recharts internals instead of **data / labels / roles**.
-- **One shared `Response`** from `fetch` for two `json()` reads (body consumed twice).
 
 ## Reference locations
 

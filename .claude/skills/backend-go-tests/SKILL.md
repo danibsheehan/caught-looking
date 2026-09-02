@@ -10,6 +10,11 @@ description: >-
 
 # Backend Go tests (caught-looking)
 
+For the Go/`httptest` mechanics this follows (fake the upstream with `httptest.Server`,
+router-aware handler tests, the validation/success/upstream-failure minimum coverage bar),
+see the **`foundations:go-http-testing`** skill. This file is caught-looking's own shared
+test-helper and fixture reference.
+
 ## When this applies
 
 - Editing `backend/handlers/`, `backend/services/`, `backend/middleware/`, `backend/config/`, or `backend/main.go` / `router.go` behavior.
@@ -51,8 +56,6 @@ description: >-
 ## Anti-patterns
 
 - Building `Handlers` by hand in every test instead of `newTestHandlers`.
-- Hitting real `statsapi.mlb.com` in unit tests.
-- Skipping chi for handlers that use `chi.URLParam` (easy to get false greens).
 
 ## Reference locations
 
