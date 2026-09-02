@@ -10,6 +10,10 @@ description: >-
 
 # Caching and upstream performance (caught-looking)
 
+For the general principles this implements (coalesce concurrent cache misses, cap outbound
+QPS, debounce search, abort stale requests), see the **`foundations:caching-and-upstream-perf`**
+skill. This file is the concrete Go/React implementation reference.
+
 Most latency and reliability risk is **outbound MLB/Savant**, not React render. Prefer cache + coalescing + QPS caps over micro-optimizing UI.
 
 **Why (ADRs):** named TTLs and adaptive settle policy — **`docs/adr/0001-cache-ttls.md`**; outbound QPS/timeouts — **`docs/adr/0002-upstream-qps.md`**. This skill is how-to; update those ADRs in the **same change** when defaults in `backend/config/config.go`, adaptive helpers in `backend/handlers/cache_ttl.go`, or QPS/timeout knobs change materially. Do not paste ADR tables into the README. Check with **`adr-doc-sync-check`** before opening a PR that touches these defaults.
