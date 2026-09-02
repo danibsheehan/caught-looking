@@ -11,6 +11,11 @@ description: >-
 
 # Doc sync patch (caught-looking)
 
+For the general method this implements (read the checker's error output, patch every
+location it validates, never touch the manifest, re-verify), see the
+**`foundations:doc-sync-patch`** skill. This file is the exact patch-location reference for
+this repo's checker.
+
 `.github/scripts/check_stack_docs.py` (run via `make check-stack-docs`) only **detects** drift
 between the manifests and the docs that quote their versions — it does not fix anything.
 Dependabot bumps `frontend/package.json` / `backend/go.mod` / CI Node/Go without ever touching

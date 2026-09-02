@@ -12,6 +12,11 @@ description: >-
 
 # Backend HTTP security (caught-looking)
 
+For the general principles this implements (validate before upstream, never leak raw
+upstream errors, explicit CORS/rate-limit/body-cap defaults, SSRF-safe URL construction),
+see the **`foundations:api-hardening`** skill. This file is the concrete chi/Go implementation
+reference.
+
 Project-specific hardening for the chi API. For a diff-wide security pass, also run a security review (Cursor's **`/review-security`**, or Claude Code's **`security-review`** skill).
 
 **Threat model:** **`docs/threat-model.md`** — assets, trust boundaries, controls, residual risks. Update it in the **same change** when CORS allowlisting, rate-limit trust (`RemoteAddr` vs forwarded headers), inbound body caps, outbound URL policy, generic upstream error responses, QPS/instance abuse assumptions, or SPA Pages security headers (`frontend/public/_headers` CSP / nosniff / frame / referrer) change. Do not duplicate the full threat table into this skill. Check with **`adr-doc-sync-check`** before opening a PR that touches these.
@@ -66,7 +71,6 @@ CI also runs `npm audit --audit-level=high` on the frontend job.
 ## Anti-patterns
 
 - Returning `err.Error()` from MLB/Savant failures in JSON.
-- Disabling rate limit or CORS allow-all in production defaults without an explicit, reviewed reason.
 - Hitting real `statsapi.mlb.com` from unit tests.
 - Introducing cookie/credentialed CORS without a clear auth design (API is currently credential-free GETs).
 - Changing the security posture above without updating **`docs/threat-model.md`**.

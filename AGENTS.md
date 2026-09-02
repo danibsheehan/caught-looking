@@ -199,16 +199,20 @@ Prefer short tables and copy-pasteable commands. Link to **`.github/pull_request
 Playbooks live in `.claude/skills/*/SKILL.md` (canonical) — `.cursor/skills` is a symlink to the
 same directory, kept for Cursor compatibility. Both tools auto-invoke them by task. This repo
 also installs the `foundations` plugin from the `dani-foundations` marketplace (see
-`.claude/settings.json`), providing `dependabot-triage`, `coverage-gap-diagnosis`, and
-`pr-summary-draft` (namespaced `foundations:*`) — no local copies of these needed; each was
-verified generic enough on its own (Go-specific coverage parsing, ecosystem-label inference,
-and PR-scaffolding-duplication guidance are all already generalized there) before removing the
-local duplicates.
+`.claude/settings.json`), providing `dependabot-triage`, `coverage-gap-diagnosis`,
+`pr-summary-draft`, `bugbot-fix-verify`, `caching-and-upstream-perf`, `doc-sync-patch`, and
+`api-hardening` (namespaced `foundations:*`) — no local copies of these needed for the
+generic parts; each was verified before removing/trimming the local versions.
+`bugbot-fix-verify` was fully redundant (removed); `caching-and-upstream-perf`,
+`doc-sync-patch`, and `backend-http-security` keep their local copies for this repo's
+specific Go implementation (types, commands, exact patch locations), cross-referencing the
+generic principles instead of restating them.
 
 - `add-api-endpoint` — full route end-to-end: models → handler → router → OpenAPI → types →
   client → hook/UI → tests.
 - `backend-go-tests` / `frontend-vitest-tests` — test conventions and fakes.
-- `backend-http-security` — CORS, rate limits, body caps, error responses, threat model.
+- `backend-http-security` — CORS, rate limits, body caps, error responses, threat model; see
+  `foundations:api-hardening` for the general principles this implements.
 - `caching-and-upstream-perf` — `TTLCache`, `GetOrLoad`, MLB/Savant QPS limits.
 - `openapi-maintain` — keeping the spec, generated types, and compat layer in sync.
 - `pr-ready` — local CI-parity checks and PR template before opening a PR.
@@ -221,8 +225,6 @@ local duplicates.
 - `venue-data-sync` — checks `mlbVenueFieldDimensions.ts`'s venue-id table against the live MLB
   Stats API and drafts entries for new/changed venues from a published source. Reactive, not
   scheduled — a franchise relocation or new ballpark is roughly once-a-decade.
-- `bugbot-fix-verify` — verifies a Bugbot finding against actual code/docs/live behavior before
-  fixing it, and re-verifies the fix resolves it without opening a new regression.
 
 ## Constraints — do not
 
