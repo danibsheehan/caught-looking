@@ -197,7 +197,13 @@ Prefer short tables and copy-pasteable commands. Link to **`.github/pull_request
 ## Step-by-step playbooks
 
 Playbooks live in `.claude/skills/*/SKILL.md` (canonical) — `.cursor/skills` is a symlink to the
-same directory, kept for Cursor compatibility. Both tools auto-invoke them by task:
+same directory, kept for Cursor compatibility. Both tools auto-invoke them by task. This repo
+also installs the `foundations` plugin from the `dani-foundations` marketplace (see
+`.claude/settings.json`), providing `dependabot-triage`, `coverage-gap-diagnosis`, and
+`pr-summary-draft` (namespaced `foundations:*`) — no local copies of these needed; each was
+verified generic enough on its own (Go-specific coverage parsing, ecosystem-label inference,
+and PR-scaffolding-duplication guidance are all already generalized there) before removing the
+local duplicates.
 
 - `add-api-endpoint` — full route end-to-end: models → handler → router → OpenAPI → types →
   client → hook/UI → tests.
@@ -206,18 +212,12 @@ same directory, kept for Cursor compatibility. Both tools auto-invoke them by ta
 - `caching-and-upstream-perf` — `TTLCache`, `GetOrLoad`, MLB/Savant QPS limits.
 - `openapi-maintain` — keeping the spec, generated types, and compat layer in sync.
 - `pr-ready` — local CI-parity checks and PR template before opening a PR.
-- `pr-summary-draft` — drafts a why-first PR Summary/How-to-verify from the actual diff and
-  commits, complementing the path-based PR guide scaffolding (which only knows file paths).
 - `doc-sync-patch` — patches README/`AGENTS.md` version drift after a dependency bump; run
   when `make check-stack-docs` fails or after bumping React, Vite, TypeScript, Go, or CI
   Node/Go.
-- `dependabot-triage` — reads each open Dependabot PR's changelog and required CI to classify
-  risk (security / low risk / needs a look); merges only PRs the user explicitly names.
 - `adr-doc-sync-check` — flags when a diff changes cache TTL/QPS defaults, CORS/rate-limit/
   body-cap/security-header behavior, or the OpenAPI workflow without a matching update to
   `docs/adr/0001`/`0002`/`0003` or `docs/threat-model.md`.
-- `coverage-gap-diagnosis` — reads local coverage output for files changed on this branch and
-  names the specific untested branches/error paths, rather than a bare percentage.
 - `venue-data-sync` — checks `mlbVenueFieldDimensions.ts`'s venue-id table against the live MLB
   Stats API and drafts entries for new/changed venues from a published source. Reactive, not
   scheduled — a franchise relocation or new ballpark is roughly once-a-decade.
