@@ -64,7 +64,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: danibsheehan/dani-actions/.github/workflows/deploy-cloud-run.yml@feat/deploy-cloud-run
+    uses: danibsheehan/dani-actions/.github/workflows/deploy-cloud-run.yml@v13
     with:
       service-name: ${{ vars.CLOUDRUN_SERVICE_NAME }}
       region: ${{ vars.GCP_REGION }}
@@ -86,7 +86,7 @@ jobs:
     permissions:
       contents: read
       deployments: write
-    uses: danibsheehan/dani-actions/.github/workflows/deploy-cloudflare-pages.yml@feat/deploy-cloud-run
+    uses: danibsheehan/dani-actions/.github/workflows/deploy-cloudflare-pages.yml@v13
     with:
       build-command: VITE_API_BASE="$BUILD_SECRET_1" npm run build
       dist-path: dist
