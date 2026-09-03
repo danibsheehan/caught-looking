@@ -1,11 +1,11 @@
 name: Dependency review
 
 on:
-    pull_request:
+  pull_request:
 
 jobs:
-    dependency-review:
-        permissions:
-            contents: read
-            pull-requests: write
-        uses: danibsheehan/dani-actions/.github/workflows/dependency-review.yml@v8
+  dependency-review:
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: danibsheehan/dani-actions/.github/workflows/dependency-review.yml@v8
