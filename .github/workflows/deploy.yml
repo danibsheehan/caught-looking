@@ -1,3 +1,9 @@
+# One caller file, two jobs -- not two separate files -- because the frontend build needs
+# the backend's freshly-deployed URL (VITE_API_BASE), an ordering dependency `needs:` only
+# expresses within the same workflow file. Both deploy mechanisms are still fully generalized
+# into dani-actions' deploy-cloud-run.yml / deploy-cloudflare-pages.yml; only this
+# orchestration stays combined. See dani-actions' README "File naming conventions" for the
+# general rule this is the documented exception to.
 name: Deploy
 
 on:
@@ -14,130 +20,24 @@ permissions:
   contents: read
 
 jobs:
-  deploy-backend:
+  # CORS origins are computed here (not inside deploy-cloud-run.yml) since merging
+  # CORS_ALLOWED_ORIGINS with a derived Cloudflare Pages origin is caller-specific business
+  # logic, not something a generic Cloud Run deploy workflow should know about. A job's
+  # `uses:` (reusable workflow call) can't have sibling steps in the same job, so this has to
+  # be its own job, feeding `backend` via an output.
+  prepare-backend-env:
     if: ${{ github.event.repository.fork == false }}
-    name: Deploy API (Cloud Run)
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
+    timeout-minutes: 5
     outputs:
-      api_url: ${{ steps.cloudrun-url.outputs.url }}
-    env:
-      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-      GCP_REGION: ${{ vars.GCP_REGION }}
-      GCP_ARTIFACT_REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY }}
-      CLOUDRUN_SERVICE_NAME: ${{ vars.CLOUDRUN_SERVICE_NAME }}
-      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-      GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      env-vars-json: ${{ steps.compute.outputs.json }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
-
-      # Optional cost caps stay step-scoped (not job env): unset vars expand to "" and
-      # would otherwise override the defaults written to GITHUB_ENV below.
-      - name: Validate GCP configuration
-        env:
-          CLOUDRUN_MAX_INSTANCES: ${{ vars.CLOUDRUN_MAX_INSTANCES }}
-          CLOUDRUN_MIN_INSTANCES: ${{ vars.CLOUDRUN_MIN_INSTANCES }}
-          GCP_ARTIFACT_KEEP_COUNT: ${{ vars.GCP_ARTIFACT_KEEP_COUNT }}
-        run: |
-          if [ -z "$GCP_PROJECT_ID" ] || [ -z "$GCP_REGION" ] || [ -z "$GCP_ARTIFACT_REPOSITORY" ] || [ -z "$CLOUDRUN_SERVICE_NAME" ] || [ -z "$GCP_WORKLOAD_IDENTITY_PROVIDER" ] || [ -z "$GCP_DEPLOY_SERVICE_ACCOUNT" ]; then
-            echo "::error::Set GitHub repository variables: GCP_PROJECT_ID, GCP_REGION, GCP_ARTIFACT_REPOSITORY, CLOUDRUN_SERVICE_NAME, GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_DEPLOY_SERVICE_ACCOUNT"
-            exit 1
-          fi
-          MAX_INSTANCES="${CLOUDRUN_MAX_INSTANCES:-2}"
-          MIN_INSTANCES="${CLOUDRUN_MIN_INSTANCES:-0}"
-          KEEP_COUNT="${GCP_ARTIFACT_KEEP_COUNT:-5}"
-          # Decimal only: reject leading zeros (e.g. 00) so bash -gt is not octal and keepCount stays > 0.
-          if [[ ! "$MAX_INSTANCES" =~ ^[1-9][0-9]*$ ]]; then
-            echo "::error::CLOUDRUN_MAX_INSTANCES must be a positive integer without leading zeros (got ${MAX_INSTANCES})"
-            exit 1
-          fi
-          if [[ ! "$MIN_INSTANCES" =~ ^(0|[1-9][0-9]*)$ ]]; then
-            echo "::error::CLOUDRUN_MIN_INSTANCES must be a non-negative integer without leading zeros (got ${MIN_INSTANCES})"
-            exit 1
-          fi
-          if [[ ! "$KEEP_COUNT" =~ ^[1-9][0-9]*$ ]]; then
-            echo "::error::GCP_ARTIFACT_KEEP_COUNT must be a positive integer without leading zeros (got ${KEEP_COUNT})"
-            exit 1
-          fi
-          if [ "$MIN_INSTANCES" -gt "$MAX_INSTANCES" ]; then
-            echo "::error::CLOUDRUN_MIN_INSTANCES ($MIN_INSTANCES) cannot exceed CLOUDRUN_MAX_INSTANCES ($MAX_INSTANCES)"
-            exit 1
-          fi
-          echo "CLOUDRUN_MAX_INSTANCES=$MAX_INSTANCES" >> "$GITHUB_ENV"
-          echo "CLOUDRUN_MIN_INSTANCES=$MIN_INSTANCES" >> "$GITHUB_ENV"
-          echo "GCP_ARTIFACT_KEEP_COUNT=$KEEP_COUNT" >> "$GITHUB_ENV"
-
-      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
-        with:
-          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ env.GCP_DEPLOY_SERVICE_ACCOUNT }}
-
-      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
-
-      - name: Validate CORS (ALLOWED_ORIGINS)
-        env:
-          CORS: ${{ vars.CORS_ALLOWED_ORIGINS }}
-        run: |
-          if [ -z "$CORS" ]; then
-            echo "::error::Set repository variable CORS_ALLOWED_ORIGINS (comma-separated origins), e.g. https://your-project.pages.dev"
-            exit 1
-          fi
-
-      - name: Configure Docker for Artifact Registry
-        run: |
-          gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
-          gcloud auth print-access-token | docker login \
-            -u oauth2accesstoken \
-            --password-stdin "https://${GCP_REGION}-docker.pkg.dev"
-
-      - name: Ensure Artifact Registry cleanup policy
-        run: |
-          # Keep policies win over delete. Delete anything older than 1 day that is
-          # outside the most-recent keep window so :sha images do not accumulate forever.
-          python3 - <<'PY'
-          import json, os
-
-          keep = int(os.environ["GCP_ARTIFACT_KEEP_COUNT"])
-          policy = [
-              {
-                  "name": "delete-old-versions",
-                  "action": {"type": "Delete"},
-                  "condition": {"tagState": "ANY", "olderThan": "86400s"},
-              },
-              {
-                  "name": "keep-minimum-versions",
-                  "action": {"type": "Keep"},
-                  "mostRecentVersions": {"keepCount": keep},
-              },
-          ]
-          with open("/tmp/ar-cleanup-policy.json", "w") as f:
-              json.dump(policy, f)
-          print(f"Artifact Registry keepCount={keep}")
-          PY
-          gcloud artifacts repositories set-cleanup-policies "$GCP_ARTIFACT_REPOSITORY" \
-            --project "$GCP_PROJECT_ID" \
-            --location "$GCP_REGION" \
-            --policy=/tmp/ar-cleanup-policy.json \
-            --no-dry-run
-
-      - name: Build and push container image
-        run: |
-          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/api:${GITHUB_SHA}"
-          docker build -t "$IMAGE" -f backend/Dockerfile backend
-          docker push "$IMAGE"
-
-      # ALLOWED_ORIGINS values look like https://….pages.dev — they contain ":" and ",".
-      # Inline --set-env-vars / ^:^ breaks on "https://"; use --env-vars-file (JSON) instead.
-      # Always allow the Pages project origin and branch-preview wildcard so PR previews
-      # (https://<branch>.<project>.pages.dev) can call the API without manual CORS edits.
-      - name: Deploy to Cloud Run
+      - name: Compute ALLOWED_ORIGINS
+        id: compute
         env:
           CORS: ${{ vars.CORS_ALLOWED_ORIGINS }}
           CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
         run: |
-          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/api:${GITHUB_SHA}"
           python3 - <<'PY'
           import json, os
 
@@ -152,180 +52,48 @@ jobs:
                       origins.append(extra)
           if not origins:
               raise SystemExit("ALLOWED_ORIGINS resolved empty")
-          json.dump({"ALLOWED_ORIGINS": ",".join(origins)}, open("/tmp/cr-env.json", "w"))
+          payload = json.dumps({"ALLOWED_ORIGINS": ",".join(origins)})
           print("ALLOWED_ORIGINS=" + ",".join(origins))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"json={payload}\n")
           PY
-          gcloud run deploy "$CLOUDRUN_SERVICE_NAME" \
-            --image "$IMAGE" \
-            --region "$GCP_REGION" \
-            --project "$GCP_PROJECT_ID" \
-            --platform managed \
-            --allow-unauthenticated \
-            --min-instances="$CLOUDRUN_MIN_INSTANCES" \
-            --max-instances="$CLOUDRUN_MAX_INSTANCES" \
-            --startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=0,timeoutSeconds=3,periodSeconds=5,failureThreshold=12 \
-            --env-vars-file=/tmp/cr-env.json
 
-      - id: cloudrun-url
-        name: Read Cloud Run service URL
-        run: |
-          URL=$(gcloud run services describe "$CLOUDRUN_SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format 'value(status.url)')
-          echo "url=$URL" >> "$GITHUB_OUTPUT"
+  backend:
+    needs: prepare-backend-env
+    if: ${{ github.event.repository.fork == false }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: danibsheehan/dani-actions/.github/workflows/deploy-cloud-run.yml@feat/deploy-cloud-run
+    with:
+      service-name: ${{ vars.CLOUDRUN_SERVICE_NAME }}
+      region: ${{ vars.GCP_REGION }}
+      project-id: ${{ vars.GCP_PROJECT_ID }}
+      artifact-repository: ${{ vars.GCP_ARTIFACT_REPOSITORY }}
+      workload-identity-provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      deploy-service-account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      source-path: backend
+      min-instances: ${{ vars.CLOUDRUN_MIN_INSTANCES || 0 }}
+      max-instances: ${{ vars.CLOUDRUN_MAX_INSTANCES || 2 }}
+      artifact-keep-count: ${{ vars.GCP_ARTIFACT_KEEP_COUNT || 5 }}
+      startup-probe-path: /health
+      smoke-check-paths: '["/health", "/ready"]'
+      env-vars-json: ${{ needs.prepare-backend-env.outputs.env-vars-json }}
 
-      # Fail before Pages publish if the new revision is not serving probes.
-      # Retries cover brief Cloud Run URL / revision propagation after deploy.
-      - name: Smoke check API probes
-        env:
-          API_URL: ${{ steps.cloudrun-url.outputs.url }}
-        run: |
-          if [ -z "$API_URL" ]; then
-            echo "::error::Cloud Run URL is empty; cannot smoke-check probes"
-            exit 1
-          fi
-          for path in /health /ready; do
-            echo "Checking ${API_URL}${path}…"
-            ok=0
-            for i in $(seq 1 10); do
-              code=$(curl -sS -o /tmp/probe-body -w '%{http_code}' --max-time 10 "${API_URL}${path}" || true)
-              body=$(tr -d '\r' </tmp/probe-body 2>/dev/null || true)
-              if [ "$code" = "200" ]; then
-                echo "OK ${path} (attempt ${i}): ${body}"
-                ok=1
-                break
-              fi
-              echo "attempt ${i}: HTTP ${code} body=${body}"
-              sleep 3
-            done
-            if [ "$ok" != "1" ]; then
-              echo "::error::Probe ${path} did not return HTTP 200 after retries"
-              exit 1
-            fi
-          done
-
-      - name: Deploy summary (API)
-        env:
-          API_URL: ${{ steps.cloudrun-url.outputs.url }}
-        run: |
-          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/api:${GITHUB_SHA}"
-          {
-            echo "## Deploy summary (API)"
-            echo ""
-            echo "| | |"
-            echo "| --- | --- |"
-            echo "| **git SHA** | \`${GITHUB_SHA}\` |"
-            echo "| **image** | \`${IMAGE}\` |"
-            echo "| **Cloud Run** | ${API_URL} |"
-            echo "| **probes** | \`GET /health\` + \`GET /ready\` → 200 |"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  deploy-frontend:
+  frontend:
+    needs: backend
     if: ${{ github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
-    name: Deploy frontend (Cloudflare Pages)
-    runs-on: ubuntu-latest
-    needs: deploy-backend
     permissions:
       contents: read
       deployments: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
-
-      - name: Validate Cloudflare configuration
-        env:
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
-        run: |
-          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ] || [ -z "$CF_PROJECT" ]; then
-            echo "::error::Set secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID, and variable CLOUDFLARE_PAGES_PROJECT_NAME (Pages project must exist in Cloudflare)."
-            exit 1
-          fi
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Build static assets
-        working-directory: frontend
-        env:
-          VITE_API_BASE: ${{ needs.deploy-backend.outputs.api_url }}
-        run: |
-          npm ci
-          npm run build
-
-      - id: pages
-        name: Publish to Cloudflare Pages
-        uses: cloudflare/pages-action@f0a1cd58cd66095dee69bfa18fa5efd1dde93bca # v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
-          directory: dist
-          branch: main
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          workingDirectory: frontend
-
-      # Catch a bad SPA upload the API probes cannot see.
-      # Hard-check the Pages deployment URL (*.pages.dev) — custom domains often
-      # hit Cloudflare bot challenges (403 + cf-mitigated: challenge) from Actions curl.
-      - name: Smoke check Pages
-        env:
-          PAGES_URL: ${{ steps.pages.outputs.url }}
-          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
-          SITE_PUBLIC_URL: ${{ vars.SITE_PUBLIC_URL }}
-        run: |
-          URL="${PAGES_URL:-https://${CF_PROJECT}.pages.dev}"
-          URL="${URL%/}"
-          if [ -z "$URL" ]; then
-            echo "::error::Pages URL is empty; set CLOUDFLARE_PAGES_PROJECT_NAME"
-            exit 1
-          fi
-          echo "Checking ${URL}/…"
-          ok=0
-          for i in $(seq 1 10); do
-            code=$(curl -sS -o /tmp/pages-body -w '%{http_code}' --max-time 15 "${URL}/" || true)
-            if [ "$code" = "200" ]; then
-              echo "OK / (attempt ${i})"
-              ok=1
-              break
-            fi
-            echo "attempt ${i}: HTTP ${code}"
-            sleep 3
-          done
-          if [ "$ok" != "1" ]; then
-            echo "::error::Pages smoke ${URL}/ did not return HTTP 200 after retries"
-            exit 1
-          fi
-          # Optional soft check: custom domains may challenge bots; never fail deploy.
-          if [ -n "$SITE_PUBLIC_URL" ]; then
-            SITE="${SITE_PUBLIC_URL%/}"
-            site_code=$(curl -sS -o /tmp/site-body -w '%{http_code}' --max-time 15 "${SITE}/" || true)
-            if [ "$site_code" = "200" ]; then
-              echo "OK soft check ${SITE}/ → 200"
-            else
-              echo "::warning::SITE_PUBLIC_URL ${SITE}/ returned HTTP ${site_code} (often Cloudflare bot challenge). Upload smoke used ${URL}/ instead."
-            fi
-          fi
-
-      - name: Deploy summary (frontend)
-        env:
-          API_URL: ${{ needs.deploy-backend.outputs.api_url }}
-          PAGES_URL: ${{ steps.pages.outputs.url }}
-          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
-          SITE_PUBLIC_URL: ${{ vars.SITE_PUBLIC_URL }}
-        run: |
-          PAGES="${PAGES_URL:-https://${CF_PROJECT}.pages.dev}"
-          {
-            echo "## Deploy summary (frontend)"
-            echo ""
-            echo "| | |"
-            echo "| --- | --- |"
-            echo "| **git SHA** | \`${GITHUB_SHA}\` |"
-            echo "| **VITE_API_BASE** | ${API_URL} |"
-            echo "| **Pages (smoke)** | ${PAGES} |"
-            if [ -n "$SITE_PUBLIC_URL" ]; then
-              echo "| **SITE_PUBLIC_URL** | ${SITE_PUBLIC_URL} (soft check only) |"
-            fi
-            echo "| **SPA smoke** | \`GET /\` on Pages URL → 200 |"
-          } >> "$GITHUB_STEP_SUMMARY"
+    uses: danibsheehan/dani-actions/.github/workflows/deploy-cloudflare-pages.yml@feat/deploy-cloud-run
+    with:
+      build-command: VITE_API_BASE="$BUILD_SECRET_1" npm run build
+      dist-path: dist
+      working-directory: frontend
+      project-name: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
+      site-public-url: ${{ vars.SITE_PUBLIC_URL }}
+    secrets:
+      cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      cloudflare-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      build-secret-1: ${{ needs.backend.outputs.url }}
