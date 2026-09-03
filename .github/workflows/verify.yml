@@ -29,7 +29,7 @@ jobs:
       contents: read
       pull-requests: write
       checks: write
-    uses: danibsheehan/dani-actions/.github/workflows/npm-verify.yml@v7
+    uses: danibsheehan/dani-actions/.github/workflows/npm-verify.yml@v10
     with:
       packages: |
         [{"name": "frontend", "path": "frontend",
