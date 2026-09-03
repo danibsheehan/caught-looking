@@ -5,7 +5,7 @@
 # green on docs/skills-only (or single-side) PRs while skipping heavy steps. Optional
 # e2e/sbom use a shared changes job and skip entirely when their paths are unchanged
 # (skipped checks, not green no-ops). Frontend delegates to dani-actions' npm-verify.yml;
-# Backend/lint-backend stay native since no Go-equivalent shared workflow exists yet.
+# Backend delegates to go-verify.yml (lint + test-build as its two internal jobs).
 name: verify
 
 on:
@@ -48,112 +48,18 @@ jobs:
           "paths": "app:\n  - 'frontend/**'\n  - 'backend/apidocs/**'\n  - 'redocly.yaml'\n  - 'Makefile'\n  - '.nvmrc'\n  - '.github/workflows/verify.yml'"}]
 
   backend:
-    name: Backend (vet, test+coverage, build)
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: write
       checks: write
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
-
-      - name: Detect backend-relevant changes
-        if: github.event_name == 'pull_request'
-        id: filter
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-        with:
-          filters: |
-            backend:
-              - 'backend/**'
-              - 'Makefile'
-              - '.github/workflows/verify.yml'
-
-      - name: Skip heavy backend gates (path filter)
-        if: github.event_name == 'pull_request' && steps.filter.outputs.backend != 'true'
-        run: echo 'No backend-relevant paths changed; skipping Go gates.'
-        working-directory: ${{ github.workspace }}
-
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        with:
-          go-version: '1.26.6'
-          cache-dependency-path: backend/go.sum
-
-      - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        run: go mod download
-
-      - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        run: go vet ./...
-
-      - name: Vulnerability scan
-        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
-
-      - name: Test with race detector
-        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        run: go test ./... -race -count=1
-
-      - name: Test with coverage
-        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        run: |
-          go test ./... -count=1 -coverprofile=coverage.out -covermode=atomic
-          go install github.com/boumenot/gocover-cobertura@v1.4.0
-          # Write as gha-cobertura.xml (gitignored paths stay out of the workspace snapshot).
-          "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura-raw.xml
-          python3 "$GITHUB_WORKSPACE/.github/scripts/merge_cobertura_by_file.py" gha-cobertura-raw.xml > "$GITHUB_WORKSPACE/gha-cobertura.xml"
-
-      - name: Enforce backend coverage threshold
-        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        run: >
-          python3 "${GITHUB_WORKSPACE}/.github/scripts/check_cobertura_line_rate.py"
-          "${GITHUB_WORKSPACE}/gha-cobertura.xml" 0.50
-          --label "Backend coverage"
-
-      - name: Cobertura markdown summary (for job summary)
-        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0
-        with:
-          filename: gha-cobertura.xml
-          badge: true
-          fail_below_min: false
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: true
-          indicators: true
-          output: file
-          thresholds: '50 75'
-
-      - name: Add coverage to GitHub Actions job summary
-        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        run: |
-          echo "## Code coverage: backend (Cobertura)" >> "$GITHUB_STEP_SUMMARY"
-          cat code-coverage-results.md >> "$GITHUB_STEP_SUMMARY"
-        working-directory: ${{ github.workspace }}
-
-      # Same-repo PRs only: forked PR workflows get a read-only token and cannot post
-      # comments on the base repo PR.
-      - name: Cobertura coverage comment on PR
-        if: >
-          (github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true') &&
-          github.event_name == 'pull_request' &&
-          github.event.pull_request.head.repo.full_name == github.repository
-        uses: 5monkeys/cobertura-action@ee5787cc56634acddedc51f21c7947985531e6eb # v14
-        with:
-          path: gha-cobertura.xml
-          minimum_coverage: 0
-          fail_below_threshold: false
-          show_line: true
-          show_branch: true
-          skip_covered: false
-          report_name: backend
-
-      - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        run: go build -o /dev/null .
+    uses: danibsheehan/dani-actions/.github/workflows/go-verify.yml@feat/go-verify
+    with:
+      working-directory: backend
+      paths: "app:\n  - 'backend/**'\n  - 'Makefile'\n  - '.github/workflows/verify.yml'"
+      coverage-threshold: "0.50"
+      coverage-label: "Backend coverage"
+      skip-covered: false
 
   # Optional path detection for e2e/sbom. Required FE/BE keep in-job filters
   # (must stay green for branch protection when path-skipped).
@@ -252,44 +158,3 @@ jobs:
           upload-release-assets: false
           dependency-snapshot: false
 
-  # Required status check "Lint (golangci-lint)" -- must match branch ruleset exactly.
-  # Keeps its own in-job path filter (like Backend) rather than the "changes" job's
-  # gating: a job skipped entirely via job-level `if` never posts a check run, which leaves
-  # a required check pending forever on PRs that don't touch backend/**. Skipping per-step
-  # instead (job always runs) reports green quickly on unrelated PRs.
-  lint-backend:
-    name: Lint (golangci-lint)
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
-
-      - name: Detect backend-relevant changes
-        if: github.event_name == 'pull_request'
-        id: filter
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-        with:
-          filters: |
-            backend:
-              - 'backend/**'
-              - '.github/workflows/verify.yml'
-
-      - name: Skip lint (path filter)
-        if: github.event_name == 'pull_request' && steps.filter.outputs.backend != 'true'
-        run: echo 'No backend-relevant paths changed; skipping golangci-lint.'
-        working-directory: ${{ github.workspace }}
-
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        with:
-          go-version: '1.26.6'
-          cache-dependency-path: backend/go.sum
-
-      - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-        run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run ./...
