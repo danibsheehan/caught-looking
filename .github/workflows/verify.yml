@@ -133,6 +133,7 @@ jobs:
               run: |
                   echo "## Code coverage: backend (Cobertura)" >> "$GITHUB_STEP_SUMMARY"
                   cat code-coverage-results.md >> "$GITHUB_STEP_SUMMARY"
+              working-directory: ${{ github.workspace }}
 
             # Same-repo PRs only: forked PR workflows get a read-only token and cannot post
             # comments on the base repo PR.
