@@ -6,7 +6,7 @@
 # e2e/sbom use a shared changes job and skip entirely when their paths are unchanged
 # (skipped checks, not green no-ops). Frontend delegates to dani-actions' npm-verify.yml;
 # Backend delegates to go-verify.yml (lint + test-build as its two internal jobs).
-name: verify
+name: CI
 
 on:
   push:
