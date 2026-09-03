@@ -44,6 +44,18 @@ export default defineConfig({
         'src/main.tsx',
         'src/vite-env.d.ts',
       ],
+      /**
+       * Floor vs current aggregate (~87% stmts, ~77% branches, ~84% funcs, ~89% lines).
+       * Raise gradually as suites grow; `npm run test:coverage` prints the table locally.
+       * Replaces the previous external check_cobertura_line_rate.py threshold gate --
+       * Vitest can enforce this natively, matching musing's pattern.
+       */
+      thresholds: {
+        statements: 83,
+        branches: 73,
+        functions: 80,
+        lines: 85,
+      },
     },
   },
 });

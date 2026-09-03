@@ -1,6 +1,6 @@
 # Caught looking
 
-[![CI](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml/badge.svg)](https://github.com/danibsheehan/caught-looking/actions/workflows/ci.yml)
+[![CI](https://github.com/danibsheehan/caught-looking/actions/workflows/verify.yml/badge.svg)](https://github.com/danibsheehan/caught-looking/actions/workflows/verify.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![OpenAPI docs](https://img.shields.io/badge/docs-Redoc-f472b6?style=flat-square&labelColor=070b10)](https://docs.caught-looking.com/)
 [![Live app — caught-looking.com](./docs/badge-live.svg)](https://caught-looking.com/standings)
@@ -328,7 +328,7 @@ Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull req
 | Workflow / job | Role |
 | --- | --- |
 | [**PR guide**](.github/workflows/pr-guide.yml) | On open / reopen / ready-for-review: scaffolds empty/default PR description (verify commands, **Touches**), sticky checklist comment, `area:*` labels from changed paths (does not re-run on every push). Authors/agents should still write a why-first **Summary**. |
-| **Coverage comments** (CI job) | After frontend/backend succeed, posts or updates Cobertura coverage comments from uploaded artifacts (same-repo PRs only; does not run on `main`) |
+| **Coverage comments** | Frontend and Backend each post their own Cobertura coverage comment directly after their own tests run (same-repo PRs only; does not run on `main`) — no separate combining job or artifact hand-off |
 | [**Pages preview**](.github/workflows/pages-preview.yml) | Builds SPA with `VITE_API_BASE` → Cloudflare branch preview; does not run at all for non-SPA path PRs |
 | **Lighthouse** (job in [pages preview](.github/workflows/pages-preview.yml)) | After the preview deploys, audits that live URL with Lighthouse CI and comments the report link; warn-level thresholds in [`.lighthouserc.json`](.lighthouserc.json), non-blocking |
 | [**Preview cleanup**](.github/workflows/pages-preview-cleanup.yml) | Deletes preview deployments when the PR is closed or merged |

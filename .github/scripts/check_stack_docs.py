@@ -4,8 +4,8 @@
 Sources of truth:
   - frontend/package.json — react, typescript, vite
   - backend/go.mod — `go` directive (and optional toolchain)
-  - .nvmrc — Node major (preferred); else ci.yml node-version
-  - .github/workflows/ci.yml — go-version (and node-version if no .nvmrc)
+  - .nvmrc — Node major (preferred); else verify.yml node-version
+  - .github/workflows/verify.yml — go-version (and node-version if no .nvmrc)
 
 Checked docs:
   - README.md badges, Tech stack table, Prerequisites
@@ -69,7 +69,7 @@ def read_go_mod(go_mod: Path) -> dict[str, str]:
     return out
 
 
-def read_node_major(root: Path, ci_yml: Path) -> str:
+def read_node_major(root: Path, verify_yml: Path) -> str:
     nvmrc = root / ".nvmrc"
     if nvmrc.is_file():
         lines = [
@@ -85,23 +85,23 @@ def read_node_major(root: Path, ci_yml: Path) -> str:
             raise ValueError(f"{nvmrc}: expected Node version, got {lines[0]!r}")
         return major
 
-    text = ci_yml.read_text(encoding="utf-8")
+    text = verify_yml.read_text(encoding="utf-8")
     node = re.search(r"(?m)^\s*node-version:\s*['\"]?(\d+)['\"]?\s*$", text)
     if not node:
-        raise ValueError(f"{ci_yml}: no node-version and no .nvmrc")
+        raise ValueError(f"{verify_yml}: no node-version and no .nvmrc")
     return node.group(1)
 
 
-def read_ci_versions(root: Path, ci_yml: Path) -> dict[str, str]:
-    text = ci_yml.read_text(encoding="utf-8")
+def read_verify_versions(root: Path, verify_yml: Path) -> dict[str, str]:
+    # Node's version now comes from .nvmrc via dani-actions' npm-verify.yml default --
+    # there's no literal node-version-file: string left in this repo's own workflow file
+    # to cross-check (unlike go-version, which stays a literal string here since Backend
+    # is a native job, not delegated to a shared workflow).
+    text = verify_yml.read_text(encoding="utf-8")
     go = re.search(r"(?m)^\s*go-version:\s*['\"]?([\d.]+)['\"]?\s*$", text)
     if not go:
-        raise ValueError(f"{ci_yml}: no go-version")
-    node_major = read_node_major(root, ci_yml)
-    if (root / ".nvmrc").is_file() and "node-version-file:" not in text:
-        raise ValueError(
-            f"{ci_yml}: .nvmrc is present but no node-version-file (pin Actions to .nvmrc)"
-        )
+        raise ValueError(f"{verify_yml}: no go-version")
+    node_major = read_node_major(root, verify_yml)
     return {"node_major": node_major, "go_version": go.group(1)}
 
 
@@ -197,14 +197,14 @@ def check_stack_line(
 def main() -> int:
     package_json = ROOT / "frontend" / "package.json"
     go_mod = ROOT / "backend" / "go.mod"
-    ci_yml = ROOT / ".github" / "workflows" / "ci.yml"
+    verify_yml = ROOT / ".github" / "workflows" / "verify.yml"
     readme_path = ROOT / "README.md"
     agents_md = ROOT / "AGENTS.md"
 
     try:
         pkg = read_package_versions(package_json)
         go = read_go_mod(go_mod)
-        ci = read_ci_versions(ROOT, ci_yml)
+        ci = read_verify_versions(ROOT, verify_yml)
         readme = readme_path.read_text(encoding="utf-8")
         agents_text = agents_md.read_text(encoding="utf-8")
     except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -246,7 +246,7 @@ def main() -> int:
             print(f"  - {err}", file=sys.stderr)
         print(
             "Update README badges/Prerequisites/Tech stack (and AGENTS.md) to match "
-            "frontend/package.json, backend/go.mod, .nvmrc, and .github/workflows/ci.yml.",
+            "frontend/package.json, backend/go.mod, .nvmrc, and .github/workflows/verify.yml.",
             file=sys.stderr,
         )
         return 1
