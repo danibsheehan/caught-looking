@@ -64,7 +64,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: danibsheehan/dani-actions/.github/workflows/deploy-cloud-run.yml@fix/deploy-cloud-run-url-output
+    uses: danibsheehan/dani-actions/.github/workflows/deploy-cloud-run.yml@v14
     with:
       service-name: ${{ vars.CLOUDRUN_SERVICE_NAME }}
       region: ${{ vars.GCP_REGION }}
