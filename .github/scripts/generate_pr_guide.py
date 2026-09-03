@@ -71,10 +71,10 @@ def main() -> int:
 
     repo_url = os.environ.get("GITHUB_REPO_URL", "").rstrip("/")
     if repo_url:
-        ci_href = f"{repo_url}/blob/main/.github/workflows/ci.yml"
+        ci_href = f"{repo_url}/blob/main/.github/workflows/verify.yml"
         template_href = f"{repo_url}/blob/main/.github/pull_request_template.md"
     else:
-        ci_href = ".github/workflows/ci.yml"
+        ci_href = ".github/workflows/verify.yml"
         template_href = ".github/pull_request_template.md"
 
     lines.extend(
@@ -82,8 +82,8 @@ def main() -> int:
             "",
             "### CI",
             "",
-            f"Required checks: **Frontend** and **Backend** jobs in [CI]({ci_href}). "
-            "Coverage tables are posted separately when those jobs finish.",
+            f"Required checks: **Frontend** (per-concern jobs) and **Backend** in "
+            f"[verify]({ci_href}). Coverage tables are posted separately when those jobs finish.",
             "",
             "---",
             "",
