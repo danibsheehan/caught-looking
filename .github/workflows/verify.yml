@@ -6,6 +6,8 @@
 # e2e/sbom use a shared changes job and skip entirely when their paths are unchanged
 # (skipped checks, not green no-ops). Frontend delegates to dani-actions' npm-verify.yml;
 # Backend/lint-backend stay native since no Go-equivalent shared workflow exists yet.
+name: verify
+
 on:
     push:
         branches:
@@ -116,7 +118,7 @@ jobs:
               if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
               uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0
               with:
-                  filename: ${{ github.workspace }}/gha-cobertura.xml
+                  filename: gha-cobertura.xml
                   badge: true
                   fail_below_min: false
                   format: markdown
@@ -141,7 +143,7 @@ jobs:
                   github.event.pull_request.head.repo.full_name == github.repository
               uses: 5monkeys/cobertura-action@ee5787cc56634acddedc51f21c7947985531e6eb # v14
               with:
-                  path: ${{ github.workspace }}/gha-cobertura.xml
+                  path: gha-cobertura.xml
                   minimum_coverage: 0
                   fail_below_threshold: false
                   show_line: true
