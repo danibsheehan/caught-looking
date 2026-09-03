@@ -9,287 +9,287 @@
 name: verify
 
 on:
-    push:
-        branches:
-            - main
-    pull_request:
-        types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
-    group: verify-${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    frontend:
-        if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-        permissions:
-            contents: read
-            pull-requests: write
-            checks: write
-        uses: danibsheehan/dani-actions/.github/workflows/npm-verify.yml@v7
+  frontend:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    uses: danibsheehan/dani-actions/.github/workflows/npm-verify.yml@v7
+    with:
+      packages: |
+        [{"name": "frontend", "path": "frontend",
+          "test-command": "npm run test:coverage",
+          "build-command": "npm run build",
+          "coverage-file": "coverage/cobertura-coverage.xml",
+          "typecheck-command": "npm run typecheck",
+          "paths": "app:\n  - 'frontend/**'\n  - 'backend/apidocs/**'\n  - 'redocly.yaml'\n  - 'Makefile'\n  - '.nvmrc'\n  - '.github/workflows/verify.yml'"}]
+      doc-check-commands: |
+        [{"name": "stack-docs", "command": "python3 .github/scripts/check_stack_docs.py"},
+         {"name": "skills-docs", "command": "python3 .github/scripts/check_skills_docs.py"}]
+      extra-checks: |
+        [{"name": "api-validate", "command": "npm run api:validate", "path": "frontend",
+          "paths": "app:\n  - 'frontend/**'\n  - 'backend/apidocs/**'\n  - 'redocly.yaml'\n  - 'Makefile'\n  - '.nvmrc'\n  - '.github/workflows/verify.yml'"},
+         {"name": "api-types", "command": "npm run api:types:check", "path": "frontend",
+          "paths": "app:\n  - 'frontend/**'\n  - 'backend/apidocs/**'\n  - 'redocly.yaml'\n  - 'Makefile'\n  - '.nvmrc'\n  - '.github/workflows/verify.yml'"}]
+
+  backend:
+    name: Backend (vet, test+coverage, build)
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+      - name: Detect backend-relevant changes
+        if: github.event_name == 'pull_request'
+        id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
-            packages: |
-                [{"name": "frontend", "path": "frontend",
-                  "test-command": "npm run test:coverage",
-                  "build-command": "npm run build",
-                  "coverage-file": "coverage/cobertura-coverage.xml",
-                  "typecheck-command": "npm run typecheck",
-                  "paths": "app:\n  - 'frontend/**'\n  - 'backend/apidocs/**'\n  - 'redocly.yaml'\n  - 'Makefile'\n  - '.nvmrc'\n  - '.github/workflows/verify.yml'"}]
-            doc-check-commands: |
-                [{"name": "stack-docs", "command": "python3 .github/scripts/check_stack_docs.py"},
-                 {"name": "skills-docs", "command": "python3 .github/scripts/check_skills_docs.py"}]
-            extra-checks: |
-                [{"name": "api-validate", "command": "npm run api:validate", "path": "frontend",
-                  "paths": "app:\n  - 'frontend/**'\n  - 'backend/apidocs/**'\n  - 'redocly.yaml'\n  - 'Makefile'\n  - '.nvmrc'\n  - '.github/workflows/verify.yml'"},
-                 {"name": "api-types", "command": "npm run api:types:check", "path": "frontend",
-                  "paths": "app:\n  - 'frontend/**'\n  - 'backend/apidocs/**'\n  - 'redocly.yaml'\n  - 'Makefile'\n  - '.nvmrc'\n  - '.github/workflows/verify.yml'"}]
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'Makefile'
+              - '.github/workflows/verify.yml'
 
-    backend:
-        name: Backend (vet, test+coverage, build)
-        if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        permissions:
-            contents: read
-            pull-requests: write
-            checks: write
-        defaults:
-            run:
-                working-directory: backend
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - name: Skip heavy backend gates (path filter)
+        if: github.event_name == 'pull_request' && steps.filter.outputs.backend != 'true'
+        run: echo 'No backend-relevant paths changed; skipping Go gates.'
+        working-directory: ${{ github.workspace }}
 
-            - name: Detect backend-relevant changes
-              if: github.event_name == 'pull_request'
-              id: filter
-              uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-              with:
-                  filters: |
-                      backend:
-                        - 'backend/**'
-                        - 'Makefile'
-                        - '.github/workflows/verify.yml'
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        with:
+          go-version: '1.26.6'
+          cache-dependency-path: backend/go.sum
 
-            - name: Skip heavy backend gates (path filter)
-              if: github.event_name == 'pull_request' && steps.filter.outputs.backend != 'true'
-              run: echo 'No backend-relevant paths changed; skipping Go gates.'
-              working-directory: ${{ github.workspace }}
+      - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        run: go mod download
 
-            - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              with:
-                  go-version: '1.26.6'
-                  cache-dependency-path: backend/go.sum
+      - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        run: go vet ./...
 
-            - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              run: go mod download
+      - name: Vulnerability scan
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
-            - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              run: go vet ./...
+      - name: Test with race detector
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        run: go test ./... -race -count=1
 
-            - name: Vulnerability scan
-              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - name: Test with coverage
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        run: |
+          go test ./... -count=1 -coverprofile=coverage.out -covermode=atomic
+          go install github.com/boumenot/gocover-cobertura@v1.4.0
+          # Write as gha-cobertura.xml (gitignored paths stay out of the workspace snapshot).
+          "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura-raw.xml
+          python3 "$GITHUB_WORKSPACE/.github/scripts/merge_cobertura_by_file.py" gha-cobertura-raw.xml > "$GITHUB_WORKSPACE/gha-cobertura.xml"
 
-            - name: Test with race detector
-              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              run: go test ./... -race -count=1
+      - name: Enforce backend coverage threshold
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        run: >
+          python3 "${GITHUB_WORKSPACE}/.github/scripts/check_cobertura_line_rate.py"
+          "${GITHUB_WORKSPACE}/gha-cobertura.xml" 0.50
+          --label "Backend coverage"
 
-            - name: Test with coverage
-              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              run: |
-                  go test ./... -count=1 -coverprofile=coverage.out -covermode=atomic
-                  go install github.com/boumenot/gocover-cobertura@v1.4.0
-                  # Write as gha-cobertura.xml (gitignored paths stay out of the workspace snapshot).
-                  "$(go env GOPATH)/bin/gocover-cobertura" < coverage.out > gha-cobertura-raw.xml
-                  python3 "$GITHUB_WORKSPACE/.github/scripts/merge_cobertura_by_file.py" gha-cobertura-raw.xml > "$GITHUB_WORKSPACE/gha-cobertura.xml"
+      - name: Cobertura markdown summary (for job summary)
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0
+        with:
+          filename: gha-cobertura.xml
+          badge: true
+          fail_below_min: false
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: true
+          indicators: true
+          output: file
+          thresholds: '50 75'
 
-            - name: Enforce backend coverage threshold
-              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              run: >
-                  python3 "${GITHUB_WORKSPACE}/.github/scripts/check_cobertura_line_rate.py"
-                  "${GITHUB_WORKSPACE}/gha-cobertura.xml" 0.50
-                  --label "Backend coverage"
+      - name: Add coverage to GitHub Actions job summary
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        run: |
+          echo "## Code coverage: backend (Cobertura)" >> "$GITHUB_STEP_SUMMARY"
+          cat code-coverage-results.md >> "$GITHUB_STEP_SUMMARY"
+        working-directory: ${{ github.workspace }}
 
-            - name: Cobertura markdown summary (for job summary)
-              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0
-              with:
-                  filename: gha-cobertura.xml
-                  badge: true
-                  fail_below_min: false
-                  format: markdown
-                  hide_branch_rate: false
-                  hide_complexity: true
-                  indicators: true
-                  output: file
-                  thresholds: '50 75'
-
-            - name: Add coverage to GitHub Actions job summary
-              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              run: |
-                  echo "## Code coverage: backend (Cobertura)" >> "$GITHUB_STEP_SUMMARY"
-                  cat code-coverage-results.md >> "$GITHUB_STEP_SUMMARY"
-              working-directory: ${{ github.workspace }}
-
-            # Same-repo PRs only: forked PR workflows get a read-only token and cannot post
-            # comments on the base repo PR.
-            - name: Cobertura coverage comment on PR
-              if: >
-                  (github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true') &&
-                  github.event_name == 'pull_request' &&
-                  github.event.pull_request.head.repo.full_name == github.repository
-              uses: 5monkeys/cobertura-action@ee5787cc56634acddedc51f21c7947985531e6eb # v14
-              with:
-                  path: gha-cobertura.xml
-                  minimum_coverage: 0
-                  fail_below_threshold: false
-                  show_line: true
-                  show_branch: true
-                  skip_covered: false
-                  report_name: backend
-
-            - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              run: go build -o /dev/null .
-
-    # Optional path detection for e2e/sbom. Required FE/BE keep in-job filters
-    # (must stay green for branch protection when path-skipped).
-    changes:
-        name: Detect optional CI paths
-        if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-        runs-on: ubuntu-latest
-        timeout-minutes: 5
-        permissions:
-            contents: read
-            pull-requests: read
-        outputs:
-            e2e: ${{ steps.filter.outputs.e2e }}
-            sbom: ${{ steps.filter.outputs.sbom }}
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
-
-            - id: filter
-              uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-              with:
-                  filters: |
-                      e2e:
-                        - 'frontend/**'
-                        - 'backend/**'
-                        - 'Makefile'
-                      sbom:
-                        - 'backend/go.mod'
-                        - 'backend/go.sum'
-                        - 'frontend/package.json'
-                        - 'frontend/package-lock.json'
-
-    # Optional (not a required status check yet): Playwright stub smoke + contract path.
-    e2e:
-        name: E2E (Playwright)
-        needs: changes
+      # Same-repo PRs only: forked PR workflows get a read-only token and cannot post
+      # comments on the base repo PR.
+      - name: Cobertura coverage comment on PR
         if: >
-            (github.event_name != 'pull_request' || github.event.pull_request.draft == false) &&
-            needs.changes.outputs.e2e == 'true'
-        runs-on: ubuntu-latest
-        timeout-minutes: 30
-        permissions:
-            contents: read
-        defaults:
-            run:
-                working-directory: frontend
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+          (github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true') &&
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        uses: 5monkeys/cobertura-action@ee5787cc56634acddedc51f21c7947985531e6eb # v14
+        with:
+          path: gha-cobertura.xml
+          minimum_coverage: 0
+          fail_below_threshold: false
+          show_line: true
+          show_branch: true
+          skip_covered: false
+          report_name: backend
 
-            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-              with:
-                  node-version-file: .nvmrc
-                  cache: npm
-                  cache-dependency-path: frontend/package-lock.json
+      - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        run: go build -o /dev/null .
 
-            - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-              with:
-                  go-version: '1.26.6'
-                  cache-dependency-path: backend/go.sum
+  # Optional path detection for e2e/sbom. Required FE/BE keep in-job filters
+  # (must stay green for branch protection when path-skipped).
+  changes:
+    name: Detect optional CI paths
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      e2e: ${{ steps.filter.outputs.e2e }}
+      sbom: ${{ steps.filter.outputs.sbom }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
-            - run: npm ci
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            e2e:
+              - 'frontend/**'
+              - 'backend/**'
+              - 'Makefile'
+            sbom:
+              - 'backend/go.mod'
+              - 'backend/go.sum'
+              - 'frontend/package.json'
+              - 'frontend/package-lock.json'
 
-            - name: Install Playwright Chromium
-              run: npx playwright install chromium --with-deps
+  # Optional (not a required status check yet): Playwright stub smoke + contract path.
+  e2e:
+    name: E2E (Playwright)
+    needs: changes
+    if: >
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false) &&
+      needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
-            - name: Playwright stub smoke
-              run: npm run test:e2e
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
-            - name: Playwright contract (Go API + fixtures)
-              run: npm run test:e2e:contract
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.6'
+          cache-dependency-path: backend/go.sum
 
-            - name: Playwright chaos contract (upstream 429/5xx/slow)
-              run: npm run test:e2e:chaos
+      - run: npm ci
 
-    # Optional (not a required status check): SPDX SBOM via Syft for supply-chain visibility.
-    sbom:
-        name: SBOM (Syft)
-        needs: changes
-        if: >
-            (github.event_name != 'pull_request' || github.event.pull_request.draft == false) &&
-            needs.changes.outputs.sbom == 'true'
-        runs-on: ubuntu-latest
-        timeout-minutes: 10
-        permissions:
-            contents: read
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
 
-            - name: Generate SPDX SBOM
-              uses: anchore/sbom-action@aa80c8c5bd439a416a62804f2151ab38c671a638 # v0.24.1
-              with:
-                  path: .
-                  format: spdx-json
-                  upload-artifact: true
-                  artifact-name: caught-looking-sbom
-                  upload-artifact-retention: 14
-                  upload-release-assets: false
-                  dependency-snapshot: false
+      - name: Playwright stub smoke
+        run: npm run test:e2e
 
-    # Required status check "Lint (golangci-lint)" -- must match branch ruleset exactly.
-    # Keeps its own in-job path filter (like Backend) rather than the "changes" job's
-    # gating: a job skipped entirely via job-level `if` never posts a check run, which leaves
-    # a required check pending forever on PRs that don't touch backend/**. Skipping per-step
-    # instead (job always runs) reports green quickly on unrelated PRs.
-    lint-backend:
-        name: Lint (golangci-lint)
-        if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-        runs-on: ubuntu-latest
-        timeout-minutes: 10
-        permissions:
-            contents: read
-        defaults:
-            run:
-                working-directory: backend
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - name: Playwright contract (Go API + fixtures)
+        run: npm run test:e2e:contract
 
-            - name: Detect backend-relevant changes
-              if: github.event_name == 'pull_request'
-              id: filter
-              uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-              with:
-                  filters: |
-                      backend:
-                        - 'backend/**'
-                        - '.github/workflows/verify.yml'
+      - name: Playwright chaos contract (upstream 429/5xx/slow)
+        run: npm run test:e2e:chaos
 
-            - name: Skip lint (path filter)
-              if: github.event_name == 'pull_request' && steps.filter.outputs.backend != 'true'
-              run: echo 'No backend-relevant paths changed; skipping golangci-lint.'
-              working-directory: ${{ github.workspace }}
+  # Optional (not a required status check): SPDX SBOM via Syft for supply-chain visibility.
+  sbom:
+    name: SBOM (Syft)
+    needs: changes
+    if: >
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false) &&
+      needs.changes.outputs.sbom == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
-            - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-              if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              with:
-                  go-version: '1.26.6'
-                  cache-dependency-path: backend/go.sum
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@aa80c8c5bd439a416a62804f2151ab38c671a638 # v0.24.1
+        with:
+          path: .
+          format: spdx-json
+          upload-artifact: true
+          artifact-name: caught-looking-sbom
+          upload-artifact-retention: 14
+          upload-release-assets: false
+          dependency-snapshot: false
 
-            - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
-              run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run ./...
+  # Required status check "Lint (golangci-lint)" -- must match branch ruleset exactly.
+  # Keeps its own in-job path filter (like Backend) rather than the "changes" job's
+  # gating: a job skipped entirely via job-level `if` never posts a check run, which leaves
+  # a required check pending forever on PRs that don't touch backend/**. Skipping per-step
+  # instead (job always runs) reports green quickly on unrelated PRs.
+  lint-backend:
+    name: Lint (golangci-lint)
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+      - name: Detect backend-relevant changes
+        if: github.event_name == 'pull_request'
+        id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/verify.yml'
+
+      - name: Skip lint (path filter)
+        if: github.event_name == 'pull_request' && steps.filter.outputs.backend != 'true'
+        run: echo 'No backend-relevant paths changed; skipping golangci-lint.'
+        working-directory: ${{ github.workspace }}
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        with:
+          go-version: '1.26.6'
+          cache-dependency-path: backend/go.sum
+
+      - if: github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true'
+        run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run ./...

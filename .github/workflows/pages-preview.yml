@@ -5,187 +5,187 @@ name: Cloudflare Pages (PR preview)
 # Workflow-level paths: non-SPA PRs never start this workflow (no Detect/Skipped noise).
 # Skip drafts, Dependabot, and forks at the job level.
 on:
-    pull_request:
-        types: [opened, synchronize, reopened, ready_for_review]
-        paths:
-            - 'frontend/**'
-            - '.nvmrc'
-            - '.github/workflows/pages-preview.yml'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'frontend/**'
+      - '.nvmrc'
+      - '.github/workflows/pages-preview.yml'
 
 concurrency:
-    group: pages-preview-${{ github.event.pull_request.number || github.ref }}
-    cancel-in-progress: true
+  group: pages-preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    preview:
-        # Gate on PR author (not github.actor): synchronize after a human commit
-        # would otherwise deploy a preview for a Dependabot-authored PR.
-        if: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
-        name: Deploy PR preview (Cloudflare Pages)
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-            deployments: write
-            pull-requests: write
-            id-token: write
-        outputs:
-            url: ${{ steps.pages.outputs.url }}
-            alias: ${{ steps.pages.outputs.alias }}
+  preview:
+    # Gate on PR author (not github.actor): synchronize after a human commit
+    # would otherwise deploy a preview for a Dependabot-authored PR.
+    if: ${{ github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && github.event.repository.fork == false && vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
+    name: Deploy PR preview (Cloudflare Pages)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+      id-token: write
+    outputs:
+      url: ${{ steps.pages.outputs.url }}
+      alias: ${{ steps.pages.outputs.alias }}
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      CLOUDRUN_SERVICE_NAME: ${{ vars.CLOUDRUN_SERVICE_NAME }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+      - name: Validate Cloudflare configuration
         env:
-            GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-            GCP_REGION: ${{ vars.GCP_REGION }}
-            CLOUDRUN_SERVICE_NAME: ${{ vars.CLOUDRUN_SERVICE_NAME }}
-            GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-            GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
+        run: |
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ] || [ -z "$CF_PROJECT" ]; then
+            echo "::error::Set secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID, and variable CLOUDFLARE_PAGES_PROJECT_NAME."
+            exit 1
+          fi
 
-            - name: Validate Cloudflare configuration
-              env:
-                  CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                  CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
-              run: |
-                  if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ] || [ -z "$CF_PROJECT" ]; then
-                    echo "::error::Set secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID, and variable CLOUDFLARE_PAGES_PROJECT_NAME."
-                    exit 1
-                  fi
+      - name: Resolve API base URL
+        id: api
+        env:
+          API_PUBLIC_URL: ${{ vars.API_PUBLIC_URL }}
+        run: |
+          if [ -n "$API_PUBLIC_URL" ]; then
+            echo "url=$API_PUBLIC_URL" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -z "$GCP_PROJECT_ID" ] || [ -z "$GCP_REGION" ] || [ -z "$CLOUDRUN_SERVICE_NAME" ] || [ -z "$GCP_WORKLOAD_IDENTITY_PROVIDER" ] || [ -z "$GCP_DEPLOY_SERVICE_ACCOUNT" ]; then
+            echo "::error::Set repository variable API_PUBLIC_URL to the Cloud Run API origin (no trailing slash), or set GCP_* / CLOUDRUN_SERVICE_NAME so this job can look it up."
+            exit 1
+          fi
+          echo "need_gcp=true" >> "$GITHUB_OUTPUT"
 
-            - name: Resolve API base URL
-              id: api
-              env:
-                  API_PUBLIC_URL: ${{ vars.API_PUBLIC_URL }}
-              run: |
-                  if [ -n "$API_PUBLIC_URL" ]; then
-                    echo "url=$API_PUBLIC_URL" >> "$GITHUB_OUTPUT"
-                    exit 0
-                  fi
-                  if [ -z "$GCP_PROJECT_ID" ] || [ -z "$GCP_REGION" ] || [ -z "$CLOUDRUN_SERVICE_NAME" ] || [ -z "$GCP_WORKLOAD_IDENTITY_PROVIDER" ] || [ -z "$GCP_DEPLOY_SERVICE_ACCOUNT" ]; then
-                    echo "::error::Set repository variable API_PUBLIC_URL to the Cloud Run API origin (no trailing slash), or set GCP_* / CLOUDRUN_SERVICE_NAME so this job can look it up."
-                    exit 1
-                  fi
-                  echo "need_gcp=true" >> "$GITHUB_OUTPUT"
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        if: ${{ steps.api.outputs.need_gcp == 'true' }}
+        with:
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_DEPLOY_SERVICE_ACCOUNT }}
 
-            - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
-              if: ${{ steps.api.outputs.need_gcp == 'true' }}
-              with:
-                  workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-                  service_account: ${{ env.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        if: ${{ steps.api.outputs.need_gcp == 'true' }}
 
-            - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
-              if: ${{ steps.api.outputs.need_gcp == 'true' }}
+      - name: Read Cloud Run service URL
+        if: ${{ steps.api.outputs.need_gcp == 'true' }}
+        id: cloudrun-url
+        run: |
+          URL=$(gcloud run services describe "$CLOUDRUN_SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format 'value(status.url)')
+          if [ -z "$URL" ]; then
+            echo "::error::Cloud Run service URL was empty."
+            exit 1
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
 
-            - name: Read Cloud Run service URL
-              if: ${{ steps.api.outputs.need_gcp == 'true' }}
-              id: cloudrun-url
-              run: |
-                  URL=$(gcloud run services describe "$CLOUDRUN_SERVICE_NAME" --region "$GCP_REGION" --project "$GCP_PROJECT_ID" --format 'value(status.url)')
-                  if [ -z "$URL" ]; then
-                    echo "::error::Cloud Run service URL was empty."
-                    exit 1
-                  fi
-                  echo "url=$URL" >> "$GITHUB_OUTPUT"
+      - name: Select VITE_API_BASE
+        id: vite
+        run: |
+          URL='${{ steps.api.outputs.url }}'
+          if [ -z "$URL" ]; then
+            URL='${{ steps.cloudrun-url.outputs.url }}'
+          fi
+          if [ -z "$URL" ]; then
+            echo "::error::VITE_API_BASE resolved empty; PR previews cannot use the Vite /api proxy."
+            exit 1
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
 
-            - name: Select VITE_API_BASE
-              id: vite
-              run: |
-                  URL='${{ steps.api.outputs.url }}'
-                  if [ -z "$URL" ]; then
-                    URL='${{ steps.cloudrun-url.outputs.url }}'
-                  fi
-                  if [ -z "$URL" ]; then
-                    echo "::error::VITE_API_BASE resolved empty; PR previews cannot use the Vite /api proxy."
-                    exit 1
-                  fi
-                  echo "url=$URL" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
-            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-              with:
-                  node-version-file: .nvmrc
-                  cache: npm
-                  cache-dependency-path: frontend/package-lock.json
+      - name: Build static assets
+        working-directory: frontend
+        env:
+          VITE_API_BASE: ${{ steps.vite.outputs.url }}
+        run: |
+          echo "Building with VITE_API_BASE=$VITE_API_BASE"
+          npm ci
+          npm run build
 
-            - name: Build static assets
-              working-directory: frontend
-              env:
-                  VITE_API_BASE: ${{ steps.vite.outputs.url }}
-              run: |
-                  echo "Building with VITE_API_BASE=$VITE_API_BASE"
-                  npm ci
-                  npm run build
+      - name: Publish preview to Cloudflare Pages
+        id: pages
+        uses: cloudflare/pages-action@f0a1cd58cd66095dee69bfa18fa5efd1dde93bca # v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
+          directory: dist
+          branch: ${{ github.head_ref }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          workingDirectory: frontend
 
-            - name: Publish preview to Cloudflare Pages
-              id: pages
-              uses: cloudflare/pages-action@f0a1cd58cd66095dee69bfa18fa5efd1dde93bca # v1
-              with:
-                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                  projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
-                  directory: dist
-                  branch: ${{ github.head_ref }}
-                  gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-                  workingDirectory: frontend
+      # Sticky so each push updates one comment instead of spamming the PR.
+      - name: Comment preview URL on PR
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v2 branch
+        with:
+          header: pages-preview
+          message: |
+            ### Cloudflare Pages preview
 
-            # Sticky so each push updates one comment instead of spamming the PR.
-            - name: Comment preview URL on PR
-              uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v2 branch
-              with:
-                  header: pages-preview
-                  message: |
-                      ### Cloudflare Pages preview
+            **[Open preview](${{ steps.pages.outputs.alias }})**
 
-                      **[Open preview](${{ steps.pages.outputs.alias }})**
+            - Branch alias (stable): ${{ steps.pages.outputs.alias }}
+            - This commit: ${{ steps.pages.outputs.url }}
+            - Commit: `${{ github.event.pull_request.head.sha }}`
 
-                      - Branch alias (stable): ${{ steps.pages.outputs.alias }}
-                      - This commit: ${{ steps.pages.outputs.url }}
-                      - Commit: `${{ github.event.pull_request.head.sha }}`
+  lighthouse:
+    # Runs only when `preview` actually deployed (needs.*.result defaults dependents to
+    # skipped if the dependency was skipped or failed, but this is kept explicit to match
+    # the rest of this file). Audits the real deployed preview -- live Cloud Run API behind
+    # it -- rather than a standalone static build with a fake API base.
+    needs: preview
+    if: ${{ needs.preview.result == 'success' }}
+    name: Lighthouse (PR preview)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
-    lighthouse:
-        # Runs only when `preview` actually deployed (needs.*.result defaults dependents to
-        # skipped if the dependency was skipped or failed, but this is kept explicit to match
-        # the rest of this file). Audits the real deployed preview -- live Cloud Run API behind
-        # it -- rather than a standalone static build with a fake API base.
-        needs: preview
-        if: ${{ needs.preview.result == 'success' }}
-        name: Lighthouse (PR preview)
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-            pull-requests: write
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - name: Run Lighthouse CI
+        id: lhci
+        uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # v12
+        with:
+          urls: ${{ needs.preview.outputs.url }}
+          configPath: ./.lighthouserc.json
+          runs: 3
+          temporaryPublicStorage: true
 
-            - name: Run Lighthouse CI
-              id: lhci
-              uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # v12
-              with:
-                  urls: ${{ needs.preview.outputs.url }}
-                  configPath: ./.lighthouserc.json
-                  runs: 3
-                  temporaryPublicStorage: true
+      - name: Extract report link
+        id: report
+        env:
+          LINKS: ${{ steps.lhci.outputs.links }}
+        run: |
+          set -euo pipefail
+          URL=$(echo "$LINKS" | jq -r 'to_entries[0].value // empty')
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
 
-            - name: Extract report link
-              id: report
-              env:
-                  LINKS: ${{ steps.lhci.outputs.links }}
-              run: |
-                  set -euo pipefail
-                  URL=$(echo "$LINKS" | jq -r 'to_entries[0].value // empty')
-                  echo "url=$URL" >> "$GITHUB_OUTPUT"
+      # Sticky so each push updates one comment instead of spamming the PR.
+      - name: Comment Lighthouse results on PR
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v2 branch
+        with:
+          header: lighthouse-preview
+          message: |
+            ### Lighthouse report
 
-            # Sticky so each push updates one comment instead of spamming the PR.
-            - name: Comment Lighthouse results on PR
-              uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v2 branch
-              with:
-                  header: lighthouse-preview
-                  message: |
-                      ### Lighthouse report
+            ${{ steps.report.outputs.url && format('**[Open report]({0})**', steps.report.outputs.url) || 'Report link unavailable -- see job logs.' }}
 
-                      ${{ steps.report.outputs.url && format('**[Open report]({0})**', steps.report.outputs.url) || 'Report link unavailable -- see job logs.' }}
-
-                      Audited: ${{ needs.preview.outputs.url }}
-                      Thresholds are informational (warn-level) for now; see `.lighthouserc.json`.
-                      Commit: `${{ github.event.pull_request.head.sha }}`
+            Audited: ${{ needs.preview.outputs.url }}
+            Thresholds are informational (warn-level) for now; see `.lighthouserc.json`.
+            Commit: `${{ github.event.pull_request.head.sha }}`
