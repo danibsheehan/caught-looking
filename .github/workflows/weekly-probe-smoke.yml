@@ -8,7 +8,7 @@ on:
 
 jobs:
   probe:
-    uses: danibsheehan/dani-actions/.github/workflows/health-probe.yml@feat/health-probe
+    uses: danibsheehan/dani-actions/.github/workflows/health-probe.yml@v11
     with:
       url: ${{ vars.API_PUBLIC_URL }}
       paths: '["/health", "/ready"]'
