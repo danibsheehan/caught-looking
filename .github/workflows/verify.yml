@@ -29,7 +29,7 @@ jobs:
       contents: read
       pull-requests: write
       checks: write
-    uses: danibsheehan/dani-actions/.github/workflows/npm-verify.yml@v15
+    uses: danibsheehan/dani-actions/.github/workflows/npm-verify.yml@v16
     with:
       packages: |
         [{"name": "frontend", "path": "frontend",
@@ -53,7 +53,7 @@ jobs:
       contents: read
       pull-requests: write
       checks: write
-    uses: danibsheehan/dani-actions/.github/workflows/go-verify.yml@v15
+    uses: danibsheehan/dani-actions/.github/workflows/go-verify.yml@v16
     with:
       go-version-file: backend/go.mod
       working-directory: backend
