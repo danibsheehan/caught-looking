@@ -55,6 +55,7 @@ jobs:
       checks: write
     uses: danibsheehan/dani-actions/.github/workflows/go-verify.yml@feat/go-verify
     with:
+      go-version-file: backend/go.mod
       working-directory: backend
       paths: "app:\n  - 'backend/**'\n  - 'Makefile'\n  - '.github/workflows/verify.yml'"
       coverage-threshold: "0.50"
