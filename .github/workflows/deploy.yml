@@ -86,7 +86,7 @@ jobs:
     permissions:
       contents: read
       deployments: write
-    uses: danibsheehan/dani-actions/.github/workflows/deploy-cloudflare-pages.yml@v13
+    uses: danibsheehan/dani-actions/.github/workflows/deploy-cloudflare-pages.yml@feat/pages-production-prune
     with:
       build-command: VITE_API_BASE="$BUILD_SECRET_1" npm run build
       dist-path: dist
