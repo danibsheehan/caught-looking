@@ -111,8 +111,7 @@
       border-color: color-mix(in srgb, var(--border) 55%, transparent);
       cursor: pointer;
 
-      &:hover,
-      &:focus-visible {
+      &:hover {
         outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
         outline-offset: 1px;
       }
