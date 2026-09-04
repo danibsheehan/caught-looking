@@ -71,5 +71,5 @@ if asked.
 
 - `docs/adr/0001-cache-ttls.md`, `docs/adr/0002-upstream-qps.md`, `docs/adr/0003-openapi-contract.md`.
 - `docs/threat-model.md`.
-- Complements **`pr-ready`** (run before opening a PR) and **`caching-and-upstream-perf`** /
+- Complements **`local-ci-parity`** (run before opening a PR) and **`caching-and-upstream-perf`** /
   **`backend-http-security`** (the source of the "please remember" notes this skill enforces).

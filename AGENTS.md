@@ -219,7 +219,9 @@ restating them.
   `foundations:api-hardening` for the general principles this implements.
 - `caching-and-upstream-perf` — `TTLCache`, `GetOrLoad`, MLB/Savant QPS limits.
 - `openapi-maintain` — keeping the spec, generated types, and compat layer in sync.
-- `pr-ready` — local CI-parity checks and PR template before opening a PR.
+- `local-ci-parity` — local CI-parity checks and PR template before opening a PR. Named
+  distinctly from `foundations:pr-ready` (this repo's own `make ci-local` wrapper predates
+  the plugin's equivalent; kept as a separate name rather than shadowing it).
 - `doc-sync-patch` — patches README/`AGENTS.md` version drift after a dependency bump; run
   when `make check-stack-docs` fails or after bumping React, Vite, TypeScript, Go, or CI
   Node/Go.
@@ -270,6 +272,6 @@ restating them.
   check (focused package tests, `make check-openapi` if the API contract changed). Full CI is
   not required for every small edit. For larger or risky changes, run `/code-review` manually
   before committing to catch issues early.
-- **PR done**: `make ci-local` green, then follow the `pr-ready` skill (PR template filled,
+- **PR done**: `make ci-local` green, then follow the `local-ci-parity` skill (PR template filled,
   summary leads with *why*, no secrets). After merge, delete local (and, if not auto-deleted,
   remote) feature branches when cleaning up.

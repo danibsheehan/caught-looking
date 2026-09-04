@@ -32,7 +32,7 @@ This file is caught-looking's own mocking/fixture reference.
 4. **Commands**
    - **Task done**: **`cd frontend && npm run test:run`** (or **`npm run test`** in watch) for the suites you touched; run **`npx prettier --write`** on changed files if the Prettier hook did not cover them (see `AGENTS.md`'s **Prettier formatting** conventions).
    - Coverage when investigating the gate: **`npm run test:coverage`** — HTML under **`frontend/coverage/`** (gitignored). From repo root: **`make test-frontend`**.
-   - **PR done**: **`make ci-local`** / **`.claude/skills/pr-ready/SKILL.md`** — do not run full lint/typecheck/build/CI on every test edit.
+   - **PR done**: **`make ci-local`** / **`.claude/skills/local-ci-parity/SKILL.md`** — do not run full lint/typecheck/build/CI on every test edit.
 
 ## Anti-patterns
 

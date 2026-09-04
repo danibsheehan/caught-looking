@@ -524,7 +524,7 @@ Glad you’re here. Small, well-described changes are welcome.
 | Scaffold | [PR guide](.github/workflows/pr-guide.yml) fills empty/default descriptions (verify commands, **Touches**) and posts a sticky checklist; still lead Summary with why |
 | Before open | `make ci-local` from repo root (same gates as CI: stack-docs, `npm audit`, coverage ≥50%, OpenAPI type drift) |
 | API changes | Keep **Go JSON / OpenAPI** ↔ `frontend/src/types/api.generated.ts` + `frontend/src/api/client.ts` in sync |
-| Agents | [`.claude/skills/pr-ready/SKILL.md`](.claude/skills/pr-ready/SKILL.md) |
+| Agents | [`.claude/skills/local-ci-parity/SKILL.md`](.claude/skills/local-ci-parity/SKILL.md) |
 
 **Security:** unauthenticated read proxy + SPA Pages headers — [threat model](docs/threat-model.md). Handler conventions: [`.claude/skills/backend-http-security/SKILL.md`](.claude/skills/backend-http-security/SKILL.md).
 
