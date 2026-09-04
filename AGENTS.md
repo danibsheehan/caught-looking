@@ -201,7 +201,7 @@ same directory, kept for Cursor compatibility. Both tools auto-invoke them by ta
 also installs the `foundations` plugin from the `dani-foundations` marketplace (see
 `.claude/settings.json`), providing `dependabot-triage`, `coverage-gap-diagnosis`,
 `pr-summary-draft`, `bugbot-fix-verify`, `caching-and-upstream-perf`, `doc-sync-patch`,
-`api-hardening`, `react-vitest-testing`, and `go-http-testing` (namespaced `foundations:*`)
+`api-hardening`, `react-vitest-testing`, `go-http-testing`, and `go-testing` (namespaced `foundations:*`)
 — no local copies of these needed for the generic parts; each was verified before
 removing/trimming the local versions. `bugbot-fix-verify` was fully redundant (removed);
 `caching-and-upstream-perf`, `doc-sync-patch`, `backend-http-security`,
@@ -213,7 +213,7 @@ restating them.
 - `add-api-endpoint` — full route end-to-end: models → handler → router → OpenAPI → types →
   client → hook/UI → tests.
 - `backend-go-tests` / `frontend-vitest-tests` — this repo's shared test helpers and
-  mocking/fixture conventions; see `foundations:go-http-testing` /
+  mocking/fixture conventions; see `foundations:go-http-testing` / `foundations:go-testing` /
   `foundations:react-vitest-testing` for the framework mechanics.
 - `backend-http-security` — CORS, rate limits, body caps, error responses, threat model; see
   `foundations:api-hardening` for the general principles this implements.

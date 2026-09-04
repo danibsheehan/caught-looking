@@ -11,8 +11,10 @@ description: >-
 # Backend Go tests (caught-looking)
 
 For the Go/`httptest` mechanics this follows (fake the upstream with `httptest.Server`,
-router-aware handler tests, the validation/success/upstream-failure minimum coverage bar),
-see the **`foundations:go-http-testing`** skill. This file is caught-looking's own shared
+router-aware handler tests, middleware tests, the validation/success/upstream-failure
+minimum coverage bar), see the **`foundations:go-http-testing`** skill. For cross-cutting
+mechanics independent of HTTP (concurrent coalescing convergence, config/env-loading
+tests), see **`foundations:go-testing`**. This file is caught-looking's own shared
 test-helper and fixture reference.
 
 ## When this applies
@@ -44,12 +46,33 @@ test-helper and fixture reference.
 
 6. **Services (cache / clients)**
    - Prefer table-driven unit tests next to the package (`cache_test.go`, `mlb_client_test.go`, `savant_client_test.go`).
-   - Exercise **`GetOrLoad`** coalescing and error paths without a real network; use short TTLs and controlled clocks where neighboring tests already do.
+   - For the concurrent-coalescing test shape itself (N goroutines racing `GetOrLoad`,
+     asserting one load call and convergence to one value), see
+     **`foundations:go-testing`**'s concurrent idempotency/coalescing convergence section —
+     `GetOrLoad` on `services.TTLCache` is this repo's instance of that pattern.
 
-7. **OpenAPI**
+7. **Middleware**
+   - Test each middleware in isolation: wrap it around a stub inner `http.Handler`, drive
+     with `httptest.NewRecorder`/`httptest.NewRequest` — see `middleware/middleware_test.go`
+     for CORS (allow/deny/preflight), `HTTPRateLimit` (must assert two distinct
+     `RemoteAddr`s land in independent buckets, not just one), `Logger` (structured `slog`
+     fields via a redirected default logger), and `MaxBodyBytes` (known vs. unknown
+     `Content-Length`).
+   - For the general mechanics behind each of these, see **`foundations:go-http-testing`**'s
+     middleware-tests item — this entry is only the repo-specific pointer to where each
+     concern's test lives.
+
+8. **Config**
+   - `config/config_test.go` resets every env key `Load()` reads via `t.Setenv(key, "")` in
+     `resetLoadEnv`, then asserts the full defaults `Config{}` literal — keep the env-key
+     list there in sync with `config.Load` whenever a new env var is added.
+   - For the general shape of this pattern, see **`foundations:go-testing`**'s config/env-loading
+     section.
+
+9. **OpenAPI**
    - If the change under test alters **routes, query params, or JSON** the API exposes, update **`backend/apidocs/openapi.yaml`** in the same PR and run **`make check-openapi`** — see **`.claude/skills/openapi-maintain/SKILL.md`**.
 
-8. **Commands**
+10. **Commands**
    - **Task done**: focused tests for packages you changed (`cd backend && go test ./handlers -count=1`, or `go test ./... -count=1`). Prefer **`make test-backend`** when you want vet + govulncheck + full suite without the coverage gate; **`make test-backend-race`** (or `go test ./... -race`) when debugging flakes or CI race failures.
    - **PR done**: **`make ci-local`** / **`.claude/skills/local-ci-parity/SKILL.md`** — do not treat full CI as required for every test edit.
 
@@ -63,3 +86,5 @@ test-helper and fixture reference.
 - Example handler tests: `backend/handlers/*_test.go` (e.g. `players_compare_test.go`, `standings_test.go`, `setup_test.go`).
 - MLB client contract: `backend/services/mlb_client.go`.
 - Cache: `backend/services/cache.go`, `cache_test.go`.
+- Middleware: `backend/middleware/middleware_test.go`.
+- Config: `backend/config/config_test.go`.
