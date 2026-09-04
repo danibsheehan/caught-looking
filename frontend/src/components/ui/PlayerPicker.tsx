@@ -71,39 +71,41 @@ export default function PlayerPicker({ label, selected, onChange, disabled }: Pl
             aria-controls={listId}
             aria-autocomplete="list"
           />
-          {searchError ? (
-            <p className="text text--error text--small" role="alert">
-              {searchError}
-            </p>
-          ) : null}
-          {searching ? <p className="text text--muted text--small">Searching…</p> : null}
-          {!searching && q.trim().length >= 2 && hits.length === 0 && !searchError ? (
-            <p className="text text--muted text--small">No matches.</p>
-          ) : null}
-          {hits.length > 0 ? (
-            <ul id={listId} className="player-picker__results" role="listbox">
-              {hits.map((p) => (
-                <li key={p.id} role="none">
-                  <button
-                    type="button"
-                    className="player-picker__hit"
-                    disabled={disabled}
-                    onClick={() => {
-                      onChange({ id: p.id, fullName: p.fullName });
-                      setQ('');
-                    }}
-                  >
-                    <span className="player-picker__hit-name">{p.fullName}</span>
-                    <span className="text text--muted text--small">
-                      {p.position ? `${p.position}` : ''}
-                      {p.primaryNumber ? ` · #${p.primaryNumber}` : ''}
-                      {!p.active ? ' · inactive' : ''}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          <div aria-live="polite" aria-atomic="true">
+            {searchError ? (
+              <p className="text text--error text--small" role="alert">
+                {searchError}
+              </p>
+            ) : null}
+            {searching ? <p className="text text--muted text--small">Searching…</p> : null}
+            {!searching && q.trim().length >= 2 && hits.length === 0 && !searchError ? (
+              <p className="text text--muted text--small">No matches.</p>
+            ) : null}
+            {hits.length > 0 ? (
+              <ul id={listId} className="player-picker__results" role="listbox">
+                {hits.map((p) => (
+                  <li key={p.id} role="none">
+                    <button
+                      type="button"
+                      className="player-picker__hit"
+                      disabled={disabled}
+                      onClick={() => {
+                        onChange({ id: p.id, fullName: p.fullName });
+                        setQ('');
+                      }}
+                    >
+                      <span className="player-picker__hit-name">{p.fullName}</span>
+                      <span className="text text--muted text--small">
+                        {p.position ? `${p.position}` : ''}
+                        {p.primaryNumber ? ` · #${p.primaryNumber}` : ''}
+                        {!p.active ? ' · inactive' : ''}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         </>
       )}
     </div>
