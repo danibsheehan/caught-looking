@@ -11,6 +11,7 @@ import {
   type TooltipValueType,
 } from 'recharts';
 import type { GameLogPlayer, PlayersGameLogResponse } from '../../types/api.compat';
+import ChartDataTable from './ChartDataTable';
 import { usePlayerCompareChartColors } from '../../hooks/usePlayerCompareChartColors';
 import { chartCartesianTick } from '../../utils/rechartsAxis';
 import { rollingTrailingMean } from '../../utils/rollingMean';
@@ -57,84 +58,94 @@ function SparkBlock({
   const fmt = (v: number | undefined) =>
     v == null || !Number.isFinite(v) ? '—' : metric === 'ops' ? v.toFixed(3) : v.toFixed(2);
 
+  const statLabel = metric === 'ops' ? 'Game OPS' : 'Game ERA';
+  const a11yRows = rows.map((r) => [String(r.i), r.date, fmt(r[dataKey]), fmt(r[rollKey])]);
+
   return (
     <div className="player-game-spark__block">
       <div className="player-game-spark__head">
         <span className="player-game-spark__title">{title}</span>
         <span className="text text--muted text--small">{name}</span>
       </div>
-      <ResponsiveContainer width="100%" height={160}>
-        <LineChart data={rows} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-          <XAxis
-            dataKey="i"
-            tick={{ ...chartCartesianTick, fontSize: 10 }}
-            label={{
-              value: 'Recent games (chronological)',
-              position: 'insideBottom',
-              offset: -2,
-              fill: 'var(--muted)',
-              fontSize: 10,
-              fontFamily: 'var(--sans)',
-            }}
-          />
-          <YAxis
-            tick={{ ...chartCartesianTick, fontSize: 10 }}
-            width={36}
-            domain={['auto', 'auto']}
-          />
-          {leagueBaseline > 0 ? (
-            <ReferenceLine
-              y={leagueBaseline}
-              stroke="var(--muted)"
-              strokeDasharray="5 4"
-              strokeWidth={1.5}
+      <div aria-hidden="true">
+        <ResponsiveContainer width="100%" height={160}>
+          <LineChart data={rows} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+            <XAxis
+              dataKey="i"
+              tick={{ ...chartCartesianTick, fontSize: 10 }}
               label={{
-                value: metric === 'ops' ? 'Lg avg' : 'Lg ERA',
+                value: 'Recent games (chronological)',
+                position: 'insideBottom',
+                offset: -2,
                 fill: 'var(--muted)',
                 fontSize: 10,
-                position: 'insideTopRight',
                 fontFamily: 'var(--sans)',
               }}
             />
-          ) : null}
-          <Tooltip
-            contentStyle={{
-              background: 'var(--bg)',
-              border: '1px solid var(--border)',
-              fontSize: 11,
-            }}
-            formatter={(v: TooltipValueType | undefined, name: string | number | undefined) => [
-              fmt(typeof v === 'number' ? v : undefined),
-              String(name ?? ''),
-            ]}
-            labelFormatter={(_lab, payload) => {
-              const row = payload?.[0]?.payload as { date?: string } | undefined;
-              return row?.date ? `Game · ${row.date}` : 'Game';
-            }}
-          />
-          <Line
-            type="monotone"
-            dataKey={dataKey}
-            stroke={color}
-            strokeWidth={2}
-            dot={{ r: 2 }}
-            name={metric === 'ops' ? 'Game OPS' : 'Game ERA'}
-            isAnimationActive={false}
-          />
-          <Line
-            type="monotone"
-            dataKey={rollKey}
-            stroke={color}
-            strokeWidth={2}
-            strokeOpacity={0.55}
-            strokeDasharray="6 4"
-            dot={false}
-            name="Rolling avg"
-            isAnimationActive={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+            <YAxis
+              tick={{ ...chartCartesianTick, fontSize: 10 }}
+              width={36}
+              domain={['auto', 'auto']}
+            />
+            {leagueBaseline > 0 ? (
+              <ReferenceLine
+                y={leagueBaseline}
+                stroke="var(--muted)"
+                strokeDasharray="5 4"
+                strokeWidth={1.5}
+                label={{
+                  value: metric === 'ops' ? 'Lg avg' : 'Lg ERA',
+                  fill: 'var(--muted)',
+                  fontSize: 10,
+                  position: 'insideTopRight',
+                  fontFamily: 'var(--sans)',
+                }}
+              />
+            ) : null}
+            <Tooltip
+              contentStyle={{
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                fontSize: 11,
+              }}
+              formatter={(v: TooltipValueType | undefined, name: string | number | undefined) => [
+                fmt(typeof v === 'number' ? v : undefined),
+                String(name ?? ''),
+              ]}
+              labelFormatter={(_lab, payload) => {
+                const row = payload?.[0]?.payload as { date?: string } | undefined;
+                return row?.date ? `Game · ${row.date}` : 'Game';
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey={dataKey}
+              stroke={color}
+              strokeWidth={2}
+              dot={{ r: 2 }}
+              name={metric === 'ops' ? 'Game OPS' : 'Game ERA'}
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey={rollKey}
+              stroke={color}
+              strokeWidth={2}
+              strokeOpacity={0.55}
+              strokeDasharray="6 4"
+              dot={false}
+              name="Rolling avg"
+              isAnimationActive={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <ChartDataTable
+        caption={`${title} — ${name}: recent games.`}
+        columns={['Game #', 'Date', statLabel, 'Rolling avg']}
+        rows={a11yRows}
+      />
     </div>
   );
 }

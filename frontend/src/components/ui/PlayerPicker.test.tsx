@@ -54,7 +54,7 @@ describe('PlayerPicker', () => {
     });
 
     const list = document.getElementById(listId!);
-    expect(list).toHaveAttribute('role', 'listbox');
+    expect(list).toHaveAttribute('role', 'list');
   });
 
   it('does not search until at least two characters', async () => {

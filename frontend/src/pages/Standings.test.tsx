@@ -122,7 +122,7 @@ describe('Standings', () => {
   });
 
   it('renders only the selected division table and updates on division change', async () => {
-    renderStandings();
+    const { container } = renderStandings();
     const user = userEvent.setup();
 
     expect(
@@ -140,7 +140,7 @@ describe('Standings', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'NL East' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2, name: 'NL Central' })).not.toBeInTheDocument();
 
-    const table = screen.getByRole('table');
+    const table = container.querySelector('.standings-page__table') as HTMLElement;
     expect(within(table).getByRole('columnheader', { name: 'Team' })).toBeInTheDocument();
     expect(within(table).getByText('Mets')).toBeInTheDocument();
     expect(within(table).queryByText('Cubs')).not.toBeInTheDocument();
@@ -164,7 +164,7 @@ describe('Standings', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'NL Central' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2, name: 'NL East' })).not.toBeInTheDocument();
 
-    const updatedTable = screen.getByRole('table');
+    const updatedTable = container.querySelector('.standings-page__table') as HTMLElement;
     expect(within(updatedTable).getByText('Cubs')).toBeInTheDocument();
     expect(within(updatedTable).queryByText('Mets')).not.toBeInTheDocument();
 
@@ -195,7 +195,7 @@ describe('Standings', () => {
   }, 15_000);
 
   it('restores division and team focus from the URL', async () => {
-    renderStandings('/standings?team=112');
+    const { container } = renderStandings('/standings?team=112');
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Standings' }, asyncWait),
@@ -204,7 +204,8 @@ describe('Standings', () => {
     expect(screen.getByRole('combobox', { name: 'Jump to team' })).toHaveValue('112');
     expect(screen.getByRole('combobox', { name: 'Division' })).toHaveValue('1');
     expect(screen.getByRole('heading', { level: 2, name: 'NL Central' })).toBeInTheDocument();
-    expect(within(screen.getByRole('table')).getByText('Cubs')).toBeInTheDocument();
+    const table = container.querySelector('.standings-page__table') as HTMLElement;
+    expect(within(table).getByText('Cubs')).toBeInTheDocument();
   }, 15_000);
 
   it('restores division from division id when team is absent', async () => {

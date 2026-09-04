@@ -116,9 +116,11 @@ describe('MultiTeamWinPctChart', () => {
 
     expect(await screen.findByText('Game #', undefined, asyncWait)).toBeInTheDocument();
 
-    const legendItems = document.querySelectorAll('.recharts-legend-item-text');
-    const legendText = [...legendItems].map((el) => el.textContent?.trim()).filter(Boolean);
-    expect(legendText).toEqual(expect.arrayContaining(['NYM', 'ATL']));
+    await waitFor(() => {
+      const legendItems = document.querySelectorAll('.recharts-legend-item-text');
+      const legendText = [...legendItems].map((el) => el.textContent?.trim()).filter(Boolean);
+      expect(legendText).toEqual(expect.arrayContaining(['NYM', 'ATL']));
+    }, asyncWait);
   });
 
   it('toggles Season, Race, and Recent modes', async () => {
