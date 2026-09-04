@@ -104,3 +104,11 @@
     background-position: -100% 0;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-skeleton,
+  .skeleton__line,
+  .skeleton__box {
+    animation: none;
+  }
+}
