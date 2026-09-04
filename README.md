@@ -413,7 +413,11 @@ CI still runs `npm run format:check`.
 [`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md), read by both tools — there are no separate
 `.cursor/rules/*.mdc` files. Skills live in [`.claude/skills/`](.claude/skills/), the canonical
 directory; `.cursor/skills` is kept only as a symlink to it, so Cursor sees the same playbooks
-Claude Code does.
+Claude Code does. Repo-specific skills sit alongside generic ones installed from the
+[`dani-foundations`](https://github.com/danibsheehan/dani-foundations) marketplace (see
+[`.claude/settings.json`](.claude/settings.json)), namespaced `foundations:*` — see
+[`AGENTS.md`](AGENTS.md#step-by-step-playbooks) for which skills come from there and which
+stay local to this repo.
 
 ---
 
