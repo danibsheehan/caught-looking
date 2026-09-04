@@ -1,0 +1,119 @@
+# Config for dani-actions' shared pr-guide-engine composite action (used by pr-guide.yml).
+# See dani-actions' README for the full schema. This is a faithful translation of what used
+# to be .github/scripts/pr_guide_lib.py + generate_pr_guide.py -- verified against a real PR
+# to produce byte-identical output before those scripts were removed.
+
+match_mode: prefix_only
+verify_strategy: additive
+checklist_position: end
+
+# The original bespoke functions do NOT all iterate areas in declaration order --
+# verify_commands/checklist_items put frontend/backend contributions before openapi's
+# (so a shared "make dev" line lands first), while reviewer_focus happens to already match
+# declaration order (openapi, frontend, backend, ci) and needs no override.
+#
+# Known, accepted limitation: the original verify_commands interleaves openapi's line
+# *between* the shared "make dev" trigger and each area's own follow-up command (make
+# test-frontend/test-backend). This engine's per-area contribution model can only place an
+# area's whole list in one slot, so when openapi is touched alongside frontend/backend, its
+# line now appears after their own commands instead of before -- same commands, different
+# read order. Accepted as not worth a bigger engine change for one cosmetic ordering detail.
+verify_order: [frontend, backend, openapi, ci, docs]
+checklist_order: [frontend, backend, openapi, ci, docs]
+
+meta_start: "<!-- pr-guide:meta -->"
+meta_end: "<!-- /pr-guide:meta -->"
+summary_prompt: |-
+  <!--
+  Lead with why (motivation / problem), then what changed for users, API, or data.
+  Prefer 1–3 short bullets. File lists alone are not enough.
+  -->
+verify_prompt: "<!-- Suggested starting points — edit or replace with user-facing steps when useful: -->"
+legacy_template_markers:
+  - "## Checklist"
+  - "`frontend`: `npm run lint`"
+extra_body_line: "_Suggested local check:_ `make ci-local`"
+meta_block_template: |-
+  **Touches:** {touches}
+
+  Checklist and reviewer focus: see the sticky **PR guide** comment on this PR (posted on open / reopen / ready-for-review).
+
+guide_intro: >-
+  _Auto-generated from changed paths. Prefer a why-first **Summary** in the PR description
+  above (motivation, then what changed); use this comment for path-based checklist and
+  suggested verify commands._
+commit_overflow_note: "_…and {n} more_"
+required_checks_description: >-
+  Required checks: **Frontend** (per-concern jobs) and **Backend** in [verify]({ci_href}).
+  Coverage tables are posted separately when those jobs finish.
+
+no_touches_text: "—"
+
+always_checklist_items:
+  - "No unintended secrets or local-only config committed"
+
+fallback:
+  verify: "N/A — tooling/docs only; confirm locally if anything user-facing changed"
+  reviewer_focus: "Scope looks tooling- or docs-only — confirm no hidden runtime impact"
+
+test_file_rule:
+  substrings: ["/test"]
+  suffixes: ["_test.go"]
+  note: "Test coverage and assertions for changed behavior"
+
+areas:
+  - id: openapi
+    display: "OpenAPI / API types"
+    prefixes:
+      - "backend/apidocs/"
+      - "frontend/src/types/api.generated.ts"
+      - "frontend/src/types/api.compat.ts"
+      - "frontend/src/api/client.ts"
+    verify_commands:
+      - "`make check-openapi` — OpenAPI lint + generated type drift check"
+    checklist:
+      - >-
+        API: `backend/apidocs/openapi.yaml` updated; `npm run api:types` in `frontend/` if
+        needed; `api.compat.ts` / `client.ts` updated; `make check-openapi` passes
+    reviewer_focus:
+      - "API contract stays aligned with Go handlers and generated frontend types"
+
+  - id: frontend
+    display: "frontend"
+    prefixes: ["frontend/"]
+    verify_commands:
+      - "`make dev` — run API (:8080) and Vite together"
+      - >-
+        `make test-frontend` — or from `frontend/`: `npm run lint`, `npm run format:check`,
+        `npm run typecheck`, `npm run build`
+    checklist:
+      - "Frontend: `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm run build`"
+    reviewer_focus:
+      - "User-visible UI behavior and routes (`frontend/src/App.tsx`, pages)"
+
+  - id: backend
+    display: "backend"
+    prefixes: ["backend/"]
+    verify_commands:
+      - "`make dev` — run API (:8080) and Vite together"
+      - >-
+        `make test-backend` — or from `backend/`: `go vet ./...`,
+        `go run golang.org/x/vuln/cmd/govulncheck@latest ./...`, `go test ./... -race`,
+        `go build .`
+    checklist:
+      - >-
+        Backend: `go vet ./...`, `go run golang.org/x/vuln/cmd/govulncheck@latest ./...`,
+        `go test ./... -race`, `go build .`
+    reviewer_focus:
+      - text: "HTTP handlers, MLB/Savant clients, and response shapes"
+        unless_area: openapi
+
+  - id: ci
+    display: "CI / GitHub"
+    prefixes: [".github/"]
+    reviewer_focus:
+      - "Workflow changes and required status check names"
+
+  - id: docs
+    display: "docs"
+    prefixes: ["README.md", "docs/"]
