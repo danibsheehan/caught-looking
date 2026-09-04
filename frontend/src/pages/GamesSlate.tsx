@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import GameListSkeleton from '../components/skeletons/GameListSkeleton';
 import { TeamSelector } from '../components/ui';
@@ -77,6 +77,16 @@ export default function GamesSlate() {
 
   const games = useMemo(() => data?.games ?? [], [data]);
 
+  const resultsHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    resultsHeadingRef.current?.focus();
+  }, [date, teamId]);
+
   function onDateChange(next: string) {
     setSearchParams(
       (prev) => {
@@ -140,7 +150,9 @@ export default function GamesSlate() {
       ) : null}
 
       <div className="games-slate__panel" aria-live="polite" aria-atomic="true">
-        <h2>Games on this day</h2>
+        <h2 ref={resultsHeadingRef} tabIndex={-1}>
+          Games on this day
+        </h2>
         {loadingList ? (
           <GameListSkeleton rows={7} />
         ) : games.length === 0 ? (
