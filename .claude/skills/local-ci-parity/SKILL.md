@@ -1,5 +1,5 @@
 ---
-name: pr-ready
+name: local-ci-parity
 description: >-
   Runs caught-looking’s local CI-parity checks and prepares a pull request via
   make ci-local (stack docs, OpenAPI, audit, lint, format, typecheck, coverage
@@ -8,7 +8,7 @@ description: >-
   before merging.
 ---
 
-# PR ready (caught-looking)
+# Local CI parity (caught-looking)
 
 Run before opening or updating a PR. Prefer **`make ci-local`** from the repo root.
 

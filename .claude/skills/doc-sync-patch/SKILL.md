@@ -75,4 +75,4 @@ the exact expected value.
 
 - Checker: `.github/scripts/check_stack_docs.py` (source of the exact regexes each doc must match).
 - Conventions: `AGENTS.md`'s **README maintenance** subsection (accuracy checklist, tech-stack row).
-- Run via `make ci-local` / **`pr-ready`** skill before opening a PR.
+- Run via `make ci-local` / **`local-ci-parity`** skill before opening a PR.

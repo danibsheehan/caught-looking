@@ -24,7 +24,7 @@ description: >-
 3. From **`frontend/`**: `npm run api:types` then commit **`frontend/src/types/api.generated.ts`** if it changed.
 4. **`frontend/src/types/api.compat.ts`** — add or adjust exports for new schemas or `QueryOf<operations['…']>` types the client uses.
 5. **`frontend/src/api/client.ts`** — paths and query params match the spec and router.
-6. **Done when**: **`make check-openapi`** passes (task-level). Before a PR, run **`make ci-local`** / **`.claude/skills/pr-ready/SKILL.md`**.
+6. **Done when**: **`make check-openapi`** passes (task-level). Before a PR, run **`make ci-local`** / **`.claude/skills/local-ci-parity/SKILL.md`**.
 
 ## Spec conventions
 

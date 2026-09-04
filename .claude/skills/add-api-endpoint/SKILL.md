@@ -73,7 +73,7 @@ Endpoint progress:
 ## Done when
 
 - **Task done**: checklist above through tests + `make check-openapi` and focused backend/frontend tests for the change.
-- **PR done**: **`make ci-local`** and **`.claude/skills/pr-ready/SKILL.md`**.
+- **PR done**: **`make ci-local`** and **`.claude/skills/local-ci-parity/SKILL.md`**.
 
 ## Anti-patterns
 
