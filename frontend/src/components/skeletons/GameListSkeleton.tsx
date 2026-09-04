@@ -6,7 +6,7 @@ type GameListSkeletonProps = {
 
 export default function GameListSkeleton({ rows = 6 }: GameListSkeletonProps) {
   return (
-    <div className="games-list-skeleton" aria-hidden="true">
+    <div className="games-list-skeleton" role="status" aria-busy="true" aria-label="Loading games">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="games-list-skeleton__row">
           <SkeletonLine style={{ width: '55%', height: '0.95rem' }} />

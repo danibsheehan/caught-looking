@@ -7,7 +7,7 @@ type TableSkeletonProps = {
 
 export default function TableSkeleton({ rows = 8, cols = 7 }: TableSkeletonProps) {
   return (
-    <div className="table-skeleton" aria-hidden="true">
+    <div className="table-skeleton" role="status" aria-busy="true" aria-label="Loading table">
       <div className="table-skeleton__head">
         {Array.from({ length: cols }, (_, i) => (
           <SkeletonLine key={`h-${i}`} style={{ height: '0.7rem', flex: 1 }} />
