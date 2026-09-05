@@ -68,8 +68,7 @@ export default function PlayerPicker({ label, selected, onChange, disabled }: Pl
             value={q}
             onChange={(e) => setQ(e.target.value)}
             disabled={disabled}
-            aria-controls={listId}
-            aria-autocomplete="list"
+            aria-expanded={hits.length > 0}
           />
           <div aria-live="polite" aria-atomic="true">
             {searchError ? (
@@ -82,9 +81,9 @@ export default function PlayerPicker({ label, selected, onChange, disabled }: Pl
               <p className="text text--muted text--small">No matches.</p>
             ) : null}
             {hits.length > 0 ? (
-              <ul id={listId} className="player-picker__results" role="listbox">
+              <ul id={listId} className="player-picker__results" role="list">
                 {hits.map((p) => (
-                  <li key={p.id} role="none">
+                  <li key={p.id}>
                     <button
                       type="button"
                       className="player-picker__hit"

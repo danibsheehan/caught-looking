@@ -10,9 +10,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import ChartDataTable from './ChartDataTable';
 import ChartSkeleton from '../skeletons/ChartSkeleton';
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
 import { useRecordTimelinesBatch } from '../../hooks/useRecordTimelinesBatch';
+import { CHART_A11Y_ROW_CAP, chartA11yFootnote } from '../../utils/chartA11yRows';
 import { obsidianTeamChartPairsRegistryPrimary } from '../../utils/mlbTeamColors';
 import { chartCartesianTick } from '../../utils/rechartsAxis';
 import {
@@ -251,6 +253,26 @@ export default function MultiTeamWinPctChart({
   const yDomain: [number, number] =
     mode === 'race' ? [0, Math.max(1, Math.ceil(raceMaxGb))] : [0, 100];
 
+  const a11y = useMemo(() => {
+    // 'race'/'recent' modes are already trailing-windowed to <= CHART_A11Y_ROW_CAP rows
+    // by buildDivisionRaceChartRows; 'season' mode is the full chronological game log, so
+    // slice from the end -- the *current* standings, not the season's opening month.
+    const total = chartData.length;
+    const trailing = total > CHART_A11Y_ROW_CAP ? chartData.slice(-CHART_A11Y_ROW_CAP) : chartData;
+    const slice = { rows: trailing, omitted: total - trailing.length, total };
+    const rows = slice.rows.map((row) => [
+      String(row.gameIndex),
+      ...orderedIds.map((id) => {
+        const v = row[divisionRaceValueKey(id)];
+        if (v == null || typeof v !== 'number') return '—';
+        if (mode === 'race')
+          return v === 0 ? '—' : `${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)} GB`;
+        return `${v.toFixed(1)}%`;
+      }),
+    ]);
+    return { rows, footnote: chartA11yFootnote('games', slice) };
+  }, [chartData, orderedIds, mode]);
+
   if (orderedIds.length === 0 || season == null) {
     return (
       <p className="text text--muted">
@@ -301,101 +323,117 @@ export default function MultiTeamWinPctChart({
         </div>
         <p className="division-race-chart__hint text text--muted text--small">{MODE_HINT[mode]}</p>
       </div>
-      <ResponsiveContainer width="100%" height={360}>
-        <LineChart data={chartData} margin={{ top: 10, right: 14, left: 4, bottom: 28 }}>
-          <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
-          {mode === 'race' ? (
-            <ReferenceLine y={0} stroke="var(--chart-y-mid)" strokeWidth={1} />
-          ) : (
-            <ReferenceLine y={50} stroke="var(--chart-y-mid)" strokeWidth={1} />
-          )}
-          <XAxis
-            dataKey="gameIndex"
-            tick={chartCartesianTick}
-            label={{
-              value: 'Game #',
-              position: 'insideBottom',
-              offset: -4,
-              fill: 'var(--muted)',
-              fontFamily: 'var(--sans)',
-            }}
-          />
-          <YAxis
-            domain={yDomain}
-            reversed={mode === 'race'}
-            tick={mode === 'race' ? <GamesBehindYAxisTick /> : <WinPctYAxisTick />}
-            width={48}
-            label={
-              mode === 'race'
-                ? {
-                    value: 'GB',
-                    angle: -90,
-                    position: 'insideLeft',
-                    offset: 8,
-                    fill: 'var(--muted)',
-                    fontFamily: 'var(--sans)',
-                    fontSize: 11,
-                  }
-                : undefined
-            }
-          />
-          <Tooltip
-            cursor={{ strokeDasharray: '3 3' }}
-            content={(props) => (
-              <DivisionRaceTooltip
-                active={props.active}
-                payload={props.payload as readonly TipEntry[] | undefined}
-                label={props.label}
-                getLabel={getLabel}
-                mode={mode}
-              />
+      <div aria-hidden="true">
+        <ResponsiveContainer width="100%" height={360}>
+          <LineChart
+            data={chartData}
+            margin={{ top: 10, right: 14, left: 4, bottom: 28 }}
+            accessibilityLayer={false}
+          >
+            <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
+            {mode === 'race' ? (
+              <ReferenceLine y={0} stroke="var(--chart-y-mid)" strokeWidth={1} />
+            ) : (
+              <ReferenceLine y={50} stroke="var(--chart-y-mid)" strokeWidth={1} />
             )}
-          />
-          <Legend
-            wrapperStyle={{ fontSize: 12 }}
-            formatter={(value: string) => {
-              const id = orderedIds.find((tid) => getLabel(tid) === value);
-              const col = id != null ? pairById.get(id)?.label : undefined;
-              return <span style={{ color: col ?? 'var(--text)' }}>{value}</span>;
-            }}
-          />
-          {renderOrder.map((id) => {
-            const pair = pairById.get(id);
-            const ink = pair?.ink ?? '#64748b';
-            const label = pair?.label ?? '#c8d8e8';
-            const lastG = lastGameByTeamId.get(id);
-            return (
-              <Line
-                key={`${mode}-${id}`}
-                type="monotone"
-                dataKey={divisionRaceValueKey(id)}
-                name={getLabel(id)}
-                stroke={ink}
-                strokeWidth={lineStrokeWidth(id)}
-                strokeOpacity={lineOpacity(id)}
-                dot={(dotProps: { cx?: number; cy?: number; payload?: { gameIndex: number } }) => {
-                  const { cx, cy, payload } = dotProps;
-                  if (cx == null || cy == null || payload == null || lastG == null) return null;
-                  if (payload.gameIndex !== lastG) return null;
-                  return (
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r={3.5}
-                      fill={label}
-                      stroke="var(--bg)"
-                      strokeWidth={1}
-                    />
-                  );
-                }}
-                activeDot={{ r: 5, strokeWidth: 0, fill: label }}
-                isAnimationActive={false}
-                onMouseEnter={() => setHoveredTeamId(id)}
-              />
-            );
-          })}
-        </LineChart>
-      </ResponsiveContainer>
+            <XAxis
+              dataKey="gameIndex"
+              tick={chartCartesianTick}
+              label={{
+                value: 'Game #',
+                position: 'insideBottom',
+                offset: -4,
+                fill: 'var(--muted)',
+                fontFamily: 'var(--sans)',
+              }}
+            />
+            <YAxis
+              domain={yDomain}
+              reversed={mode === 'race'}
+              tick={mode === 'race' ? <GamesBehindYAxisTick /> : <WinPctYAxisTick />}
+              width={48}
+              label={
+                mode === 'race'
+                  ? {
+                      value: 'GB',
+                      angle: -90,
+                      position: 'insideLeft',
+                      offset: 8,
+                      fill: 'var(--muted)',
+                      fontFamily: 'var(--sans)',
+                      fontSize: 11,
+                    }
+                  : undefined
+              }
+            />
+            <Tooltip
+              cursor={{ strokeDasharray: '3 3' }}
+              content={(props) => (
+                <DivisionRaceTooltip
+                  active={props.active}
+                  payload={props.payload as readonly TipEntry[] | undefined}
+                  label={props.label}
+                  getLabel={getLabel}
+                  mode={mode}
+                />
+              )}
+            />
+            <Legend
+              wrapperStyle={{ fontSize: 12 }}
+              formatter={(value: string) => {
+                const id = orderedIds.find((tid) => getLabel(tid) === value);
+                const col = id != null ? pairById.get(id)?.label : undefined;
+                return <span style={{ color: col ?? 'var(--text)' }}>{value}</span>;
+              }}
+            />
+            {renderOrder.map((id) => {
+              const pair = pairById.get(id);
+              const ink = pair?.ink ?? '#64748b';
+              const label = pair?.label ?? '#c8d8e8';
+              const lastG = lastGameByTeamId.get(id);
+              return (
+                <Line
+                  key={`${mode}-${id}`}
+                  type="monotone"
+                  dataKey={divisionRaceValueKey(id)}
+                  name={getLabel(id)}
+                  stroke={ink}
+                  strokeWidth={lineStrokeWidth(id)}
+                  strokeOpacity={lineOpacity(id)}
+                  dot={(dotProps: {
+                    cx?: number;
+                    cy?: number;
+                    payload?: { gameIndex: number };
+                  }) => {
+                    const { cx, cy, payload } = dotProps;
+                    if (cx == null || cy == null || payload == null || lastG == null) return null;
+                    if (payload.gameIndex !== lastG) return null;
+                    return (
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={3.5}
+                        fill={label}
+                        stroke="var(--bg)"
+                        strokeWidth={1}
+                      />
+                    );
+                  }}
+                  activeDot={{ r: 5, strokeWidth: 0, fill: label }}
+                  isAnimationActive={false}
+                  onMouseEnter={() => setHoveredTeamId(id)}
+                />
+              );
+            })}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <ChartDataTable
+        caption={`Division race — ${MODES.find((m) => m.id === mode)?.label ?? mode} mode.`}
+        columns={['Game #', ...orderedIds.map((id) => getLabel(id))]}
+        rows={a11y.rows}
+        footnote={a11y.footnote}
+      />
     </div>
   );
 }

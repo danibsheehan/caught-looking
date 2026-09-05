@@ -33,7 +33,7 @@ describe('PlayerPicker', () => {
     vi.mocked(fetchPlayersSearch).mockReset();
   });
 
-  it('associates search input with aria-controls for the results list', async () => {
+  it('reflects result visibility via aria-expanded on the search input', async () => {
     const user = userEvent.setup();
     vi.mocked(fetchPlayersSearch).mockResolvedValue({
       query: 'Pl',
@@ -43,8 +43,7 @@ describe('PlayerPicker', () => {
     render(<PlayerPicker label="Player A" selected={null} onChange={vi.fn()} />);
 
     const input = screen.getByRole('searchbox');
-    const listId = input.getAttribute('aria-controls');
-    expect(listId).toBeTruthy();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
 
     await user.type(input, 'Pl');
     await flushSearchDebounce();
@@ -53,8 +52,10 @@ describe('PlayerPicker', () => {
       expect(fetchPlayersSearch).toHaveBeenCalledWith({ names: 'Pl' }, expect.any(AbortSignal));
     });
 
-    const list = document.getElementById(listId!);
-    expect(list).toHaveAttribute('role', 'listbox');
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(screen.getByRole('list')).toBeInTheDocument();
   });
 
   it('does not search until at least two characters', async () => {
