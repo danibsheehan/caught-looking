@@ -181,6 +181,8 @@ describe('Leaders', () => {
         ),
       asyncWait,
     );
+    // A valid keystroke mid-type must not steal focus into the results panel.
+    expect(document.activeElement).toBe(input);
   });
 
   it('commits the input DOM value on blur, not a stale draft', async () => {

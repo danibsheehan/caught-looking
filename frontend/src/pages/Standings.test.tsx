@@ -181,6 +181,19 @@ describe('Standings', () => {
     );
   }, 15_000);
 
+  it('does not steal focus into the results panel on ordinary page load', async () => {
+    renderStandings();
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Standings' }, asyncWait),
+    ).toBeInTheDocument();
+
+    await waitFor(() => expect(api.fetchStandings).toHaveBeenCalled(), asyncWait);
+    // `selected` goes from undefined (before the fetch resolves) to a real division once
+    // standings load -- that transition must not be treated as a user-driven filter change.
+    expect(document.activeElement).not.toBe(document.querySelector('.standings-page__results'));
+  }, 15_000);
+
   it('restores division and team focus from the URL', async () => {
     renderStandings('/standings?team=112');
 

@@ -99,13 +99,16 @@ export default function Standings() {
   }, [divisions, surfaceHex]);
 
   const resultsRef = useRef<HTMLDivElement | null>(null);
-  const isFirstRender = useRef(true);
+  // Tracks the previous division id so the effect can tell "standings data just
+  // finished loading" (undefined -> a real id) apart from a real user-driven
+  // division/team change (one real id -> another) -- only the latter should steal focus.
+  const prevDivisionIdRef = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
+    const prev = prevDivisionIdRef.current;
+    prevDivisionIdRef.current = selected?.divisionId;
+    if (prev !== undefined && prev !== selected?.divisionId) {
+      resultsRef.current?.focus();
     }
-    resultsRef.current?.focus();
   }, [selected?.divisionId]);
 
   function onTeamSelected(id: number | '') {

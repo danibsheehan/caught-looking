@@ -90,6 +90,11 @@ export default function Leaders() {
       isFirstRender.current = false;
       return;
     }
+    // Skip while the season field is mid-edit so a valid keystroke (e.g. finishing "2024")
+    // doesn't yank focus out of the input into the results panel.
+    if (editingSeasonRef.current) {
+      return;
+    }
     resultsRef.current?.focus();
   }, [group, category, season]);
 
