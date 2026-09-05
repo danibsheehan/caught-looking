@@ -212,6 +212,22 @@ describe('api client', () => {
       );
     });
 
+    it('fetchLeaders builds query with all params set', async () => {
+      fetchMock.mockResolvedValue(jsonResponse({ leaders: [] }));
+      const { fetchLeaders } = await getClient();
+      await fetchLeaders({ season: 2024, group: 'hitting', category: 'homeRuns', limit: 10 });
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/leaders?season=2024&group=hitting&category=homeRuns&limit=10',
+      );
+    });
+
+    it('fetchLeaders omits all query params when none are set', async () => {
+      fetchMock.mockResolvedValue(jsonResponse({ leaders: [] }));
+      const { fetchLeaders } = await getClient();
+      await fetchLeaders();
+      expect(fetchMock).toHaveBeenCalledWith('/api/leaders');
+    });
+
     it('fetchTeams adds sportId when set', async () => {
       fetchMock.mockResolvedValue(jsonResponse({ teams: [] }));
       const { fetchTeams } = await getClient();
@@ -328,6 +344,15 @@ describe('api client', () => {
       await fetchPlayersCompareYearByYear({ ids: '10,20', group: 'hitting' });
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/players/compare/year-by-year?ids=10%2C20&group=hitting',
+      );
+    });
+
+    it('fetchPlayersCompareYearByYear includes metric when set', async () => {
+      fetchMock.mockResolvedValue(jsonResponse({}));
+      const { fetchPlayersCompareYearByYear } = await getClient();
+      await fetchPlayersCompareYearByYear({ ids: '10,20', group: 'hitting', metric: 'ops' });
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/players/compare/year-by-year?ids=10%2C20&group=hitting&metric=ops',
       );
     });
 

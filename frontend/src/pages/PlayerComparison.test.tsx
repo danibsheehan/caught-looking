@@ -124,4 +124,47 @@ describe('PlayerComparison deep links', () => {
     expect(screen.queryByText('Alpha One')).not.toBeInTheDocument();
     expect(screen.getByText('Beta Two')).toBeInTheDocument();
   });
+
+  it('swaps sides when picking a player who is already the other side', async () => {
+    const user = userEvent.setup();
+    api.fetchPlayersSearch.mockResolvedValue({
+      query: 'Beta',
+      people: [{ id: 2, fullName: 'Beta Two', active: true }],
+    });
+    const router = createMemoryRouter([{ path: '/players', element: <PlayerComparison /> }], {
+      initialEntries: ['/players?ids=1,2&season=2024&n1=Alpha%20One&n2=Beta%20Two'],
+    });
+    render(<RouterProvider router={router} />);
+
+    await screen.findByText('Alpha One', {}, asyncWait);
+    const changeButtons = screen.getAllByRole('button', { name: 'Change' });
+    await user.click(changeButtons[0]!);
+
+    const searchbox = await screen.findByRole('searchbox', {}, asyncWait);
+    await user.type(searchbox, 'Beta');
+    const hit = await screen.findByRole('button', { name: /Beta Two/i }, asyncWait);
+    await user.click(hit);
+
+    await waitFor(() => {
+      const params = new URLSearchParams(router.state.location.search);
+      expect(params.get('ids')).toBe('2,1');
+    }, asyncWait);
+  });
+
+  it('updates stat group and career metric from the filter controls', async () => {
+    const user = userEvent.setup();
+    const router = createMemoryRouter([{ path: '/players', element: <PlayerComparison /> }], {
+      initialEntries: ['/players?ids=1,2&season=2024&group=hitting&scope=career'],
+    });
+    render(<RouterProvider router={router} />);
+    await screen.findByRole('heading', { level: 1, name: 'Player comparison' }, asyncWait);
+
+    const statGroup = screen.getByLabelText('Stat group');
+    await user.selectOptions(statGroup, 'pitching');
+    await waitFor(() => {
+      const params = new URLSearchParams(router.state.location.search);
+      expect(params.get('group')).toBe('pitching');
+      expect(params.get('metric')).toBe('era');
+    }, asyncWait);
+  });
 });
