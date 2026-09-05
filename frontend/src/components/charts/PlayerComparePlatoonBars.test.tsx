@@ -39,6 +39,14 @@ describe('PlayerComparePlatoonBars', () => {
     expect(screen.getByRole('cell', { name: '0.900' })).toBeInTheDocument();
   });
 
+  it('shows a pitching-specific note when comparing pitchers', () => {
+    const pitching: PlayersPlatoonResponse = { ...sample, group: 'pitching' };
+    render(<PlayerComparePlatoonBars data={pitching} />);
+    expect(
+      screen.getByText(/Bars are opponent OPS \(lower is better for the pitcher\)/i),
+    ).toBeInTheDocument();
+  });
+
   it('shows empty state when no splits', () => {
     const empty: PlayersPlatoonResponse = {
       season: 2024,

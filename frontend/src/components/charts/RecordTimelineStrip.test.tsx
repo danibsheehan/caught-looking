@@ -102,6 +102,35 @@ describe('RecordTimelineStrip', () => {
     expect(await screen.findByText('Game 4 · 2026-04-04 · T (2-1)')).toBeInTheDocument();
   });
 
+  it('marks a day as split when it has both a win and a loss (doubleheader)', async () => {
+    api.fetchRecordTimeline.mockResolvedValueOnce(
+      record([
+        {
+          gameIndex: 1,
+          officialDate: '2026-04-01',
+          result: 'W',
+          wins: 1,
+          losses: 0,
+          pct: 1,
+        },
+        {
+          gameIndex: 2,
+          officialDate: '2026-04-01',
+          result: 'L',
+          wins: 1,
+          losses: 1,
+          pct: 0.5,
+        },
+      ]),
+    );
+    render(<RecordTimelineStrip teamId={121} season={2026} />);
+
+    expect(await screen.findByRole('list')).toBeInTheDocument();
+    const items = screen.getAllByRole('listitem');
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveClass('record-calendar__day--split');
+  });
+
   it('does not show tie legend when no ties are present', async () => {
     api.fetchRecordTimeline.mockResolvedValueOnce(
       record([
