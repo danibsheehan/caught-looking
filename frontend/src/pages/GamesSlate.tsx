@@ -139,7 +139,7 @@ export default function GamesSlate() {
         </p>
       ) : null}
 
-      <div className="games-slate__panel">
+      <div className="games-slate__panel" aria-live="polite" aria-atomic="true">
         <h2>Games on this day</h2>
         {loadingList ? (
           <GameListSkeleton rows={7} />

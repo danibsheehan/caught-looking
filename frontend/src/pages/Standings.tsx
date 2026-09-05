@@ -185,7 +185,7 @@ export default function Standings() {
       {divisions.length === 0 ? (
         <p className="text text--muted">No standings returned.</p>
       ) : (
-        <>
+        <div className="standings-page__results" aria-live="polite" aria-atomic="true">
           <div className="standings-page__panel standings-page__panel--chart">
             <h2>Wins by team</h2>
             <p className="text text--muted text--small">
@@ -257,7 +257,7 @@ export default function Standings() {
               </div>
             </div>
           ) : null}
-        </>
+        </div>
       )}
     </section>
   );

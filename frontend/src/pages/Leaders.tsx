@@ -173,7 +173,7 @@ export default function Leaders() {
       ) : null}
 
       {table ? (
-        <>
+        <div aria-live="polite" aria-atomic="true">
           {table.leaders.length > 0 ? (
             <div className="leaders-page__chart">
               <h2 className="leaders-page__chart-title">Top {table.leaders.length}</h2>
@@ -222,7 +222,7 @@ export default function Leaders() {
               </tbody>
             </table>
           </div>
-        </>
+        </div>
       ) : null}
     </section>
   );

@@ -51,7 +51,7 @@ export default function App() {
               </NavLink>
             ))}
           </nav>
-          <div className="app-shell__status" aria-live="polite">
+          <div className="app-shell__status">
             <span className="app-shell__status-pulse" aria-hidden="true" />
             <span>live · statcast</span>
           </div>
