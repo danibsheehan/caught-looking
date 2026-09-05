@@ -1,4 +1,4 @@
-import { lazy, useCallback, useEffect, useMemo } from 'react';
+import { lazy, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import { ChartSuspense } from '../components/charts/ChartSuspense';
 
@@ -98,6 +98,19 @@ export default function Standings() {
     return list.length ? obsidianRegistryLabelMap(list, surfaceHex) : new Map();
   }, [divisions, surfaceHex]);
 
+  const resultsRef = useRef<HTMLDivElement | null>(null);
+  // Tracks the previous division id so the effect can tell "standings data just
+  // finished loading" (undefined -> a real id) apart from a real user-driven
+  // division/team change (one real id -> another) -- only the latter should steal focus.
+  const prevDivisionIdRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevDivisionIdRef.current;
+    prevDivisionIdRef.current = selected?.divisionId;
+    if (prev !== undefined && prev !== selected?.divisionId) {
+      resultsRef.current?.focus();
+    }
+  }, [selected?.divisionId]);
+
   function onTeamSelected(id: number | '') {
     if (id === '') {
       const div = divisions[safeIdx];
@@ -185,7 +198,13 @@ export default function Standings() {
       {divisions.length === 0 ? (
         <p className="text text--muted">No standings returned.</p>
       ) : (
-        <div className="standings-page__results" aria-live="polite" aria-atomic="true">
+        <div
+          className="standings-page__results"
+          aria-live="polite"
+          aria-atomic="true"
+          ref={resultsRef}
+          tabIndex={-1}
+        >
           <div className="standings-page__panel standings-page__panel--chart">
             <h2>Wins by team</h2>
             <p className="text text--muted text--small">

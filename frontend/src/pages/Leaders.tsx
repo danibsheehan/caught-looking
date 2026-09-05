@@ -83,6 +83,21 @@ export default function Leaders() {
 
   const { data, error, loading } = useLeaders(query);
 
+  const resultsRef = useRef<HTMLDivElement | null>(null);
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    // Skip while the season field is mid-edit so a valid keystroke (e.g. finishing "2024")
+    // doesn't yank focus out of the input into the results panel.
+    if (editingSeasonRef.current) {
+      return;
+    }
+    resultsRef.current?.focus();
+  }, [group, category, season]);
+
   const categories =
     data?.group === group && data.categories.length > 0
       ? data.categories
@@ -187,7 +202,7 @@ export default function Leaders() {
               />
             </div>
           ) : null}
-          <div className="leaders-page__table-wrap">
+          <div className="leaders-page__table-wrap" ref={resultsRef} tabIndex={-1}>
             <table
               className="leaders-page__table"
               aria-label={`${labelCategory(table.category)} leaders for ${table.season}`}
