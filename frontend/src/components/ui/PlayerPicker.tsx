@@ -68,8 +68,6 @@ export default function PlayerPicker({ label, selected, onChange, disabled }: Pl
             value={q}
             onChange={(e) => setQ(e.target.value)}
             disabled={disabled}
-            aria-controls={listId}
-            aria-autocomplete="list"
             aria-expanded={hits.length > 0}
           />
           <div aria-live="polite" aria-atomic="true">

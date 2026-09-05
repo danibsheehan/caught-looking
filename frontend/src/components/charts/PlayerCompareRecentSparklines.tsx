@@ -69,7 +69,11 @@ function SparkBlock({
       </div>
       <div aria-hidden="true">
         <ResponsiveContainer width="100%" height={160}>
-          <LineChart data={rows} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
+          <LineChart
+            data={rows}
+            margin={{ top: 6, right: 8, left: 0, bottom: 0 }}
+            accessibilityLayer={false}
+          >
             <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
             <XAxis
               dataKey="i"

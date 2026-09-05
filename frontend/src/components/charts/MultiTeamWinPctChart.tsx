@@ -14,7 +14,7 @@ import ChartDataTable from './ChartDataTable';
 import ChartSkeleton from '../skeletons/ChartSkeleton';
 import { useChartSurfaceHex } from '../../hooks/useChartSurfaceHex';
 import { useRecordTimelinesBatch } from '../../hooks/useRecordTimelinesBatch';
-import { chartA11yFootnote, chartA11ySlice } from '../../utils/chartA11yRows';
+import { CHART_A11Y_ROW_CAP, chartA11yFootnote } from '../../utils/chartA11yRows';
 import { obsidianTeamChartPairsRegistryPrimary } from '../../utils/mlbTeamColors';
 import { chartCartesianTick } from '../../utils/rechartsAxis';
 import {
@@ -254,7 +254,12 @@ export default function MultiTeamWinPctChart({
     mode === 'race' ? [0, Math.max(1, Math.ceil(raceMaxGb))] : [0, 100];
 
   const a11y = useMemo(() => {
-    const slice = chartA11ySlice(chartData);
+    // 'race'/'recent' modes are already trailing-windowed to <= CHART_A11Y_ROW_CAP rows
+    // by buildDivisionRaceChartRows; 'season' mode is the full chronological game log, so
+    // slice from the end -- the *current* standings, not the season's opening month.
+    const total = chartData.length;
+    const trailing = total > CHART_A11Y_ROW_CAP ? chartData.slice(-CHART_A11Y_ROW_CAP) : chartData;
+    const slice = { rows: trailing, omitted: total - trailing.length, total };
     const rows = slice.rows.map((row) => [
       String(row.gameIndex),
       ...orderedIds.map((id) => {
@@ -320,7 +325,11 @@ export default function MultiTeamWinPctChart({
       </div>
       <div aria-hidden="true">
         <ResponsiveContainer width="100%" height={360}>
-          <LineChart data={chartData} margin={{ top: 10, right: 14, left: 4, bottom: 28 }}>
+          <LineChart
+            data={chartData}
+            margin={{ top: 10, right: 14, left: 4, bottom: 28 }}
+            accessibilityLayer={false}
+          >
             <CartesianGrid strokeDasharray="3 4" stroke="var(--chart-grid-faint)" />
             {mode === 'race' ? (
               <ReferenceLine y={0} stroke="var(--chart-y-mid)" strokeWidth={1} />

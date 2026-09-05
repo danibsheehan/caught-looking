@@ -33,23 +33,23 @@ export default function App() {
         </div>
         <div className="app-shell__header-tools">
           <nav className="app-shell__nav" aria-label="Primary">
-            {nav.map(({ to, label }) => {
-              const active = location.pathname === to || location.pathname.startsWith(`${to}/`);
-              return (
-                <NavLink
-                  key={to}
-                  to={to}
-                  className={
-                    active
-                      ? 'app-shell__nav-link app-shell__nav-link--active'
-                      : 'app-shell__nav-link'
-                  }
-                  aria-current={active ? 'page' : undefined}
-                >
-                  {label}
-                </NavLink>
-              );
-            })}
+            {nav.map(({ to, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) => {
+                  const active =
+                    to === '/games'
+                      ? isActive || location.pathname.startsWith('/games/')
+                      : isActive;
+                  return active
+                    ? 'app-shell__nav-link app-shell__nav-link--active'
+                    : 'app-shell__nav-link';
+                }}
+              >
+                {label}
+              </NavLink>
+            ))}
           </nav>
           <div className="app-shell__status">
             <span className="app-shell__status-pulse" aria-hidden="true" />
