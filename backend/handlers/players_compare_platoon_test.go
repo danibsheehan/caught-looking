@@ -125,3 +125,19 @@ func TestPlayersComparePlatoon_keepsZeroOpsSplit(t *testing.T) {
 		t.Fatalf("want vl split with zero ops, got: %+v", out.Players[0].Splits[0])
 	}
 }
+
+func TestPlayersComparePlatoon_upstreamError(t *testing.T) {
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/players/compare/platoon", h.PlayersComparePlatoon)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/players/compare/platoon?ids=7,8&group=hitting&season=2026", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status: got %d", rec.Code)
+	}
+}

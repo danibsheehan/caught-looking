@@ -134,6 +134,53 @@ func TestPlayersCompareYearByYear_reusesLeagueTeamStatsCache(t *testing.T) {
 	}
 }
 
+func TestPlayersCompareYearByYear_upstreamError(t *testing.T) {
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/players/compare/year-by-year", h.PlayersCompareYearByYear)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/players/compare/year-by-year?ids=3,4&group=hitting", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status: got %d", rec.Code)
+	}
+}
+
+func Test_validYearByYearMetric(t *testing.T) {
+	tests := []struct {
+		name   string
+		group  string
+		metric string
+		want   bool
+	}{
+		{"hitting ops", "hitting", "ops", true},
+		{"hitting avg", "hitting", "avg", true},
+		{"hitting obp", "hitting", "obp", true},
+		{"hitting slg", "hitting", "slg", true},
+		{"hitting woba", "hitting", "woba", true},
+		{"pitching era", "pitching", "era", true},
+		{"pitching whip", "pitching", "whip", true},
+		{"pitching k9", "pitching", "k9", true},
+		{"pitching bb9", "pitching", "bb9", true},
+		{"pitching fip", "pitching", "fip", true},
+		{"pitching metric under hitting", "hitting", "era", false},
+		{"hitting metric under pitching", "pitching", "ops", false},
+		{"unknown group", "fielding", "ops", false},
+		{"empty group and metric", "", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := validYearByYearMetric(tt.group, tt.metric); got != tt.want {
+				t.Fatalf("validYearByYearMetric(%q, %q) = %v want %v", tt.group, tt.metric, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestPlayersCompareGameLog_validation(t *testing.T) {
 	h := newTestHandlers(t, http.NotFoundHandler())
 	r := chi.NewRouter()

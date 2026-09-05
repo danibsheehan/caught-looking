@@ -128,3 +128,19 @@ func TestGamesForDate_abstractFinalWithoutDetailed(t *testing.T) {
 		t.Fatalf("want Status Final from abstractGameState, got %+v", out.Games)
 	}
 }
+
+func TestGamesForDate_upstreamError(t *testing.T) {
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/games/for-date", h.GamesForDate)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/games/for-date?date=2026-06-15", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status: got %d", rec.Code)
+	}
+}
