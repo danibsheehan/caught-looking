@@ -76,6 +76,10 @@
       background 0.15s ease,
       border-color 0.15s ease;
 
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+
     &:hover {
       color: var(--text-h);
       border-color: color-mix(in srgb, var(--border) 65%, var(--accent) 35%);
