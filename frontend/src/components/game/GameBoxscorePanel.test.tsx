@@ -44,7 +44,7 @@ const box: GameBoxscoreResponse = {
       {
         playerId: 1,
         name: 'Zeta Pitcher',
-        ip: '7.0',
+        ip: '7.1',
         h: 4,
         r: 1,
         er: 1,
@@ -55,7 +55,7 @@ const box: GameBoxscoreResponse = {
       {
         playerId: 2,
         name: 'Alpha Pitcher',
-        ip: '1.0',
+        ip: '1.2',
         h: 2,
         r: 2,
         er: 2,
@@ -79,6 +79,20 @@ const box: GameBoxscoreResponse = {
         bb: 0,
         so: 1,
       },
+      {
+        playerId: 11,
+        name: 'Sam Fielder',
+        pos: 'CF',
+        ab: 3,
+        r: 0,
+        h: 1,
+        doubles: 0,
+        triples: 0,
+        hr: 0,
+        rbi: 0,
+        bb: 1,
+        so: 0,
+      },
     ],
   },
   home: {
@@ -98,7 +112,22 @@ const box: GameBoxscoreResponse = {
         hr: 0,
       },
     ],
-    batting: [],
+    batting: [
+      {
+        playerId: 12,
+        name: 'Home Batter',
+        pos: 'DH',
+        ab: 3,
+        r: 0,
+        h: 1,
+        doubles: 0,
+        triples: 0,
+        hr: 0,
+        rbi: 0,
+        bb: 0,
+        so: 0,
+      },
+    ],
   },
 };
 
@@ -197,5 +226,66 @@ describe('GameBoxscorePanel', () => {
     const bodyRows = within(awayPitching).getAllByRole('row').slice(1);
     expect(bodyRows[0]).toHaveTextContent('Alpha Pitcher');
     expect(bodyRows[1]).toHaveTextContent('Zeta Pitcher');
+  });
+
+  it('shows — for missing optional team totals fields', () => {
+    render(<GameBoxscorePanel data={box} />);
+    const homeTotals = screen
+      .getAllByRole('heading', { name: 'Home Club', level: 3 })[0]!
+      .closest('.game-boxscore__team-totals')! as HTMLElement;
+    const lobLabel = within(homeTotals).getByText('LOB', { exact: true });
+    expect(lobLabel.nextElementSibling).toHaveTextContent('—');
+    const hrLabel = within(homeTotals).getByText('HR', { exact: true });
+    expect(hrLabel.nextElementSibling).toHaveTextContent('—');
+  });
+
+  it('sorts the home pitching table independently of the away table', async () => {
+    const user = userEvent.setup();
+    render(<GameBoxscorePanel data={box} />);
+
+    const tables = screen.getAllByRole('table');
+    const homePitching = tables[1]!;
+    const soBtn = within(homePitching).getByRole('button', { name: /^SO/ });
+    await user.click(soBtn);
+
+    expect(within(homePitching).getByRole('button', { name: /^SO ▼/ })).toBeInTheDocument();
+  });
+
+  it('sorts a batting table by a string column and resets to insertion order on a third click', async () => {
+    const user = userEvent.setup();
+    render(<GameBoxscorePanel data={box} />);
+
+    const tables = screen.getAllByRole('table');
+    const awayBatting = tables[2]!;
+    const posBtn = within(awayBatting).getByRole('button', { name: /^Pos/ });
+
+    await user.click(posBtn);
+    const afterFirstClick = within(awayBatting).getAllByRole('row').slice(1);
+    expect(afterFirstClick[0]).toHaveTextContent('Pat Batter');
+
+    await user.click(posBtn);
+    const afterSecondClick = within(awayBatting).getAllByRole('row').slice(1);
+    expect(afterSecondClick[0]).toHaveTextContent('Sam Fielder');
+
+    await user.click(posBtn);
+    expect(
+      within(awayBatting).queryByRole('button', { name: /^Pos [▲▼]/ }),
+    ).not.toBeInTheDocument();
+    const afterThirdClick = within(awayBatting).getAllByRole('row').slice(1);
+    expect(afterThirdClick[0]).toHaveTextContent('Pat Batter');
+    expect(afterThirdClick[1]).toHaveTextContent('Sam Fielder');
+  });
+
+  it('renders home batting rows and supports sorting them', async () => {
+    const user = userEvent.setup();
+    render(<GameBoxscorePanel data={box} />);
+
+    const tables = screen.getAllByRole('table');
+    const homeBatting = tables[3]!;
+    expect(within(homeBatting).getByText('Home Batter')).toBeInTheDocument();
+
+    const abBtn = within(homeBatting).getByRole('button', { name: /^AB/ });
+    await user.click(abBtn);
+    expect(within(homeBatting).getByRole('button', { name: /^AB ▼/ })).toBeInTheDocument();
   });
 });

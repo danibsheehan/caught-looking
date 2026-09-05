@@ -6,38 +6,39 @@ import MultiTeamWinPctChart from './MultiTeamWinPctChart';
 
 const asyncWait = { timeout: 10_000 };
 
+function seriesPoints(
+  results: ('W' | 'L')[],
+): RecordTimelinesBatchResponse['timelines'][number]['points'] {
+  let wins = 0;
+  let losses = 0;
+  return results.map((result, i) => {
+    if (result === 'W') wins += 1;
+    else losses += 1;
+    return {
+      gameIndex: i + 1,
+      officialDate: `2026-04-${String(i + 1).padStart(2, '0')}`,
+      result,
+      wins,
+      losses,
+      pct: wins / (wins + losses),
+    };
+  });
+}
+
 const batchPayload: RecordTimelinesBatchResponse = {
   season: 2026,
   timelines: [
     {
       teamId: 121,
       season: 2026,
-      finishedGames: 1,
-      points: [
-        {
-          gameIndex: 1,
-          officialDate: '2026-04-01',
-          result: 'W',
-          wins: 1,
-          losses: 0,
-          pct: 1,
-        },
-      ],
+      finishedGames: 5,
+      points: seriesPoints(['W', 'W', 'L', 'W', 'W']),
     },
     {
       teamId: 144,
       season: 2026,
-      finishedGames: 1,
-      points: [
-        {
-          gameIndex: 1,
-          officialDate: '2026-04-01',
-          result: 'L',
-          wins: 0,
-          losses: 1,
-          pct: 0,
-        },
-      ],
+      finishedGames: 5,
+      points: seriesPoints(['L', 'L', 'W', 'L', 'L']),
     },
   ],
 };
