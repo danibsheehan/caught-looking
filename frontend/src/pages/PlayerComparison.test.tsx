@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PlayersRadarResponse } from '../types/api.compat';
+import type { PlayersRadarResponse, PlayersSearchResponse } from '../types/api.compat';
 import { DEFAULT_PLAYER_COMPARE_URL } from '../utils/playerCompareSearchParams';
 import PlayerComparison from './PlayerComparison';
 
@@ -43,7 +43,10 @@ const api = vi.hoisted(() => {
       group: 'hitting',
       players: [],
     })),
-    fetchPlayersSearch: vi.fn(async () => ({ people: [] })),
+    fetchPlayersSearch: vi.fn(async (): Promise<PlayersSearchResponse> => ({
+      query: '',
+      people: [],
+    })),
   };
 });
 
