@@ -31,12 +31,18 @@ jobs:
       checks: write
     uses: danibsheehan/dani-actions/.github/workflows/npm-verify.yml@v19
     with:
+      # coverage-minimum is checked against cobertura-action's own per-file "Coverage" column,
+      # which is (line-rate + branch-rate) / 2 -- not any of Vitest's four coverage.thresholds
+      # metrics in frontend/vite.config.ts (stmts 83 / branches 73 / functions 80 / lines 85,
+      # enforced in aggregate by `npm run test:coverage` itself, the real gate). 78 approximates
+      # that policy under the blended formula; it's still a lossy single-number stand-in for
+      # four independent thresholds, so don't read the comment table's checkmarks as gating.
       packages: |
         [{"name": "frontend", "path": "frontend",
           "test-command": "npm run test:coverage",
           "build-command": "npm run build",
           "coverage-file": "coverage/cobertura-coverage.xml",
-          "coverage-minimum": 85,
+          "coverage-minimum": 78,
           "typecheck-command": "npm run typecheck",
           "paths": "app:\n  - 'frontend/**'\n  - 'backend/apidocs/**'\n  - 'redocly.yaml'\n  - 'Makefile'\n  - '.nvmrc'\n  - '.github/workflows/verify.yml'"}]
       doc-check-commands: |
