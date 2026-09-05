@@ -29,13 +29,14 @@ jobs:
       contents: read
       pull-requests: write
       checks: write
-    uses: danibsheehan/dani-actions/.github/workflows/npm-verify.yml@v18
+    uses: danibsheehan/dani-actions/.github/workflows/npm-verify.yml@v19
     with:
       packages: |
         [{"name": "frontend", "path": "frontend",
           "test-command": "npm run test:coverage",
           "build-command": "npm run build",
           "coverage-file": "coverage/cobertura-coverage.xml",
+          "coverage-minimum": 85,
           "typecheck-command": "npm run typecheck",
           "paths": "app:\n  - 'frontend/**'\n  - 'backend/apidocs/**'\n  - 'redocly.yaml'\n  - 'Makefile'\n  - '.nvmrc'\n  - '.github/workflows/verify.yml'"}]
       doc-check-commands: |
@@ -53,7 +54,7 @@ jobs:
       contents: read
       pull-requests: write
       checks: write
-    uses: danibsheehan/dani-actions/.github/workflows/go-verify.yml@v18
+    uses: danibsheehan/dani-actions/.github/workflows/go-verify.yml@v19
     with:
       go-version-file: backend/go.mod
       working-directory: backend
