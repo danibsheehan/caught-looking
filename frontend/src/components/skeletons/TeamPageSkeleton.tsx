@@ -3,7 +3,7 @@ import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives';
 
 export default function TeamPageSkeleton() {
   return (
-    <section className="page teams-page" aria-busy="true" aria-label="Loading teams">
+    <section className="page teams-page" role="status" aria-busy="true" aria-label="Loading teams">
       <header className="teams-page__header">
         <div>
           <SkeletonLine style={{ width: '6rem', height: '1.75rem', marginBottom: '0.4rem' }} />

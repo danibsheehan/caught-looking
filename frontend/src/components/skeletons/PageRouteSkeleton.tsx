@@ -3,7 +3,7 @@ import { SkeletonBox, SkeletonLine } from './SkeletonPrimitives';
 /** Shown while lazy route chunks load (Suspense). */
 export default function PageRouteSkeleton() {
   return (
-    <div className="page page-skeleton" aria-busy="true" aria-label="Loading page">
+    <div className="page page-skeleton" role="status" aria-busy="true" aria-label="Loading page">
       <div className="page-skeleton__header">
         <div className="page-skeleton__title-block">
           <SkeletonLine style={{ width: '40%', height: '1.75rem', marginBottom: '0.5rem' }} />
