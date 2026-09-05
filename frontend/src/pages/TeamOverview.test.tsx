@@ -222,4 +222,99 @@ describe('TeamOverview', () => {
     ).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 3, name: 'Home and road' })).toBeInTheDocument();
   });
+
+  it('formats zero/dash standings values and highlights a non-leader team in a 3-team division', async () => {
+    const user = userEvent.setup();
+    api.fetchTeams.mockResolvedValueOnce({
+      teams: [
+        api.teams.teams[0]!,
+        {
+          id: 144,
+          name: 'Braves',
+          abbreviation: 'ATL',
+          teamName: 'Atlanta Braves',
+          leagueId: 104,
+          leagueName: 'National League',
+          divisionId: 201,
+          divisionName: 'NL East',
+          active: true,
+        },
+        {
+          id: 143,
+          name: 'Phillies',
+          abbreviation: 'PHI',
+          teamName: 'Philadelphia Phillies',
+          leagueId: 104,
+          leagueName: 'National League',
+          divisionId: 201,
+          divisionName: 'NL East',
+          active: true,
+        },
+      ],
+    });
+    api.fetchStandings.mockResolvedValueOnce({
+      season: 2026,
+      divisions: [
+        {
+          divisionId: 201,
+          divisionName: 'NL East',
+          leagueId: 104,
+          teams: [
+            {
+              teamId: 121,
+              teamName: 'Mets',
+              wins: 12,
+              losses: 3,
+              pct: '.800',
+              gamesPlayed: 15,
+              divisionRank: '1',
+              gamesBack: '-',
+              wildCardGamesBack: '-',
+              runsScored: 90,
+              runsAllowed: 60,
+              runDifferential: 30,
+            },
+            {
+              teamId: 144,
+              teamName: 'Braves',
+              wins: 10,
+              losses: 5,
+              pct: '.667',
+              gamesPlayed: 15,
+              divisionRank: '2',
+              gamesBack: '2',
+              wildCardGamesBack: '-',
+              runsScored: 75,
+              runsAllowed: 70,
+              runDifferential: 5,
+            },
+            {
+              teamId: 143,
+              teamName: 'Phillies',
+              wins: 7,
+              losses: 8,
+              pct: '.467',
+              gamesPlayed: 15,
+              divisionRank: '3',
+              gamesBack: '5.5',
+              wildCardGamesBack: '1',
+              runsScored: 70,
+              runsAllowed: 70,
+              runDifferential: 0,
+            },
+          ],
+        },
+      ],
+    });
+    api.fetchTeamSeasonStats.mockResolvedValueOnce({ ...api.seasonStats, teamId: 143 });
+    api.fetchRecordTimeline.mockResolvedValueOnce({ ...api.recordTimeline, teamId: 143 });
+
+    renderTeamOverview();
+    await screen.findByRole('heading', { level: 1, name: 'Teams' }, asyncWait);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Club' }), '143');
+
+    await screen.findByRole('heading', { level: 2, name: 'Season snapshot' }, asyncWait);
+    expect(screen.getByText('5.5')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
+  });
 });

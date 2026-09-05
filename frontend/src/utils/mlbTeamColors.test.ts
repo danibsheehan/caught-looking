@@ -113,4 +113,13 @@ describe('teamSplitChartColors', () => {
     expect(defense).toMatch(/^#/);
     expect(defense).not.toBe(offense);
   });
+
+  it('falls back to a distinct reserve color when the secondary is near-black', () => {
+    // Team 110 (Orioles) has a near-black secondary hex in MLB_TEAM_SECONDARY_HEX.
+    const { offense, defense } = teamSplitChartColors(110, '#ffffff');
+    expect(offense).toMatch(/^#/);
+    expect(defense).toMatch(/^#/);
+    expect(defense).not.toBe(offense);
+    expect(rgbDistance(offense, defense)).toBeGreaterThanOrEqual(40);
+  });
 });
