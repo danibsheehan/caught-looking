@@ -97,6 +97,22 @@ func TestPlayerSearch_success_namesAndQ(t *testing.T) {
 	}
 }
 
+func TestPlayerSearch_upstreamError(t *testing.T) {
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/players/search", h.PlayerSearch)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/players/search?names=Example", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status: got %d", rec.Code)
+	}
+}
+
 func TestTeams_validation(t *testing.T) {
 	h := newTestHandlers(t, http.NotFoundHandler())
 	r := chi.NewRouter()

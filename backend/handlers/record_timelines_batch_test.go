@@ -102,3 +102,19 @@ func TestRecordTimelinesBatch_dedupesTeamIDs(t *testing.T) {
 		t.Fatalf("timelines: %d", len(out.Timelines))
 	}
 }
+
+func TestRecordTimelinesBatch_upstreamError(t *testing.T) {
+	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	})
+	h := newTestHandlers(t, mlb)
+	r := chi.NewRouter()
+	r.Get("/record-timelines/batch", h.RecordTimelinesBatch)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/record-timelines/batch?teamIds=144,121&season=2026", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status: got %d", rec.Code)
+	}
+}
