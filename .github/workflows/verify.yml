@@ -29,7 +29,7 @@ jobs:
       contents: read
       pull-requests: write
       checks: write
-    uses: danibsheehan/dani-actions/.github/workflows/npm-verify.yml@v20
+    uses: danibsheehan/dani-actions/.github/workflows/npm-verify.yml@v21
     with:
       # coverage-minimum is checked against cobertura-action's own per-file "Coverage" column,
       # which is (line-rate + branch-rate) / 2 -- not any of Vitest's four coverage.thresholds
@@ -60,7 +60,7 @@ jobs:
       contents: read
       pull-requests: write
       checks: write
-    uses: danibsheehan/dani-actions/.github/workflows/go-verify.yml@v20
+    uses: danibsheehan/dani-actions/.github/workflows/go-verify.yml@v21
     with:
       go-version-file: backend/go.mod
       working-directory: backend
