@@ -339,11 +339,11 @@ Fork PRs may skip guide, coverage comments, or previews (`GITHUB_TOKEN` / secret
 
 [`.github/dependabot.yml`](.github/dependabot.yml) opens **weekly** version PRs for:
 
-- **Go modules** (`backend/`)
-- **npm** (`frontend/` — minor/patch **grouped**)
+- **Go modules** (`backend/` — minor/patch **grouped**, plus a grouped security-update bucket)
+- **npm** (`frontend/` — minor/patch **grouped**, plus a grouped security-update bucket)
 - **GitHub Actions** (ungrouped)
 
-The grouped npm minor/patch PR auto-merges on its own once required CI passes ([`dependabot-auto-merge.yml`](.github/workflows/dependabot-auto-merge.yml)). Everything else — Go modules, GitHub Actions, and any ungrouped npm major bump — still needs a human merge; a weekly scheduled Claude Code routine reads each one's changelog and required CI to classify risk and post a report, but only merges PRs a person names explicitly (see [`dependabot-triage`](.claude/skills/dependabot-triage/SKILL.md) for the logic it follows, and [AI-assisted development & automation](docs/automation.md) for the full picture of what runs unattended here vs. on request).
+The grouped npm/gomod minor/patch PRs, and grouped security-update PRs at patch/minor level, auto-merge on their own once required CI passes ([`dependabot-auto-merge.yml`](.github/workflows/dependabot-auto-merge.yml)). Everything else — GitHub Actions bumps, any ungrouped npm/gomod major bump, and major-level security updates — still needs a human merge; a weekly scheduled Claude Code routine reads each one's changelog and required CI to classify risk and post a report, but only merges PRs a person names explicitly (see [`dependabot-triage`](.claude/skills/dependabot-triage/SKILL.md) for the logic it follows, and [AI-assisted development & automation](docs/automation.md) for the full picture of what runs unattended here vs. on request).
 
 It does **not** update README badges or Prerequisites. When a bump changes React / Vite / TypeScript / Go / CI Node majors (or TypeScript major.minor), update those docs in the same PR — CI’s `make check-stack-docs` catches drift. Review Dependabot PRs like any other change (`govulncheck` and `npm audit` still gate merges).
 
@@ -353,7 +353,7 @@ Also enable **Dependabot alerts** and **Dependabot security updates** under GitH
 
 ## Automation
 
-**In plain English:** the grouped npm minor/patch Dependabot PR merges itself once CI is green (see [CI & quality gates → Dependabot](#dependabot) above); everything riskier — Go modules, GitHub Actions bumps, npm majors — still needs a person. The other piece runs outside this repo entirely and never writes to it: a scheduled Claude Code routine, defined in [`danibsheehan/portfolio-automation`](https://github.com/danibsheehan/portfolio-automation)'s [`weekly-project-update`](https://github.com/danibsheehan/portfolio-automation/blob/main/.claude/skills/weekly-project-update/SKILL.md) skill, reads this repo once a week alongside three others and — only when there's something people-relevant to report — opens a PR against [danibsheehan.github.io](https://github.com/danibsheehan/danibsheehan.github.io) updating this project's page.
+**In plain English:** the grouped npm/gomod minor/patch and grouped patch/minor security-update Dependabot PRs merge themselves once CI is green (see [CI & quality gates → Dependabot](#dependabot) above); everything riskier — GitHub Actions bumps, npm/gomod majors — still needs a person. The other piece runs outside this repo entirely and never writes to it: a scheduled Claude Code routine, defined in [`danibsheehan/portfolio-automation`](https://github.com/danibsheehan/portfolio-automation)'s [`weekly-project-update`](https://github.com/danibsheehan/portfolio-automation/blob/main/.claude/skills/weekly-project-update/SKILL.md) skill, reads this repo once a week alongside three others and — only when there's something people-relevant to report — opens a PR against [danibsheehan.github.io](https://github.com/danibsheehan/danibsheehan.github.io) updating this project's page.
 
 See [AI-assisted development & automation](docs/automation.md) for the full table of what runs unattended here vs. on request, and [`portfolio-automation`'s README](https://github.com/danibsheehan/portfolio-automation#autonomy-boundary) for the cross-repo autonomy boundary.
 
