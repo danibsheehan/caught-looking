@@ -60,7 +60,7 @@ jobs:
       contents: read
       pull-requests: write
       checks: write
-    uses: danibsheehan/dani-actions/.github/workflows/go-verify.yml@v21
+    uses: danibsheehan/dani-actions/.github/workflows/go-verify.yml@v27
     with:
       go-version-file: backend/go.mod
       working-directory: backend
