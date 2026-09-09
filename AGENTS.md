@@ -201,7 +201,8 @@ same directory, kept for Cursor compatibility. Both tools auto-invoke them by ta
 also installs the `foundations` plugin from the `dani-foundations` marketplace (see
 `.claude/settings.json`), providing `dependabot-triage`, `coverage-gap-diagnosis`,
 `pr-summary-draft`, `bugbot-fix-verify`, `caching-and-upstream-perf`, `doc-sync-patch`,
-`api-hardening`, `react-vitest-testing`, `go-http-testing`, and `go-testing` (namespaced `foundations:*`)
+`api-hardening`, `react-vitest-testing`, `go-http-testing`, `go-testing`, `pr-stack-ship`, and
+`definition-of-done` (namespaced `foundations:*`)
 — no local copies of these needed for the generic parts; each was verified before
 removing/trimming the local versions. `bugbot-fix-verify` was fully redundant (removed);
 `caching-and-upstream-perf`, `doc-sync-patch`, `backend-http-security`,
@@ -214,7 +215,12 @@ scoped: **`foundations:branch-naming`** — every branch follows `<type>/<slug>`
 plugin, so a non-conforming `git checkout -b`/`git switch -c` is blocked automatically.
 **`foundations:pr-chunk-plan`** — before starting a task that touches 3 or more files, or
 bundles multiple distinct concerns, break it into an ordered sequence of small,
-independently reviewable chunks first; skip it for single-file or one-line fixes.
+independently reviewable chunks first; skip it for single-file or one-line fixes. Once
+chunks are underway, **`foundations:pr-stack-ship`** ships them as a stack of small
+branches/PRs, retargeting and rebasing later ones as earlier ones merge. When writing up
+any one of those PRs (or a single-PR change), **`foundations:pr-summary-draft`** drafts a
+why-first Summary and How-to-verify section from the actual diff and commits on the branch,
+rather than filling in the PR template from scratch.
 
 - `add-api-endpoint` — full route end-to-end: models → handler → router → OpenAPI → types →
   client → hook/UI → tests.
@@ -274,6 +280,12 @@ independently reviewable chunks first; skip it for single-file or one-line fixes
   PR creation being inherently risky.
 
 ## Definition of done
+
+This repo's checklist below is more specific than the plugin's generic
+**`foundations:definition-of-done`** skill (format/lint/test/build), because the gates here
+(Prettier hook scope, focused-package tests, `make check-openapi`, manual `/code-review` for
+risky changes) don't map onto a single generic command — use the checklist below rather than
+invoking that skill directly.
 
 - **Task done**: follow the scoped convention/skill for files touched; keep frontend edits
   Prettier-clean (`.cursor/hooks/prettier-frontend.sh` on `afterFileEdit` in Cursor sessions,
