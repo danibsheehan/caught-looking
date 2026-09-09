@@ -50,7 +50,10 @@ make load-smoke          # cache singleflight/coalesce proof under concurrency
 
 Optional Playwright e2e (not required for every change): `make test-e2e` (stubbed API),
 `make test-e2e-contract` (real Go API + fixture upstream), `make test-e2e-chaos` (429/5xx/slow
-fault injection). Coverage gate is ≥50% line rate on both sides, enforced in CI.
+fault injection). Coverage gate is ≥50% line rate on both sides, enforced in CI. If coverage fails or sits
+close to that gate, **`foundations:coverage-gap-diagnosis`** reads the local coverage output
+for files changed on the branch and names the specific untested branches/error paths instead
+of just the percentage.
 
 Before opening or updating a PR, run full local CI parity:
 
@@ -81,7 +84,7 @@ Conventions for this repo, organized by area. Read automatically by Claude Code 
 - **Styling**: follow patterns in `frontend/src/index.scss` and `frontend/src/styles/` (variables, utilities). Prefer existing classes and layout patterns over one-off inline styles unless there's a strong reason.
 - **New class names / new components**: use **BEM** as defined in [BEM naming](#bem-naming) below. Leave legacy class strings unchanged unless the task is an explicit BEM migration.
 - **Page filters / form controls**: reuse the shared field chrome in **`frontend/src/styles/features/_form-field.scss`** — `form-field`, `form-field__label`, `form-field__select`, `form-field__input` (and `--wide` / `--date` modifiers when needed). Mirror **Teams**, **Standings**, **Games**, and **Players** (Players may use the aliased `players-compare__*` classes that share the same styles). Do **not** invent classes like `form-field__control` or leave bare native `<select>` / `<input>` without those styles. Put filter rows in the page header (`*-page__header` / `games-slate__header` + controls) beside the title when other list pages do. For season year pickers, use a concrete default year in the URL/input (same idea as Teams/Players), not an empty "Default" placeholder. Prefer the same control type for the same concept across pages (e.g. hitting/pitching as a **Stat group** `<select>`, not a one-off tab strip).
-- **Errors / a11y**: surface failures to the user (message or empty state), not silent `console.log` only. Prefer accessible names/roles for interactive controls.
+- **Errors / a11y**: surface failures to the user (message or empty state), not silent `console.log` only. Prefer accessible names/roles for interactive controls; see **`foundations:accessibility-a11y`** for keyboard/focus, ARIA live-region, and reduced-motion conventions beyond this.
 - **Tests**: follow **`.claude/skills/frontend-vitest-tests/SKILL.md`** for Vitest, Testing Library, and mocked `api/client` (see also [Vitest / Testing Library tests](#vitest--testing-library-tests) below for `*.test.ts(x)` files).
 
 ### API client (`frontend/src/api`)
@@ -155,6 +158,7 @@ Use explicit paths (not `npm run format` on the whole tree) unless you touched m
 ### OpenAPI contract
 
 - **Source of truth for HTTP shapes**: `backend/apidocs/openapi.yaml` (served at `/openapi.yaml`, Redoc on GitHub Pages from `main` when the spec changes).
+- **Docs deploy workflow**: `.github/workflows/openapi-pages.yml` builds and publishes the Redoc docs site to GitHub Pages (`docs.caught-looking.com`) whenever `openapi.yaml` changes on `main`; see **`foundations:github-pages-deploy`** for base-path/workflow-structure conventions when touching that workflow.
 - **When you change** a handler's JSON (models, field names, status codes, paths, query params): update **`openapi.yaml`** in the **same change** so docs, lint, and typegen stay accurate. Full new route checklist: **`.claude/skills/add-api-endpoint/SKILL.md`**. Regen/compat steps: **`.claude/skills/openapi-maintain/SKILL.md`**.
 - **Generated types**: `frontend/src/types/api.generated.ts` — do not hand-edit. From `frontend/`: `npm run api:types`. CI runs `npm run api:types:check` (must be clean `git diff` after regen).
 - **Compat layer**: `frontend/src/types/api.compat.ts` — re-exports schema types and `QueryOf<operations['…']>` helpers; add exports here when the app needs a stable name or a query shape OpenAPI cannot express cleanly.
@@ -201,8 +205,8 @@ same directory, kept for Cursor compatibility. Both tools auto-invoke them by ta
 also installs the `foundations` plugin from the `dani-foundations` marketplace (see
 `.claude/settings.json`), providing `dependabot-triage`, `coverage-gap-diagnosis`,
 `pr-summary-draft`, `bugbot-fix-verify`, `caching-and-upstream-perf`, `doc-sync-patch`,
-`api-hardening`, `react-vitest-testing`, `go-http-testing`, `go-testing`, `pr-stack-ship`, and
-`definition-of-done` (namespaced `foundations:*`)
+`api-hardening`, `react-vitest-testing`, `go-http-testing`, `go-testing`, `pr-stack-ship`,
+`accessibility-a11y`, `github-pages-deploy`, and `definition-of-done` (namespaced `foundations:*`)
 — no local copies of these needed for the generic parts; each was verified before
 removing/trimming the local versions. `bugbot-fix-verify` was fully redundant (removed);
 `caching-and-upstream-perf`, `doc-sync-patch`, `backend-http-security`,
