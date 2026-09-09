@@ -59,7 +59,7 @@ def read_package_versions(package_json: Path) -> dict[str, str]:
 
 def read_go_mod(go_mod: Path) -> dict[str, str]:
     text = go_mod.read_text(encoding="utf-8")
-    go_match = re.search(r"(?m)^go\s+(\d+\.\d+)\s*$", text)
+    go_match = re.search(r"(?m)^go\s+(\d+\.\d+)(?:\.\d+)?\s*$", text)
     if not go_match:
         raise ValueError(f"{go_mod}: no `go X.Y` directive")
     out = {"go_mm": go_match.group(1)}
