@@ -28,6 +28,7 @@
 - [Architecture](#architecture)
 - [Design tokens](#design-tokens)
 - [Tech stack](#tech-stack)
+- [CI](#ci--what-github-actions-runs)
 - [Automation](#automation)
 - [Project layout](#project-layout)
 - [Prerequisites](#prerequisites)
@@ -36,6 +37,7 @@
 - [Configuration](#configuration)
 - [Deployment](#deployment)
 - [Contributing](#contributing)
+- [Cursor](#cursor--legacy-compatibility-only)
 - [License](#license)
 
 ## Start here
@@ -46,6 +48,7 @@
 | **Run it on my machine** | [Prerequisites](#prerequisites) → [Run locally](#run-locally) |
 | **Understand the product** | [What you can explore](#what-you-can-explore) |
 | **Contribute a change** | [Contributing](#contributing) |
+| **See what CI does** | [CI](#ci--what-github-actions-runs) → [Automation](#automation) |
 | **Tune env vars or ship to the cloud** | [Configuration](docs/configuration.md) · [Deployment](docs/deploy.md) |
 | **Read the “why” docs** | [docs/](docs/) — ADRs, SLOs, threat model, glossary |
 
@@ -291,13 +294,16 @@ Defined on `html` in [`frontend/src/styles/_base.scss`](frontend/src/styles/_bas
 | Backend | Go 1.26, [chi](https://github.com/go-chi/chi), TTL cache, per-IP rate limit, inbound body size cap, token-bucket QPS caps (MLB + Savant) |
 | Data | MLB Stats API v1 (JSON); Baseball Savant (CSV) for Statcast game data |
 
+---
+
+## CI — what GitHub Actions runs
+
+**In plain English:** every push to `main` and every non-draft pull request runs required
+frontend, backend, and lint-backend checks; draft PRs skip CI until marked ready for review.
+Local parity: `make ci-local`.
+
 <details>
-<summary><strong>CI & quality gates</strong> (expand)</summary>
-
-Skip this if you're just trying the app or reading code — it's reference detail
-for anyone opening a PR who wants to know exactly what has to pass.
-
-Runs in **GitHub Actions** on pushes to **`main`** and on **non-draft** pull requests. Draft PRs skip CI until **Ready for review**. Local parity: **`make ci-local`**.
+<summary><strong>Full CI reference</strong> — required gates, optional jobs, triggers, Dependabot (expand)</summary>
 
 #### Required gates
 
@@ -407,17 +413,6 @@ You do not need cloud accounts to explore locally.
 | Agent conventions | [`AGENTS.md`](AGENTS.md)'s **Prettier formatting** subsection — `npx prettier --write` on changed files |
 
 CI still runs `npm run format:check`.
-
-**AI agent tooling**: this repo is worked in with both Claude Code and Cursor. Conventions
-(backend Go, React, OpenAPI contract, BEM naming, and more) live directly in
-[`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md), read by both tools — there are no separate
-`.cursor/rules/*.mdc` files. Skills live in [`.claude/skills/`](.claude/skills/), the canonical
-directory; `.cursor/skills` is kept only as a symlink to it, so Cursor sees the same playbooks
-Claude Code does. Repo-specific skills sit alongside generic ones installed from the
-[`dani-foundations`](https://github.com/danibsheehan/dani-foundations) marketplace (see
-[`.claude/settings.json`](.claude/settings.json)), namespaced `foundations:*` — see
-[`AGENTS.md`](AGENTS.md#step-by-step-playbooks) for which skills come from there and which
-stay local to this repo.
 
 ---
 
@@ -537,6 +532,21 @@ Glad you’re here. Small, well-described changes are welcome.
 **Security:** unauthenticated read proxy + SPA Pages headers — [threat model](docs/threat-model.md). Handler conventions: [`.claude/skills/backend-http-security/SKILL.md`](.claude/skills/backend-http-security/SKILL.md).
 
 Deeper reading: **[docs/](docs/)**.
+
+---
+
+## Cursor — legacy compatibility only
+
+This project is developed with Claude Code. Conventions (backend Go, React, OpenAPI contract,
+BEM naming, and more) live directly in [`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md) —
+there are no separate `.cursor/rules/*.mdc` files. `.cursor/skills` is kept only as a symlink to
+the canonical [`.claude/skills/`](.claude/skills/) directory, for compatibility if this repo is
+opened in Cursor.
+
+| Path | Purpose |
+| :--- | :--- |
+| `.claude/skills/*/` | Repo-local canonical skills — `add-api-endpoint`, `adr-doc-sync-check`, `backend-go-tests`, `backend-http-security`, `caching-and-upstream-perf`, `doc-sync-patch`, `frontend-vitest-tests`, `local-ci-parity`, `openapi-maintain`, `venue-data-sync` — `.cursor/skills` symlinks here. Skills namespaced `foundations:*` come from the installed `foundations` plugin instead of living here — see [`AGENTS.md`](AGENTS.md#step-by-step-playbooks). |
+| Editor / formatting config | See [Editor setup](#editor-setup) above for Prettier / EditorConfig details. |
 
 ---
 
