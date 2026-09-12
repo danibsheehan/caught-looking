@@ -36,7 +36,6 @@
 - [Run locally](#run-locally)
 - [Configuration](#configuration)
 - [Deployment](#deployment)
-- [Contributing](#contributing)
 - [Cursor](#cursor--legacy-compatibility-only)
 - [License](#license)
 
@@ -47,7 +46,6 @@
 | **Explore the live app** | [caught-looking.com/standings](https://caught-looking.com/standings) — no install |
 | **Run it on my machine** | [Prerequisites](#prerequisites) → [Run locally](#run-locally) |
 | **Understand the product** | [What you can explore](#what-you-can-explore) |
-| **Contribute a change** | [Contributing](#contributing) |
 | **See what CI does** | [CI](#ci--what-github-actions-runs) → [Automation](#automation) |
 | **Tune env vars or ship to the cloud** | [Configuration](docs/configuration.md) · [Deployment](docs/deploy.md) |
 | **Read the “why” docs** | [docs/](docs/) — ADRs, SLOs, threat model, glossary |
@@ -514,24 +512,6 @@ Env vars for the API and SPA (listen address, cache TTLs, rate limits, `VITE_API
 ## Deployment
 
 Production ship path (Cloud Run + Cloudflare Pages), GitHub variables/secrets, one-time cloud setup, and rollback notes: **[docs/deploy.md](docs/deploy.md)**.
-
----
-
-## Contributing
-
-Glad you’re here. Small, well-described changes are welcome.
-
-| Step | Action |
-| :--- | :--- |
-| Template | [PR template](.github/pull_request_template.md) — **Summary** (why + what) + **How to verify** |
-| Scaffold | [PR guide](.github/workflows/pr-guide.yml) fills empty/default descriptions (verify commands, **Touches**) and posts a sticky checklist; still lead Summary with why |
-| Before open | `make ci-local` from repo root (same gates as CI: stack-docs, `npm audit`, coverage ≥50%, OpenAPI type drift) |
-| API changes | Keep **Go JSON / OpenAPI** ↔ `frontend/src/types/api.generated.ts` + `frontend/src/api/client.ts` in sync |
-| Agents | [`.claude/skills/local-ci-parity/SKILL.md`](.claude/skills/local-ci-parity/SKILL.md) |
-
-**Security:** unauthenticated read proxy + SPA Pages headers — [threat model](docs/threat-model.md). Handler conventions: [`.claude/skills/backend-http-security/SKILL.md`](.claude/skills/backend-http-security/SKILL.md).
-
-Deeper reading: **[docs/](docs/)**.
 
 ---
 
