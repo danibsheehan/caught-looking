@@ -14,8 +14,6 @@
 
 > League tables, spray geometry, and Statcast-backed panels—**built for a dark dugout**, not a bright dashboard template.
 
-**Caught Looking** is a web app for exploring **MLB statistics** with charts and comparisons. Browse standings, season leaders, team and player views, and game-day boards — including Statcast spray and pitch location when the data is there. Under the hood, a **Go** API proxies and caches the public **MLB Stats API** and, for some game views, **Baseball Savant**.
-
 > [!TIP]
 > **Try it live:** [caught-looking.com/standings](https://caught-looking.com/standings) · **API reference:** [docs.caught-looking.com](https://docs.caught-looking.com/)
 >
@@ -24,6 +22,7 @@
 ## Contents
 
 - [Start here](#start-here)
+- [Overview](#overview)
 - [What you can explore](#what-you-can-explore)
 - [Architecture](#architecture)
 - [Design tokens](#design-tokens)
@@ -45,13 +44,19 @@
 | :--- | :--- |
 | **Explore the live app** | [caught-looking.com/standings](https://caught-looking.com/standings) — no install |
 | **Run it on my machine** | [Prerequisites](#prerequisites) → [Run locally](#run-locally) |
-| **Understand the product** | [What you can explore](#what-you-can-explore) |
+| **Understand the product** | [Overview](#overview) → [What you can explore](#what-you-can-explore) |
 | **See what CI does** | [CI](#ci--what-github-actions-runs) → [Automation](#automation) |
 | **Tune env vars or ship to the cloud** | [Configuration](docs/configuration.md) · [Deployment](docs/deploy.md) |
 | **Read the “why” docs** | [docs/](docs/) — ADRs, SLOs, threat model, glossary |
 
 New to terms like **TTL**, **QPS**, or **singleflight**? Plain-language
 definitions: [glossary](docs/README.md#a-few-terms-in-plain-words).
+
+---
+
+## Overview
+
+**Caught Looking** is a web app for exploring **MLB statistics** with charts and comparisons. Browse standings, season leaders, team and player views, and game-day boards — including Statcast spray and pitch location when the data is there. Under the hood, a **Go** API proxies and caches the public **MLB Stats API** and, for some game views, **Baseball Savant**.
 
 ---
 
