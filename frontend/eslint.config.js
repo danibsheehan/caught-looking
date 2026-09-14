@@ -15,6 +15,7 @@ export default defineConfig([
       'playwright.config.ts',
       'playwright.contract.config.ts',
       'playwright.chaos.config.ts',
+      'playwright.a11y.config.ts',
       'e2e/**/*.{ts,tsx}',
     ],
     languageOptions: {
@@ -34,6 +35,7 @@ export default defineConfig([
       'playwright.config.ts',
       'playwright.contract.config.ts',
       'playwright.chaos.config.ts',
+      'playwright.a11y.config.ts',
       'e2e/**',
       'vite.config.ts',
     ],

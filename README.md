@@ -340,6 +340,7 @@ Local parity: `make ci-local`.
 | **Coverage comments** | Frontend and Backend each post their own Cobertura coverage comment directly after their own tests run (same-repo PRs only; does not run on `main`) — no separate combining job or artifact hand-off |
 | [**Pages preview**](.github/workflows/pages-preview.yml) | Builds SPA with `VITE_API_BASE` → Cloudflare branch preview; does not run at all for non-SPA path PRs |
 | **Lighthouse** (job in [pages preview](.github/workflows/pages-preview.yml)) | After the preview deploys, audits that live URL with Lighthouse CI and comments the report link; warn-level thresholds in [`.lighthouserc.json`](.lighthouserc.json), non-blocking |
+| **Accessibility** (job in [pages preview](.github/workflows/pages-preview.yml)) | After the preview deploys, scans a handful of routes on that live URL with [axe-core](https://github.com/dequelabs/axe-core) via Playwright and comments a violation summary; informational only for now, does not block merge |
 | [**Preview cleanup**](.github/workflows/pages-preview-cleanup.yml) | Deletes preview deployments when the PR is closed or merged |
 
 Fork PRs may skip guide, coverage comments, or previews (`GITHUB_TOKEN` / secrets limits); those steps are non-blocking or skipped.
