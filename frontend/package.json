@@ -20,6 +20,7 @@
     "test:e2e": "playwright test",
     "test:e2e:contract": "playwright test -c playwright.contract.config.ts",
     "test:e2e:chaos": "playwright test -c playwright.chaos.config.ts",
+    "test:a11y": "playwright test -c playwright.a11y.config.ts",
     "preview": "vite preview",
     "prepare": "cd .. && node frontend/node_modules/husky/bin.js"
   },
@@ -33,6 +34,7 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
     "@redocly/cli": "^2.52.0",
