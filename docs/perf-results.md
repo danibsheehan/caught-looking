@@ -9,7 +9,7 @@ run against a fixture upstream (no live MLB/Savant traffic) by a scheduled GitHu
 Regenerated weekly and on demand; a person still reviews and merges the PR it opens — see
 [docs/automation.md](automation.md).
 
-**Last updated:** 2026-09-14 · commit `f860884` · [workflow run](https://github.com/danibsheehan/caught-looking/actions/runs/34887712475)
+**Last updated:** 2026-09-21 · commit `1c19adc` · [workflow run](https://github.com/danibsheehan/caught-looking/actions/runs/35646526573)
 
 ## Latency sweep (ms)
 
