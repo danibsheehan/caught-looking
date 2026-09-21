@@ -32,8 +32,8 @@ jobs:
       pull-requests: write
       id-token: write
     outputs:
-      url: ${{ steps.pages.outputs.url }}
-      alias: ${{ steps.pages.outputs.alias }}
+      url: ${{ steps.pages.outputs.deployment-url }}
+      alias: ${{ steps.pages.outputs.pages-deployment-alias-url }}
     env:
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       GCP_REGION: ${{ vars.GCP_REGION }}
@@ -119,15 +119,13 @@ jobs:
 
       - name: Publish preview to Cloudflare Pages
         id: pages
-        uses: cloudflare/pages-action@f0a1cd58cd66095dee69bfa18fa5efd1dde93bca # v1
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }}
-          directory: dist
-          branch: ${{ github.head_ref }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           workingDirectory: frontend
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }} --branch=${{ github.head_ref }}
 
       # Sticky so each push updates one comment instead of spamming the PR.
       - name: Comment preview URL on PR
@@ -137,10 +135,10 @@ jobs:
           message: |
             ### Cloudflare Pages preview
 
-            **[Open preview](${{ steps.pages.outputs.alias }})**
+            **[Open preview](${{ steps.pages.outputs.pages-deployment-alias-url }})**
 
-            - Branch alias (stable): ${{ steps.pages.outputs.alias }}
-            - This commit: ${{ steps.pages.outputs.url }}
+            - Branch alias (stable): ${{ steps.pages.outputs.pages-deployment-alias-url }}
+            - This commit: ${{ steps.pages.outputs.deployment-url }}
             - Commit: `${{ github.event.pull_request.head.sha }}`
 
   lighthouse:
