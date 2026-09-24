@@ -2,10 +2,14 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -175,4 +179,56 @@ func (u upstreamGET) do(ctx context.Context, path string) ([]byte, error) {
 		return body, nil
 	}
 	return nil, lastErr
+}
+
+func sleepContext(ctx context.Context, d time.Duration) error {
+	if d <= 0 {
+		return nil
+	}
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
+}
+
+func upstreamRetryable(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var ne net.Error
+	if errors.As(err, &ne) && ne.Timeout() {
+		return true
+	}
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "Client.Timeout"):
+		return true
+	case strings.Contains(msg, "timeout awaiting response headers"):
+		return true
+	case strings.Contains(msg, "connection reset"):
+		return true
+	case strings.Contains(msg, "broken pipe"):
+		return true
+	case strings.Contains(msg, "TLS handshake timeout"):
+		return true
+	case strings.Contains(msg, "unexpected EOF"):
+		return true
+	case strings.Contains(msg, "use of closed network connection"):
+		return true
+	}
+	var ue *url.Error
+	if errors.As(err, &ue) {
+		return upstreamRetryable(ue.Err)
+	}
+	return false
 }
