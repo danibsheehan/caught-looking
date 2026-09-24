@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -289,6 +289,11 @@ describe('App routes', () => {
       asyncWait,
     );
     await waitFor(() => expect(api.fetchGameTimeline).toHaveBeenCalled(), asyncWait);
+    expect(
+      within(screen.getByRole('navigation', { name: 'Primary' })).getByRole('link', {
+        name: 'Games',
+      }),
+    ).toHaveAttribute('aria-current', 'page');
   });
 
   it('shows player comparison and issues compare API calls', async () => {
