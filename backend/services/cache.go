@@ -80,11 +80,10 @@ func (c *TTLCache) GetOrLoadWithTTL(ctx context.Context, key string, load func(c
 		start := time.Now()
 		body, ttl, err := load(context.WithoutCancel(ctx))
 		recordCacheLoadDuration(time.Since(start), err == nil)
+		recordCacheMiss()
 		if err != nil {
-			recordCacheMiss()
 			return nil, err
 		}
-		recordCacheMiss()
 		c.Set(key, body, ttl)
 		return cacheLoadResult{body: body, ttl: ttl, loaded: true}, nil
 	})
