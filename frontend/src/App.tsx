@@ -37,15 +37,11 @@ export default function App() {
               <NavLink
                 key={to}
                 to={to}
-                className={({ isActive }) => {
-                  const active =
-                    to === '/games'
-                      ? isActive || location.pathname.startsWith('/games/')
-                      : isActive;
-                  return active
+                className={({ isActive }) =>
+                  isActive
                     ? 'app-shell__nav-link app-shell__nav-link--active'
-                    : 'app-shell__nav-link';
-                }}
+                    : 'app-shell__nav-link'
+                }
               >
                 {label}
               </NavLink>
