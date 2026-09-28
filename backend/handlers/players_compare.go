@@ -9,8 +9,6 @@ import (
 	"strings"
 
 	"caught-looking/backend/models"
-
-	"golang.org/x/sync/errgroup"
 )
 
 type mlbPeopleStatsPayload struct {
@@ -28,15 +26,8 @@ type mlbPeopleStatsPayload struct {
 
 // PlayersCompare returns stat snapshots for two players (hitting or pitching), season or career.
 func (h *Handlers) PlayersCompare(w http.ResponseWriter, r *http.Request) {
-	id1, id2, err := parseTwoPlayerIDs(r.URL.Query().Get("ids"))
-	if err != nil {
-		respondTwoPlayerIDsError(w, err, "invalid ids")
-		return
-	}
-
-	group, err := parseHittingPitchingGroup(r.URL.Query().Get("group"))
-	if err != nil {
-		respondAPIError(w, http.StatusBadRequest, "group must be hitting or pitching")
+	id1, id2, group, ok := parseCompareIDsAndGroup(w, r)
+	if !ok {
 		return
 	}
 
@@ -51,6 +42,7 @@ func (h *Handlers) PlayersCompare(w http.ResponseWriter, r *http.Request) {
 
 	season := h.cfg.DefaultSeason
 	if scope == "season" {
+		var err error
 		season, err = parseSeasonOrDefault(r.URL.Query().Get("season"), h.cfg.DefaultSeason)
 		if err != nil {
 			respondAPIError(w, http.StatusBadRequest, "invalid season")
@@ -64,19 +56,10 @@ func (h *Handlers) PlayersCompare(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
-		g, gctx := errgroup.WithContext(ctx)
-		var p1, p2 models.PlayerStatSnapshot
-		g.Go(func() error {
-			var err error
-			p1, err = h.fetchPlayerStats(gctx, id1, group, scope, season)
-			return err
+		p1, p2, err := fetchPairConcurrently(ctx, id1, id2, func(ctx context.Context, id int64) (models.PlayerStatSnapshot, error) {
+			return h.fetchPlayerStats(ctx, id, group, scope, season)
 		})
-		g.Go(func() error {
-			var err error
-			p2, err = h.fetchPlayerStats(gctx, id2, group, scope, season)
-			return err
-		})
-		if err := g.Wait(); err != nil {
+		if err != nil {
 			return nil, err
 		}
 

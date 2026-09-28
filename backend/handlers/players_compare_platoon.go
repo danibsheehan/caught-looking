@@ -9,8 +9,6 @@ import (
 	"strings"
 
 	"caught-looking/backend/models"
-
-	"golang.org/x/sync/errgroup"
 )
 
 type mlbPeopleStatSplitsPayload struct {
@@ -33,15 +31,8 @@ type mlbPeopleStatSplitsPayload struct {
 // PlayersComparePlatoon returns vs-L / vs-R regular-season splits (MLB statSplits sitCodes vl,vr).
 // Hitting: batter OPS vs LHP and vs RHP. Pitching: opponent OPS vs LHB and vs RHB (ERA is often absent on these splits).
 func (h *Handlers) PlayersComparePlatoon(w http.ResponseWriter, r *http.Request) {
-	id1, id2, err := parseTwoPlayerIDs(r.URL.Query().Get("ids"))
-	if err != nil {
-		respondTwoPlayerIDsError(w, err, "invalid ids")
-		return
-	}
-
-	group, err := parseHittingPitchingGroup(r.URL.Query().Get("group"))
-	if err != nil {
-		respondAPIError(w, http.StatusBadRequest, "query group must be hitting or pitching")
+	id1, id2, group, ok := parseCompareIDsAndGroup(w, r)
+	if !ok {
 		return
 	}
 
@@ -53,19 +44,10 @@ func (h *Handlers) PlayersComparePlatoon(w http.ResponseWriter, r *http.Request)
 
 	cacheKey := "players-platoon:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + strconv.Itoa(season)
 	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
-		g, gctx := errgroup.WithContext(ctx)
-		var a, b models.PlatoonPlayer
-		g.Go(func() error {
-			var err error
-			a, err = h.fetchPlayerPlatoonSplits(gctx, id1, group, season)
-			return err
+		a, b, err := fetchPairConcurrently(ctx, id1, id2, func(ctx context.Context, id int64) (models.PlatoonPlayer, error) {
+			return h.fetchPlayerPlatoonSplits(ctx, id, group, season)
 		})
-		g.Go(func() error {
-			var err error
-			b, err = h.fetchPlayerPlatoonSplits(gctx, id2, group, season)
-			return err
-		})
-		if err := g.Wait(); err != nil {
+		if err != nil {
 			return nil, err
 		}
 

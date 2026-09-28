@@ -82,3 +82,19 @@ func respondTwoPlayerIDsError(w http.ResponseWriter, err error, fallback string)
 	}
 	respondAPIError(w, http.StatusBadRequest, fallback)
 }
+
+// parseCompareIDsAndGroup parses and validates the "ids" and "group" query params shared by all
+// players-compare endpoints. On failure it writes the error response itself and ok is false.
+func parseCompareIDsAndGroup(w http.ResponseWriter, r *http.Request) (id1, id2 int64, group string, ok bool) {
+	id1, id2, err := parseTwoPlayerIDs(r.URL.Query().Get("ids"))
+	if err != nil {
+		respondTwoPlayerIDsError(w, err, "invalid ids")
+		return 0, 0, "", false
+	}
+	group, err = parseHittingPitchingGroup(r.URL.Query().Get("group"))
+	if err != nil {
+		respondAPIError(w, http.StatusBadRequest, "group must be hitting or pitching")
+		return 0, 0, "", false
+	}
+	return id1, id2, group, true
+}
