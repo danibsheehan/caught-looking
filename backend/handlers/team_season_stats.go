@@ -182,43 +182,11 @@ func (h *Handlers) fetchTeamPitchingSeason(ctx context.Context, teamID int, seas
 }
 
 func intFromStat(v interface{}) int {
-	switch t := v.(type) {
-	case float64:
-		return int(t)
-	case int:
-		return t
-	case string:
-		t = strings.TrimSpace(t)
-		if t == "" {
-			return 0
-		}
-		n, err := strconv.Atoi(t)
-		if err != nil {
-			return 0
-		}
-		return n
-	default:
-		return 0
-	}
+	n, _ := coerceStatInt(v)
+	return n
 }
 
 func statFloat(v interface{}) float64 {
-	switch t := v.(type) {
-	case float64:
-		return t
-	case int:
-		return float64(t)
-	case string:
-		t = strings.TrimSpace(t)
-		if t == "" || t == ".---" || t == "-.--" {
-			return 0
-		}
-		f, err := strconv.ParseFloat(t, 64)
-		if err != nil {
-			return 0
-		}
-		return f
-	default:
-		return 0
-	}
+	f, _ := coerceStatFloat(v)
+	return f
 }

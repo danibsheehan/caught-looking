@@ -289,28 +289,8 @@ func flexInt(m map[string]interface{}, key string) int {
 	if !ok || v == nil {
 		return 0
 	}
-	switch t := v.(type) {
-	case float64:
-		return int(t)
-	case int:
-		return t
-	case string:
-		t = strings.TrimSpace(t)
-		if t == "" || t == "-.--" {
-			return 0
-		}
-		n, err := strconv.Atoi(t)
-		if err == nil {
-			return n
-		}
-		f, err := strconv.ParseFloat(t, 64)
-		if err == nil {
-			return int(f)
-		}
-		return 0
-	default:
-		return 0
-	}
+	n, _ := coerceStatInt(v)
+	return n
 }
 
 func flexString(m map[string]interface{}, key string) string {
