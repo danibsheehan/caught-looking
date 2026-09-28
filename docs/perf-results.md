@@ -9,7 +9,7 @@ run against a fixture upstream (no live MLB/Savant traffic) by a scheduled GitHu
 Regenerated weekly and on demand; a person still reviews and merges the PR it opens — see
 [docs/automation.md](automation.md).
 
-**Last updated:** 2026-09-21 · commit `1c19adc` · [workflow run](https://github.com/danibsheehan/caught-looking/actions/runs/35646526573)
+**Last updated:** 2026-09-28 · commit `409b250` · [workflow run](https://github.com/danibsheehan/caught-looking/actions/runs/36481442295)
 
 ## Latency sweep (ms)
 
@@ -18,7 +18,7 @@ N        cold-p50   cold-p95   warm-p50   warm-p95
 10       1750.0     2425.0     2.5        4.8       
 40       1750.0     2425.0     2.5        4.8       
 100      1750.0     2425.0     2.5        4.8       
-500      1750.0     2425.0     2.5        4.8       
+500      1342.6     2384.3     2.5        4.8       
 ```
 
 **Reading it:** cold latency clusters on the fixture's injected ~2000ms delay regardless of N
