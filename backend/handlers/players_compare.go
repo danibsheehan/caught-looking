@@ -181,20 +181,8 @@ func applyPlayerGroupStats(dst map[string]float64, group string, statMap map[str
 }
 
 func putFloat(dst map[string]float64, key string, v interface{}) {
-	switch t := v.(type) {
-	case float64:
-		dst[key] = t
-	case int:
-		dst[key] = float64(t)
-	case string:
-		t = strings.TrimSpace(t)
-		if t == "" || t == ".---" || t == "-.--" {
-			return
-		}
-		f, err := strconv.ParseFloat(t, 64)
-		if err == nil {
-			dst[key] = f
-		}
+	if f, ok := coerceStatFloat(v); ok {
+		dst[key] = f
 	}
 }
 
