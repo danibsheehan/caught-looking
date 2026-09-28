@@ -47,18 +47,23 @@ type mlbPeopleGameLogPayload struct {
 	} `json:"stats"`
 }
 
+// yearByYearFetch bundles fetchPlayerYearByYear's two return values for fetchPairConcurrently.
+type yearByYearFetch struct {
+	points []models.SeasonPoint
+	name   string
+}
+
+// gameLogFetch bundles fetchPlayerGameLog's two return values for fetchPairConcurrently.
+type gameLogFetch struct {
+	games []models.GamePoint
+	name  string
+}
+
 // PlayersCompareYearByYear returns per-season rate stats for two players plus league baseline per season.
 // Query metric (optional): hitting — ops (default), avg, obp, slg, woba; pitching — era (default), whip, k9, bb9, fip.
 func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Request) {
-	id1, id2, err := parseTwoPlayerIDs(r.URL.Query().Get("ids"))
-	if err != nil {
-		respondTwoPlayerIDsError(w, err, "invalid ids")
-		return
-	}
-
-	group, err := parseHittingPitchingGroup(r.URL.Query().Get("group"))
-	if err != nil {
-		respondAPIError(w, http.StatusBadRequest, "group must be hitting or pitching")
+	id1, id2, group, ok := parseCompareIDsAndGroup(w, r)
+	if !ok {
 		return
 	}
 
@@ -77,22 +82,15 @@ func (h *Handlers) PlayersCompareYearByYear(w http.ResponseWriter, r *http.Reque
 
 	cacheKey := "players-yearly:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + metric
 	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
-		g, gctx := errgroup.WithContext(ctx)
-		var p1, p2 []models.SeasonPoint
-		var n1, n2 string
-		g.Go(func() error {
-			var err error
-			p1, n1, err = h.fetchPlayerYearByYear(gctx, id1, group, metric)
-			return err
+		r1, r2, err := fetchPairConcurrently(ctx, id1, id2, func(ctx context.Context, id int64) (yearByYearFetch, error) {
+			pts, name, err := h.fetchPlayerYearByYear(ctx, id, group, metric)
+			return yearByYearFetch{points: pts, name: name}, err
 		})
-		g.Go(func() error {
-			var err error
-			p2, n2, err = h.fetchPlayerYearByYear(gctx, id2, group, metric)
-			return err
-		})
-		if err := g.Wait(); err != nil {
+		if err != nil {
 			return nil, err
 		}
+		p1, n1 := r1.points, r1.name
+		p2, n2 := r2.points, r2.name
 
 		seasonSeen := map[int]struct{}{}
 		for _, p := range p1 {
@@ -246,15 +244,8 @@ func (h *Handlers) fetchPlayerYearByYear(ctx context.Context, id int64, group, m
 
 // PlayersCompareGameLog returns the last N games of OPS or ERA for two players in a season, plus league baseline.
 func (h *Handlers) PlayersCompareGameLog(w http.ResponseWriter, r *http.Request) {
-	id1, id2, err := parseTwoPlayerIDs(r.URL.Query().Get("ids"))
-	if err != nil {
-		respondTwoPlayerIDsError(w, err, "invalid ids")
-		return
-	}
-
-	group, err := parseHittingPitchingGroup(r.URL.Query().Get("group"))
-	if err != nil {
-		respondAPIError(w, http.StatusBadRequest, "group must be hitting or pitching")
+	id1, id2, group, ok := parseCompareIDsAndGroup(w, r)
+	if !ok {
 		return
 	}
 
@@ -281,22 +272,15 @@ func (h *Handlers) PlayersCompareGameLog(w http.ResponseWriter, r *http.Request)
 
 	cacheKey := "players-gamelog:" + strconv.FormatInt(id1, 10) + ":" + strconv.FormatInt(id2, 10) + ":" + group + ":" + strconv.Itoa(season) + ":" + strconv.Itoa(limit)
 	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
-		g, gctx := errgroup.WithContext(ctx)
-		var g1, g2 []models.GamePoint
-		var n1, n2 string
-		g.Go(func() error {
-			var err error
-			g1, n1, err = h.fetchPlayerGameLog(gctx, id1, group, season, limit)
-			return err
+		r1, r2, err := fetchPairConcurrently(ctx, id1, id2, func(ctx context.Context, id int64) (gameLogFetch, error) {
+			games, name, err := h.fetchPlayerGameLog(ctx, id, group, season, limit)
+			return gameLogFetch{games: games, name: name}, err
 		})
-		g.Go(func() error {
-			var err error
-			g2, n2, err = h.fetchPlayerGameLog(gctx, id2, group, season, limit)
-			return err
-		})
-		if err := g.Wait(); err != nil {
+		if err != nil {
 			return nil, err
 		}
+		g1, n1 := r1.games, r1.name
+		g2, n2 := r2.games, r2.name
 
 		lb, err := h.fetchLeagueBaseline(ctx, season, group)
 		if err != nil {
