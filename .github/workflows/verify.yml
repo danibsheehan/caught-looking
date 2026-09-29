@@ -65,7 +65,7 @@ jobs:
       go-version-file: backend/go.mod
       working-directory: backend
       paths: "app:\n  - 'backend/**'\n  - 'Makefile'\n  - '.github/workflows/verify.yml'"
-      coverage-threshold: "0.50"
+      coverage-threshold: "0.70"
       coverage-label: "Backend coverage"
       skip-covered: false
 

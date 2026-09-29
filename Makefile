@@ -1,6 +1,6 @@
 # Repository root for recipes (run from here, or: make -C /path/to/caught-looking dev).
 PROJECT_ROOT := $(CURDIR)
-COVERAGE_MIN ?= 0.50
+COVERAGE_MIN ?= 0.70
 CHECK_COVERAGE := python3 "$(PROJECT_ROOT)/.github/scripts/check_cobertura_line_rate.py"
 
 .PHONY: dev backend frontend install check-openapi check-stack-docs check-skills-docs test-backend test-backend-race lint-backend test-frontend test-e2e test-e2e-contract test-e2e-chaos load-smoke cover-backend cover-backend-html cover-frontend ci-local ci-local-frontend ci-local-backend
