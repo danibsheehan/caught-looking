@@ -251,3 +251,24 @@ export function useAsyncResource<T>(
 
   return { data, error, loading, updatedAt, reload };
 }
+
+/**
+ * Like {@link useAsyncResource}, but masks `data`/`error`/`loading` to their disabled values
+ * (`null`/`null`/`false`) whenever `enabled` is false — the `inactive ? null : data` pattern
+ * several `use*Compare*` hooks repeat around an inner validity check (e.g. "ids built, but the
+ * season isn't loaded yet"), distinct from `useAsyncResource`'s own `enabled` (which only
+ * controls whether a request fires, and otherwise still returns last-known `data`/`error` by
+ * default via `resetOnDisable`).
+ */
+export function useGatedAsyncResource<T>(
+  input: UseAsyncResourceInput<T> & { enabled: boolean },
+  deps: DependencyList,
+): Pick<AsyncResourceResult<T>, 'data' | 'error' | 'loading'> {
+  const { enabled } = input;
+  const { data, error, loading } = useAsyncResource(input, deps);
+  return {
+    data: enabled ? data : null,
+    error: enabled ? error : null,
+    loading: enabled && loading,
+  };
+}
