@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"caught-looking/backend/models"
@@ -70,27 +69,18 @@ func (h *Handlers) RecordTimelinesBatch(w http.ResponseWriter, r *http.Request) 
 	ttl := cacheTTLForSeason(season, h.cfg, time.Now())
 	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, ttl, func(ctx context.Context) ([]byte, error) {
 		g, ctx := errgroup.WithContext(ctx)
-		sem := make(chan struct{}, batchTimelineConcurrency)
+		g.SetLimit(batchTimelineConcurrency)
 
 		results := make([][]byte, len(teamIDs))
-		var mu sync.Mutex
 
 		for i, tid := range teamIDs {
 			i, tid := i, tid
 			g.Go(func() error {
-				select {
-				case sem <- struct{}{}:
-					defer func() { <-sem }()
-				case <-ctx.Done():
-					return ctx.Err()
-				}
 				b, _, err := h.getOrBuildRecordTimelineBytes(ctx, tid, season)
 				if err != nil {
 					return err
 				}
-				mu.Lock()
 				results[i] = b
-				mu.Unlock()
 				return nil
 			})
 		}
