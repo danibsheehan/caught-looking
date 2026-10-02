@@ -54,7 +54,6 @@ func (c *SavantClient) Get(ctx context.Context, path string) ([]byte, error) {
 		accept:    "text/csv,*/*;q=0.8",
 		userAgent: savantUserAgent,
 		client:    c.httpClient,
-		transport: c.transport,
 		limiter:   c.upstream,
 	}.do(ctx, path)
 }

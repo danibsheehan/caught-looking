@@ -1,10 +1,16 @@
 package services
 
 import (
+	"context"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 func TestUpstreamResponseHeaderTimeout(t *testing.T) {
@@ -53,6 +59,90 @@ func TestUpstreamStatusRetryable(t *testing.T) {
 	}
 	if upstreamStatusRetryable(http.StatusNotFound) || upstreamStatusRetryable(http.StatusOK) {
 		t.Fatal("404/200 must not be retryable")
+	}
+}
+
+// TestUpstreamGET_retryReusesConnection proves the retry path no longer closes idle connections:
+// a 503-then-200 retry sequence must open exactly one TCP connection to the upstream host.
+func TestUpstreamGET_retryReusesConnection(t *testing.T) {
+	var reqN atomic.Int32
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if reqN.Add(1) == 1 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	var newConns atomic.Int32
+	srv.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			newConns.Add(1)
+		}
+	}
+	srv.Start()
+	t.Cleanup(srv.Close)
+
+	u := upstreamGET{
+		name:      "test",
+		baseURL:   srv.URL,
+		accept:    "application/json",
+		userAgent: "test",
+		client:    srv.Client(),
+	}
+	body, err := u.do(context.Background(), "/x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(body) != "ok" {
+		t.Fatalf("got %q", body)
+	}
+	if got := reqN.Load(); got != 2 {
+		t.Fatalf("server hits: got %d want 2", got)
+	}
+	if got := newConns.Load(); got != 1 {
+		t.Fatalf("new TCP connections: got %d want 1 (retry should reuse the pooled connection)", got)
+	}
+}
+
+// TestUpstreamGET_retryWaitsOnLimiter proves a retry attempt waits on the rate limiter like the
+// first attempt, so the QPS cap covers every outbound attempt, not just the initial one.
+func TestUpstreamGET_retryWaitsOnLimiter(t *testing.T) {
+	var reqN atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if reqN.Add(1) == 1 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	t.Cleanup(srv.Close)
+
+	// Burst 1 at 5/sec: the first Wait drains the only token instantly; the retry's Wait must
+	// block ~200ms for the next token.
+	limiter := rate.NewLimiter(5, 1)
+	u := upstreamGET{
+		name:      "test",
+		baseURL:   srv.URL,
+		accept:    "application/json",
+		userAgent: "test",
+		client:    srv.Client(),
+		limiter:   limiter,
+	}
+	start := time.Now()
+	body, err := u.do(context.Background(), "/y")
+	elapsed := time.Since(start)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(body) != "ok" {
+		t.Fatalf("got %q", body)
+	}
+	if elapsed < 150*time.Millisecond {
+		t.Fatalf("expected retry attempt to wait on limiter (~200ms), elapsed=%v", elapsed)
 	}
 }
 

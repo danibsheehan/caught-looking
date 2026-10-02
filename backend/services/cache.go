@@ -41,18 +41,26 @@ func (c *TTLCache) getWithRemaining(key string) ([]byte, time.Duration, bool) {
 	if !ok {
 		return nil, 0, false
 	}
-	e := v.(cacheEntry)
+	e := v.(*cacheEntry)
 	now := time.Now()
 	if now.After(e.expiresAt) {
-		c.m.Delete(key)
+		// CompareAndDelete (not Delete) so a concurrent fresh Set for this key is not clobbered
+		// if it raced in between our Load and this delete.
+		c.deleteIfSame(key, e)
 		return nil, 0, false
 	}
 	return e.body, e.expiresAt.Sub(now), true
 }
 
+// deleteIfSame removes key only if its current value is still e (same pointer), so a concurrent
+// Set that replaced the entry after the caller's Load is not undone.
+func (c *TTLCache) deleteIfSame(key string, e *cacheEntry) {
+	c.m.CompareAndDelete(key, e)
+}
+
 // Set stores JSON bytes with the given TTL.
 func (c *TTLCache) Set(key string, body []byte, ttl time.Duration) {
-	c.m.Store(key, cacheEntry{body: body, expiresAt: time.Now().Add(ttl)})
+	c.m.Store(key, &cacheEntry{body: body, expiresAt: time.Now().Add(ttl)})
 }
 
 // GetOrLoad returns cached bytes and remaining TTL, or runs load once for concurrent misses
@@ -119,16 +127,21 @@ func (c *TTLCache) Len() int {
 // SweepExpired deletes all entries whose TTL has passed as of now.
 // Returns how many entries were removed.
 func (c *TTLCache) SweepExpired(now time.Time) int {
-	var stale []string
+	type staleEntry struct {
+		key   string
+		entry *cacheEntry
+	}
+	var stale []staleEntry
 	c.m.Range(func(key, value any) bool {
-		e := value.(cacheEntry)
+		e := value.(*cacheEntry)
 		if now.After(e.expiresAt) {
-			stale = append(stale, key.(string))
+			stale = append(stale, staleEntry{key: key.(string), entry: e})
 		}
 		return true
 	})
-	for _, k := range stale {
-		c.m.Delete(k)
+	for _, s := range stale {
+		// CompareAndDelete so a fresh Set that raced in after Range saw this entry is kept.
+		c.deleteIfSame(s.key, s.entry)
 	}
 	return len(stale)
 }
@@ -141,7 +154,7 @@ func (c *TTLCache) evictDownTo(now time.Time, target int) int {
 	}
 	var live []string
 	c.m.Range(func(key, value any) bool {
-		e := value.(cacheEntry)
+		e := value.(*cacheEntry)
 		if !now.After(e.expiresAt) {
 			live = append(live, key.(string))
 		}

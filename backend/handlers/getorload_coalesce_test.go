@@ -143,9 +143,10 @@ func TestGameBoxscore_concurrentMissCoalesces(t *testing.T) {
 	for err := range errCh {
 		t.Fatal(err)
 	}
-	// boxscore raw (+ schedule for raw TTL) + outer schedule for API TTL.
-	if got := hits.Load(); got != 3 {
-		t.Fatalf("upstream hits: got %d want 3", got)
+	// boxscore raw body + one shared schedule lookup (fetchGameScheduleRaw coalesces the
+	// raw-boxscore-TTL and outer-API-TTL schedule fetches into a single cached call).
+	if got := hits.Load(); got != 2 {
+		t.Fatalf("upstream hits: got %d want 2", got)
 	}
 }
 
