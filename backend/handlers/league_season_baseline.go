@@ -3,11 +3,8 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"net/url"
 	"strconv"
-
-	"caught-looking/backend/models"
 )
 
 type mlbTeamSeasonSplitsPayload struct {
@@ -24,41 +21,8 @@ type mlbTeamSeasonSplitsPayload struct {
 	} `json:"stats"`
 }
 
-// LeagueSeasonBaseline returns league OPS (hitting) or ERA (pitching) for MLB (AL+NL) from team season totals.
-func (h *Handlers) LeagueSeasonBaseline(w http.ResponseWriter, r *http.Request) {
-	season, err := parseSeasonOrDefault(r.URL.Query().Get("season"), h.cfg.DefaultSeason)
-	if err != nil {
-		respondAPIError(w, http.StatusBadRequest, "invalid season")
-		return
-	}
-
-	group, err := parseHittingPitchingGroup(r.URL.Query().Get("group"))
-	if err != nil {
-		respondAPIError(w, http.StatusBadRequest, "group must be hitting or pitching")
-		return
-	}
-
-	cacheKey := "league-baseline:" + group + ":" + strconv.Itoa(season)
-	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLStandings, func(ctx context.Context) ([]byte, error) {
-		val, err := h.fetchLeagueBaseline(ctx, season, group)
-		if err != nil {
-			return nil, err
-		}
-		out := models.LeagueSeasonBaselineResponse{Season: season, Group: group}
-		if group == "hitting" {
-			out.Ops = val
-		} else {
-			out.Era = val
-		}
-		return marshalCachedJSON(out)
-	})
-	if err != nil {
-		respondGetOrLoadError(w, r, err)
-		return
-	}
-	writeJSONBytes(w, body, ttl)
-}
-
+// fetchLeagueBaseline returns league OPS (hitting) or ERA (pitching) for MLB (AL+NL) from team
+// season totals (used by GET /players/compare/game-log).
 func (h *Handlers) fetchLeagueBaseline(ctx context.Context, season int, group string) (float64, error) {
 	best, err := h.loadLeagueTeamStatMaps(ctx, season, group)
 	if err != nil {
@@ -70,8 +34,8 @@ func (h *Handlers) fetchLeagueBaseline(ctx context.Context, season int, group st
 	return leagueRateFromTeamMaps(best, group, "era"), nil
 }
 
-// fetchLeagueBaselineMetric returns the same AL+NL team-aggregate rate as /league/season-baseline
-// for OPS/ERA, and extended metrics used by GET /players/compare/year-by-year.
+// fetchLeagueBaselineMetric returns the same AL+NL team-aggregate rate as fetchLeagueBaseline
+// (OPS/ERA), plus extended metrics, used by GET /players/compare/year-by-year.
 func (h *Handlers) fetchLeagueBaselineMetric(ctx context.Context, season int, group, metric string) (float64, error) {
 	best, err := h.loadLeagueTeamStatMaps(ctx, season, group)
 	if err != nil {

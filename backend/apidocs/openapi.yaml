@@ -540,8 +540,8 @@ paths:
     get:
       summary: Current team for two players (single request)
       description: >-
-        Same per-player data and cache behavior as GET /players/{playerID}/current-team,
-        but fetches two ids in parallel. Response `players` order matches the `ids` query order.
+        Fetches each player's current MLB team id in parallel.
+        Response `players` order matches the `ids` query order.
       operationId: getPlayersCurrentTeams
       parameters:
         - in: query
@@ -561,36 +561,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlayersCurrentTeamsResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalError"
-        "502":
-          $ref: "#/components/responses/BadGateway"
-        "504":
-          $ref: "#/components/responses/GatewayTimeout"
-  /players/{playerID}/current-team:
-    get:
-      summary: Player current team
-      operationId: getPlayerCurrentTeam
-      parameters:
-        - in: path
-          name: playerID
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Current team id
-          headers:
-            Cache-Control:
-              $ref: "#/components/headers/CacheControl"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PlayerCurrentTeamResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "429":
@@ -756,40 +726,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlayersPlatoonResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalError"
-        "502":
-          $ref: "#/components/responses/BadGateway"
-        "504":
-          $ref: "#/components/responses/GatewayTimeout"
-  /league/season-baseline:
-    get:
-      summary: League baseline for season
-      operationId: getLeagueSeasonBaseline
-      parameters:
-        - in: query
-          name: season
-          schema:
-            type: integer
-        - in: query
-          name: group
-          schema:
-            type: string
-            enum: [hitting, pitching]
-      responses:
-        "200":
-          description: League baseline values
-          headers:
-            Cache-Control:
-              $ref: "#/components/headers/CacheControl"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LeagueSeasonBaselineResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "429":
@@ -1530,18 +1466,6 @@ components:
         sample:
           type: integer
       required: [code, description, ops, sample]
-    LeagueSeasonBaselineResponse:
-      type: object
-      properties:
-        season:
-          type: integer
-        group:
-          type: string
-        ops:
-          type: number
-        era:
-          type: number
-      required: [season, group, ops, era]
     GameSummary:
       type: object
       properties:

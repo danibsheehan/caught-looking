@@ -8,8 +8,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
-
-	"github.com/go-chi/chi/v5"
 )
 
 func TestRespondGetOrLoadError_encodeVsUpstream(t *testing.T) {
@@ -116,21 +114,6 @@ func TestFetchGameBoxscoreRaw_rejectsInvalidJSONWithoutCaching(t *testing.T) {
 	}
 	if got := boxHits.Load(); got != 2 {
 		t.Fatalf("invalid JSON must not be cached: box hits=%d want 2", got)
-	}
-}
-
-func TestLeagueSeasonBaseline_invalidUpstreamJSON(t *testing.T) {
-	h := newTestHandlers(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("nope"))
-	}))
-	r := chi.NewRouter()
-	r.Get("/league/season-baseline", h.LeagueSeasonBaseline)
-
-	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/league/season-baseline?season=2026&group=hitting", nil))
-	if rec.Code != http.StatusBadGateway {
-		t.Fatalf("status: got %d want 502", rec.Code)
 	}
 }
 

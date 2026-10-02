@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"caught-looking/backend/models"
 
-	"github.com/go-chi/chi/v5"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -24,7 +22,7 @@ type mlbPersonHydratePayload struct {
 }
 
 // playerCurrentTeamJSON returns cached or freshly fetched JSON for one player
-// (same payload as GET /players/{id}/current-team).
+// (one element of GET /players/current-teams).
 func (h *Handlers) playerCurrentTeamJSON(ctx context.Context, id int64) ([]byte, time.Duration, error) {
 	cacheKey := "player-current-team:" + strconv.FormatInt(id, 10)
 	return h.cache.GetOrLoad(ctx, cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
@@ -52,24 +50,7 @@ func (h *Handlers) playerCurrentTeamJSON(ctx context.Context, id int64) ([]byte,
 	})
 }
 
-// PlayerCurrentTeam returns the player's current MLB team id (for chart colors), if any.
-func (h *Handlers) PlayerCurrentTeam(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "playerID")
-	id, err := strconv.ParseInt(strings.TrimSpace(idStr), 10, 64)
-	if err != nil || id <= 0 {
-		respondAPIError(w, http.StatusBadRequest, "invalid player id")
-		return
-	}
-
-	body, ttl, err := h.playerCurrentTeamJSON(r.Context(), id)
-	if err != nil {
-		respondGetOrLoadError(w, r, err)
-		return
-	}
-	writeJSONBytes(w, body, ttl)
-}
-
-// PlayersCurrentTeams returns current team ids for two players in one round trip (same cache keys as single-player GET).
+// PlayersCurrentTeams returns current team ids for two players in one round trip.
 func (h *Handlers) PlayersCurrentTeams(w http.ResponseWriter, r *http.Request) {
 	id1, id2, err := parseTwoPlayerIDs(r.URL.Query().Get("ids"))
 	if err != nil {

@@ -155,48 +155,6 @@ func TestTeams_success(t *testing.T) {
 	}
 }
 
-func TestPlayerCurrentTeam_invalidID(t *testing.T) {
-	h := newTestHandlers(t, http.NotFoundHandler())
-	r := chi.NewRouter()
-	r.Get("/players/{playerID}/current-team", h.PlayerCurrentTeam)
-
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/players/x/current-team", nil)
-	r.ServeHTTP(rec, req)
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status: got %d", rec.Code)
-	}
-}
-
-func TestPlayerCurrentTeam_withTeam(t *testing.T) {
-	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/people/592450" {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"people":[{"id":592450,"currentTeam":{"id":121}}]}`))
-	})
-	h := newTestHandlers(t, mlb)
-	r := chi.NewRouter()
-	r.Get("/players/{playerID}/current-team", h.PlayerCurrentTeam)
-
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/players/592450/current-team", nil)
-	r.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
-	}
-	var out models.PlayerCurrentTeamResponse
-	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
-		t.Fatal(err)
-	}
-	if out.PlayerID != 592450 || out.TeamID != 121 {
-		t.Fatalf("response: %+v", out)
-	}
-}
-
 func TestPlayersCurrentTeams_ok(t *testing.T) {
 	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -258,31 +216,43 @@ func TestPlayersCurrentTeams_badIds(t *testing.T) {
 	}
 }
 
-func TestPlayerCurrentTeam_noTeam(t *testing.T) {
+func TestPlayersCurrentTeams_oneWithoutTeam(t *testing.T) {
 	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/people/1" {
+		w.Header().Set("Content-Type", "application/json")
+		var body string
+		switch r.URL.Path {
+		case "/people/1":
+			body = `{"people":[{"id":1}]}`
+		case "/people/20":
+			body = `{"people":[{"id":20,"currentTeam":{"id":147}}]}`
+		default:
 			http.NotFound(w, r)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"people":[{"id":1}]}`))
+		_, _ = w.Write([]byte(body))
 	})
 	h := newTestHandlers(t, mlb)
 	r := chi.NewRouter()
-	r.Get("/players/{playerID}/current-team", h.PlayerCurrentTeam)
+	r.Get("/players/current-teams", h.PlayersCurrentTeams)
 
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/players/1/current-team", nil)
+	req := httptest.NewRequest(http.MethodGet, "/players/current-teams?ids=1,20", nil)
 	r.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
-		t.Fatalf("status %d", rec.Code)
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
 	}
-	var out models.PlayerCurrentTeamResponse
+	var out models.PlayersCurrentTeamsResponse
 	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
 		t.Fatal(err)
 	}
-	if out.TeamID != 0 {
-		t.Fatalf("want team 0, got %+v", out)
+	if len(out.Players) != 2 {
+		t.Fatalf("players len: %+v", out.Players)
+	}
+	if out.Players[0].PlayerID != 1 || out.Players[0].TeamID != 0 {
+		t.Fatalf("p0 (no current team): %+v", out.Players[0])
+	}
+	if out.Players[1].PlayerID != 20 || out.Players[1].TeamID != 147 {
+		t.Fatalf("p1: %+v", out.Players[1])
 	}
 }

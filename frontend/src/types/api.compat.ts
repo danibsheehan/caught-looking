@@ -9,7 +9,6 @@ export type RecordPoint = components['schemas']['RecordPoint'];
 export type GameSummary = components['schemas']['GameSummary'];
 export type PlayerSearchHit = components['schemas']['PlayerSearchHit'];
 export type GameTimelineResponse = components['schemas']['GameTimelineResponse'];
-export type LeagueSeasonBaselineResponse = components['schemas']['LeagueSeasonBaselineResponse'];
 export type LeadersResponse = components['schemas']['LeadersResponse'];
 export type LeaderRow = components['schemas']['LeaderRow'];
 export type PlayerCurrentTeamResponse = components['schemas']['PlayerCurrentTeamResponse'];

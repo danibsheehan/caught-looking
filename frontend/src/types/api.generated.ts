@@ -317,26 +317,9 @@ export interface paths {
         };
         /**
          * Current team for two players (single request)
-         * @description Same per-player data and cache behavior as GET /players/{playerID}/current-team, but fetches two ids in parallel. Response `players` order matches the `ids` query order.
+         * @description Fetches each player's current MLB team id in parallel. Response `players` order matches the `ids` query order.
          */
         get: operations["getPlayersCurrentTeams"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/players/{playerID}/current-team": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Player current team */
-        get: operations["getPlayerCurrentTeam"];
         put?: never;
         post?: never;
         delete?: never;
@@ -405,23 +388,6 @@ export interface paths {
         };
         /** Multi-player platoon split comparison */
         get: operations["comparePlayersPlatoon"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/league/season-baseline": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** League baseline for season */
-        get: operations["getLeagueSeasonBaseline"];
         put?: never;
         post?: never;
         delete?: never;
@@ -740,12 +706,6 @@ export interface components {
             description: string;
             ops: number;
             sample: number;
-        };
-        LeagueSeasonBaselineResponse: {
-            season: number;
-            group: string;
-            ops: number;
-            era: number;
         };
         GameSummary: {
             gamePk: number;
@@ -1342,34 +1302,6 @@ export interface operations {
             504: components["responses"]["GatewayTimeout"];
         };
     };
-    getPlayerCurrentTeam: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                playerID: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Current team id */
-            200: {
-                headers: {
-                    "Cache-Control": components["headers"]["CacheControl"];
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlayerCurrentTeamResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            429: components["responses"]["TooManyRequests"];
-            500: components["responses"]["InternalError"];
-            502: components["responses"]["BadGateway"];
-            504: components["responses"]["GatewayTimeout"];
-        };
-    };
     comparePlayers: {
         parameters: {
             query: {
@@ -1483,35 +1415,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayersPlatoonResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            429: components["responses"]["TooManyRequests"];
-            500: components["responses"]["InternalError"];
-            502: components["responses"]["BadGateway"];
-            504: components["responses"]["GatewayTimeout"];
-        };
-    };
-    getLeagueSeasonBaseline: {
-        parameters: {
-            query?: {
-                season?: number;
-                group?: "hitting" | "pitching";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description League baseline values */
-            200: {
-                headers: {
-                    "Cache-Control": components["headers"]["CacheControl"];
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LeagueSeasonBaselineResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
