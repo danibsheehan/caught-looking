@@ -72,7 +72,7 @@ func (h *Handlers) GameBoxscore(w http.ResponseWriter, r *http.Request) {
 		})
 		g.Go(func() error {
 			// Best-effort status for the API response TTL (raw boxscore cache has its own TTL).
-			b, err := h.mlb.Get(gctx, "/schedule?sportId=1&gamePks="+pkStr)
+			b, err := h.fetchGameScheduleRaw(gctx, pkStr)
 			if err != nil {
 				return nil
 			}
@@ -122,7 +122,7 @@ func (h *Handlers) fetchGameBoxscoreRaw(ctx context.Context, pkStr string) ([]by
 			return err
 		})
 		g.Go(func() error {
-			b, err := h.mlb.Get(gctx, "/schedule?sportId=1&gamePks="+pkStr)
+			b, err := h.fetchGameScheduleRaw(gctx, pkStr)
 			if err != nil {
 				return nil
 			}
