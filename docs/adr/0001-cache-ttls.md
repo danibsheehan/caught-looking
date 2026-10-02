@@ -25,7 +25,7 @@ Adaptive policy (summary):
 
 - **Date games:** future or today-with-unsettled → live TTL; settled today → scores TTL; settled past dates → standings TTL.
 - **Single game boxscore/timeline:** settled status → standings TTL; otherwise live TTL.
-- **Season-scoped schedule/timelines:** completed calendar years → standings TTL; current/future → scores TTL.
+- **Season-scoped schedule/timelines and team season stats:** completed calendar years → standings TTL; current/future → scores TTL.
 
 Memory is bounded with `CACHE_MAX_ENTRIES` (default 2000) and a background sweeper (`CACHE_SWEEP_INTERVAL`).
 

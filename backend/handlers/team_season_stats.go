@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"caught-looking/backend/models"
 
@@ -38,7 +39,8 @@ func (h *Handlers) TeamSeasonStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cacheKey := "team-season-stats-v4:" + strconv.Itoa(teamID) + ":" + strconv.Itoa(season)
-	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, h.cfg.TTLScores, func(ctx context.Context) ([]byte, error) {
+	ttl := cacheTTLForSeason(season, h.cfg, time.Now())
+	body, ttl, err := h.cache.GetOrLoad(r.Context(), cacheKey, ttl, func(ctx context.Context) ([]byte, error) {
 		g, gctx := errgroup.WithContext(ctx)
 		var hit models.TeamHittingLine
 		var pit models.TeamPitchingLine
@@ -78,30 +80,44 @@ func (h *Handlers) TeamSeasonStats(w http.ResponseWriter, r *http.Request) {
 	writeJSONBytes(w, body, ttl)
 }
 
-func (h *Handlers) fetchTeamHittingSeason(ctx context.Context, teamID int, season int) (models.TeamHittingLine, error) {
+// fetchTeamStatMap fetches MLB /teams/{id}/stats for one group ("hitting" or "pitching") and
+// returns the decoded stat map for the first split, or a nil map (not an error) when there are
+// no splits or the stat object can't be decoded — callers fall back to a zero-value line.
+func (h *Handlers) fetchTeamStatMap(ctx context.Context, teamID, season int, group string) (map[string]interface{}, error) {
 	q := url.Values{}
 	q.Set("stats", "season")
-	q.Set("group", "hitting")
+	q.Set("group", group)
 	q.Set("season", strconv.Itoa(season))
 	path := "/teams/" + strconv.Itoa(teamID) + "/stats?" + q.Encode()
 
 	raw, err := h.mlb.Get(ctx, path)
 	if err != nil {
-		return models.TeamHittingLine{}, err
+		return nil, err
 	}
 
 	var payload mlbTeamStatsPayload
 	if err := json.Unmarshal(raw, &payload); err != nil {
-		return models.TeamHittingLine{}, wrapUpstreamJSONParse(err)
+		return nil, wrapUpstreamJSONParse(err)
 	}
 
-	var line models.TeamHittingLine
 	if len(payload.Stats) == 0 || len(payload.Stats[0].Splits) == 0 {
-		return line, nil
+		return nil, nil
 	}
 
 	var statMap map[string]interface{}
 	if err := json.Unmarshal(payload.Stats[0].Splits[0].Stat, &statMap); err != nil {
+		return nil, nil
+	}
+	return statMap, nil
+}
+
+func (h *Handlers) fetchTeamHittingSeason(ctx context.Context, teamID int, season int) (models.TeamHittingLine, error) {
+	var line models.TeamHittingLine
+	statMap, err := h.fetchTeamStatMap(ctx, teamID, season, "hitting")
+	if err != nil {
+		return models.TeamHittingLine{}, err
+	}
+	if statMap == nil {
 		return line, nil
 	}
 
@@ -140,29 +156,12 @@ func (h *Handlers) fetchTeamHittingSeason(ctx context.Context, teamID int, seaso
 }
 
 func (h *Handlers) fetchTeamPitchingSeason(ctx context.Context, teamID int, season int) (models.TeamPitchingLine, error) {
-	q := url.Values{}
-	q.Set("stats", "season")
-	q.Set("group", "pitching")
-	q.Set("season", strconv.Itoa(season))
-	path := "/teams/" + strconv.Itoa(teamID) + "/stats?" + q.Encode()
-
-	raw, err := h.mlb.Get(ctx, path)
+	var line models.TeamPitchingLine
+	statMap, err := h.fetchTeamStatMap(ctx, teamID, season, "pitching")
 	if err != nil {
 		return models.TeamPitchingLine{}, err
 	}
-
-	var payload mlbTeamStatsPayload
-	if err := json.Unmarshal(raw, &payload); err != nil {
-		return models.TeamPitchingLine{}, wrapUpstreamJSONParse(err)
-	}
-
-	var line models.TeamPitchingLine
-	if len(payload.Stats) == 0 || len(payload.Stats[0].Splits) == 0 {
-		return line, nil
-	}
-
-	var statMap map[string]interface{}
-	if err := json.Unmarshal(payload.Stats[0].Splits[0].Stat, &statMap); err != nil {
+	if statMap == nil {
 		return line, nil
 	}
 

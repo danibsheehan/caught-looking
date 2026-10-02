@@ -4,10 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"caught-looking/backend/models"
+	"caught-looking/backend/services"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -495,5 +499,68 @@ func TestTeamSeasonStats_venueSplitsFromSchedule(t *testing.T) {
 	}
 	if out.VenueSplits.Home.Games != 1 || out.VenueSplits.Home.RunsScored != 6 || out.VenueSplits.Away.Games != 0 {
 		t.Fatalf("venue: %+v", out.VenueSplits)
+	}
+}
+
+// newTeamSeasonStatsTestHandlers is like newTestHandlers, but with distinct TTLScores/TTLStandings
+// so cacheTTLForSeason's past-vs-current-season choice is observable in Cache-Control.
+func newTeamSeasonStatsTestHandlers(t *testing.T, mlb http.Handler) *Handlers {
+	t.Helper()
+	srv := httptest.NewServer(mlb)
+	t.Cleanup(srv.Close)
+	cfg := testConfig()
+	cfg.TTLScores = 5 * time.Minute
+	cfg.TTLStandings = time.Hour
+	return New(cfg, services.NewTTLCache(), services.NewMLBClient(srv.URL, 0, 0), services.NewSavantClient(srv.URL, 0, 0))
+}
+
+func teamSeasonStatsStubUpstream() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path == "/teams/121/stats" && r.URL.Query().Get("group") == "hitting":
+			_, _ = w.Write([]byte(`{"stats":[{"splits":[{"stat":{"gamesPlayed":1,"runs":1,"ops":0.1}}]}]}`))
+		case r.URL.Path == "/teams/121/stats" && r.URL.Query().Get("group") == "pitching":
+			_, _ = w.Write([]byte(`{"stats":[{"splits":[{"stat":{"gamesPlayed":1,"runs":1,"era":2.0}}]}]}`))
+		case r.URL.Path == "/schedule":
+			_, _ = w.Write([]byte(`{"dates":[]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+func TestTeamSeasonStats_pastSeasonUsesStandingsTTL(t *testing.T) {
+	h := newTeamSeasonStatsTestHandlers(t, teamSeasonStatsStubUpstream())
+	r := chi.NewRouter()
+	r.Get("/teams/{teamID}/season-stats", h.TeamSeasonStats)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/teams/121/season-stats?season=2020", nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+	cc := rec.Header().Get("Cache-Control")
+	if !strings.Contains(cc, "max-age=3600") {
+		t.Fatalf("Cache-Control: got %q want max-age=3600 (completed season -> standings TTL)", cc)
+	}
+}
+
+func TestTeamSeasonStats_currentSeasonUsesScoresTTL(t *testing.T) {
+	h := newTeamSeasonStatsTestHandlers(t, teamSeasonStatsStubUpstream())
+	r := chi.NewRouter()
+	r.Get("/teams/{teamID}/season-stats", h.TeamSeasonStats)
+
+	currentSeason := strconv.Itoa(time.Now().UTC().Year())
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/teams/121/season-stats?season="+currentSeason, nil)
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
+	}
+	cc := rec.Header().Get("Cache-Control")
+	if !strings.Contains(cc, "max-age=300") {
+		t.Fatalf("Cache-Control: got %q want max-age=300 (current season -> scores TTL)", cc)
 	}
 }
