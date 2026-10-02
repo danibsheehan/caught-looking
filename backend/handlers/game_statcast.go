@@ -38,7 +38,7 @@ func (h *Handlers) GameStatcast(w http.ResponseWriter, r *http.Request) {
 			return err
 		})
 		g.Go(func() error {
-			b, err := h.mlb.Get(gctx, "/schedule?sportId=1&gamePks="+pkStr)
+			b, err := h.fetchGameScheduleRaw(gctx, pkStr)
 			if err != nil {
 				slog.Warn("statcast schedule venue optional fetch failed", "method", r.Method, "path", r.URL.Path, "err", err)
 				return nil
