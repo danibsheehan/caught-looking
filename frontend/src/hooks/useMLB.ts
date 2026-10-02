@@ -6,7 +6,7 @@ import type {
   TeamsQuery,
   TeamsResponse,
 } from '../types/api.compat';
-import { useAsyncResource } from './useAsyncResource';
+import { useAsyncResource, useGatedAsyncResource } from './useAsyncResource';
 
 export function useStandings(params: StandingsQuery = {}) {
   const { season, leagueId, standingsTypes } = params;
@@ -20,7 +20,7 @@ export function useStandings(params: StandingsQuery = {}) {
 
 export function useTeamSeasonStats(teamId: number | '', season: number) {
   const valid = typeof teamId === 'number' && teamId > 0;
-  const { data, error, loading } = useAsyncResource<TeamSeasonStatsResponse>(
+  return useGatedAsyncResource<TeamSeasonStatsResponse>(
     {
       enabled: valid,
       initialPending: false,
@@ -28,11 +28,6 @@ export function useTeamSeasonStats(teamId: number | '', season: number) {
     },
     [valid, teamId, season],
   );
-  return {
-    data: valid ? data : null,
-    error: valid ? error : null,
-    loading: valid && loading,
-  };
 }
 
 export function useTeams(params: TeamsQuery = {}) {

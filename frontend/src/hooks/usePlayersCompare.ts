@@ -1,6 +1,6 @@
 import { fetchPlayersCompare } from '../api/client';
 import type { PlayersRadarResponse } from '../types/api.compat';
-import { useAsyncResource } from './useAsyncResource';
+import { useGatedAsyncResource } from './useAsyncResource';
 
 type Args = {
   playerId1: number | null | undefined;
@@ -20,7 +20,7 @@ export function usePlayersCompare({ playerId1, playerId2, season, scope, group, 
     (needSeason && season == null) ||
     playerId1 === playerId2;
 
-  const { data, error, loading } = useAsyncResource<PlayersRadarResponse>(
+  return useGatedAsyncResource<PlayersRadarResponse>(
     {
       enabled: !inactive,
       initialPending: false,
@@ -37,10 +37,4 @@ export function usePlayersCompare({ playerId1, playerId2, season, scope, group, 
     },
     [inactive, needSeason, playerId1, playerId2, season, scope, group],
   );
-
-  return {
-    data: inactive ? null : data,
-    error: inactive ? null : error,
-    loading: inactive ? false : loading,
-  };
 }

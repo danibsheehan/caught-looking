@@ -9,7 +9,7 @@ import type {
   PlayersYearByYearResponse,
   YearByYearMetric,
 } from '../types/api.compat';
-import { useAsyncResource } from './useAsyncResource';
+import { useGatedAsyncResource } from './useAsyncResource';
 
 export function usePlayerCompareYearByYear(
   ids: string,
@@ -19,7 +19,7 @@ export function usePlayerCompareYearByYear(
 ) {
   const inactive = !enabled || !ids;
 
-  const { data, error, loading } = useAsyncResource<PlayersYearByYearResponse>(
+  return useGatedAsyncResource<PlayersYearByYearResponse>(
     {
       enabled: !inactive,
       initialPending: false,
@@ -27,12 +27,6 @@ export function usePlayerCompareYearByYear(
     },
     [ids, group, inactive, metric],
   );
-
-  return {
-    data: inactive ? null : data,
-    error: inactive ? null : error,
-    loading: inactive ? false : loading,
-  };
 }
 
 export function usePlayerCompareGameLog(
@@ -44,7 +38,7 @@ export function usePlayerCompareGameLog(
 ) {
   const inactive = !enabled || !ids || season < 1900;
 
-  const { data, error, loading } = useAsyncResource<PlayersGameLogResponse>(
+  return useGatedAsyncResource<PlayersGameLogResponse>(
     {
       enabled: !inactive,
       initialPending: false,
@@ -52,12 +46,6 @@ export function usePlayerCompareGameLog(
     },
     [ids, season, group, inactive, limit],
   );
-
-  return {
-    data: inactive ? null : data,
-    error: inactive ? null : error,
-    loading: inactive ? false : loading,
-  };
 }
 
 export function usePlayerComparePlatoon(
@@ -68,7 +56,7 @@ export function usePlayerComparePlatoon(
 ) {
   const inactive = !enabled || !ids || season < 1900;
 
-  const { data, error, loading } = useAsyncResource<PlayersPlatoonResponse>(
+  return useGatedAsyncResource<PlayersPlatoonResponse>(
     {
       enabled: !inactive,
       initialPending: false,
@@ -76,10 +64,4 @@ export function usePlayerComparePlatoon(
     },
     [ids, season, group, inactive],
   );
-
-  return {
-    data: inactive ? null : data,
-    error: inactive ? null : error,
-    loading: inactive ? false : loading,
-  };
 }

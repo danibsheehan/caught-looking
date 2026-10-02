@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { isAbortError, useAsyncResource } from './useAsyncResource';
+import { isAbortError, useAsyncResource, useGatedAsyncResource } from './useAsyncResource';
 
 describe('isAbortError', () => {
   it('detects DOMException AbortError', () => {
@@ -397,5 +397,27 @@ describe('useAsyncResource', () => {
       }
       vi.useRealTimers();
     }
+  });
+});
+
+describe('useGatedAsyncResource', () => {
+  it('masks data/error/loading to disabled values once enabled becomes false', async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true });
+
+    const { result, rerender } = renderHook(
+      ({ enabled }: { enabled: boolean }) =>
+        useGatedAsyncResource({ enabled, fetch, initialPending: false }, [enabled]),
+      { initialProps: { enabled: true } },
+    );
+
+    await waitFor(() => expect(result.current.data).toEqual({ ok: true }));
+    expect(result.current.loading).toBe(false);
+    expect(result.current.error).toBeNull();
+
+    rerender({ enabled: false });
+
+    expect(result.current.data).toBeNull();
+    expect(result.current.error).toBeNull();
+    expect(result.current.loading).toBe(false);
   });
 });
