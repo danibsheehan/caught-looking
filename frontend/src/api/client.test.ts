@@ -228,11 +228,25 @@ describe('api client', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/leaders');
     });
 
+    it('fetchLeaders sends limit=0 (a set, falsy value is still included)', async () => {
+      fetchMock.mockResolvedValue(jsonResponse({ leaders: [] }));
+      const { fetchLeaders } = await getClient();
+      await fetchLeaders({ limit: 0 });
+      expect(fetchMock).toHaveBeenCalledWith('/api/leaders?limit=0');
+    });
+
     it('fetchTeams adds sportId when set', async () => {
       fetchMock.mockResolvedValue(jsonResponse({ teams: [] }));
       const { fetchTeams } = await getClient();
       await fetchTeams({ sportId: '1' });
       expect(fetchMock).toHaveBeenCalledWith('/api/teams?sportId=1');
+    });
+
+    it('fetchTeams omits sportId when empty string', async () => {
+      fetchMock.mockResolvedValue(jsonResponse({ teams: [] }));
+      const { fetchTeams } = await getClient();
+      await fetchTeams({ sportId: '' });
+      expect(fetchMock).toHaveBeenCalledWith('/api/teams');
     });
 
     it('fetchTeamSeasonStats includes season in path and query', async () => {

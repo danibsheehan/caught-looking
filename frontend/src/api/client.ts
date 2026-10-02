@@ -105,39 +105,59 @@ function apiOpts(signal?: AbortSignal): ApiGetOptions | undefined {
   return signal !== undefined ? { signal } : undefined;
 }
 
+/** One query param: [key, value, include?]. `include` defaults to {@link isSet}. */
+type QueryParam = readonly [key: string, value: unknown, include?: (v: unknown) => boolean];
+
+const isSet = (v: unknown): boolean => v != null;
+const isTruthy = (v: unknown): boolean => Boolean(v);
+const isPositive = (v: unknown): boolean => typeof v === 'number' && v > 0;
+
+/**
+ * Builds `path` with a `?`-prefixed query string from `params`, preserving param order.
+ * Each param is included when its `include` predicate (default {@link isSet}) returns true for
+ * its value; excluded params are left out entirely. Returns `path` unchanged when no param
+ * qualifies.
+ */
+function withQuery(path: string, params: readonly QueryParam[]): string {
+  const qs = new URLSearchParams();
+  for (const [key, value, include = isSet] of params) {
+    if (include(value)) qs.set(key, String(value));
+  }
+  const suffix = qs.toString();
+  return suffix ? `${path}?${suffix}` : path;
+}
+
 export async function fetchStandings(
   query: StandingsQuery = {},
   signal?: AbortSignal,
 ): Promise<StandingsResponse> {
-  const qs = new URLSearchParams();
-  if (query.season != null) qs.set('season', String(query.season));
-  if (query.leagueId) qs.set('leagueId', query.leagueId);
-  if (query.standingsTypes) qs.set('standingsTypes', query.standingsTypes);
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-  return apiGet<StandingsResponse>(`/standings${suffix}`, apiOpts(signal));
+  const path = withQuery('/standings', [
+    ['season', query.season],
+    ['leagueId', query.leagueId, isTruthy],
+    ['standingsTypes', query.standingsTypes, isTruthy],
+  ]);
+  return apiGet<StandingsResponse>(path, apiOpts(signal));
 }
 
 export async function fetchLeaders(
   query: LeadersQuery = {},
   signal?: AbortSignal,
 ): Promise<LeadersResponse> {
-  const qs = new URLSearchParams();
-  if (query.season != null) qs.set('season', String(query.season));
-  if (query.group) qs.set('group', query.group);
-  if (query.category) qs.set('category', query.category);
-  if (query.limit != null) qs.set('limit', String(query.limit));
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-  return apiGet<LeadersResponse>(`/leaders${suffix}`, apiOpts(signal));
+  const path = withQuery('/leaders', [
+    ['season', query.season],
+    ['group', query.group, isTruthy],
+    ['category', query.category, isTruthy],
+    ['limit', query.limit],
+  ]);
+  return apiGet<LeadersResponse>(path, apiOpts(signal));
 }
 
 export async function fetchTeams(
   query: TeamsQuery = {},
   signal?: AbortSignal,
 ): Promise<TeamsResponse> {
-  const qs = new URLSearchParams();
-  if (query.sportId) qs.set('sportId', query.sportId);
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-  return apiGet<TeamsResponse>(`/teams${suffix}`, apiOpts(signal));
+  const path = withQuery('/teams', [['sportId', query.sportId, isTruthy]]);
+  return apiGet<TeamsResponse>(path, apiOpts(signal));
 }
 
 export async function fetchTeamSeasonStats(
@@ -145,10 +165,8 @@ export async function fetchTeamSeasonStats(
   query: TeamSeasonStatsQuery = {},
   signal?: AbortSignal,
 ): Promise<TeamSeasonStatsResponse> {
-  const qs = new URLSearchParams();
-  if (query.season != null) qs.set('season', String(query.season));
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-  return apiGet<TeamSeasonStatsResponse>(`/teams/${teamId}/season-stats${suffix}`, apiOpts(signal));
+  const path = withQuery(`/teams/${teamId}/season-stats`, [['season', query.season]]);
+  return apiGet<TeamSeasonStatsResponse>(path, apiOpts(signal));
 }
 
 export async function fetchRecordTimeline(
@@ -156,13 +174,8 @@ export async function fetchRecordTimeline(
   query: RecordTimelineQuery = {},
   signal?: AbortSignal,
 ): Promise<RecordTimelineResponse> {
-  const qs = new URLSearchParams();
-  if (query.season != null) qs.set('season', String(query.season));
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-  return apiGet<RecordTimelineResponse>(
-    `/teams/${teamId}/record-timeline${suffix}`,
-    apiOpts(signal),
-  );
+  const path = withQuery(`/teams/${teamId}/record-timeline`, [['season', query.season]]);
+  return apiGet<RecordTimelineResponse>(path, apiOpts(signal));
 }
 
 export async function fetchRecordTimelinesBatch(
@@ -173,13 +186,11 @@ export async function fetchRecordTimelinesBatch(
   if (ids.length === 0) {
     throw new Error('fetchRecordTimelinesBatch: teamIds must include at least one id');
   }
-  const qs = new URLSearchParams();
-  qs.set('teamIds', ids.join(','));
-  if (query.season != null) qs.set('season', String(query.season));
-  return apiGet<RecordTimelinesBatchResponse>(
-    `/record-timelines/batch?${qs.toString()}`,
-    apiOpts(signal),
-  );
+  const path = withQuery('/record-timelines/batch', [
+    ['teamIds', ids.join(',')],
+    ['season', query.season],
+  ]);
+  return apiGet<RecordTimelinesBatchResponse>(path, apiOpts(signal));
 }
 
 export async function fetchGameTimeline(
@@ -214,24 +225,24 @@ export async function fetchGamesForDate(
   query: GamesForDateQuery,
   signal?: AbortSignal,
 ): Promise<GamesForDateResponse> {
-  const qs = new URLSearchParams();
-  qs.set('date', query.date);
-  if (query.teamId != null && query.teamId > 0) {
-    qs.set('teamId', String(query.teamId));
-  }
-  return apiGet<GamesForDateResponse>(`/games/for-date?${qs.toString()}`, apiOpts(signal));
+  const path = withQuery('/games/for-date', [
+    ['date', query.date],
+    ['teamId', query.teamId, isPositive],
+  ]);
+  return apiGet<GamesForDateResponse>(path, apiOpts(signal));
 }
 
 export async function fetchPlayersCompare(
   query: PlayersCompareQuery,
   signal?: AbortSignal,
 ): Promise<PlayersRadarResponse> {
-  const qs = new URLSearchParams();
-  qs.set('ids', query.ids);
-  if (query.scope) qs.set('scope', query.scope);
-  if (query.season != null) qs.set('season', String(query.season));
-  if (query.group) qs.set('group', query.group);
-  return apiGet<PlayersRadarResponse>(`/players/compare?${qs.toString()}`, apiOpts(signal));
+  const path = withQuery('/players/compare', [
+    ['ids', query.ids],
+    ['scope', query.scope, isTruthy],
+    ['season', query.season],
+    ['group', query.group, isTruthy],
+  ]);
+  return apiGet<PlayersRadarResponse>(path, apiOpts(signal));
 }
 
 /** Two players in one request (compare page); order matches {@link PlayersCurrentTeamsResponse.players}. */
@@ -251,62 +262,51 @@ export async function fetchPlayersCurrentTeams(
   if (playerId1 === playerId2) {
     throw new Error('fetchPlayersCurrentTeams: player ids must differ');
   }
-  const qs = new URLSearchParams();
-  qs.set('ids', `${playerId1},${playerId2}`);
-  return apiGet<PlayersCurrentTeamsResponse>(
-    `/players/current-teams?${qs.toString()}`,
-    apiOpts(signal),
-  );
+  const path = withQuery('/players/current-teams', [['ids', `${playerId1},${playerId2}`]]);
+  return apiGet<PlayersCurrentTeamsResponse>(path, apiOpts(signal));
 }
 
 export async function fetchPlayersCompareYearByYear(
   query: PlayersCompareYearByYearQuery,
   signal?: AbortSignal,
 ): Promise<PlayersYearByYearResponse> {
-  const qs = new URLSearchParams();
-  qs.set('ids', query.ids);
-  if (query.group) qs.set('group', query.group);
-  if (query.metric) qs.set('metric', query.metric);
-  return apiGet<PlayersYearByYearResponse>(
-    `/players/compare/year-by-year?${qs.toString()}`,
-    apiOpts(signal),
-  );
+  const path = withQuery('/players/compare/year-by-year', [
+    ['ids', query.ids],
+    ['group', query.group, isTruthy],
+    ['metric', query.metric, isTruthy],
+  ]);
+  return apiGet<PlayersYearByYearResponse>(path, apiOpts(signal));
 }
 
 export async function fetchPlayersCompareGameLog(
   query: PlayersCompareGameLogQuery,
   signal?: AbortSignal,
 ): Promise<PlayersGameLogResponse> {
-  const qs = new URLSearchParams();
-  qs.set('ids', query.ids);
-  if (query.season != null) qs.set('season', String(query.season));
-  if (query.group) qs.set('group', query.group);
-  if (query.limit != null) qs.set('limit', String(query.limit));
-  return apiGet<PlayersGameLogResponse>(
-    `/players/compare/game-log?${qs.toString()}`,
-    apiOpts(signal),
-  );
+  const path = withQuery('/players/compare/game-log', [
+    ['ids', query.ids],
+    ['season', query.season],
+    ['group', query.group, isTruthy],
+    ['limit', query.limit],
+  ]);
+  return apiGet<PlayersGameLogResponse>(path, apiOpts(signal));
 }
 
 export async function fetchPlayersComparePlatoon(
   query: PlayersComparePlatoonQuery,
   signal?: AbortSignal,
 ): Promise<PlayersPlatoonResponse> {
-  const qs = new URLSearchParams();
-  qs.set('ids', query.ids);
-  if (query.season != null) qs.set('season', String(query.season));
-  if (query.group) qs.set('group', query.group);
-  return apiGet<PlayersPlatoonResponse>(
-    `/players/compare/platoon?${qs.toString()}`,
-    apiOpts(signal),
-  );
+  const path = withQuery('/players/compare/platoon', [
+    ['ids', query.ids],
+    ['season', query.season],
+    ['group', query.group, isTruthy],
+  ]);
+  return apiGet<PlayersPlatoonResponse>(path, apiOpts(signal));
 }
 
 export async function fetchPlayersSearch(
   query: PlayersSearchQuery,
   signal?: AbortSignal,
 ): Promise<PlayersSearchResponse> {
-  const qs = new URLSearchParams();
-  qs.set('names', query.names);
-  return apiGet<PlayersSearchResponse>(`/players/search?${qs.toString()}`, apiOpts(signal));
+  const path = withQuery('/players/search', [['names', query.names]]);
+  return apiGet<PlayersSearchResponse>(path, apiOpts(signal));
 }
