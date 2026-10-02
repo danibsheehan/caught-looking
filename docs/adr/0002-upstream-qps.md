@@ -22,6 +22,8 @@ Apply **token-bucket QPS limits per process** on outbound clients:
 
 Setting a QPS env to `0` disables that bucket (used in tests). Prefer cache + singleflight + batch routes over raising QPS. Keep Cloud Run **`CLOUDRUN_MAX_INSTANCES`** low (default 2) so aggregate outbound budget stays bounded without a global rate coordinator.
 
+Retries (one per request, on transient errors or 429/503) also wait on the bucket, so the cap covers every outbound attempt; retries reuse pooled keep-alive connections.
+
 ## Consequences
 
 - **Positive:** Predictable upstream load from one instance; Savant stays stricter than MLB; easy to tune via env without code changes.
