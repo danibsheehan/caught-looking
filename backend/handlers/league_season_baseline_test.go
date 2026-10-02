@@ -1,15 +1,10 @@
 package handlers
 
 import (
-	"encoding/json"
 	"math"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"caught-looking/backend/models"
-
-	"github.com/go-chi/chi/v5"
 )
 
 const leagueBaselineHittingJSON = `{"stats":[{"splits":[
@@ -21,28 +16,7 @@ const leagueBaselinePitchingJSON = `{"stats":[{"splits":[
   {"league":{"id":103},"team":{"id":121},"stat":{"gamesPlayed":10,"earnedRuns":20,"inningsPitched":"45.0"}}
 ]}]}`
 
-func TestLeagueSeasonBaseline_validation(t *testing.T) {
-	h := newTestHandlers(t, http.NotFoundHandler())
-	r := chi.NewRouter()
-	r.Get("/league/season-baseline", h.LeagueSeasonBaseline)
-
-	tests := []struct {
-		path string
-	}{
-		{"/league/season-baseline?season=1800"},
-		{"/league/season-baseline?group=fielding"},
-	}
-	for _, tt := range tests {
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, tt.path, nil)
-		r.ServeHTTP(rec, req)
-		if rec.Code != http.StatusBadRequest {
-			t.Errorf("%s: status %d", tt.path, rec.Code)
-		}
-	}
-}
-
-func TestLeagueSeasonBaseline_hitting(t *testing.T) {
+func TestFetchLeagueBaseline_hitting(t *testing.T) {
 	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/stats" {
 			http.NotFound(w, r)
@@ -53,25 +27,17 @@ func TestLeagueSeasonBaseline_hitting(t *testing.T) {
 		_, _ = w.Write([]byte(leagueBaselineHittingJSON))
 	})
 	h := newTestHandlers(t, mlb)
-	r := chi.NewRouter()
-	r.Get("/league/season-baseline", h.LeagueSeasonBaseline)
 
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/league/season-baseline?season=2026&group=hitting", nil)
-	r.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
-	}
-	var out models.LeagueSeasonBaselineResponse
-	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+	got, err := h.fetchLeagueBaseline(httptest.NewRequest(http.MethodGet, "/", nil).Context(), 2026, "hitting")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if out.Group != "hitting" || out.Season != 2026 || out.Ops <= 0 {
-		t.Fatalf("response: %+v", out)
+	if got <= 0 {
+		t.Fatalf("ops: got %v want > 0", got)
 	}
 }
 
-func TestLeagueSeasonBaseline_pitching(t *testing.T) {
+func TestFetchLeagueBaseline_pitching(t *testing.T) {
 	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/stats" {
 			http.NotFound(w, r)
@@ -82,40 +48,28 @@ func TestLeagueSeasonBaseline_pitching(t *testing.T) {
 		_, _ = w.Write([]byte(leagueBaselinePitchingJSON))
 	})
 	h := newTestHandlers(t, mlb)
-	r := chi.NewRouter()
-	r.Get("/league/season-baseline", h.LeagueSeasonBaseline)
 
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/league/season-baseline?season=2026&group=pitching", nil)
-	r.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
-	}
-	var out models.LeagueSeasonBaselineResponse
-	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+	got, err := h.fetchLeagueBaseline(httptest.NewRequest(http.MethodGet, "/", nil).Context(), 2026, "pitching")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if out.Group != "pitching" || out.Era <= 0 {
-		t.Fatalf("response: %+v", out)
+	if got <= 0 {
+		t.Fatalf("era: got %v want > 0", got)
 	}
 }
 
-func TestLeagueSeasonBaseline_upstreamError(t *testing.T) {
+func TestFetchLeagueBaseline_upstreamError(t *testing.T) {
 	h := newTestHandlers(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "fail", http.StatusBadGateway)
 	}))
-	r := chi.NewRouter()
-	r.Get("/league/season-baseline", h.LeagueSeasonBaseline)
 
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/league/season-baseline", nil)
-	r.ServeHTTP(rec, req)
-	if rec.Code != http.StatusBadGateway {
-		t.Fatalf("status: got %d", rec.Code)
+	_, err := h.fetchLeagueBaseline(httptest.NewRequest(http.MethodGet, "/", nil).Context(), 2026, "hitting")
+	if err == nil {
+		t.Fatal("expected error")
 	}
 }
 
-func TestLeagueSeasonBaseline_nonMLBLeaguesFilteredToZero(t *testing.T) {
+func TestFetchLeagueBaseline_nonMLBLeaguesFilteredToZero(t *testing.T) {
 	// loadLeagueTeamStatMaps keeps only league 103/104; everything else is dropped.
 	const onlyNonMLB = `{"stats":[{"splits":[
 		{"league":{"id":200},"team":{"id":1},"stat":{"gamesPlayed":5,"hits":1,"atBats":1,"totalBases":1,"baseOnBalls":0,"hitByPitch":0,"sacFlies":0}}
@@ -130,25 +84,17 @@ func TestLeagueSeasonBaseline_nonMLBLeaguesFilteredToZero(t *testing.T) {
 		_, _ = w.Write([]byte(onlyNonMLB))
 	})
 	h := newTestHandlers(t, mlb)
-	r := chi.NewRouter()
-	r.Get("/league/season-baseline", h.LeagueSeasonBaseline)
 
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/league/season-baseline?season=2026&group=hitting", nil)
-	r.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
-	}
-	var out models.LeagueSeasonBaselineResponse
-	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+	got, err := h.fetchLeagueBaseline(httptest.NewRequest(http.MethodGet, "/", nil).Context(), 2026, "hitting")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if out.Ops != 0 {
-		t.Fatalf("expected 0 OPS when no AL/NL rows, got %v", out.Ops)
+	if got != 0 {
+		t.Fatalf("expected 0 OPS when no AL/NL rows, got %v", got)
 	}
 }
 
-func TestLeagueSeasonBaseline_emptySplitsZeroRate(t *testing.T) {
+func TestFetchLeagueBaseline_emptySplitsZeroRate(t *testing.T) {
 	mlb := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/stats" {
 			http.NotFound(w, r)
@@ -159,21 +105,13 @@ func TestLeagueSeasonBaseline_emptySplitsZeroRate(t *testing.T) {
 		_, _ = w.Write([]byte(`{"stats":[{"splits":[]}]}`))
 	})
 	h := newTestHandlers(t, mlb)
-	r := chi.NewRouter()
-	r.Get("/league/season-baseline", h.LeagueSeasonBaseline)
 
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/league/season-baseline?season=2026&group=hitting", nil)
-	r.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
-	}
-	var out models.LeagueSeasonBaselineResponse
-	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+	got, err := h.fetchLeagueBaseline(httptest.NewRequest(http.MethodGet, "/", nil).Context(), 2026, "hitting")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if out.Ops != 0 {
-		t.Fatalf("empty splits: want Ops 0, got %v", out.Ops)
+	if got != 0 {
+		t.Fatalf("empty splits: want 0, got %v", got)
 	}
 }
 

@@ -314,28 +314,12 @@ describe('api client', () => {
       );
     });
 
-    it('fetchPlayerCurrentTeam uses player id in path', async () => {
-      fetchMock.mockResolvedValue(jsonResponse({}));
-      const { fetchPlayerCurrentTeam } = await getClient();
-      await fetchPlayerCurrentTeam(12345);
-      expect(fetchMock).toHaveBeenCalledWith('/api/players/12345/current-team');
-    });
-
     it('fetchPlayersCurrentTeams builds ids query and rejects invalid args', async () => {
       fetchMock.mockResolvedValue(jsonResponse({ players: [] }));
       const { fetchPlayersCurrentTeams } = await getClient();
       await fetchPlayersCurrentTeams(10, 20);
       expect(fetchMock).toHaveBeenCalledWith('/api/players/current-teams?ids=10%2C20');
       await expect(fetchPlayersCurrentTeams(1, 1)).rejects.toThrow(/must differ/);
-    });
-
-    it('fetchLeagueSeasonBaseline adds optional query', async () => {
-      fetchMock.mockResolvedValue(jsonResponse({}));
-      const { fetchLeagueSeasonBaseline } = await getClient();
-      await fetchLeagueSeasonBaseline({ season: 2024, group: 'pitching' });
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/league/season-baseline?season=2024&group=pitching',
-      );
     });
 
     it('fetchPlayersCompareYearByYear builds query string', async () => {

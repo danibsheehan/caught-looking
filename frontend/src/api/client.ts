@@ -7,8 +7,6 @@ import type {
   GamesForDateResponse,
   LeadersQuery,
   LeadersResponse,
-  LeagueSeasonBaselineResponse,
-  PlayerCurrentTeamResponse,
   PlayersCurrentTeamsResponse,
   PlayersCompareGameLogQuery,
   PlayersComparePlatoonQuery,
@@ -236,13 +234,6 @@ export async function fetchPlayersCompare(
   return apiGet<PlayersRadarResponse>(`/players/compare?${qs.toString()}`, apiOpts(signal));
 }
 
-export async function fetchPlayerCurrentTeam(
-  playerId: number,
-  signal?: AbortSignal,
-): Promise<PlayerCurrentTeamResponse> {
-  return apiGet<PlayerCurrentTeamResponse>(`/players/${playerId}/current-team`, apiOpts(signal));
-}
-
 /** Two players in one request (compare page); order matches {@link PlayersCurrentTeamsResponse.players}. */
 export async function fetchPlayersCurrentTeams(
   playerId1: number,
@@ -266,17 +257,6 @@ export async function fetchPlayersCurrentTeams(
     `/players/current-teams?${qs.toString()}`,
     apiOpts(signal),
   );
-}
-
-export async function fetchLeagueSeasonBaseline(
-  query: { season?: number; group?: 'hitting' | 'pitching' },
-  signal?: AbortSignal,
-): Promise<LeagueSeasonBaselineResponse> {
-  const qs = new URLSearchParams();
-  if (query.season != null) qs.set('season', String(query.season));
-  if (query.group) qs.set('group', query.group);
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
-  return apiGet<LeagueSeasonBaselineResponse>(`/league/season-baseline${suffix}`, apiOpts(signal));
 }
 
 export async function fetchPlayersCompareYearByYear(

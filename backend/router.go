@@ -75,12 +75,10 @@ func newRouter(cfg config.Config, h *handlers.Handlers) http.Handler {
 		r.Get("/games/{gamePk}/statcast", h.GameStatcast)
 		r.Get("/players/search", h.PlayerSearch)
 		r.Get("/players/current-teams", h.PlayersCurrentTeams)
-		r.Get("/players/{playerID}/current-team", h.PlayerCurrentTeam)
 		r.Get("/players/compare", h.PlayersCompare)
 		r.Get("/players/compare/year-by-year", h.PlayersCompareYearByYear)
 		r.Get("/players/compare/game-log", h.PlayersCompareGameLog)
 		r.Get("/players/compare/platoon", h.PlayersComparePlatoon)
-		r.Get("/league/season-baseline", h.LeagueSeasonBaseline)
 	})
 
 	return r

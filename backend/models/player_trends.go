@@ -1,13 +1,5 @@
 package models
 
-// LeagueSeasonBaselineResponse is GET /league/season-baseline.
-type LeagueSeasonBaselineResponse struct {
-	Season int     `json:"season"`
-	Group  string  `json:"group"`
-	Ops    float64 `json:"ops,omitempty"`
-	Era    float64 `json:"era,omitempty"`
-}
-
 // PlayersYearByYearResponse is GET /players/compare/year-by-year.
 type PlayersYearByYearResponse struct {
 	Group          string             `json:"group"`
