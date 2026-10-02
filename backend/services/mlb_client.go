@@ -55,7 +55,6 @@ func (c *MLBClient) Get(ctx context.Context, path string) ([]byte, error) {
 		accept:    "application/json",
 		userAgent: mlbUserAgent,
 		client:    c.httpClient,
-		transport: c.transport,
 		limiter:   c.upstream,
 	}.do(ctx, path)
 }

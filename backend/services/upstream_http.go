@@ -108,7 +108,6 @@ type upstreamGET struct {
 	accept    string
 	userAgent string
 	client    *http.Client
-	transport *http.Transport
 	limiter   *rate.Limiter
 }
 
@@ -118,17 +117,17 @@ func (u upstreamGET) do(ctx context.Context, path string) ([]byte, error) {
 	}
 	fullURL := u.baseURL + path
 
-	if u.limiter != nil {
-		if err := u.limiter.Wait(ctx); err != nil {
-			return nil, err
-		}
-	}
-
 	const maxAttempts = 2
 	var lastErr error
 	for attempt := 0; attempt < maxAttempts; attempt++ {
-		if attempt > 0 && u.transport != nil {
-			u.transport.CloseIdleConnections()
+		// Wait on each attempt (including retries) so the QPS cap covers every outbound
+		// attempt, not just the first. Keep-alive connections are reused across retries
+		// (no CloseIdleConnections) since a 429/503/timeout does not mean the pooled
+		// connection itself is bad.
+		if u.limiter != nil {
+			if err := u.limiter.Wait(ctx); err != nil {
+				return nil, err
+			}
 		}
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
