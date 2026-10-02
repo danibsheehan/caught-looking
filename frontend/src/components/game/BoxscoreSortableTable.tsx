@@ -29,7 +29,10 @@ type SortThProps = {
 function SortTh({ label, sortKey, activeKey, activeDir, onSort }: SortThProps) {
   const active = activeKey === sortKey;
   return (
-    <th scope="col">
+    <th
+      scope="col"
+      aria-sort={active ? (activeDir === 'asc' ? 'ascending' : 'descending') : undefined}
+    >
       <button type="button" className="game-boxscore__sort-btn" onClick={() => onSort(sortKey)}>
         {label}
         {active ? (activeDir === 'asc' ? ' ▲' : ' ▼') : ''}

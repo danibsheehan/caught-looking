@@ -228,6 +228,27 @@ describe('GameBoxscorePanel', () => {
     expect(bodyRows[1]).toHaveTextContent('Zeta Pitcher');
   });
 
+  it('sets aria-sort on the IP header through the desc -> asc -> none cycle', async () => {
+    const user = userEvent.setup();
+    render(<GameBoxscorePanel data={box} />);
+
+    const tables = screen.getAllByRole('table');
+    const awayPitching = tables[0]!;
+    const ipBtn = within(awayPitching).getByRole('button', { name: /^IP/ });
+    const ipHeader = ipBtn.closest('th')!;
+
+    expect(ipHeader).not.toHaveAttribute('aria-sort');
+
+    await user.click(ipBtn);
+    expect(ipHeader).toHaveAttribute('aria-sort', 'descending');
+
+    await user.click(ipBtn);
+    expect(ipHeader).toHaveAttribute('aria-sort', 'ascending');
+
+    await user.click(ipBtn);
+    expect(ipHeader).not.toHaveAttribute('aria-sort');
+  });
+
   it('shows — for missing optional team totals fields', () => {
     render(<GameBoxscorePanel data={box} />);
     const homeTotals = screen
