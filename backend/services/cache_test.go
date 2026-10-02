@@ -50,6 +50,33 @@ func TestTTLCache_Get_expired(t *testing.T) {
 	}
 }
 
+// TestTTLCache_deleteIfSame_keepsReplacedEntry proves the CompareAndDelete guard: a stale pointer
+// from a Load that raced with a new Set must not delete the fresh entry it was replaced by.
+func TestTTLCache_deleteIfSame_keepsReplacedEntry(t *testing.T) {
+	c := NewTTLCache()
+	c.Set("k", []byte("stale"), 10*time.Millisecond)
+
+	v, ok := c.m.Load("k")
+	if !ok {
+		t.Fatal("expected entry present")
+	}
+	stalePtr := v.(*cacheEntry)
+
+	time.Sleep(20 * time.Millisecond)
+	c.Set("k", []byte("fresh"), time.Hour)
+
+	// Simulate a delayed cleanup of the now-expired-and-replaced pointer.
+	c.deleteIfSame("k", stalePtr)
+
+	got, ok := c.Get("k")
+	if !ok {
+		t.Fatal("expected fresh entry to survive deleteIfSame on a stale pointer")
+	}
+	if string(got) != "fresh" {
+		t.Fatalf("got %q want %q", got, "fresh")
+	}
+}
+
 func TestTTLCache_overwrite(t *testing.T) {
 	c := NewTTLCache()
 	c.Set("k", []byte("a"), time.Hour)
