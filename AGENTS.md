@@ -50,7 +50,7 @@ make load-smoke          # cache singleflight/coalesce proof under concurrency
 
 Optional Playwright e2e (not required for every change): `make test-e2e` (stubbed API),
 `make test-e2e-contract` (real Go API + fixture upstream), `make test-e2e-chaos` (429/5xx/slow
-fault injection). Coverage gate is ≥50% line rate on both sides, enforced in CI. If coverage fails or sits
+fault injection). Coverage gates for each side, enforced in CI, are in [`docs/coverage.md`](docs/coverage.md). If coverage fails or sits
 close to that gate, **`foundations:coverage-gap-diagnosis`** reads the local coverage output
 for files changed on the branch and names the specific untested branches/error paths instead
 of just the percentage.

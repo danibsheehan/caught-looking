@@ -347,7 +347,7 @@ Fork PRs may skip guide, coverage comments, or previews (`GITHUB_TOKEN` / secret
 
 #### Dependabot
 
-[`.github/dependabot.yml`](.github/dependabot.yml) opens **weekly** version PRs for:
+[`.github/dependabot.yml`](.github/dependabot.yml) opens **daily** version PRs for:
 
 - **Go modules** (`backend/` — minor/patch **grouped**, plus a grouped security-update bucket)
 - **npm** (`frontend/` — minor/patch **grouped**, plus a grouped security-update bucket)
@@ -357,7 +357,7 @@ The grouped npm/gomod minor/patch PRs, and grouped security-update PRs at patch/
 
 It does **not** update README badges or Prerequisites. When a bump changes React / Vite / TypeScript / Go / CI Node majors (or TypeScript major.minor), update those docs in the same PR — CI’s `make check-stack-docs` catches drift. Review Dependabot PRs like any other change (`govulncheck` and `npm audit` still gate merges).
 
-Also enable **Dependabot alerts** and **Dependabot security updates** under GitHub **Settings → Code security** for advisory fix PRs outside the weekly cadence.
+Also enable **Dependabot alerts** and **Dependabot security updates** under GitHub **Settings → Code security** for advisory fix PRs outside the daily cadence.
 
 </details>
 
@@ -487,8 +487,8 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 | Target                    | Purpose                                                                 |
 | ------------------------- | ----------------------------------------------------------------------- |
 | `make ci-local`           | Full local parity with GitHub Actions CI (stack docs + frontend + backend jobs) |
-| `make ci-local-frontend`  | Frontend CI job only (audit, OpenAPI, lint, format, typecheck, coverage ≥50%, build) |
-| `make ci-local-backend`   | Backend CI job only (vet, govulncheck, race, coverage ≥50%, build)      |
+| `make ci-local-frontend`  | Frontend CI job only (audit, OpenAPI, lint, format, typecheck, coverage gate (see [docs/coverage.md](docs/coverage.md)), build) |
+| `make ci-local-backend`   | Backend CI job only (vet, govulncheck, race, coverage gate (see [docs/coverage.md](docs/coverage.md)), build) |
 | `make check-stack-docs`   | README / project-stack versions match `package.json`, `go.mod`, and CI  |
 | `make check-openapi`      | Lint OpenAPI + verify generated frontend API types are current          |
 | `make test-backend`       | Faster backend subset: `go vet`, `govulncheck`, tests, build            |
