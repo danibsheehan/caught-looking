@@ -3,7 +3,7 @@ name: doc-sync-patch
 description: >-
   Patches README.md and AGENTS.md so their stated Go/React/TypeScript/Vite/Node
   versions match frontend/package.json,
-  backend/go.mod, .nvmrc, and .github/workflows/ci.yml. Use when make
+  backend/go.mod, backend/Dockerfile, and .nvmrc. Use when make
   check-stack-docs (or CI's stack-docs job) fails, after bumping React, Vite,
   TypeScript, Go, or CI Node/Go (including a Dependabot merge), or when the
   user mentions stack docs drift, version badges, or check_stack_docs.
@@ -69,7 +69,7 @@ the exact expected value.
 
 - Patching only README and skipping `AGENTS.md` (or vice versa) — the checker validates both
   independently.
-- Guessing a version instead of reading it from `package.json` / `go.mod` / `.nvmrc` / `ci.yml`.
+- Guessing a version instead of reading it from `package.json` / `go.mod` / `.nvmrc` / `backend/Dockerfile`.
 - Changing dependency versions in the manifests as part of this skill — that's a separate,
   deliberate upgrade decision, not a docs sync.
 - Leaving `make check-stack-docs` red after editing.
