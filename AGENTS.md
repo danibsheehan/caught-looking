@@ -267,7 +267,7 @@ rather than filling in the PR template from scratch.
   without updating the matching ADR (`docs/adr/`) or `docs/threat-model.md`** in the same
   change.
 - **Bump React, Vite, TypeScript, Go, or CI Node/Go versions without updating the docs in the
-  same change** — `make check-stack-docs` checks README/`project-stack.mdc`/`AGENTS.md` drift
+  same change** — `make check-stack-docs` checks README/`AGENTS.md` drift
   but does not fix it (the `doc-sync-patch` skill does).
 - **Add or remove a `.claude/skills/*/SKILL.md` directory without updating this file's
   Step-by-step playbooks list in the same change** — `make check-skills-docs` checks this

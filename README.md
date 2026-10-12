@@ -489,7 +489,7 @@ make frontend   # Vite only (expects API on 127.0.0.1:8080 for `/api`)
 | `make ci-local`           | Full local parity with GitHub Actions CI (stack docs + frontend + backend jobs) |
 | `make ci-local-frontend`  | Frontend CI job only (audit, OpenAPI, lint, format, typecheck, coverage gate (see [docs/coverage.md](docs/coverage.md)), build) |
 | `make ci-local-backend`   | Backend CI job only (vet, govulncheck, race, coverage gate (see [docs/coverage.md](docs/coverage.md)), build) |
-| `make check-stack-docs`   | README / project-stack versions match `package.json`, `go.mod`, and CI  |
+| `make check-stack-docs`   | README / `AGENTS.md` versions match `package.json`, `go.mod`, `.nvmrc`, and the Dockerfile Go tag  |
 | `make check-openapi`      | Lint OpenAPI + verify generated frontend API types are current          |
 | `make test-backend`       | Faster backend subset: `go vet`, `govulncheck`, tests, build            |
 | `make test-backend-race`  | Backend tests with the race detector                                    |
