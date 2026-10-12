@@ -5,7 +5,7 @@ description: >-
   versions match frontend/package.json,
   backend/go.mod, backend/Dockerfile, and .nvmrc. Use when make
   check-stack-docs (or CI's stack-docs job) fails, after bumping React, Vite,
-  TypeScript, Go, or CI Node/Go (including a Dependabot merge), or when the
+  TypeScript, Go, or CI Node (including a Dependabot merge), or when the
   user mentions stack docs drift, version badges, or check_stack_docs.
 ---
 
