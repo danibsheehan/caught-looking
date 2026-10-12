@@ -39,7 +39,10 @@ files directly instead — you may have been asked to pre-emptively sync docs af
   (major.minor), `vite` (major).
 - `backend/go.mod` — `go` directive (major.minor) and `toolchain` line if present.
 - `.nvmrc` — Node major (preferred source; CI pins to it via `node-version-file`).
-- `.github/workflows/ci.yml` — `go-version` (full), `node-version` (only read if no `.nvmrc`).
+- `backend/Dockerfile` — `FROM golang:X.Y.Z-...` tag; must equal the `go.mod` `toolchain`. The Go
+  version is single-sourced from `go.mod` — workflows read `go-version-file`, so there is no
+  `go-version` literal in `.github/workflows/` to check.
+- `.github/workflows/verify.yml` — `node-version` (only read if no `.nvmrc`).
 
 ### 3. Patch every location the checker validates
 
