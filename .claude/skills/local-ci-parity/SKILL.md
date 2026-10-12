@@ -27,20 +27,20 @@ Pre-PR:
 make ci-local
 ```
 
-Runs stack-docs drift, then frontend then backend checks aligned with **`.github/workflows/ci.yml`**:
+Runs stack-docs drift, then frontend then backend checks aligned with **`.github/workflows/verify.yml`**:
 
 | Side | Includes |
 |------|----------|
-| Stack docs (`check-stack-docs`) | README badges / Prerequisites / Tech stack + `project-stack.mdc` vs `package.json`, `go.mod`, CI Node/Go |
+| Stack docs (`check-stack-docs`) | README badges / Prerequisites / Tech stack + `AGENTS.md` Stack line vs `package.json`, `go.mod`, `.nvmrc`; the `backend/Dockerfile` Go tag must equal the `go.mod` toolchain, and workflows must read `go-version-file` |
 | Skills docs (`check-skills-docs`) | `.claude/skills/*/SKILL.md` vs `AGENTS.md`'s Step-by-step playbooks list |
-| Frontend (`ci-local-frontend`) | `npm audit --audit-level=high`, `make check-openapi`, lint, `format:check`, typecheck, `test:coverage` + ≥50% line-rate gate, build |
-| Backend (`ci-local-backend`) | `go vet`, `golangci-lint`, `govulncheck`, `go test -race`, tests with coverage + ≥50% Cobertura gate, build |
+| Frontend (`ci-local-frontend`) | `npm audit --audit-level=high`, `make check-openapi`, lint, `format:check`, typecheck, `test:coverage` + coverage gate (see `docs/coverage.md`), build |
+| Backend (`ci-local-backend`) | `go vet`, `golangci-lint`, `govulncheck`, `go test -race`, tests with coverage + coverage gate (see `docs/coverage.md`), build |
 
 If coverage is close to the gate or drops, diagnose with **`coverage-gap-diagnosis`** instead of guessing which test to add.
 
 Faster subsets when iterating (not a substitute before PR):
 
-- `make check-stack-docs` — README / project-stack version drift only
+- `make check-stack-docs` — README / stack version drift only
 - `make check-skills-docs` — skill directory vs routing-doc drift only
 - `make check-openapi` — contract only
 - `make test-backend` / `make test-frontend` — tests without full audit/coverage/build gate

@@ -51,5 +51,5 @@ For scaffolding a full route end-to-end, see **`.claude/skills/add-api-endpoint/
 
 ## References
 
-- Spec: `backend/apidocs/openapi.yaml` · Redocly: `redocly.yaml` · CI: `.github/workflows/ci.yml` (`api:validate`, `api:types:check`).
+- Spec: `backend/apidocs/openapi.yaml` · Redocly: `redocly.yaml` · CI: `.github/workflows/verify.yml` (`api:validate`, `api:types:check`).
 - ADR: **`docs/adr/0003-openapi-contract.md`**.
