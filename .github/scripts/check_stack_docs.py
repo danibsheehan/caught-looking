@@ -4,8 +4,9 @@
 Sources of truth:
   - frontend/package.json — react, typescript, vite
   - backend/go.mod — `go` directive (and optional toolchain)
+  - backend/Dockerfile — `FROM golang:X.Y.Z-...` tag (must equal the go.mod toolchain)
   - .nvmrc — Node major (preferred); else verify.yml node-version
-  - .github/workflows/verify.yml — go-version (and node-version if no .nvmrc)
+  - .github/workflows/*.yml — setup-go steps must read `go-version-file`, never a literal
 
 Checked docs:
   - README.md badges, Tech stack table, Prerequisites
@@ -93,16 +94,53 @@ def read_node_major(root: Path, verify_yml: Path) -> str:
 
 
 def read_verify_versions(root: Path, verify_yml: Path) -> dict[str, str]:
-    # Node's version now comes from .nvmrc via dani-actions' npm-verify.yml default --
-    # there's no literal node-version-file: string left in this repo's own workflow file
-    # to cross-check (unlike go-version, which stays a literal string here since Backend
-    # is a native job, not delegated to a shared workflow).
-    text = verify_yml.read_text(encoding="utf-8")
-    go = re.search(r"(?m)^\s*go-version:\s*['\"]?([\d.]+)['\"]?\s*$", text)
-    if not go:
-        raise ValueError(f"{verify_yml}: no go-version")
-    node_major = read_node_major(root, verify_yml)
-    return {"node_major": node_major, "go_version": go.group(1)}
+    # Node's version comes from .nvmrc via dani-actions' npm-verify.yml default. Go's comes
+    # from backend/go.mod everywhere (see check_go_pins), so there's no Go literal to read here.
+    return {"node_major": read_node_major(root, verify_yml)}
+
+
+def read_dockerfile_go(dockerfile: Path) -> str:
+    text = dockerfile.read_text(encoding="utf-8")
+    match = re.search(r"(?m)^FROM\s+golang:(\d+\.\d+(?:\.\d+)?)-", text)
+    if not match:
+        raise ValueError(f"{dockerfile}: no `FROM golang:X.Y.Z-...` line")
+    return match.group(1)
+
+
+def check_go_pins(
+    go: dict[str, str],
+    dockerfile_version: str,
+    workflows_dir: Path,
+    errors: list[str],
+) -> None:
+    """The Go version lives in backend/go.mod; nothing else may carry its own copy."""
+    if "toolchain" in go:
+        if dockerfile_version != go["toolchain"]:
+            errors.append(
+                f"backend/Dockerfile golang tag {dockerfile_version!r} != go.mod toolchain {go['toolchain']!r}"
+            )
+    elif major_minor(dockerfile_version) != go["go_mm"]:
+        errors.append(
+            f"backend/Dockerfile golang tag {dockerfile_version!r} major.minor != go.mod {go['go_mm']!r}"
+        )
+
+    for workflow in sorted(workflows_dir.glob("*.yml")):
+        text = workflow.read_text(encoding="utf-8")
+        for number, line in enumerate(text.splitlines(), start=1):
+            if re.match(r"\s*go-version:\s", line):
+                errors.append(
+                    f"{workflow.name}:{number} hardcodes go-version; "
+                    "use `go-version-file: backend/go.mod`"
+                )
+        # Rough guard, not a step parser: each setup-go use should be matched by a
+        # go-version-file line somewhere in the same workflow.
+        setup_go = len(re.findall(r"uses:\s*actions/setup-go@", text))
+        version_files = len(re.findall(r"(?m)^\s*go-version-file:\s", text))
+        if setup_go > version_files:
+            errors.append(
+                f"{workflow.name}: {setup_go} setup-go step(s) but only {version_files} "
+                "go-version-file line(s)"
+            )
 
 
 def require_regex(text: str, pattern: str, label: str, errors: list[str]) -> re.Match[str] | None:
@@ -198,6 +236,7 @@ def main() -> int:
     package_json = ROOT / "frontend" / "package.json"
     go_mod = ROOT / "backend" / "go.mod"
     verify_yml = ROOT / ".github" / "workflows" / "verify.yml"
+    dockerfile = ROOT / "backend" / "Dockerfile"
     readme_path = ROOT / "README.md"
     agents_md = ROOT / "AGENTS.md"
 
@@ -205,6 +244,7 @@ def main() -> int:
         pkg = read_package_versions(package_json)
         go = read_go_mod(go_mod)
         ci = read_verify_versions(ROOT, verify_yml)
+        dockerfile_go = read_dockerfile_go(dockerfile)
         readme = readme_path.read_text(encoding="utf-8")
         agents_text = agents_md.read_text(encoding="utf-8")
     except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -213,15 +253,7 @@ def main() -> int:
 
     errors: list[str] = []
 
-    ci_go_mm = major_minor(ci["go_version"])
-    if ci_go_mm != go["go_mm"]:
-        errors.append(
-            f"CI go-version {ci['go_version']!r} major.minor {ci_go_mm!r} != go.mod {go['go_mm']!r}"
-        )
-    if "toolchain" in go and ci["go_version"] != go["toolchain"]:
-        errors.append(
-            f"CI go-version {ci['go_version']!r} != go.mod toolchain {go['toolchain']!r}"
-        )
+    check_go_pins(go, dockerfile_go, verify_yml.parent, errors)
 
     check_readme(
         readme,
@@ -246,7 +278,7 @@ def main() -> int:
             print(f"  - {err}", file=sys.stderr)
         print(
             "Update README badges/Prerequisites/Tech stack (and AGENTS.md) to match "
-            "frontend/package.json, backend/go.mod, .nvmrc, and .github/workflows/verify.yml.",
+            "frontend/package.json, backend/go.mod, backend/Dockerfile, and .nvmrc.",
             file=sys.stderr,
         )
         return 1
@@ -255,7 +287,7 @@ def main() -> int:
         "Stack docs OK "
         f"(Go {go['go_mm']}, React {pkg['react_major']}, "
         f"TypeScript {pkg['typescript_mm']}, Vite {pkg['vite_major']}, "
-        f"Node {ci['node_major']}, CI Go {ci['go_version']})"
+        f"Node {ci['node_major']}, toolchain Go {go.get('toolchain', go['go_mm'])})"
     )
     return 0
 
