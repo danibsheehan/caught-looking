@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail if README / project-stack stack versions drift from manifests and CI.
+"""Fail if README / AGENTS.md stack versions drift from manifests, the Dockerfile, and workflows.
 
 Sources of truth:
   - frontend/package.json — react, typescript, vite
